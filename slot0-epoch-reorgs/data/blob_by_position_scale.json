@@ -1,0 +1,290 @@
+[
+  {
+    "position_in_epoch": 0,
+    "total_slots": 142021,
+    "n_canonical": 140361,
+    "n_orphaned": 1660,
+    "avg_blobs_canonical": 3.697,
+    "avg_blobs_orphaned": 4.7048,
+    "avg_bytes_canonical": 129492.0
+  },
+  {
+    "position_in_epoch": 1,
+    "total_slots": 142694,
+    "n_canonical": 142205,
+    "n_orphaned": 489,
+    "avg_blobs_canonical": 3.6366,
+    "avg_blobs_orphaned": 4.8753,
+    "avg_bytes_canonical": 132702.0
+  },
+  {
+    "position_in_epoch": 2,
+    "total_slots": 142784,
+    "n_canonical": 142410,
+    "n_orphaned": 374,
+    "avg_blobs_canonical": 3.6323,
+    "avg_blobs_orphaned": 4.5214,
+    "avg_bytes_canonical": 135663.0
+  },
+  {
+    "position_in_epoch": 3,
+    "total_slots": 142852,
+    "n_canonical": 142528,
+    "n_orphaned": 324,
+    "avg_blobs_canonical": 3.8036,
+    "avg_blobs_orphaned": 4.8519,
+    "avg_bytes_canonical": 134231.0
+  },
+  {
+    "position_in_epoch": 4,
+    "total_slots": 142873,
+    "n_canonical": 142580,
+    "n_orphaned": 293,
+    "avg_blobs_canonical": 3.7214,
+    "avg_blobs_orphaned": 4.7509,
+    "avg_bytes_canonical": 135199.0
+  },
+  {
+    "position_in_epoch": 5,
+    "total_slots": 142935,
+    "n_canonical": 142652,
+    "n_orphaned": 283,
+    "avg_blobs_canonical": 3.7503,
+    "avg_blobs_orphaned": 4.9152,
+    "avg_bytes_canonical": 133827.0
+  },
+  {
+    "position_in_epoch": 6,
+    "total_slots": 142980,
+    "n_canonical": 142718,
+    "n_orphaned": 262,
+    "avg_blobs_canonical": 3.6821,
+    "avg_blobs_orphaned": 5.4313,
+    "avg_bytes_canonical": 132960.0
+  },
+  {
+    "position_in_epoch": 7,
+    "total_slots": 142974,
+    "n_canonical": 142727,
+    "n_orphaned": 247,
+    "avg_blobs_canonical": 3.7269,
+    "avg_blobs_orphaned": 4.7814,
+    "avg_bytes_canonical": 132543.0
+  },
+  {
+    "position_in_epoch": 8,
+    "total_slots": 143000,
+    "n_canonical": 142755,
+    "n_orphaned": 245,
+    "avg_blobs_canonical": 3.6913,
+    "avg_blobs_orphaned": 5.5102,
+    "avg_bytes_canonical": 132175.0
+  },
+  {
+    "position_in_epoch": 9,
+    "total_slots": 142995,
+    "n_canonical": 142775,
+    "n_orphaned": 220,
+    "avg_blobs_canonical": 3.741,
+    "avg_blobs_orphaned": 4.9955,
+    "avg_bytes_canonical": 131921.0
+  },
+  {
+    "position_in_epoch": 10,
+    "total_slots": 142965,
+    "n_canonical": 142754,
+    "n_orphaned": 211,
+    "avg_blobs_canonical": 3.682,
+    "avg_blobs_orphaned": 5.0142,
+    "avg_bytes_canonical": 130994.0
+  },
+  {
+    "position_in_epoch": 11,
+    "total_slots": 142992,
+    "n_canonical": 142775,
+    "n_orphaned": 217,
+    "avg_blobs_canonical": 3.7371,
+    "avg_blobs_orphaned": 4.8203,
+    "avg_bytes_canonical": 131255.0
+  },
+  {
+    "position_in_epoch": 12,
+    "total_slots": 142985,
+    "n_canonical": 142765,
+    "n_orphaned": 220,
+    "avg_blobs_canonical": 3.6843,
+    "avg_blobs_orphaned": 5.0136,
+    "avg_bytes_canonical": 130706.0
+  },
+  {
+    "position_in_epoch": 13,
+    "total_slots": 142976,
+    "n_canonical": 142765,
+    "n_orphaned": 211,
+    "avg_blobs_canonical": 3.7325,
+    "avg_blobs_orphaned": 5.3033,
+    "avg_bytes_canonical": 131205.0
+  },
+  {
+    "position_in_epoch": 14,
+    "total_slots": 142973,
+    "n_canonical": 142771,
+    "n_orphaned": 202,
+    "avg_blobs_canonical": 3.6766,
+    "avg_blobs_orphaned": 4.8218,
+    "avg_bytes_canonical": 131023.0
+  },
+  {
+    "position_in_epoch": 15,
+    "total_slots": 142971,
+    "n_canonical": 142760,
+    "n_orphaned": 211,
+    "avg_blobs_canonical": 3.7178,
+    "avg_blobs_orphaned": 5.2986,
+    "avg_bytes_canonical": 131200.0
+  },
+  {
+    "position_in_epoch": 16,
+    "total_slots": 143010,
+    "n_canonical": 142779,
+    "n_orphaned": 231,
+    "avg_blobs_canonical": 3.6847,
+    "avg_blobs_orphaned": 4.961,
+    "avg_bytes_canonical": 131076.0
+  },
+  {
+    "position_in_epoch": 17,
+    "total_slots": 142972,
+    "n_canonical": 142765,
+    "n_orphaned": 207,
+    "avg_blobs_canonical": 3.735,
+    "avg_blobs_orphaned": 4.942,
+    "avg_bytes_canonical": 131838.0
+  },
+  {
+    "position_in_epoch": 18,
+    "total_slots": 143021,
+    "n_canonical": 142818,
+    "n_orphaned": 203,
+    "avg_blobs_canonical": 3.6814,
+    "avg_blobs_orphaned": 5.1379,
+    "avg_bytes_canonical": 131176.0
+  },
+  {
+    "position_in_epoch": 19,
+    "total_slots": 142976,
+    "n_canonical": 142769,
+    "n_orphaned": 207,
+    "avg_blobs_canonical": 3.728,
+    "avg_blobs_orphaned": 4.9855,
+    "avg_bytes_canonical": 131225.0
+  },
+  {
+    "position_in_epoch": 20,
+    "total_slots": 142982,
+    "n_canonical": 142746,
+    "n_orphaned": 236,
+    "avg_blobs_canonical": 3.6688,
+    "avg_blobs_orphaned": 5.089,
+    "avg_bytes_canonical": 130977.0
+  },
+  {
+    "position_in_epoch": 21,
+    "total_slots": 142996,
+    "n_canonical": 142768,
+    "n_orphaned": 228,
+    "avg_blobs_canonical": 3.7372,
+    "avg_blobs_orphaned": 5.3947,
+    "avg_bytes_canonical": 131204.0
+  },
+  {
+    "position_in_epoch": 22,
+    "total_slots": 143000,
+    "n_canonical": 142829,
+    "n_orphaned": 171,
+    "avg_blobs_canonical": 3.6877,
+    "avg_blobs_orphaned": 5.152,
+    "avg_bytes_canonical": 130631.0
+  },
+  {
+    "position_in_epoch": 23,
+    "total_slots": 142960,
+    "n_canonical": 142730,
+    "n_orphaned": 230,
+    "avg_blobs_canonical": 3.7102,
+    "avg_blobs_orphaned": 5.7,
+    "avg_bytes_canonical": 130729.0
+  },
+  {
+    "position_in_epoch": 24,
+    "total_slots": 142974,
+    "n_canonical": 142776,
+    "n_orphaned": 198,
+    "avg_blobs_canonical": 3.7405,
+    "avg_blobs_orphaned": 5.3333,
+    "avg_bytes_canonical": 131365.0
+  },
+  {
+    "position_in_epoch": 25,
+    "total_slots": 142944,
+    "n_canonical": 142735,
+    "n_orphaned": 209,
+    "avg_blobs_canonical": 3.8632,
+    "avg_blobs_orphaned": 5.3732,
+    "avg_bytes_canonical": 132111.0
+  },
+  {
+    "position_in_epoch": 26,
+    "total_slots": 143023,
+    "n_canonical": 142804,
+    "n_orphaned": 219,
+    "avg_blobs_canonical": 3.6857,
+    "avg_blobs_orphaned": 4.9543,
+    "avg_bytes_canonical": 130639.0
+  },
+  {
+    "position_in_epoch": 27,
+    "total_slots": 142974,
+    "n_canonical": 142791,
+    "n_orphaned": 183,
+    "avg_blobs_canonical": 3.7282,
+    "avg_blobs_orphaned": 5.235,
+    "avg_bytes_canonical": 130994.0
+  },
+  {
+    "position_in_epoch": 28,
+    "total_slots": 142970,
+    "n_canonical": 142760,
+    "n_orphaned": 210,
+    "avg_blobs_canonical": 3.7107,
+    "avg_blobs_orphaned": 5.3286,
+    "avg_bytes_canonical": 131470.0
+  },
+  {
+    "position_in_epoch": 29,
+    "total_slots": 142969,
+    "n_canonical": 142766,
+    "n_orphaned": 203,
+    "avg_blobs_canonical": 3.7963,
+    "avg_blobs_orphaned": 5.3941,
+    "avg_bytes_canonical": 131833.0
+  },
+  {
+    "position_in_epoch": 30,
+    "total_slots": 142987,
+    "n_canonical": 142798,
+    "n_orphaned": 189,
+    "avg_blobs_canonical": 3.6979,
+    "avg_blobs_orphaned": 5.8201,
+    "avg_bytes_canonical": 130524.0
+  },
+  {
+    "position_in_epoch": 31,
+    "total_slots": 142878,
+    "n_canonical": 142757,
+    "n_orphaned": 121,
+    "avg_blobs_canonical": 3.7426,
+    "avg_blobs_orphaned": 6.3884,
+    "avg_bytes_canonical": 130186.0
+  }
+]

@@ -1,0 +1,226 @@
+{
+  "window": [
+    "2024-09-01 00:00:00",
+    "2025-05-07 00:00:00"
+  ],
+  "note": "client attribution is pre-Electra only (blockprint frozen ~2025-05-07); operator/entity labels are post-Electra only -> the two signals are temporally disjoint and cannot confound each other. blockprint is a probabilistic classifier with ~5-10% error concentrated in the minority clients (Nimbus/Lodestar/Grandine), so small-n client rates are directional only.",
+  "n_orphans": 371,
+  "n_attributed_orphans": 342,
+  "n_unattributed_orphans": 29,
+  "n_canonical_slot0": 54989,
+  "orphan_rate_by_client": {
+    "prysm": {
+      "orphaned": 135,
+      "canonical": 19604,
+      "orphan_rate": 0.006839252241754901,
+      "ci_lo": 0.005781583162722264,
+      "ci_hi": 0.008088834598249287
+    },
+    "lighthouse": {
+      "orphaned": 55,
+      "canonical": 18615,
+      "orphan_rate": 0.0029459025174076057,
+      "ci_lo": 0.002264136941264387,
+      "ci_hi": 0.0038321694386268495
+    },
+    "teku": {
+      "orphaned": 88,
+      "canonical": 12436,
+      "orphan_rate": 0.007026509102523155,
+      "ci_lo": 0.005707203552790523,
+      "ci_hi": 0.008648139258148956
+    },
+    "nimbus": {
+      "orphaned": 57,
+      "canonical": 3199,
+      "orphan_rate": 0.017506142506142505,
+      "ci_lo": 0.013536913637410755,
+      "ci_hi": 0.022612531147263873
+    },
+    "lodestar": {
+      "orphaned": 5,
+      "canonical": 568,
+      "orphan_rate": 0.008726003490401396,
+      "ci_lo": 0.0037328221372991306,
+      "ci_hi": 0.020262434463624742
+    },
+    "grandine": {
+      "orphaned": 2,
+      "canonical": 567,
+      "orphan_rate": 0.0035149384885764497,
+      "ci_lo": 0.0009644527321835336,
+      "ci_hi": 0.012724254154736929
+    }
+  },
+  "robustness": {
+    "fisher_p_lighthouse_vs_grandine": 0.686042289667846,
+    "fisher_p_nimbus_vs_lighthouse": 3.046812586348692e-19,
+    "fisher_p_nimbus_vs_prysm": 2.8156299759986445e-08
+  },
+  "build_path_confound": {
+    "by_client_buildpath": {
+      "prysm_local": {
+        "orphaned": 72,
+        "canonical": 2761,
+        "n": 2833,
+        "orphan_rate": 0.025414754677020826,
+        "ci_lo": 0.020230460312079784,
+        "ci_hi": 0.03188435151947827
+      },
+      "prysm_relay": {
+        "orphaned": 63,
+        "canonical": 16843,
+        "n": 16906,
+        "orphan_rate": 0.003726487637525139,
+        "ci_lo": 0.0029139638969012957,
+        "ci_hi": 0.004764491228693862
+      },
+      "lighthouse_local": {
+        "orphaned": 42,
+        "canonical": 2776,
+        "n": 2818,
+        "orphan_rate": 0.014904187366926898,
+        "ci_lo": 0.011045357191122977,
+        "ci_hi": 0.020083768985636692
+      },
+      "lighthouse_relay": {
+        "orphaned": 13,
+        "canonical": 15839,
+        "n": 15852,
+        "orphan_rate": 0.0008200857935907141,
+        "ci_lo": 0.00047934389068817585,
+        "ci_hi": 0.0014027043689387336
+      },
+      "teku_local": {
+        "orphaned": 41,
+        "canonical": 1398,
+        "n": 1439,
+        "orphan_rate": 0.02849200833912439,
+        "ci_lo": 0.02107139434125716,
+        "ci_hi": 0.0384233327457731
+      },
+      "teku_relay": {
+        "orphaned": 47,
+        "canonical": 11038,
+        "n": 11085,
+        "orphan_rate": 0.004239963915200722,
+        "ci_lo": 0.003190192301793762,
+        "ci_hi": 0.005633223488379026
+      },
+      "nimbus_local": {
+        "orphaned": 16,
+        "canonical": 426,
+        "n": 442,
+        "orphan_rate": 0.03619909502262444,
+        "ci_lo": 0.022402663027087943,
+        "ci_hi": 0.057987928994473345
+      },
+      "nimbus_relay": {
+        "orphaned": 41,
+        "canonical": 2773,
+        "n": 2814,
+        "orphan_rate": 0.01457000710732054,
+        "ci_lo": 0.010758378000662212,
+        "ci_hi": 0.019705173649389816
+      },
+      "lodestar_local": {
+        "orphaned": 5,
+        "canonical": 285,
+        "n": 290,
+        "orphan_rate": 0.017241379310344827,
+        "ci_lo": 0.00738640140311558,
+        "ci_hi": 0.03971879225459217
+      },
+      "lodestar_relay": {
+        "orphaned": 0,
+        "canonical": 283,
+        "n": 283,
+        "orphan_rate": 0.0,
+        "ci_lo": 8.673617379884035e-19,
+        "ci_hi": 0.013392271947948248
+      },
+      "grandine_local": {
+        "orphaned": 1,
+        "canonical": 110,
+        "n": 111,
+        "orphan_rate": 0.009009009009009009,
+        "ci_lo": 0.00159208548654384,
+        "ci_hi": 0.04927333265069734
+      },
+      "grandine_relay": {
+        "orphaned": 1,
+        "canonical": 457,
+        "n": 458,
+        "orphan_rate": 0.002183406113537118,
+        "ci_lo": 0.0003855288243533447,
+        "ci_hi": 0.012262661828322925
+      }
+    },
+    "local_share_by_client": {
+      "prysm": {
+        "local_share": 0.1435229748214195,
+        "n_slot0": 19739
+      },
+      "lighthouse": {
+        "local_share": 0.15093733261917514,
+        "n_slot0": 18670
+      },
+      "teku": {
+        "local_share": 0.11489939316512296,
+        "n_slot0": 12524
+      },
+      "nimbus": {
+        "local_share": 0.13574938574938575,
+        "n_slot0": 3256
+      },
+      "lodestar": {
+        "local_share": 0.506108202443281,
+        "n_slot0": 573
+      },
+      "grandine": {
+        "local_share": 0.19507908611599298,
+        "n_slot0": 569
+      }
+    },
+    "fisher_local_nimbus_vs_lighthouse": 0.005381833074839339,
+    "fisher_local_nimbus_vs_prysm": 0.20427968781229508,
+    "note": "tests whether the Nimbus-worst rate is a build-path/operator-profile artifact: (a) local_share_by_client = does Nimbus self-build more? (b) within the local-build stratum, is Nimbus still separable from Lighthouse/Prysm? Relay-delivery = slot present in mev_relay_proposer_payload_delivered (full pre-Electra coverage)."
+  },
+  "disentangling": {
+    "pre_electra_orphan_entities": {
+      "unknown": 371
+    },
+    "per_client_validator_spread": {
+      "prysm": {
+        "orphans": 135,
+        "distinct_validators": 135,
+        "distinct_index_buckets": 95
+      },
+      "lighthouse": {
+        "orphans": 55,
+        "distinct_validators": 55,
+        "distinct_index_buckets": 45
+      },
+      "teku": {
+        "orphans": 88,
+        "distinct_validators": 88,
+        "distinct_index_buckets": 73
+      },
+      "nimbus": {
+        "orphans": 57,
+        "distinct_validators": 57,
+        "distinct_index_buckets": 27
+      },
+      "lodestar": {
+        "orphans": 5,
+        "distinct_validators": 5,
+        "distinct_index_buckets": 5
+      },
+      "grandine": {
+        "orphans": 2,
+        "distinct_validators": 2,
+        "distinct_index_buckets": 2
+      }
+    }
+  }
+}

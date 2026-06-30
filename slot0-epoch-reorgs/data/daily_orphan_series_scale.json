@@ -1,0 +1,4468 @@
+[
+  {
+    "day": "2024-09-01",
+    "slot0_total": "223",
+    "slot0_orphaned": "3",
+    "all_total": "7179",
+    "all_orphaned": "15"
+  },
+  {
+    "day": "2024-09-02",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7178",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2024-09-03",
+    "slot0_total": "225",
+    "slot0_orphaned": "1",
+    "all_total": "7176",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2024-09-04",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7172",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2024-09-05",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7178",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2024-09-06",
+    "slot0_total": "221",
+    "slot0_orphaned": "1",
+    "all_total": "7176",
+    "all_orphaned": "15"
+  },
+  {
+    "day": "2024-09-07",
+    "slot0_total": "225",
+    "slot0_orphaned": "0",
+    "all_total": "7184",
+    "all_orphaned": "5"
+  },
+  {
+    "day": "2024-09-08",
+    "slot0_total": "222",
+    "slot0_orphaned": "0",
+    "all_total": "7172",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2024-09-09",
+    "slot0_total": "224",
+    "slot0_orphaned": "0",
+    "all_total": "7176",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2024-09-10",
+    "slot0_total": "223",
+    "slot0_orphaned": "4",
+    "all_total": "7161",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2024-09-11",
+    "slot0_total": "225",
+    "slot0_orphaned": "1",
+    "all_total": "7178",
+    "all_orphaned": "16"
+  },
+  {
+    "day": "2024-09-12",
+    "slot0_total": "223",
+    "slot0_orphaned": "0",
+    "all_total": "7167",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2024-09-13",
+    "slot0_total": "223",
+    "slot0_orphaned": "2",
+    "all_total": "7179",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2024-09-14",
+    "slot0_total": "224",
+    "slot0_orphaned": "2",
+    "all_total": "7169",
+    "all_orphaned": "15"
+  },
+  {
+    "day": "2024-09-15",
+    "slot0_total": "225",
+    "slot0_orphaned": "0",
+    "all_total": "7188",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2024-09-16",
+    "slot0_total": "224",
+    "slot0_orphaned": "2",
+    "all_total": "7167",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2024-09-17",
+    "slot0_total": "222",
+    "slot0_orphaned": "3",
+    "all_total": "7166",
+    "all_orphaned": "22"
+  },
+  {
+    "day": "2024-09-18",
+    "slot0_total": "224",
+    "slot0_orphaned": "4",
+    "all_total": "7171",
+    "all_orphaned": "16"
+  },
+  {
+    "day": "2024-09-19",
+    "slot0_total": "224",
+    "slot0_orphaned": "0",
+    "all_total": "7179",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2024-09-20",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7163",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2024-09-21",
+    "slot0_total": "224",
+    "slot0_orphaned": "0",
+    "all_total": "7170",
+    "all_orphaned": "19"
+  },
+  {
+    "day": "2024-09-22",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7179",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2024-09-23",
+    "slot0_total": "225",
+    "slot0_orphaned": "1",
+    "all_total": "7176",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2024-09-24",
+    "slot0_total": "224",
+    "slot0_orphaned": "0",
+    "all_total": "7185",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2024-09-25",
+    "slot0_total": "222",
+    "slot0_orphaned": "1",
+    "all_total": "7175",
+    "all_orphaned": "16"
+  },
+  {
+    "day": "2024-09-26",
+    "slot0_total": "224",
+    "slot0_orphaned": "2",
+    "all_total": "7182",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2024-09-27",
+    "slot0_total": "222",
+    "slot0_orphaned": "1",
+    "all_total": "7185",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2024-09-28",
+    "slot0_total": "223",
+    "slot0_orphaned": "4",
+    "all_total": "7179",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2024-09-29",
+    "slot0_total": "224",
+    "slot0_orphaned": "2",
+    "all_total": "7180",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2024-09-30",
+    "slot0_total": "225",
+    "slot0_orphaned": "2",
+    "all_total": "7188",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2024-10-01",
+    "slot0_total": "220",
+    "slot0_orphaned": "1",
+    "all_total": "7177",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2024-10-02",
+    "slot0_total": "225",
+    "slot0_orphaned": "1",
+    "all_total": "7185",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2024-10-03",
+    "slot0_total": "222",
+    "slot0_orphaned": "1",
+    "all_total": "7176",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2024-10-04",
+    "slot0_total": "224",
+    "slot0_orphaned": "0",
+    "all_total": "7191",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2024-10-05",
+    "slot0_total": "223",
+    "slot0_orphaned": "0",
+    "all_total": "7186",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2024-10-06",
+    "slot0_total": "223",
+    "slot0_orphaned": "2",
+    "all_total": "7177",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2024-10-07",
+    "slot0_total": "225",
+    "slot0_orphaned": "3",
+    "all_total": "7184",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2024-10-08",
+    "slot0_total": "223",
+    "slot0_orphaned": "3",
+    "all_total": "7184",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2024-10-09",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7189",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2024-10-10",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7186",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2024-10-11",
+    "slot0_total": "219",
+    "slot0_orphaned": "0",
+    "all_total": "7158",
+    "all_orphaned": "4"
+  },
+  {
+    "day": "2024-10-12",
+    "slot0_total": "221",
+    "slot0_orphaned": "2",
+    "all_total": "7157",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2024-10-13",
+    "slot0_total": "222",
+    "slot0_orphaned": "0",
+    "all_total": "7142",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2024-10-14",
+    "slot0_total": "222",
+    "slot0_orphaned": "1",
+    "all_total": "7169",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2024-10-15",
+    "slot0_total": "220",
+    "slot0_orphaned": "3",
+    "all_total": "7169",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2024-10-16",
+    "slot0_total": "225",
+    "slot0_orphaned": "1",
+    "all_total": "7171",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2024-10-17",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7179",
+    "all_orphaned": "15"
+  },
+  {
+    "day": "2024-10-18",
+    "slot0_total": "223",
+    "slot0_orphaned": "2",
+    "all_total": "7176",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2024-10-19",
+    "slot0_total": "224",
+    "slot0_orphaned": "0",
+    "all_total": "7180",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2024-10-20",
+    "slot0_total": "224",
+    "slot0_orphaned": "2",
+    "all_total": "7180",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2024-10-21",
+    "slot0_total": "223",
+    "slot0_orphaned": "0",
+    "all_total": "7176",
+    "all_orphaned": "5"
+  },
+  {
+    "day": "2024-10-22",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7173",
+    "all_orphaned": "16"
+  },
+  {
+    "day": "2024-10-23",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7185",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2024-10-24",
+    "slot0_total": "225",
+    "slot0_orphaned": "0",
+    "all_total": "7182",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2024-10-25",
+    "slot0_total": "223",
+    "slot0_orphaned": "0",
+    "all_total": "7179",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2024-10-26",
+    "slot0_total": "217",
+    "slot0_orphaned": "1",
+    "all_total": "7170",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2024-10-27",
+    "slot0_total": "223",
+    "slot0_orphaned": "0",
+    "all_total": "7184",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2024-10-28",
+    "slot0_total": "223",
+    "slot0_orphaned": "0",
+    "all_total": "7176",
+    "all_orphaned": "18"
+  },
+  {
+    "day": "2024-10-29",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7180",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2024-10-30",
+    "slot0_total": "222",
+    "slot0_orphaned": "1",
+    "all_total": "7170",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2024-10-31",
+    "slot0_total": "222",
+    "slot0_orphaned": "1",
+    "all_total": "7182",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2024-11-01",
+    "slot0_total": "225",
+    "slot0_orphaned": "0",
+    "all_total": "7179",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2024-11-02",
+    "slot0_total": "221",
+    "slot0_orphaned": "2",
+    "all_total": "7163",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2024-11-03",
+    "slot0_total": "223",
+    "slot0_orphaned": "2",
+    "all_total": "7176",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2024-11-04",
+    "slot0_total": "223",
+    "slot0_orphaned": "0",
+    "all_total": "7178",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2024-11-05",
+    "slot0_total": "223",
+    "slot0_orphaned": "2",
+    "all_total": "7172",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2024-11-06",
+    "slot0_total": "225",
+    "slot0_orphaned": "3",
+    "all_total": "7172",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2024-11-07",
+    "slot0_total": "223",
+    "slot0_orphaned": "2",
+    "all_total": "7172",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2024-11-08",
+    "slot0_total": "225",
+    "slot0_orphaned": "1",
+    "all_total": "7175",
+    "all_orphaned": "17"
+  },
+  {
+    "day": "2024-11-09",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7184",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2024-11-10",
+    "slot0_total": "225",
+    "slot0_orphaned": "2",
+    "all_total": "7183",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2024-11-11",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7179",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2024-11-12",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7173",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2024-11-13",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7181",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2024-11-14",
+    "slot0_total": "220",
+    "slot0_orphaned": "1",
+    "all_total": "7173",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2024-11-15",
+    "slot0_total": "224",
+    "slot0_orphaned": "2",
+    "all_total": "7170",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2024-11-16",
+    "slot0_total": "225",
+    "slot0_orphaned": "2",
+    "all_total": "7184",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2024-11-17",
+    "slot0_total": "225",
+    "slot0_orphaned": "0",
+    "all_total": "7180",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2024-11-18",
+    "slot0_total": "225",
+    "slot0_orphaned": "1",
+    "all_total": "7185",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2024-11-19",
+    "slot0_total": "225",
+    "slot0_orphaned": "3",
+    "all_total": "7185",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2024-11-20",
+    "slot0_total": "225",
+    "slot0_orphaned": "3",
+    "all_total": "7179",
+    "all_orphaned": "19"
+  },
+  {
+    "day": "2024-11-21",
+    "slot0_total": "222",
+    "slot0_orphaned": "1",
+    "all_total": "7174",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2024-11-22",
+    "slot0_total": "223",
+    "slot0_orphaned": "2",
+    "all_total": "7175",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2024-11-23",
+    "slot0_total": "224",
+    "slot0_orphaned": "0",
+    "all_total": "7179",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2024-11-24",
+    "slot0_total": "221",
+    "slot0_orphaned": "0",
+    "all_total": "7178",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2024-11-25",
+    "slot0_total": "225",
+    "slot0_orphaned": "0",
+    "all_total": "7168",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2024-11-26",
+    "slot0_total": "221",
+    "slot0_orphaned": "1",
+    "all_total": "7174",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2024-11-27",
+    "slot0_total": "222",
+    "slot0_orphaned": "2",
+    "all_total": "7169",
+    "all_orphaned": "16"
+  },
+  {
+    "day": "2024-11-28",
+    "slot0_total": "225",
+    "slot0_orphaned": "4",
+    "all_total": "7142",
+    "all_orphaned": "32"
+  },
+  {
+    "day": "2024-11-29",
+    "slot0_total": "220",
+    "slot0_orphaned": "0",
+    "all_total": "7153",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2024-11-30",
+    "slot0_total": "220",
+    "slot0_orphaned": "1",
+    "all_total": "7166",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2024-12-01",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7184",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2024-12-02",
+    "slot0_total": "225",
+    "slot0_orphaned": "3",
+    "all_total": "7171",
+    "all_orphaned": "17"
+  },
+  {
+    "day": "2024-12-03",
+    "slot0_total": "221",
+    "slot0_orphaned": "1",
+    "all_total": "7163",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2024-12-04",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7172",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2024-12-05",
+    "slot0_total": "221",
+    "slot0_orphaned": "1",
+    "all_total": "7167",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2024-12-06",
+    "slot0_total": "223",
+    "slot0_orphaned": "3",
+    "all_total": "7173",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2024-12-07",
+    "slot0_total": "221",
+    "slot0_orphaned": "1",
+    "all_total": "7167",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2024-12-08",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7178",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2024-12-09",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7180",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2024-12-10",
+    "slot0_total": "223",
+    "slot0_orphaned": "2",
+    "all_total": "7165",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2024-12-11",
+    "slot0_total": "224",
+    "slot0_orphaned": "3",
+    "all_total": "7170",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2024-12-12",
+    "slot0_total": "225",
+    "slot0_orphaned": "2",
+    "all_total": "7178",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2024-12-13",
+    "slot0_total": "224",
+    "slot0_orphaned": "0",
+    "all_total": "7169",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2024-12-14",
+    "slot0_total": "222",
+    "slot0_orphaned": "1",
+    "all_total": "7176",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2024-12-15",
+    "slot0_total": "222",
+    "slot0_orphaned": "1",
+    "all_total": "7173",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2024-12-16",
+    "slot0_total": "225",
+    "slot0_orphaned": "1",
+    "all_total": "7183",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2024-12-17",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7176",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2024-12-18",
+    "slot0_total": "224",
+    "slot0_orphaned": "0",
+    "all_total": "7167",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2024-12-19",
+    "slot0_total": "223",
+    "slot0_orphaned": "4",
+    "all_total": "7170",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2024-12-20",
+    "slot0_total": "225",
+    "slot0_orphaned": "1",
+    "all_total": "7177",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2024-12-21",
+    "slot0_total": "223",
+    "slot0_orphaned": "4",
+    "all_total": "7155",
+    "all_orphaned": "16"
+  },
+  {
+    "day": "2024-12-22",
+    "slot0_total": "224",
+    "slot0_orphaned": "2",
+    "all_total": "7170",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2024-12-23",
+    "slot0_total": "225",
+    "slot0_orphaned": "0",
+    "all_total": "7154",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2024-12-24",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7167",
+    "all_orphaned": "20"
+  },
+  {
+    "day": "2024-12-25",
+    "slot0_total": "223",
+    "slot0_orphaned": "0",
+    "all_total": "7165",
+    "all_orphaned": "5"
+  },
+  {
+    "day": "2024-12-26",
+    "slot0_total": "224",
+    "slot0_orphaned": "4",
+    "all_total": "7167",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2024-12-27",
+    "slot0_total": "224",
+    "slot0_orphaned": "0",
+    "all_total": "7172",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2024-12-28",
+    "slot0_total": "219",
+    "slot0_orphaned": "1",
+    "all_total": "7172",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2024-12-29",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7177",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2024-12-30",
+    "slot0_total": "223",
+    "slot0_orphaned": "3",
+    "all_total": "7174",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2024-12-31",
+    "slot0_total": "220",
+    "slot0_orphaned": "1",
+    "all_total": "7171",
+    "all_orphaned": "15"
+  },
+  {
+    "day": "2025-01-01",
+    "slot0_total": "222",
+    "slot0_orphaned": "4",
+    "all_total": "7180",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2025-01-02",
+    "slot0_total": "225",
+    "slot0_orphaned": "1",
+    "all_total": "7184",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-01-03",
+    "slot0_total": "225",
+    "slot0_orphaned": "1",
+    "all_total": "7173",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-01-04",
+    "slot0_total": "224",
+    "slot0_orphaned": "0",
+    "all_total": "7170",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-01-05",
+    "slot0_total": "222",
+    "slot0_orphaned": "2",
+    "all_total": "7163",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-01-06",
+    "slot0_total": "221",
+    "slot0_orphaned": "1",
+    "all_total": "7159",
+    "all_orphaned": "5"
+  },
+  {
+    "day": "2025-01-07",
+    "slot0_total": "222",
+    "slot0_orphaned": "0",
+    "all_total": "7185",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2025-01-08",
+    "slot0_total": "222",
+    "slot0_orphaned": "0",
+    "all_total": "7176",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-01-09",
+    "slot0_total": "223",
+    "slot0_orphaned": "0",
+    "all_total": "7169",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-01-10",
+    "slot0_total": "225",
+    "slot0_orphaned": "2",
+    "all_total": "7167",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-01-11",
+    "slot0_total": "221",
+    "slot0_orphaned": "3",
+    "all_total": "7170",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-01-12",
+    "slot0_total": "224",
+    "slot0_orphaned": "0",
+    "all_total": "7178",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2025-01-13",
+    "slot0_total": "221",
+    "slot0_orphaned": "0",
+    "all_total": "7164",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2025-01-14",
+    "slot0_total": "225",
+    "slot0_orphaned": "2",
+    "all_total": "7176",
+    "all_orphaned": "19"
+  },
+  {
+    "day": "2025-01-15",
+    "slot0_total": "223",
+    "slot0_orphaned": "0",
+    "all_total": "7175",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-01-16",
+    "slot0_total": "224",
+    "slot0_orphaned": "2",
+    "all_total": "7173",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-01-17",
+    "slot0_total": "224",
+    "slot0_orphaned": "2",
+    "all_total": "7173",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-01-18",
+    "slot0_total": "223",
+    "slot0_orphaned": "0",
+    "all_total": "7172",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-01-19",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7169",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-01-20",
+    "slot0_total": "223",
+    "slot0_orphaned": "0",
+    "all_total": "7177",
+    "all_orphaned": "5"
+  },
+  {
+    "day": "2025-01-21",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7174",
+    "all_orphaned": "15"
+  },
+  {
+    "day": "2025-01-22",
+    "slot0_total": "224",
+    "slot0_orphaned": "0",
+    "all_total": "7180",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2025-01-23",
+    "slot0_total": "223",
+    "slot0_orphaned": "2",
+    "all_total": "7172",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-01-24",
+    "slot0_total": "223",
+    "slot0_orphaned": "2",
+    "all_total": "7175",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-01-25",
+    "slot0_total": "225",
+    "slot0_orphaned": "1",
+    "all_total": "7177",
+    "all_orphaned": "15"
+  },
+  {
+    "day": "2025-01-26",
+    "slot0_total": "224",
+    "slot0_orphaned": "0",
+    "all_total": "7170",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-01-27",
+    "slot0_total": "224",
+    "slot0_orphaned": "0",
+    "all_total": "7184",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-01-28",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7171",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-01-29",
+    "slot0_total": "222",
+    "slot0_orphaned": "2",
+    "all_total": "7171",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-01-30",
+    "slot0_total": "221",
+    "slot0_orphaned": "0",
+    "all_total": "7174",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-01-31",
+    "slot0_total": "219",
+    "slot0_orphaned": "2",
+    "all_total": "7169",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2025-02-01",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7170",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-02-02",
+    "slot0_total": "219",
+    "slot0_orphaned": "1",
+    "all_total": "7168",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2025-02-03",
+    "slot0_total": "224",
+    "slot0_orphaned": "2",
+    "all_total": "7169",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2025-02-04",
+    "slot0_total": "225",
+    "slot0_orphaned": "2",
+    "all_total": "7165",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2025-02-05",
+    "slot0_total": "225",
+    "slot0_orphaned": "2",
+    "all_total": "7176",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-02-06",
+    "slot0_total": "223",
+    "slot0_orphaned": "0",
+    "all_total": "7175",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-02-07",
+    "slot0_total": "223",
+    "slot0_orphaned": "0",
+    "all_total": "7175",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2025-02-08",
+    "slot0_total": "225",
+    "slot0_orphaned": "5",
+    "all_total": "7176",
+    "all_orphaned": "18"
+  },
+  {
+    "day": "2025-02-09",
+    "slot0_total": "225",
+    "slot0_orphaned": "3",
+    "all_total": "7174",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-02-10",
+    "slot0_total": "225",
+    "slot0_orphaned": "1",
+    "all_total": "7179",
+    "all_orphaned": "17"
+  },
+  {
+    "day": "2025-02-11",
+    "slot0_total": "222",
+    "slot0_orphaned": "3",
+    "all_total": "7174",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2025-02-12",
+    "slot0_total": "225",
+    "slot0_orphaned": "3",
+    "all_total": "7137",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2025-02-13",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7160",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2025-02-14",
+    "slot0_total": "221",
+    "slot0_orphaned": "4",
+    "all_total": "7147",
+    "all_orphaned": "19"
+  },
+  {
+    "day": "2025-02-15",
+    "slot0_total": "222",
+    "slot0_orphaned": "1",
+    "all_total": "7139",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-02-16",
+    "slot0_total": "224",
+    "slot0_orphaned": "2",
+    "all_total": "7156",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2025-02-17",
+    "slot0_total": "224",
+    "slot0_orphaned": "4",
+    "all_total": "7157",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2025-02-18",
+    "slot0_total": "225",
+    "slot0_orphaned": "1",
+    "all_total": "7171",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-02-19",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7165",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-02-20",
+    "slot0_total": "220",
+    "slot0_orphaned": "0",
+    "all_total": "7153",
+    "all_orphaned": "15"
+  },
+  {
+    "day": "2025-02-21",
+    "slot0_total": "224",
+    "slot0_orphaned": "2",
+    "all_total": "7174",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2025-02-22",
+    "slot0_total": "222",
+    "slot0_orphaned": "1",
+    "all_total": "7164",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-02-23",
+    "slot0_total": "224",
+    "slot0_orphaned": "3",
+    "all_total": "7165",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-02-24",
+    "slot0_total": "221",
+    "slot0_orphaned": "2",
+    "all_total": "7168",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2025-02-25",
+    "slot0_total": "225",
+    "slot0_orphaned": "3",
+    "all_total": "7172",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-02-26",
+    "slot0_total": "221",
+    "slot0_orphaned": "1",
+    "all_total": "7176",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-02-27",
+    "slot0_total": "224",
+    "slot0_orphaned": "5",
+    "all_total": "7180",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-02-28",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7183",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2025-03-01",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7180",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-03-02",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7181",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-03-03",
+    "slot0_total": "225",
+    "slot0_orphaned": "2",
+    "all_total": "7173",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-03-04",
+    "slot0_total": "225",
+    "slot0_orphaned": "4",
+    "all_total": "7178",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2025-03-05",
+    "slot0_total": "225",
+    "slot0_orphaned": "3",
+    "all_total": "7173",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-03-06",
+    "slot0_total": "225",
+    "slot0_orphaned": "2",
+    "all_total": "7174",
+    "all_orphaned": "16"
+  },
+  {
+    "day": "2025-03-07",
+    "slot0_total": "220",
+    "slot0_orphaned": "1",
+    "all_total": "7168",
+    "all_orphaned": "16"
+  },
+  {
+    "day": "2025-03-08",
+    "slot0_total": "224",
+    "slot0_orphaned": "3",
+    "all_total": "7172",
+    "all_orphaned": "20"
+  },
+  {
+    "day": "2025-03-09",
+    "slot0_total": "224",
+    "slot0_orphaned": "2",
+    "all_total": "7170",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-03-10",
+    "slot0_total": "225",
+    "slot0_orphaned": "1",
+    "all_total": "7167",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-03-11",
+    "slot0_total": "221",
+    "slot0_orphaned": "2",
+    "all_total": "7172",
+    "all_orphaned": "15"
+  },
+  {
+    "day": "2025-03-12",
+    "slot0_total": "224",
+    "slot0_orphaned": "3",
+    "all_total": "7177",
+    "all_orphaned": "17"
+  },
+  {
+    "day": "2025-03-13",
+    "slot0_total": "225",
+    "slot0_orphaned": "3",
+    "all_total": "7179",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-03-14",
+    "slot0_total": "224",
+    "slot0_orphaned": "3",
+    "all_total": "7170",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-03-15",
+    "slot0_total": "223",
+    "slot0_orphaned": "2",
+    "all_total": "7178",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-03-16",
+    "slot0_total": "225",
+    "slot0_orphaned": "0",
+    "all_total": "7171",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-03-17",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7179",
+    "all_orphaned": "18"
+  },
+  {
+    "day": "2025-03-18",
+    "slot0_total": "223",
+    "slot0_orphaned": "4",
+    "all_total": "7171",
+    "all_orphaned": "17"
+  },
+  {
+    "day": "2025-03-19",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7170",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2025-03-20",
+    "slot0_total": "223",
+    "slot0_orphaned": "4",
+    "all_total": "7180",
+    "all_orphaned": "18"
+  },
+  {
+    "day": "2025-03-21",
+    "slot0_total": "225",
+    "slot0_orphaned": "0",
+    "all_total": "7185",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-03-22",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7180",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2025-03-23",
+    "slot0_total": "222",
+    "slot0_orphaned": "1",
+    "all_total": "7180",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-03-24",
+    "slot0_total": "224",
+    "slot0_orphaned": "2",
+    "all_total": "7176",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-03-25",
+    "slot0_total": "223",
+    "slot0_orphaned": "2",
+    "all_total": "7172",
+    "all_orphaned": "22"
+  },
+  {
+    "day": "2025-03-26",
+    "slot0_total": "224",
+    "slot0_orphaned": "0",
+    "all_total": "7183",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-03-27",
+    "slot0_total": "221",
+    "slot0_orphaned": "2",
+    "all_total": "7170",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-03-28",
+    "slot0_total": "222",
+    "slot0_orphaned": "0",
+    "all_total": "7166",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2025-03-29",
+    "slot0_total": "221",
+    "slot0_orphaned": "1",
+    "all_total": "7164",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-03-30",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7177",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2025-03-31",
+    "slot0_total": "225",
+    "slot0_orphaned": "0",
+    "all_total": "7172",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-04-01",
+    "slot0_total": "224",
+    "slot0_orphaned": "5",
+    "all_total": "7178",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2025-04-02",
+    "slot0_total": "225",
+    "slot0_orphaned": "3",
+    "all_total": "7181",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-04-03",
+    "slot0_total": "224",
+    "slot0_orphaned": "5",
+    "all_total": "7172",
+    "all_orphaned": "15"
+  },
+  {
+    "day": "2025-04-04",
+    "slot0_total": "225",
+    "slot0_orphaned": "1",
+    "all_total": "7180",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-04-05",
+    "slot0_total": "223",
+    "slot0_orphaned": "4",
+    "all_total": "7163",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2025-04-06",
+    "slot0_total": "224",
+    "slot0_orphaned": "0",
+    "all_total": "7163",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-04-07",
+    "slot0_total": "223",
+    "slot0_orphaned": "4",
+    "all_total": "7171",
+    "all_orphaned": "21"
+  },
+  {
+    "day": "2025-04-08",
+    "slot0_total": "223",
+    "slot0_orphaned": "0",
+    "all_total": "7179",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-04-09",
+    "slot0_total": "225",
+    "slot0_orphaned": "1",
+    "all_total": "7178",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-04-10",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7183",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2025-04-11",
+    "slot0_total": "224",
+    "slot0_orphaned": "3",
+    "all_total": "7183",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-04-12",
+    "slot0_total": "224",
+    "slot0_orphaned": "2",
+    "all_total": "7186",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-04-13",
+    "slot0_total": "223",
+    "slot0_orphaned": "3",
+    "all_total": "7181",
+    "all_orphaned": "5"
+  },
+  {
+    "day": "2025-04-14",
+    "slot0_total": "225",
+    "slot0_orphaned": "2",
+    "all_total": "7181",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2025-04-15",
+    "slot0_total": "222",
+    "slot0_orphaned": "6",
+    "all_total": "7176",
+    "all_orphaned": "18"
+  },
+  {
+    "day": "2025-04-16",
+    "slot0_total": "223",
+    "slot0_orphaned": "0",
+    "all_total": "7181",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-04-17",
+    "slot0_total": "225",
+    "slot0_orphaned": "2",
+    "all_total": "7177",
+    "all_orphaned": "16"
+  },
+  {
+    "day": "2025-04-18",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7179",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-04-19",
+    "slot0_total": "224",
+    "slot0_orphaned": "2",
+    "all_total": "7179",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2025-04-20",
+    "slot0_total": "222",
+    "slot0_orphaned": "2",
+    "all_total": "7168",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-04-21",
+    "slot0_total": "222",
+    "slot0_orphaned": "2",
+    "all_total": "7177",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-04-22",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7181",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-04-23",
+    "slot0_total": "225",
+    "slot0_orphaned": "3",
+    "all_total": "7176",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2025-04-24",
+    "slot0_total": "224",
+    "slot0_orphaned": "0",
+    "all_total": "7168",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2025-04-25",
+    "slot0_total": "222",
+    "slot0_orphaned": "0",
+    "all_total": "7180",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-04-26",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7180",
+    "all_orphaned": "2"
+  },
+  {
+    "day": "2025-04-27",
+    "slot0_total": "225",
+    "slot0_orphaned": "1",
+    "all_total": "7187",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-04-28",
+    "slot0_total": "225",
+    "slot0_orphaned": "3",
+    "all_total": "7170",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-04-29",
+    "slot0_total": "223",
+    "slot0_orphaned": "3",
+    "all_total": "7163",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-04-30",
+    "slot0_total": "223",
+    "slot0_orphaned": "3",
+    "all_total": "7150",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-05-01",
+    "slot0_total": "222",
+    "slot0_orphaned": "1",
+    "all_total": "7145",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2025-05-02",
+    "slot0_total": "220",
+    "slot0_orphaned": "4",
+    "all_total": "7133",
+    "all_orphaned": "16"
+  },
+  {
+    "day": "2025-05-03",
+    "slot0_total": "220",
+    "slot0_orphaned": "1",
+    "all_total": "7156",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-05-04",
+    "slot0_total": "221",
+    "slot0_orphaned": "0",
+    "all_total": "7144",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-05-05",
+    "slot0_total": "217",
+    "slot0_orphaned": "1",
+    "all_total": "7150",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-05-06",
+    "slot0_total": "221",
+    "slot0_orphaned": "1",
+    "all_total": "7134",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-05-07",
+    "slot0_total": "217",
+    "slot0_orphaned": "3",
+    "all_total": "7066",
+    "all_orphaned": "28"
+  },
+  {
+    "day": "2025-05-08",
+    "slot0_total": "218",
+    "slot0_orphaned": "2",
+    "all_total": "7104",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2025-05-09",
+    "slot0_total": "213",
+    "slot0_orphaned": "4",
+    "all_total": "7090",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2025-05-10",
+    "slot0_total": "215",
+    "slot0_orphaned": "2",
+    "all_total": "7112",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-05-11",
+    "slot0_total": "216",
+    "slot0_orphaned": "2",
+    "all_total": "7121",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2025-05-12",
+    "slot0_total": "220",
+    "slot0_orphaned": "3",
+    "all_total": "7115",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2025-05-13",
+    "slot0_total": "220",
+    "slot0_orphaned": "5",
+    "all_total": "7117",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-05-14",
+    "slot0_total": "217",
+    "slot0_orphaned": "3",
+    "all_total": "7112",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-05-15",
+    "slot0_total": "221",
+    "slot0_orphaned": "6",
+    "all_total": "7132",
+    "all_orphaned": "17"
+  },
+  {
+    "day": "2025-05-16",
+    "slot0_total": "218",
+    "slot0_orphaned": "5",
+    "all_total": "7119",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-05-17",
+    "slot0_total": "222",
+    "slot0_orphaned": "4",
+    "all_total": "7146",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2025-05-18",
+    "slot0_total": "219",
+    "slot0_orphaned": "3",
+    "all_total": "7132",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-05-19",
+    "slot0_total": "218",
+    "slot0_orphaned": "2",
+    "all_total": "7132",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-05-20",
+    "slot0_total": "221",
+    "slot0_orphaned": "1",
+    "all_total": "7137",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2025-05-21",
+    "slot0_total": "220",
+    "slot0_orphaned": "0",
+    "all_total": "7148",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-05-22",
+    "slot0_total": "222",
+    "slot0_orphaned": "2",
+    "all_total": "7159",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-05-23",
+    "slot0_total": "219",
+    "slot0_orphaned": "1",
+    "all_total": "7155",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-05-24",
+    "slot0_total": "221",
+    "slot0_orphaned": "2",
+    "all_total": "7149",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2025-05-25",
+    "slot0_total": "221",
+    "slot0_orphaned": "2",
+    "all_total": "7145",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-05-26",
+    "slot0_total": "221",
+    "slot0_orphaned": "5",
+    "all_total": "7145",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-05-27",
+    "slot0_total": "223",
+    "slot0_orphaned": "0",
+    "all_total": "7161",
+    "all_orphaned": "4"
+  },
+  {
+    "day": "2025-05-28",
+    "slot0_total": "219",
+    "slot0_orphaned": "1",
+    "all_total": "7140",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-05-29",
+    "slot0_total": "222",
+    "slot0_orphaned": "2",
+    "all_total": "7149",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-05-30",
+    "slot0_total": "221",
+    "slot0_orphaned": "2",
+    "all_total": "7157",
+    "all_orphaned": "3"
+  },
+  {
+    "day": "2025-05-31",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7161",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-06-01",
+    "slot0_total": "219",
+    "slot0_orphaned": "2",
+    "all_total": "7152",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-06-02",
+    "slot0_total": "218",
+    "slot0_orphaned": "2",
+    "all_total": "7137",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-06-03",
+    "slot0_total": "224",
+    "slot0_orphaned": "3",
+    "all_total": "7161",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-06-04",
+    "slot0_total": "217",
+    "slot0_orphaned": "2",
+    "all_total": "7147",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-06-05",
+    "slot0_total": "220",
+    "slot0_orphaned": "1",
+    "all_total": "7149",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-06-06",
+    "slot0_total": "223",
+    "slot0_orphaned": "0",
+    "all_total": "7166",
+    "all_orphaned": "20"
+  },
+  {
+    "day": "2025-06-07",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7167",
+    "all_orphaned": "4"
+  },
+  {
+    "day": "2025-06-08",
+    "slot0_total": "215",
+    "slot0_orphaned": "2",
+    "all_total": "7163",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-06-09",
+    "slot0_total": "220",
+    "slot0_orphaned": "2",
+    "all_total": "7154",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-06-10",
+    "slot0_total": "224",
+    "slot0_orphaned": "0",
+    "all_total": "7166",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-06-11",
+    "slot0_total": "222",
+    "slot0_orphaned": "5",
+    "all_total": "7164",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2025-06-12",
+    "slot0_total": "222",
+    "slot0_orphaned": "0",
+    "all_total": "7169",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2025-06-13",
+    "slot0_total": "220",
+    "slot0_orphaned": "3",
+    "all_total": "7163",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-06-14",
+    "slot0_total": "222",
+    "slot0_orphaned": "7",
+    "all_total": "7171",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2025-06-15",
+    "slot0_total": "219",
+    "slot0_orphaned": "0",
+    "all_total": "7141",
+    "all_orphaned": "5"
+  },
+  {
+    "day": "2025-06-16",
+    "slot0_total": "218",
+    "slot0_orphaned": "5",
+    "all_total": "7154",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-06-17",
+    "slot0_total": "222",
+    "slot0_orphaned": "2",
+    "all_total": "7147",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-06-18",
+    "slot0_total": "223",
+    "slot0_orphaned": "3",
+    "all_total": "7160",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-06-19",
+    "slot0_total": "221",
+    "slot0_orphaned": "1",
+    "all_total": "7165",
+    "all_orphaned": "5"
+  },
+  {
+    "day": "2025-06-20",
+    "slot0_total": "222",
+    "slot0_orphaned": "0",
+    "all_total": "7155",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2025-06-21",
+    "slot0_total": "222",
+    "slot0_orphaned": "4",
+    "all_total": "7163",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-06-22",
+    "slot0_total": "220",
+    "slot0_orphaned": "2",
+    "all_total": "7148",
+    "all_orphaned": "4"
+  },
+  {
+    "day": "2025-06-23",
+    "slot0_total": "218",
+    "slot0_orphaned": "0",
+    "all_total": "7159",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-06-24",
+    "slot0_total": "223",
+    "slot0_orphaned": "2",
+    "all_total": "7170",
+    "all_orphaned": "2"
+  },
+  {
+    "day": "2025-06-25",
+    "slot0_total": "222",
+    "slot0_orphaned": "1",
+    "all_total": "7169",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2025-06-26",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7168",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-06-27",
+    "slot0_total": "220",
+    "slot0_orphaned": "1",
+    "all_total": "7161",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2025-06-28",
+    "slot0_total": "222",
+    "slot0_orphaned": "1",
+    "all_total": "7168",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-06-29",
+    "slot0_total": "218",
+    "slot0_orphaned": "4",
+    "all_total": "7157",
+    "all_orphaned": "17"
+  },
+  {
+    "day": "2025-06-30",
+    "slot0_total": "218",
+    "slot0_orphaned": "2",
+    "all_total": "7168",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2025-07-01",
+    "slot0_total": "221",
+    "slot0_orphaned": "4",
+    "all_total": "7161",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-07-02",
+    "slot0_total": "220",
+    "slot0_orphaned": "2",
+    "all_total": "7161",
+    "all_orphaned": "5"
+  },
+  {
+    "day": "2025-07-03",
+    "slot0_total": "219",
+    "slot0_orphaned": "1",
+    "all_total": "7162",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-07-04",
+    "slot0_total": "222",
+    "slot0_orphaned": "0",
+    "all_total": "7173",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-07-05",
+    "slot0_total": "220",
+    "slot0_orphaned": "0",
+    "all_total": "7154",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-07-06",
+    "slot0_total": "216",
+    "slot0_orphaned": "0",
+    "all_total": "7159",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-07-07",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7164",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-07-08",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7167",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-07-09",
+    "slot0_total": "223",
+    "slot0_orphaned": "3",
+    "all_total": "7152",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-07-10",
+    "slot0_total": "224",
+    "slot0_orphaned": "2",
+    "all_total": "7171",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2025-07-11",
+    "slot0_total": "217",
+    "slot0_orphaned": "3",
+    "all_total": "7161",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2025-07-12",
+    "slot0_total": "222",
+    "slot0_orphaned": "1",
+    "all_total": "7168",
+    "all_orphaned": "5"
+  },
+  {
+    "day": "2025-07-13",
+    "slot0_total": "218",
+    "slot0_orphaned": "3",
+    "all_total": "7170",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-07-14",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7174",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-07-15",
+    "slot0_total": "224",
+    "slot0_orphaned": "0",
+    "all_total": "7173",
+    "all_orphaned": "4"
+  },
+  {
+    "day": "2025-07-16",
+    "slot0_total": "222",
+    "slot0_orphaned": "0",
+    "all_total": "7175",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-07-17",
+    "slot0_total": "222",
+    "slot0_orphaned": "3",
+    "all_total": "7179",
+    "all_orphaned": "5"
+  },
+  {
+    "day": "2025-07-18",
+    "slot0_total": "225",
+    "slot0_orphaned": "0",
+    "all_total": "7177",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-07-19",
+    "slot0_total": "220",
+    "slot0_orphaned": "3",
+    "all_total": "7160",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2025-07-20",
+    "slot0_total": "222",
+    "slot0_orphaned": "2",
+    "all_total": "7173",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2025-07-21",
+    "slot0_total": "221",
+    "slot0_orphaned": "1",
+    "all_total": "7167",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-07-22",
+    "slot0_total": "222",
+    "slot0_orphaned": "3",
+    "all_total": "7168",
+    "all_orphaned": "21"
+  },
+  {
+    "day": "2025-07-23",
+    "slot0_total": "221",
+    "slot0_orphaned": "5",
+    "all_total": "7167",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2025-07-24",
+    "slot0_total": "220",
+    "slot0_orphaned": "3",
+    "all_total": "7165",
+    "all_orphaned": "17"
+  },
+  {
+    "day": "2025-07-25",
+    "slot0_total": "219",
+    "slot0_orphaned": "2",
+    "all_total": "7159",
+    "all_orphaned": "15"
+  },
+  {
+    "day": "2025-07-26",
+    "slot0_total": "221",
+    "slot0_orphaned": "3",
+    "all_total": "7175",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2025-07-27",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7180",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-07-28",
+    "slot0_total": "223",
+    "slot0_orphaned": "5",
+    "all_total": "7165",
+    "all_orphaned": "16"
+  },
+  {
+    "day": "2025-07-29",
+    "slot0_total": "223",
+    "slot0_orphaned": "2",
+    "all_total": "7161",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-07-30",
+    "slot0_total": "224",
+    "slot0_orphaned": "8",
+    "all_total": "7168",
+    "all_orphaned": "22"
+  },
+  {
+    "day": "2025-07-31",
+    "slot0_total": "223",
+    "slot0_orphaned": "9",
+    "all_total": "7162",
+    "all_orphaned": "21"
+  },
+  {
+    "day": "2025-08-01",
+    "slot0_total": "222",
+    "slot0_orphaned": "7",
+    "all_total": "7171",
+    "all_orphaned": "23"
+  },
+  {
+    "day": "2025-08-02",
+    "slot0_total": "224",
+    "slot0_orphaned": "3",
+    "all_total": "7173",
+    "all_orphaned": "22"
+  },
+  {
+    "day": "2025-08-03",
+    "slot0_total": "224",
+    "slot0_orphaned": "3",
+    "all_total": "7178",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-08-04",
+    "slot0_total": "220",
+    "slot0_orphaned": "4",
+    "all_total": "7177",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2025-08-05",
+    "slot0_total": "224",
+    "slot0_orphaned": "5",
+    "all_total": "7177",
+    "all_orphaned": "16"
+  },
+  {
+    "day": "2025-08-06",
+    "slot0_total": "221",
+    "slot0_orphaned": "1",
+    "all_total": "7177",
+    "all_orphaned": "18"
+  },
+  {
+    "day": "2025-08-07",
+    "slot0_total": "221",
+    "slot0_orphaned": "7",
+    "all_total": "7169",
+    "all_orphaned": "15"
+  },
+  {
+    "day": "2025-08-08",
+    "slot0_total": "224",
+    "slot0_orphaned": "0",
+    "all_total": "7169",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-08-09",
+    "slot0_total": "223",
+    "slot0_orphaned": "4",
+    "all_total": "7180",
+    "all_orphaned": "18"
+  },
+  {
+    "day": "2025-08-10",
+    "slot0_total": "223",
+    "slot0_orphaned": "3",
+    "all_total": "7176",
+    "all_orphaned": "19"
+  },
+  {
+    "day": "2025-08-11",
+    "slot0_total": "223",
+    "slot0_orphaned": "4",
+    "all_total": "7160",
+    "all_orphaned": "16"
+  },
+  {
+    "day": "2025-08-12",
+    "slot0_total": "221",
+    "slot0_orphaned": "1",
+    "all_total": "7172",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-08-13",
+    "slot0_total": "225",
+    "slot0_orphaned": "5",
+    "all_total": "7179",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2025-08-14",
+    "slot0_total": "220",
+    "slot0_orphaned": "3",
+    "all_total": "7156",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-08-15",
+    "slot0_total": "221",
+    "slot0_orphaned": "2",
+    "all_total": "7177",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-08-16",
+    "slot0_total": "222",
+    "slot0_orphaned": "3",
+    "all_total": "7169",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2025-08-17",
+    "slot0_total": "219",
+    "slot0_orphaned": "2",
+    "all_total": "7178",
+    "all_orphaned": "3"
+  },
+  {
+    "day": "2025-08-18",
+    "slot0_total": "225",
+    "slot0_orphaned": "5",
+    "all_total": "7177",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-08-19",
+    "slot0_total": "225",
+    "slot0_orphaned": "5",
+    "all_total": "7186",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-08-20",
+    "slot0_total": "222",
+    "slot0_orphaned": "1",
+    "all_total": "7174",
+    "all_orphaned": "5"
+  },
+  {
+    "day": "2025-08-21",
+    "slot0_total": "222",
+    "slot0_orphaned": "6",
+    "all_total": "7171",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2025-08-22",
+    "slot0_total": "222",
+    "slot0_orphaned": "1",
+    "all_total": "7176",
+    "all_orphaned": "5"
+  },
+  {
+    "day": "2025-08-23",
+    "slot0_total": "221",
+    "slot0_orphaned": "3",
+    "all_total": "7167",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-08-24",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7179",
+    "all_orphaned": "5"
+  },
+  {
+    "day": "2025-08-25",
+    "slot0_total": "224",
+    "slot0_orphaned": "4",
+    "all_total": "7183",
+    "all_orphaned": "15"
+  },
+  {
+    "day": "2025-08-26",
+    "slot0_total": "225",
+    "slot0_orphaned": "7",
+    "all_total": "7180",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2025-08-27",
+    "slot0_total": "221",
+    "slot0_orphaned": "2",
+    "all_total": "7171",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2025-08-28",
+    "slot0_total": "222",
+    "slot0_orphaned": "4",
+    "all_total": "7173",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2025-08-29",
+    "slot0_total": "221",
+    "slot0_orphaned": "1",
+    "all_total": "7173",
+    "all_orphaned": "3"
+  },
+  {
+    "day": "2025-08-30",
+    "slot0_total": "224",
+    "slot0_orphaned": "3",
+    "all_total": "7186",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-08-31",
+    "slot0_total": "221",
+    "slot0_orphaned": "2",
+    "all_total": "7173",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-09-01",
+    "slot0_total": "222",
+    "slot0_orphaned": "1",
+    "all_total": "7173",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-09-02",
+    "slot0_total": "214",
+    "slot0_orphaned": "2",
+    "all_total": "7143",
+    "all_orphaned": "15"
+  },
+  {
+    "day": "2025-09-03",
+    "slot0_total": "221",
+    "slot0_orphaned": "3",
+    "all_total": "7174",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-09-04",
+    "slot0_total": "221",
+    "slot0_orphaned": "6",
+    "all_total": "7174",
+    "all_orphaned": "15"
+  },
+  {
+    "day": "2025-09-05",
+    "slot0_total": "225",
+    "slot0_orphaned": "5",
+    "all_total": "7176",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2025-09-06",
+    "slot0_total": "219",
+    "slot0_orphaned": "7",
+    "all_total": "7166",
+    "all_orphaned": "20"
+  },
+  {
+    "day": "2025-09-07",
+    "slot0_total": "219",
+    "slot0_orphaned": "5",
+    "all_total": "7172",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-09-08",
+    "slot0_total": "220",
+    "slot0_orphaned": "3",
+    "all_total": "7171",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2025-09-09",
+    "slot0_total": "224",
+    "slot0_orphaned": "9",
+    "all_total": "7185",
+    "all_orphaned": "16"
+  },
+  {
+    "day": "2025-09-10",
+    "slot0_total": "224",
+    "slot0_orphaned": "5",
+    "all_total": "7154",
+    "all_orphaned": "32"
+  },
+  {
+    "day": "2025-09-11",
+    "slot0_total": "222",
+    "slot0_orphaned": "7",
+    "all_total": "7169",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2025-09-12",
+    "slot0_total": "222",
+    "slot0_orphaned": "5",
+    "all_total": "7174",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-09-13",
+    "slot0_total": "221",
+    "slot0_orphaned": "3",
+    "all_total": "7173",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2025-09-14",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7176",
+    "all_orphaned": "5"
+  },
+  {
+    "day": "2025-09-15",
+    "slot0_total": "221",
+    "slot0_orphaned": "6",
+    "all_total": "7162",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-09-16",
+    "slot0_total": "224",
+    "slot0_orphaned": "0",
+    "all_total": "7167",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-09-17",
+    "slot0_total": "219",
+    "slot0_orphaned": "3",
+    "all_total": "7176",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-09-18",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7169",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-09-19",
+    "slot0_total": "221",
+    "slot0_orphaned": "2",
+    "all_total": "7169",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-09-20",
+    "slot0_total": "224",
+    "slot0_orphaned": "2",
+    "all_total": "7166",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2025-09-21",
+    "slot0_total": "220",
+    "slot0_orphaned": "3",
+    "all_total": "7161",
+    "all_orphaned": "15"
+  },
+  {
+    "day": "2025-09-22",
+    "slot0_total": "219",
+    "slot0_orphaned": "5",
+    "all_total": "7160",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-09-23",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7175",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-09-24",
+    "slot0_total": "222",
+    "slot0_orphaned": "1",
+    "all_total": "7169",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-09-25",
+    "slot0_total": "220",
+    "slot0_orphaned": "1",
+    "all_total": "7162",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2025-09-26",
+    "slot0_total": "223",
+    "slot0_orphaned": "3",
+    "all_total": "7159",
+    "all_orphaned": "16"
+  },
+  {
+    "day": "2025-09-27",
+    "slot0_total": "220",
+    "slot0_orphaned": "0",
+    "all_total": "7173",
+    "all_orphaned": "19"
+  },
+  {
+    "day": "2025-09-28",
+    "slot0_total": "218",
+    "slot0_orphaned": "0",
+    "all_total": "7161",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-09-29",
+    "slot0_total": "223",
+    "slot0_orphaned": "3",
+    "all_total": "7174",
+    "all_orphaned": "15"
+  },
+  {
+    "day": "2025-09-30",
+    "slot0_total": "218",
+    "slot0_orphaned": "1",
+    "all_total": "7163",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-10-01",
+    "slot0_total": "224",
+    "slot0_orphaned": "3",
+    "all_total": "7153",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2025-10-02",
+    "slot0_total": "222",
+    "slot0_orphaned": "3",
+    "all_total": "7166",
+    "all_orphaned": "18"
+  },
+  {
+    "day": "2025-10-03",
+    "slot0_total": "222",
+    "slot0_orphaned": "4",
+    "all_total": "7178",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2025-10-04",
+    "slot0_total": "220",
+    "slot0_orphaned": "2",
+    "all_total": "7160",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-10-05",
+    "slot0_total": "220",
+    "slot0_orphaned": "0",
+    "all_total": "7166",
+    "all_orphaned": "3"
+  },
+  {
+    "day": "2025-10-06",
+    "slot0_total": "223",
+    "slot0_orphaned": "6",
+    "all_total": "7161",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-10-07",
+    "slot0_total": "223",
+    "slot0_orphaned": "3",
+    "all_total": "7166",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-10-08",
+    "slot0_total": "219",
+    "slot0_orphaned": "3",
+    "all_total": "7147",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-10-09",
+    "slot0_total": "220",
+    "slot0_orphaned": "1",
+    "all_total": "7166",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-10-10",
+    "slot0_total": "221",
+    "slot0_orphaned": "1",
+    "all_total": "7167",
+    "all_orphaned": "19"
+  },
+  {
+    "day": "2025-10-11",
+    "slot0_total": "223",
+    "slot0_orphaned": "3",
+    "all_total": "7165",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-10-12",
+    "slot0_total": "221",
+    "slot0_orphaned": "2",
+    "all_total": "7169",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-10-13",
+    "slot0_total": "219",
+    "slot0_orphaned": "2",
+    "all_total": "7161",
+    "all_orphaned": "16"
+  },
+  {
+    "day": "2025-10-14",
+    "slot0_total": "224",
+    "slot0_orphaned": "3",
+    "all_total": "7161",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-10-15",
+    "slot0_total": "218",
+    "slot0_orphaned": "0",
+    "all_total": "7159",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-10-16",
+    "slot0_total": "220",
+    "slot0_orphaned": "1",
+    "all_total": "7154",
+    "all_orphaned": "15"
+  },
+  {
+    "day": "2025-10-17",
+    "slot0_total": "222",
+    "slot0_orphaned": "2",
+    "all_total": "7166",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-10-18",
+    "slot0_total": "219",
+    "slot0_orphaned": "0",
+    "all_total": "7154",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-10-19",
+    "slot0_total": "223",
+    "slot0_orphaned": "3",
+    "all_total": "7164",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-10-20",
+    "slot0_total": "223",
+    "slot0_orphaned": "3",
+    "all_total": "7148",
+    "all_orphaned": "25"
+  },
+  {
+    "day": "2025-10-21",
+    "slot0_total": "218",
+    "slot0_orphaned": "0",
+    "all_total": "7136",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2025-10-22",
+    "slot0_total": "224",
+    "slot0_orphaned": "6",
+    "all_total": "7155",
+    "all_orphaned": "26"
+  },
+  {
+    "day": "2025-10-23",
+    "slot0_total": "218",
+    "slot0_orphaned": "5",
+    "all_total": "7157",
+    "all_orphaned": "28"
+  },
+  {
+    "day": "2025-10-24",
+    "slot0_total": "221",
+    "slot0_orphaned": "5",
+    "all_total": "7164",
+    "all_orphaned": "26"
+  },
+  {
+    "day": "2025-10-25",
+    "slot0_total": "220",
+    "slot0_orphaned": "4",
+    "all_total": "7160",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-10-26",
+    "slot0_total": "224",
+    "slot0_orphaned": "2",
+    "all_total": "7169",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-10-27",
+    "slot0_total": "221",
+    "slot0_orphaned": "2",
+    "all_total": "7154",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2025-10-28",
+    "slot0_total": "224",
+    "slot0_orphaned": "4",
+    "all_total": "7150",
+    "all_orphaned": "22"
+  },
+  {
+    "day": "2025-10-29",
+    "slot0_total": "223",
+    "slot0_orphaned": "3",
+    "all_total": "7164",
+    "all_orphaned": "16"
+  },
+  {
+    "day": "2025-10-30",
+    "slot0_total": "219",
+    "slot0_orphaned": "2",
+    "all_total": "7156",
+    "all_orphaned": "15"
+  },
+  {
+    "day": "2025-10-31",
+    "slot0_total": "223",
+    "slot0_orphaned": "6",
+    "all_total": "7155",
+    "all_orphaned": "17"
+  },
+  {
+    "day": "2025-11-01",
+    "slot0_total": "221",
+    "slot0_orphaned": "5",
+    "all_total": "7166",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2025-11-02",
+    "slot0_total": "222",
+    "slot0_orphaned": "4",
+    "all_total": "7169",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-11-03",
+    "slot0_total": "218",
+    "slot0_orphaned": "2",
+    "all_total": "7170",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2025-11-04",
+    "slot0_total": "218",
+    "slot0_orphaned": "2",
+    "all_total": "7170",
+    "all_orphaned": "18"
+  },
+  {
+    "day": "2025-11-05",
+    "slot0_total": "217",
+    "slot0_orphaned": "4",
+    "all_total": "7151",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-11-06",
+    "slot0_total": "225",
+    "slot0_orphaned": "4",
+    "all_total": "7167",
+    "all_orphaned": "16"
+  },
+  {
+    "day": "2025-11-07",
+    "slot0_total": "222",
+    "slot0_orphaned": "1",
+    "all_total": "7171",
+    "all_orphaned": "22"
+  },
+  {
+    "day": "2025-11-08",
+    "slot0_total": "222",
+    "slot0_orphaned": "2",
+    "all_total": "7166",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2025-11-09",
+    "slot0_total": "224",
+    "slot0_orphaned": "4",
+    "all_total": "7171",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-11-10",
+    "slot0_total": "219",
+    "slot0_orphaned": "8",
+    "all_total": "7159",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2025-11-11",
+    "slot0_total": "220",
+    "slot0_orphaned": "4",
+    "all_total": "7158",
+    "all_orphaned": "21"
+  },
+  {
+    "day": "2025-11-12",
+    "slot0_total": "220",
+    "slot0_orphaned": "3",
+    "all_total": "7169",
+    "all_orphaned": "18"
+  },
+  {
+    "day": "2025-11-13",
+    "slot0_total": "221",
+    "slot0_orphaned": "8",
+    "all_total": "7165",
+    "all_orphaned": "27"
+  },
+  {
+    "day": "2025-11-14",
+    "slot0_total": "225",
+    "slot0_orphaned": "4",
+    "all_total": "7169",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2025-11-15",
+    "slot0_total": "220",
+    "slot0_orphaned": "5",
+    "all_total": "7163",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-11-16",
+    "slot0_total": "222",
+    "slot0_orphaned": "9",
+    "all_total": "7171",
+    "all_orphaned": "15"
+  },
+  {
+    "day": "2025-11-17",
+    "slot0_total": "222",
+    "slot0_orphaned": "5",
+    "all_total": "7145",
+    "all_orphaned": "22"
+  },
+  {
+    "day": "2025-11-18",
+    "slot0_total": "219",
+    "slot0_orphaned": "7",
+    "all_total": "7145",
+    "all_orphaned": "20"
+  },
+  {
+    "day": "2025-11-19",
+    "slot0_total": "221",
+    "slot0_orphaned": "8",
+    "all_total": "7135",
+    "all_orphaned": "18"
+  },
+  {
+    "day": "2025-11-20",
+    "slot0_total": "220",
+    "slot0_orphaned": "4",
+    "all_total": "7141",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2025-11-21",
+    "slot0_total": "223",
+    "slot0_orphaned": "5",
+    "all_total": "7135",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2025-11-22",
+    "slot0_total": "219",
+    "slot0_orphaned": "4",
+    "all_total": "7115",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2025-11-23",
+    "slot0_total": "220",
+    "slot0_orphaned": "4",
+    "all_total": "7130",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2025-11-24",
+    "slot0_total": "220",
+    "slot0_orphaned": "6",
+    "all_total": "7121",
+    "all_orphaned": "16"
+  },
+  {
+    "day": "2025-11-25",
+    "slot0_total": "223",
+    "slot0_orphaned": "3",
+    "all_total": "7117",
+    "all_orphaned": "19"
+  },
+  {
+    "day": "2025-11-26",
+    "slot0_total": "220",
+    "slot0_orphaned": "3",
+    "all_total": "7136",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2025-11-27",
+    "slot0_total": "223",
+    "slot0_orphaned": "4",
+    "all_total": "7146",
+    "all_orphaned": "15"
+  },
+  {
+    "day": "2025-11-28",
+    "slot0_total": "225",
+    "slot0_orphaned": "3",
+    "all_total": "7149",
+    "all_orphaned": "19"
+  },
+  {
+    "day": "2025-11-29",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7165",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2025-11-30",
+    "slot0_total": "223",
+    "slot0_orphaned": "3",
+    "all_total": "7168",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-12-01",
+    "slot0_total": "221",
+    "slot0_orphaned": "4",
+    "all_total": "7157",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-12-02",
+    "slot0_total": "223",
+    "slot0_orphaned": "4",
+    "all_total": "7156",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2025-12-03",
+    "slot0_total": "222",
+    "slot0_orphaned": "1",
+    "all_total": "7115",
+    "all_orphaned": "22"
+  },
+  {
+    "day": "2025-12-04",
+    "slot0_total": "219",
+    "slot0_orphaned": "12",
+    "all_total": "6895",
+    "all_orphaned": "130"
+  },
+  {
+    "day": "2025-12-05",
+    "slot0_total": "224",
+    "slot0_orphaned": "5",
+    "all_total": "7112",
+    "all_orphaned": "41"
+  },
+  {
+    "day": "2025-12-06",
+    "slot0_total": "222",
+    "slot0_orphaned": "2",
+    "all_total": "7132",
+    "all_orphaned": "21"
+  },
+  {
+    "day": "2025-12-07",
+    "slot0_total": "224",
+    "slot0_orphaned": "0",
+    "all_total": "7149",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2025-12-08",
+    "slot0_total": "224",
+    "slot0_orphaned": "6",
+    "all_total": "7151",
+    "all_orphaned": "26"
+  },
+  {
+    "day": "2025-12-09",
+    "slot0_total": "224",
+    "slot0_orphaned": "3",
+    "all_total": "7148",
+    "all_orphaned": "26"
+  },
+  {
+    "day": "2025-12-10",
+    "slot0_total": "224",
+    "slot0_orphaned": "11",
+    "all_total": "7141",
+    "all_orphaned": "43"
+  },
+  {
+    "day": "2025-12-11",
+    "slot0_total": "224",
+    "slot0_orphaned": "5",
+    "all_total": "7154",
+    "all_orphaned": "20"
+  },
+  {
+    "day": "2025-12-12",
+    "slot0_total": "223",
+    "slot0_orphaned": "5",
+    "all_total": "7139",
+    "all_orphaned": "34"
+  },
+  {
+    "day": "2025-12-13",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7163",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2025-12-14",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7173",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-12-15",
+    "slot0_total": "224",
+    "slot0_orphaned": "2",
+    "all_total": "7168",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2025-12-16",
+    "slot0_total": "223",
+    "slot0_orphaned": "2",
+    "all_total": "7175",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-12-17",
+    "slot0_total": "222",
+    "slot0_orphaned": "0",
+    "all_total": "7170",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2025-12-18",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7171",
+    "all_orphaned": "16"
+  },
+  {
+    "day": "2025-12-19",
+    "slot0_total": "225",
+    "slot0_orphaned": "2",
+    "all_total": "7173",
+    "all_orphaned": "16"
+  },
+  {
+    "day": "2025-12-20",
+    "slot0_total": "224",
+    "slot0_orphaned": "2",
+    "all_total": "7176",
+    "all_orphaned": "5"
+  },
+  {
+    "day": "2025-12-21",
+    "slot0_total": "225",
+    "slot0_orphaned": "0",
+    "all_total": "7180",
+    "all_orphaned": "2"
+  },
+  {
+    "day": "2025-12-22",
+    "slot0_total": "224",
+    "slot0_orphaned": "2",
+    "all_total": "7172",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-12-23",
+    "slot0_total": "224",
+    "slot0_orphaned": "6",
+    "all_total": "7171",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2025-12-24",
+    "slot0_total": "226",
+    "slot0_orphaned": "2",
+    "all_total": "7183",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2025-12-25",
+    "slot0_total": "225",
+    "slot0_orphaned": "2",
+    "all_total": "7173",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2025-12-26",
+    "slot0_total": "222",
+    "slot0_orphaned": "1",
+    "all_total": "7170",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-12-27",
+    "slot0_total": "223",
+    "slot0_orphaned": "6",
+    "all_total": "7173",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2025-12-28",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7178",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2025-12-29",
+    "slot0_total": "225",
+    "slot0_orphaned": "4",
+    "all_total": "7175",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2025-12-30",
+    "slot0_total": "225",
+    "slot0_orphaned": "7",
+    "all_total": "7174",
+    "all_orphaned": "28"
+  },
+  {
+    "day": "2025-12-31",
+    "slot0_total": "224",
+    "slot0_orphaned": "3",
+    "all_total": "7177",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2026-01-01",
+    "slot0_total": "223",
+    "slot0_orphaned": "3",
+    "all_total": "7179",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2026-01-02",
+    "slot0_total": "225",
+    "slot0_orphaned": "0",
+    "all_total": "7177",
+    "all_orphaned": "3"
+  },
+  {
+    "day": "2026-01-03",
+    "slot0_total": "225",
+    "slot0_orphaned": "7",
+    "all_total": "7183",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2026-01-04",
+    "slot0_total": "223",
+    "slot0_orphaned": "5",
+    "all_total": "7183",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2026-01-05",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7170",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2026-01-06",
+    "slot0_total": "223",
+    "slot0_orphaned": "5",
+    "all_total": "7187",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2026-01-07",
+    "slot0_total": "222",
+    "slot0_orphaned": "3",
+    "all_total": "7179",
+    "all_orphaned": "17"
+  },
+  {
+    "day": "2026-01-08",
+    "slot0_total": "224",
+    "slot0_orphaned": "2",
+    "all_total": "7175",
+    "all_orphaned": "19"
+  },
+  {
+    "day": "2026-01-09",
+    "slot0_total": "223",
+    "slot0_orphaned": "2",
+    "all_total": "7181",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2026-01-10",
+    "slot0_total": "225",
+    "slot0_orphaned": "1",
+    "all_total": "7176",
+    "all_orphaned": "5"
+  },
+  {
+    "day": "2026-01-11",
+    "slot0_total": "223",
+    "slot0_orphaned": "3",
+    "all_total": "7178",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2026-01-12",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7173",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2026-01-13",
+    "slot0_total": "221",
+    "slot0_orphaned": "6",
+    "all_total": "7170",
+    "all_orphaned": "24"
+  },
+  {
+    "day": "2026-01-14",
+    "slot0_total": "224",
+    "slot0_orphaned": "6",
+    "all_total": "7178",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2026-01-15",
+    "slot0_total": "224",
+    "slot0_orphaned": "3",
+    "all_total": "7182",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2026-01-16",
+    "slot0_total": "224",
+    "slot0_orphaned": "3",
+    "all_total": "7189",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2026-01-17",
+    "slot0_total": "223",
+    "slot0_orphaned": "4",
+    "all_total": "7181",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2026-01-18",
+    "slot0_total": "221",
+    "slot0_orphaned": "5",
+    "all_total": "7190",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2026-01-19",
+    "slot0_total": "223",
+    "slot0_orphaned": "4",
+    "all_total": "7183",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2026-01-20",
+    "slot0_total": "223",
+    "slot0_orphaned": "1",
+    "all_total": "7177",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2026-01-21",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7180",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2026-01-22",
+    "slot0_total": "224",
+    "slot0_orphaned": "3",
+    "all_total": "7166",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2026-01-23",
+    "slot0_total": "225",
+    "slot0_orphaned": "3",
+    "all_total": "7180",
+    "all_orphaned": "18"
+  },
+  {
+    "day": "2026-01-24",
+    "slot0_total": "223",
+    "slot0_orphaned": "4",
+    "all_total": "7185",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2026-01-25",
+    "slot0_total": "223",
+    "slot0_orphaned": "3",
+    "all_total": "7181",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2026-01-26",
+    "slot0_total": "219",
+    "slot0_orphaned": "3",
+    "all_total": "7179",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2026-01-27",
+    "slot0_total": "221",
+    "slot0_orphaned": "2",
+    "all_total": "7178",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2026-01-28",
+    "slot0_total": "224",
+    "slot0_orphaned": "3",
+    "all_total": "7183",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2026-01-29",
+    "slot0_total": "221",
+    "slot0_orphaned": "8",
+    "all_total": "7189",
+    "all_orphaned": "19"
+  },
+  {
+    "day": "2026-01-30",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7184",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2026-01-31",
+    "slot0_total": "222",
+    "slot0_orphaned": "4",
+    "all_total": "7179",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2026-02-01",
+    "slot0_total": "221",
+    "slot0_orphaned": "8",
+    "all_total": "7179",
+    "all_orphaned": "18"
+  },
+  {
+    "day": "2026-02-02",
+    "slot0_total": "224",
+    "slot0_orphaned": "6",
+    "all_total": "7181",
+    "all_orphaned": "21"
+  },
+  {
+    "day": "2026-02-03",
+    "slot0_total": "222",
+    "slot0_orphaned": "1",
+    "all_total": "7164",
+    "all_orphaned": "15"
+  },
+  {
+    "day": "2026-02-04",
+    "slot0_total": "223",
+    "slot0_orphaned": "5",
+    "all_total": "7175",
+    "all_orphaned": "23"
+  },
+  {
+    "day": "2026-02-05",
+    "slot0_total": "223",
+    "slot0_orphaned": "2",
+    "all_total": "7180",
+    "all_orphaned": "30"
+  },
+  {
+    "day": "2026-02-06",
+    "slot0_total": "225",
+    "slot0_orphaned": "4",
+    "all_total": "7171",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2026-02-07",
+    "slot0_total": "223",
+    "slot0_orphaned": "7",
+    "all_total": "7178",
+    "all_orphaned": "16"
+  },
+  {
+    "day": "2026-02-08",
+    "slot0_total": "220",
+    "slot0_orphaned": "4",
+    "all_total": "7131",
+    "all_orphaned": "22"
+  },
+  {
+    "day": "2026-02-09",
+    "slot0_total": "222",
+    "slot0_orphaned": "2",
+    "all_total": "7175",
+    "all_orphaned": "15"
+  },
+  {
+    "day": "2026-02-10",
+    "slot0_total": "225",
+    "slot0_orphaned": "5",
+    "all_total": "7168",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2026-02-11",
+    "slot0_total": "224",
+    "slot0_orphaned": "4",
+    "all_total": "7176",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2026-02-12",
+    "slot0_total": "223",
+    "slot0_orphaned": "4",
+    "all_total": "7176",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2026-02-13",
+    "slot0_total": "222",
+    "slot0_orphaned": "3",
+    "all_total": "7176",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2026-02-14",
+    "slot0_total": "224",
+    "slot0_orphaned": "3",
+    "all_total": "7180",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2026-02-15",
+    "slot0_total": "225",
+    "slot0_orphaned": "3",
+    "all_total": "7188",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2026-02-16",
+    "slot0_total": "225",
+    "slot0_orphaned": "2",
+    "all_total": "7179",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2026-02-17",
+    "slot0_total": "223",
+    "slot0_orphaned": "7",
+    "all_total": "7181",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2026-02-18",
+    "slot0_total": "225",
+    "slot0_orphaned": "5",
+    "all_total": "7182",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2026-02-19",
+    "slot0_total": "225",
+    "slot0_orphaned": "7",
+    "all_total": "7181",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2026-02-20",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7182",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2026-02-21",
+    "slot0_total": "224",
+    "slot0_orphaned": "3",
+    "all_total": "7181",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2026-02-22",
+    "slot0_total": "225",
+    "slot0_orphaned": "1",
+    "all_total": "7185",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2026-02-23",
+    "slot0_total": "222",
+    "slot0_orphaned": "2",
+    "all_total": "7178",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2026-02-24",
+    "slot0_total": "223",
+    "slot0_orphaned": "2",
+    "all_total": "7183",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2026-02-25",
+    "slot0_total": "219",
+    "slot0_orphaned": "5",
+    "all_total": "7171",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2026-02-26",
+    "slot0_total": "221",
+    "slot0_orphaned": "1",
+    "all_total": "7178",
+    "all_orphaned": "5"
+  },
+  {
+    "day": "2026-02-27",
+    "slot0_total": "224",
+    "slot0_orphaned": "5",
+    "all_total": "7183",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2026-02-28",
+    "slot0_total": "224",
+    "slot0_orphaned": "4",
+    "all_total": "7179",
+    "all_orphaned": "23"
+  },
+  {
+    "day": "2026-03-01",
+    "slot0_total": "225",
+    "slot0_orphaned": "2",
+    "all_total": "7186",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2026-03-02",
+    "slot0_total": "222",
+    "slot0_orphaned": "5",
+    "all_total": "7174",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2026-03-03",
+    "slot0_total": "222",
+    "slot0_orphaned": "3",
+    "all_total": "7184",
+    "all_orphaned": "15"
+  },
+  {
+    "day": "2026-03-04",
+    "slot0_total": "224",
+    "slot0_orphaned": "3",
+    "all_total": "7184",
+    "all_orphaned": "19"
+  },
+  {
+    "day": "2026-03-05",
+    "slot0_total": "224",
+    "slot0_orphaned": "5",
+    "all_total": "7185",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2026-03-06",
+    "slot0_total": "223",
+    "slot0_orphaned": "4",
+    "all_total": "7163",
+    "all_orphaned": "15"
+  },
+  {
+    "day": "2026-03-07",
+    "slot0_total": "225",
+    "slot0_orphaned": "5",
+    "all_total": "7174",
+    "all_orphaned": "15"
+  },
+  {
+    "day": "2026-03-08",
+    "slot0_total": "225",
+    "slot0_orphaned": "7",
+    "all_total": "7185",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2026-03-09",
+    "slot0_total": "224",
+    "slot0_orphaned": "3",
+    "all_total": "7176",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2026-03-10",
+    "slot0_total": "222",
+    "slot0_orphaned": "5",
+    "all_total": "7164",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2026-03-11",
+    "slot0_total": "224",
+    "slot0_orphaned": "6",
+    "all_total": "7170",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2026-03-12",
+    "slot0_total": "224",
+    "slot0_orphaned": "4",
+    "all_total": "7174",
+    "all_orphaned": "14"
+  },
+  {
+    "day": "2026-03-13",
+    "slot0_total": "225",
+    "slot0_orphaned": "4",
+    "all_total": "7182",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2026-03-14",
+    "slot0_total": "223",
+    "slot0_orphaned": "3",
+    "all_total": "7178",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2026-03-15",
+    "slot0_total": "223",
+    "slot0_orphaned": "5",
+    "all_total": "7183",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2026-03-16",
+    "slot0_total": "225",
+    "slot0_orphaned": "3",
+    "all_total": "7170",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2026-03-17",
+    "slot0_total": "222",
+    "slot0_orphaned": "7",
+    "all_total": "7171",
+    "all_orphaned": "23"
+  },
+  {
+    "day": "2026-03-18",
+    "slot0_total": "222",
+    "slot0_orphaned": "5",
+    "all_total": "7180",
+    "all_orphaned": "17"
+  },
+  {
+    "day": "2026-03-19",
+    "slot0_total": "224",
+    "slot0_orphaned": "3",
+    "all_total": "7180",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2026-03-20",
+    "slot0_total": "224",
+    "slot0_orphaned": "4",
+    "all_total": "7187",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2026-03-21",
+    "slot0_total": "222",
+    "slot0_orphaned": "4",
+    "all_total": "7181",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2026-03-22",
+    "slot0_total": "224",
+    "slot0_orphaned": "6",
+    "all_total": "7184",
+    "all_orphaned": "17"
+  },
+  {
+    "day": "2026-03-23",
+    "slot0_total": "224",
+    "slot0_orphaned": "4",
+    "all_total": "7178",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2026-03-24",
+    "slot0_total": "223",
+    "slot0_orphaned": "2",
+    "all_total": "7184",
+    "all_orphaned": "4"
+  },
+  {
+    "day": "2026-03-25",
+    "slot0_total": "225",
+    "slot0_orphaned": "6",
+    "all_total": "7182",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2026-03-26",
+    "slot0_total": "224",
+    "slot0_orphaned": "5",
+    "all_total": "7177",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2026-03-27",
+    "slot0_total": "223",
+    "slot0_orphaned": "2",
+    "all_total": "7168",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2026-03-28",
+    "slot0_total": "225",
+    "slot0_orphaned": "2",
+    "all_total": "7187",
+    "all_orphaned": "5"
+  },
+  {
+    "day": "2026-03-29",
+    "slot0_total": "225",
+    "slot0_orphaned": "4",
+    "all_total": "7182",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2026-03-30",
+    "slot0_total": "224",
+    "slot0_orphaned": "6",
+    "all_total": "7177",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2026-03-31",
+    "slot0_total": "224",
+    "slot0_orphaned": "55",
+    "all_total": "7180",
+    "all_orphaned": "1663"
+  },
+  {
+    "day": "2026-04-01",
+    "slot0_total": "221",
+    "slot0_orphaned": "2",
+    "all_total": "7172",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2026-04-02",
+    "slot0_total": "223",
+    "slot0_orphaned": "2",
+    "all_total": "7186",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2026-04-03",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7182",
+    "all_orphaned": "3"
+  },
+  {
+    "day": "2026-04-04",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7188",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2026-04-05",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7179",
+    "all_orphaned": "3"
+  },
+  {
+    "day": "2026-04-06",
+    "slot0_total": "224",
+    "slot0_orphaned": "2",
+    "all_total": "7176",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2026-04-07",
+    "slot0_total": "224",
+    "slot0_orphaned": "4",
+    "all_total": "7184",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2026-04-08",
+    "slot0_total": "224",
+    "slot0_orphaned": "3",
+    "all_total": "7186",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2026-04-09",
+    "slot0_total": "225",
+    "slot0_orphaned": "3",
+    "all_total": "7178",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2026-04-10",
+    "slot0_total": "224",
+    "slot0_orphaned": "5",
+    "all_total": "7174",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2026-04-11",
+    "slot0_total": "223",
+    "slot0_orphaned": "4",
+    "all_total": "7180",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2026-04-12",
+    "slot0_total": "223",
+    "slot0_orphaned": "3",
+    "all_total": "7184",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2026-04-13",
+    "slot0_total": "222",
+    "slot0_orphaned": "1",
+    "all_total": "7184",
+    "all_orphaned": "3"
+  },
+  {
+    "day": "2026-04-14",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7187",
+    "all_orphaned": "5"
+  },
+  {
+    "day": "2026-04-15",
+    "slot0_total": "221",
+    "slot0_orphaned": "2",
+    "all_total": "7184",
+    "all_orphaned": "5"
+  },
+  {
+    "day": "2026-04-16",
+    "slot0_total": "222",
+    "slot0_orphaned": "1",
+    "all_total": "7184",
+    "all_orphaned": "4"
+  },
+  {
+    "day": "2026-04-17",
+    "slot0_total": "224",
+    "slot0_orphaned": "3",
+    "all_total": "7187",
+    "all_orphaned": "4"
+  },
+  {
+    "day": "2026-04-18",
+    "slot0_total": "223",
+    "slot0_orphaned": "5",
+    "all_total": "7184",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2026-04-19",
+    "slot0_total": "225",
+    "slot0_orphaned": "4",
+    "all_total": "7181",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2026-04-20",
+    "slot0_total": "221",
+    "slot0_orphaned": "4",
+    "all_total": "7189",
+    "all_orphaned": "5"
+  },
+  {
+    "day": "2026-04-21",
+    "slot0_total": "223",
+    "slot0_orphaned": "0",
+    "all_total": "7183",
+    "all_orphaned": "1"
+  },
+  {
+    "day": "2026-04-22",
+    "slot0_total": "220",
+    "slot0_orphaned": "6",
+    "all_total": "7180",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2026-04-23",
+    "slot0_total": "225",
+    "slot0_orphaned": "2",
+    "all_total": "7188",
+    "all_orphaned": "5"
+  },
+  {
+    "day": "2026-04-24",
+    "slot0_total": "225",
+    "slot0_orphaned": "4",
+    "all_total": "7190",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2026-04-25",
+    "slot0_total": "224",
+    "slot0_orphaned": "4",
+    "all_total": "7194",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2026-04-26",
+    "slot0_total": "223",
+    "slot0_orphaned": "3",
+    "all_total": "7191",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2026-04-27",
+    "slot0_total": "225",
+    "slot0_orphaned": "8",
+    "all_total": "7196",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2026-04-28",
+    "slot0_total": "225",
+    "slot0_orphaned": "3",
+    "all_total": "7186",
+    "all_orphaned": "4"
+  },
+  {
+    "day": "2026-04-29",
+    "slot0_total": "224",
+    "slot0_orphaned": "4",
+    "all_total": "7185",
+    "all_orphaned": "5"
+  },
+  {
+    "day": "2026-04-30",
+    "slot0_total": "223",
+    "slot0_orphaned": "9",
+    "all_total": "7189",
+    "all_orphaned": "13"
+  },
+  {
+    "day": "2026-05-01",
+    "slot0_total": "224",
+    "slot0_orphaned": "3",
+    "all_total": "7173",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2026-05-02",
+    "slot0_total": "221",
+    "slot0_orphaned": "1",
+    "all_total": "7051",
+    "all_orphaned": "4"
+  },
+  {
+    "day": "2026-05-03",
+    "slot0_total": "224",
+    "slot0_orphaned": "0",
+    "all_total": "7140",
+    "all_orphaned": "0"
+  },
+  {
+    "day": "2026-05-04",
+    "slot0_total": "222",
+    "slot0_orphaned": "4",
+    "all_total": "7115",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2026-05-05",
+    "slot0_total": "221",
+    "slot0_orphaned": "4",
+    "all_total": "7056",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2026-05-06",
+    "slot0_total": "221",
+    "slot0_orphaned": "2",
+    "all_total": "7094",
+    "all_orphaned": "4"
+  },
+  {
+    "day": "2026-05-07",
+    "slot0_total": "224",
+    "slot0_orphaned": "6",
+    "all_total": "7183",
+    "all_orphaned": "10"
+  },
+  {
+    "day": "2026-05-08",
+    "slot0_total": "225",
+    "slot0_orphaned": "4",
+    "all_total": "7193",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2026-05-09",
+    "slot0_total": "225",
+    "slot0_orphaned": "4",
+    "all_total": "7181",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2026-05-10",
+    "slot0_total": "223",
+    "slot0_orphaned": "5",
+    "all_total": "7183",
+    "all_orphaned": "9"
+  },
+  {
+    "day": "2026-05-11",
+    "slot0_total": "225",
+    "slot0_orphaned": "3",
+    "all_total": "7173",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2026-05-12",
+    "slot0_total": "224",
+    "slot0_orphaned": "4",
+    "all_total": "7187",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2026-05-13",
+    "slot0_total": "224",
+    "slot0_orphaned": "6",
+    "all_total": "7175",
+    "all_orphaned": "16"
+  },
+  {
+    "day": "2026-05-14",
+    "slot0_total": "224",
+    "slot0_orphaned": "3",
+    "all_total": "7183",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2026-05-15",
+    "slot0_total": "224",
+    "slot0_orphaned": "3",
+    "all_total": "7184",
+    "all_orphaned": "4"
+  },
+  {
+    "day": "2026-05-16",
+    "slot0_total": "225",
+    "slot0_orphaned": "4",
+    "all_total": "7190",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2026-05-17",
+    "slot0_total": "223",
+    "slot0_orphaned": "3",
+    "all_total": "7183",
+    "all_orphaned": "7"
+  },
+  {
+    "day": "2026-05-18",
+    "slot0_total": "223",
+    "slot0_orphaned": "4",
+    "all_total": "7184",
+    "all_orphaned": "6"
+  },
+  {
+    "day": "2026-05-19",
+    "slot0_total": "223",
+    "slot0_orphaned": "0",
+    "all_total": "7185",
+    "all_orphaned": "4"
+  },
+  {
+    "day": "2026-05-20",
+    "slot0_total": "224",
+    "slot0_orphaned": "5",
+    "all_total": "7187",
+    "all_orphaned": "11"
+  },
+  {
+    "day": "2026-05-21",
+    "slot0_total": "224",
+    "slot0_orphaned": "1",
+    "all_total": "7182",
+    "all_orphaned": "4"
+  },
+  {
+    "day": "2026-05-22",
+    "slot0_total": "224",
+    "slot0_orphaned": "5",
+    "all_total": "7180",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2026-05-23",
+    "slot0_total": "222",
+    "slot0_orphaned": "2",
+    "all_total": "7179",
+    "all_orphaned": "4"
+  },
+  {
+    "day": "2026-05-24",
+    "slot0_total": "222",
+    "slot0_orphaned": "3",
+    "all_total": "7183",
+    "all_orphaned": "5"
+  },
+  {
+    "day": "2026-05-25",
+    "slot0_total": "224",
+    "slot0_orphaned": "3",
+    "all_total": "7178",
+    "all_orphaned": "12"
+  },
+  {
+    "day": "2026-05-26",
+    "slot0_total": "225",
+    "slot0_orphaned": "2",
+    "all_total": "7184",
+    "all_orphaned": "4"
+  },
+  {
+    "day": "2026-05-27",
+    "slot0_total": "225",
+    "slot0_orphaned": "3",
+    "all_total": "7176",
+    "all_orphaned": "5"
+  },
+  {
+    "day": "2026-05-28",
+    "slot0_total": "222",
+    "slot0_orphaned": "2",
+    "all_total": "7179",
+    "all_orphaned": "2"
+  },
+  {
+    "day": "2026-05-29",
+    "slot0_total": "225",
+    "slot0_orphaned": "2",
+    "all_total": "7179",
+    "all_orphaned": "5"
+  },
+  {
+    "day": "2026-05-30",
+    "slot0_total": "222",
+    "slot0_orphaned": "5",
+    "all_total": "7172",
+    "all_orphaned": "8"
+  },
+  {
+    "day": "2026-05-31",
+    "slot0_total": "225",
+    "slot0_orphaned": "4",
+    "all_total": "7175",
+    "all_orphaned": "6"
+  }
+]

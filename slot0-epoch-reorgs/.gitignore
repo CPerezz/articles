@@ -1,0 +1,14 @@
+# python
+__pycache__/
+*.pyc
+
+# os
+.DS_Store
+
+# pilot / smoke / intermediate extract outputs — only the *_scale.* deliverable is committed
+data/*_smoke.json
+data/*_pilotA.json
+data/*_janspike.json
+
+# environment-specific probe output (regenerate with `python3 extract.py --probe`)
+data/datasources.json

@@ -1,0 +1,226 @@
+[
+  {
+    "position_in_epoch": "0",
+    "total_slots": "142021",
+    "orphaned": "1660",
+    "orphan_rate": "0.011688",
+    "count_vs_avg": "5.9592"
+  },
+  {
+    "position_in_epoch": "1",
+    "total_slots": "142694",
+    "orphaned": "489",
+    "orphan_rate": "0.003427",
+    "count_vs_avg": "1.7554"
+  },
+  {
+    "position_in_epoch": "2",
+    "total_slots": "142784",
+    "orphaned": "374",
+    "orphan_rate": "0.002619",
+    "count_vs_avg": "1.3426"
+  },
+  {
+    "position_in_epoch": "3",
+    "total_slots": "142852",
+    "orphaned": "324",
+    "orphan_rate": "0.002268",
+    "count_vs_avg": "1.1631"
+  },
+  {
+    "position_in_epoch": "4",
+    "total_slots": "142873",
+    "orphaned": "293",
+    "orphan_rate": "0.002051",
+    "count_vs_avg": "1.0518"
+  },
+  {
+    "position_in_epoch": "5",
+    "total_slots": "142935",
+    "orphaned": "283",
+    "orphan_rate": "0.00198",
+    "count_vs_avg": "1.0159"
+  },
+  {
+    "position_in_epoch": "6",
+    "total_slots": "142980",
+    "orphaned": "262",
+    "orphan_rate": "0.001832",
+    "count_vs_avg": "0.9405"
+  },
+  {
+    "position_in_epoch": "7",
+    "total_slots": "142974",
+    "orphaned": "247",
+    "orphan_rate": "0.001728",
+    "count_vs_avg": "0.8867"
+  },
+  {
+    "position_in_epoch": "8",
+    "total_slots": "143000",
+    "orphaned": "245",
+    "orphan_rate": "0.001713",
+    "count_vs_avg": "0.8795"
+  },
+  {
+    "position_in_epoch": "9",
+    "total_slots": "142995",
+    "orphaned": "220",
+    "orphan_rate": "0.001539",
+    "count_vs_avg": "0.7898"
+  },
+  {
+    "position_in_epoch": "10",
+    "total_slots": "142965",
+    "orphaned": "211",
+    "orphan_rate": "0.001476",
+    "count_vs_avg": "0.7575"
+  },
+  {
+    "position_in_epoch": "11",
+    "total_slots": "142992",
+    "orphaned": "217",
+    "orphan_rate": "0.001518",
+    "count_vs_avg": "0.779"
+  },
+  {
+    "position_in_epoch": "12",
+    "total_slots": "142985",
+    "orphaned": "220",
+    "orphan_rate": "0.001539",
+    "count_vs_avg": "0.7898"
+  },
+  {
+    "position_in_epoch": "13",
+    "total_slots": "142976",
+    "orphaned": "211",
+    "orphan_rate": "0.001476",
+    "count_vs_avg": "0.7575"
+  },
+  {
+    "position_in_epoch": "14",
+    "total_slots": "142973",
+    "orphaned": "202",
+    "orphan_rate": "0.001413",
+    "count_vs_avg": "0.7252"
+  },
+  {
+    "position_in_epoch": "15",
+    "total_slots": "142971",
+    "orphaned": "211",
+    "orphan_rate": "0.001476",
+    "count_vs_avg": "0.7575"
+  },
+  {
+    "position_in_epoch": "16",
+    "total_slots": "143010",
+    "orphaned": "231",
+    "orphan_rate": "0.001615",
+    "count_vs_avg": "0.8293"
+  },
+  {
+    "position_in_epoch": "17",
+    "total_slots": "142972",
+    "orphaned": "207",
+    "orphan_rate": "0.001448",
+    "count_vs_avg": "0.7431"
+  },
+  {
+    "position_in_epoch": "18",
+    "total_slots": "143021",
+    "orphaned": "203",
+    "orphan_rate": "0.001419",
+    "count_vs_avg": "0.7287"
+  },
+  {
+    "position_in_epoch": "19",
+    "total_slots": "142976",
+    "orphaned": "207",
+    "orphan_rate": "0.001448",
+    "count_vs_avg": "0.7431"
+  },
+  {
+    "position_in_epoch": "20",
+    "total_slots": "142982",
+    "orphaned": "236",
+    "orphan_rate": "0.001651",
+    "count_vs_avg": "0.8472"
+  },
+  {
+    "position_in_epoch": "21",
+    "total_slots": "142996",
+    "orphaned": "228",
+    "orphan_rate": "0.001594",
+    "count_vs_avg": "0.8185"
+  },
+  {
+    "position_in_epoch": "22",
+    "total_slots": "143000",
+    "orphaned": "171",
+    "orphan_rate": "0.001196",
+    "count_vs_avg": "0.6139"
+  },
+  {
+    "position_in_epoch": "23",
+    "total_slots": "142960",
+    "orphaned": "230",
+    "orphan_rate": "0.001609",
+    "count_vs_avg": "0.8257"
+  },
+  {
+    "position_in_epoch": "24",
+    "total_slots": "142974",
+    "orphaned": "198",
+    "orphan_rate": "0.001385",
+    "count_vs_avg": "0.7108"
+  },
+  {
+    "position_in_epoch": "25",
+    "total_slots": "142944",
+    "orphaned": "209",
+    "orphan_rate": "0.001462",
+    "count_vs_avg": "0.7503"
+  },
+  {
+    "position_in_epoch": "26",
+    "total_slots": "143023",
+    "orphaned": "219",
+    "orphan_rate": "0.001531",
+    "count_vs_avg": "0.7862"
+  },
+  {
+    "position_in_epoch": "27",
+    "total_slots": "142974",
+    "orphaned": "183",
+    "orphan_rate": "0.00128",
+    "count_vs_avg": "0.6569"
+  },
+  {
+    "position_in_epoch": "28",
+    "total_slots": "142970",
+    "orphaned": "210",
+    "orphan_rate": "0.001469",
+    "count_vs_avg": "0.7539"
+  },
+  {
+    "position_in_epoch": "29",
+    "total_slots": "142969",
+    "orphaned": "203",
+    "orphan_rate": "0.00142",
+    "count_vs_avg": "0.7287"
+  },
+  {
+    "position_in_epoch": "30",
+    "total_slots": "142987",
+    "orphaned": "189",
+    "orphan_rate": "0.001322",
+    "count_vs_avg": "0.6785"
+  },
+  {
+    "position_in_epoch": "31",
+    "total_slots": "142878",
+    "orphaned": "121",
+    "orphan_rate": "0.000847",
+    "count_vs_avg": "0.4344"
+  }
+]
