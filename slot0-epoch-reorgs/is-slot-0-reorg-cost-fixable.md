@@ -19,7 +19,7 @@ A second is ~8% of a 12-second slot, and propagation headroom is precisely what 
 
 Glamsterdam is already pushing the gas limit upward (toward a ~200M target) and raising blob throughput; that increase is only safe if the larger blocks still reach attesters before they vote — the very budget the deadline governs. **So the dial setting and the gas-limit increase are two ends of one lever, and a deadline set too low doesn't just cost reorgs, it caps how far the rest of the upgrade can push**. 
 
-![Figure 1: where slot-0 blocks land vs the candidate deadlines — surviving blocks (median 2.1s) clear the line; orphaned ones (median 4.4s) spill past 4s. Only the 0–6s decision region of the 12s slot is shown.](figures/fig_slot_anatomy_scale.png)
+![Figure 1: where slot-0 blocks land vs the candidate deadlines — surviving blocks (median 2.1s) clear the line; orphaned ones (median 4.4s) spill past 4s. Only the 0–6s decision region of the 12s slot is shown.](https://hackmd.io/_uploads/rJHR06Jmze.png)
 
 The standing objection to a low setting is the epoch boundary. Slot 0 carries the epoch transition — finalization bookkeeping, the RANDAO reshuffle, new committee assignments — and is reorged out far more than any other slot. 
 
@@ -29,12 +29,12 @@ If that is the inherent price of doing epoch-transition work, it is a hard floor
 
 ## The phenomenon, and whether it even matters
 
-![Figure 2: slot-0 orphan rate by epoch position — slot 0 stands alone at 1.17%, slot 31 is the lowest at 0.085%.](figures/fig_orphan_by_slot_position_scale.png)
+![Figure 2: slot-0 orphan rate by epoch position — slot 0 stands alone at 1.17%, slot 31 is the lowest at 0.085%.](https://hackmd.io/_uploads/ryayfC1mzg.png)
 
 Counting orphaned blocks by position in the epoch, slot 0 sits at **1.17%** against a pooled **0.16%** elsewhere — a **risk ratio of 7.1x**.
 Slot 31, by contrast, is the *least*-orphaned position (0.085%): the fork-choice rule protects the last slot of an epoch from honest reorg, so the cost lands one slot later, on slot 0.
 
-![Figure 3: why the cost lands on slot 0 — slot 31 is fork-choice-protected, so when slot 0 is late the slot-1 proposer builds on slot 31 and leaves it behind.](figures/fig_epoch_boundary_scale.png)
+![Figure 3: why the cost lands on slot 0 — slot 31 is fork-choice-protected, so when slot 0 is late the slot-1 proposer builds on slot 31 and leaves it behind.](https://hackmd.io/_uploads/B1ljMAy7zx.png)
 
 Is a 7× elevation worth a post? In aggregate it is small — the slot-0 *excess* over baseline is ~1,428 blocks in 21 months, **0.031% of all blocks, about 1 in 3,200**. 
 
@@ -46,7 +46,7 @@ _Now the hypotheses, each stated as the intuition someone reasonably holds, then
 
 ## Hypothesis: it is unavoidable epoch-transition work
 
-![Figure 4: first-seen time, orphaned vs surviving slot-0 blocks — victims (median 4.4s) pile up around and past the 4s deadline; survivors (median 2.1s) clear it early.](figures/fig_propagation_orphaned_vs_canonical_scale.png)
+![Figure 4: first-seen time, orphaned vs surviving slot-0 blocks — victims (median 4.4s) pile up around and past the 4s deadline; survivors (median 2.1s) clear it early.](https://hackmd.io/_uploads/SJ-BQCJ7ze.png)
 
 
 **If the reorging were the protocol doing necessary work, slot-0 blocks would fail roughly uniformly. They do not**. 
@@ -56,7 +56,7 @@ That is inconsistent with a *uniform* structural toll: the boundary does not orp
 
 ## Hypothesis: a late or withheld slot-31 parent triggers it
 
-![Figure 5: slot-31 parent first-seen for orphaned slot-0s — the parent is on time (median 1.7s); 97% of victims built on it.](figures/fig_slot31_lateness_vs_slot0_orphan_scale.png)
+![Figure 5: slot-31 parent first-seen for orphaned slot-0s — the parent is on time (median 1.7s); 97% of victims built on it.](https://hackmd.io/_uploads/HyuaCkx7Me.png)
 
 
 The cleanest "we can't help it" story is the parent: a late or missed slot-31 block could force an ex-ante reorg of slot 0, and since slot 31 is protected, a proposer could even withhold it deliberately. Neither holds. 
@@ -66,7 +66,7 @@ _It was there, on time, and used — and the block was orphaned anyway. The with
 
 ## Hypothesis: relay timing games — the bid-return deadline eats the budget
 
-![Figure 6: relay-delivered vs locally-built — orphaned slot-0s are ~62% locally built, against ~11% of survivors.](figures/fig_relay_localbuild_scale.png)
+![Figure 6: relay-delivered vs locally-built — orphaned slot-0s are ~62% locally built, against ~11% of survivors.](https://hackmd.io/_uploads/SJkfJblmMx.png)
 
 
 The suspicion is the MEV-Boost path: builders return bids against the ~1-second bid-return deadline, the proposer waits for the last one, and that second is gone. 
@@ -78,32 +78,41 @@ The lever this points to is reliable relay coverage at the boundary and a faster
 
 ## Hypothesis: it's the blobs — heavy blocks propagate slower
 
-![Figure 7: orphaned slot-0 blocks carry more blobs than survivors — the ≥9-blob tail is 17% of victims vs 9% of survivors (median 5 vs 4), while orphaned blocks are smaller in beacon-block bytes.](figures/fig_blob_compare_scale.png)
+![Figure 7: orphaned slot-0 blocks carry more blobs than survivors — the ≥9-blob tail is 17% of victims vs 9% of survivors (median 5 vs 4), while orphaned blocks are smaller in beacon-block bytes.](https://hackmd.io/_uploads/Hysy5Bb7Gx.png)
+
 
 _The intuition: a block's real propagation cost is its blob sidecars, not the beacon block the validator signs — and a local builder, without a relay's tuned delivery, may pack more blobs (up to the protocol maximum, now 21) into a slot-0 block and choke on the upload. A related intuition: rollups might cluster their blob submissions by epoch position, loading particular slots._
 
-**Verdict: supported — and it pinpoints the mechanism.** Orphaned slot-0 blocks carry **more blobs** than survivors: median 5 vs 4, with the heavy tail doing the separating — **17% of victims carry ≥9 blobs versus 9% of survivors** (Mann-Whitney p ≈ 1e-20).
+**Verdict: supported — and it pinpoints the mechanism.** Orphaned slot-0 blocks carry **more blobs** than survivors: median 5 vs 4, with the heavy tail doing the separating — **17% of victims carry ≥9 blobs versus 9% of survivors**.
 
 Tellingly, the orphaned blocks are *smaller* in beacon-block bytes (median 90KB vs 114KB), so the burden is not the block the validator signs — it is the **blob sidecars**, each a separate ~128KB object that must propagate and be made available before the network will build on the block. And the blob-heaviness concentrates in exactly the slow path: among orphaned slot-0s, the locally-built ones are blob-heaviest (≥9 blobs: 19% local vs 13% relay-delivered).
 
 The "rollups cluster blobs at slot 0" version does **not** hold. Averaging blobs by epoch position over 21 months, the load is essentially flat — slot 0 (3.70) sits at the cross-position mean (3.72), with no spike at slot 0 or at the mid-epoch slots rollups are rumored to prefer. So this is not "slot 0 carries more blobs"; it is "blob-heavy blocks, wherever they land, propagate slower — and at slot 0 the deadline pressure plus local building tips the slow ones over."
 
-![Figure 8: average blobs by epoch position over 21 months — flat; slot 0 sits at the cross-position mean, refuting the rollup-clustering hypothesis.](figures/fig_blob_by_position_scale.png)
+![Figure 8: average blobs by epoch position over 21 months — flat; slot 0 sits at the cross-position mean, refuting the rollup-clustering hypothesis.](https://hackmd.io/_uploads/B1uUqr-XGx.png)
 
-How much of the orphaning does this explain? Adding blob count to the case-control logistic, the lateness effect is unchanged (still ~8× the odds per doubling of first-seen) and blob count adds only a small *independent* signal (≈1.04× the odds per extra blob). Read together: blobs are a **driver of the slow propagation**, acting largely *through* the first-seen lateness the model already captures, not a separate structural cost. That keeps the cost squarely fixable — and hands it a concrete, named lever: a [**max-blobs flag for local builders (EIP-7872)**](https://eips.ethereum.org/EIPS/eip-7872), so a fallback local build does not pack 21 blobs it cannot upload in time; and ePBS, which moves the blobs and the payload out of the attestation-relevant block entirely.
+
+How much of the orphaning does this explain? Adding blob count to the case-control logistic, the lateness effect is unchanged (still ~8× the odds per doubling of first-seen) and blob count adds only a small *independent* signal (≈1.04× the odds per extra blob). Read together: blobs are a **driver of the slow propagation**, acting largely *through* the first-seen lateness the model already captures, not a separate structural cost. 
+
+That keeps the cost squarely fixable — and hands it a concrete, named lever: a [**max-blobs flag for local builders (EIP-7872)**](https://eips.ethereum.org/EIPS/eip-7872), so a fallback local build does not pack 21 blobs it cannot upload in time; and ePBS, which moves the blobs and the payload out of the attestation-relevant block entirely.
 
 ## Hypothesis: specific consensus clients are slow at the boundary
 
-![Figure 9: pre-Electra slot-0 orphan rate by consensus client (Wilson 95% CIs) — Nimbus is robustly worst.](figures/fig_client_orphan_rate_scale.png)
+![Figure 9: pre-Electra slot-0 orphan rate by consensus client — Nimbus is robustly worst.](https://hackmd.io/_uploads/BkrpjHWXGe.png)
 
 This is the question that makes "fixable engineering" concrete, and it is where the data is both strongest and most limited. 
+
 **Where client labels exist, the answer is yes.** Pre-Electra (through 2025-05-07), blockprint labels each proposer's client: across 371 orphaned slot-0s (342 classified), **Nimbus is robustly worst**; the rest are closer than the point estimates suggest.
 
 By volume, Prysm and Teku produce most orphaned slot-0 blocks (223 of 371) simply because they are ~58% of proposers. This is a genuine client effect — 371 *distinct* validators across many cohorts — not the operator effect, which lives in a different period. (These per-client rates are unadjusted and blockprint is noisiest on minority clients like Nimbus, so treat the ranking as a lead — and the obvious confound is tested next.)
 
-A reviewer raised that confound directly: Nimbus skews toward home-stakers who self-build, so its gap could be a build-path artifact rather than a client trait. The data only partly bears that out. **Build path is the dominant axis** — *every* client orphans ~5–10× more on locally-built slot-0 blocks than on relay-delivered ones (Nimbus 3.6% local vs 1.5% relay; Lighthouse 1.5% vs 0.08%). But Nimbus does **not** self-build more than the rest (≈14% local, the same as Lighthouse and Prysm), and it stays the worst client in *both* strata — significantly above Lighthouse within the local-build set (p ≈ 5e-3), though not separable from Prysm there (small n). So the Nimbus signal is not a build-path artifact; it is more likely operator population or blockprint's known minority-client error. Either way the build-path result is the load-bearing one: it is *where* a block is built, far more than *which client* builds it, that decides whether a slot-0 block survives — which is exactly the fixable lever.
+One could argue that Nimbus skews toward home-stakers who self-build, so its gap could be a build-path artifact rather than a client trait. The data only partly bears that out. 
 
-![Figure 10: pre-Electra slot-0 orphan rate by client × build path — locally-built blocks orphan ~5–10× more for every client; Nimbus is worst in both strata.](figures/fig_client_buildpath_scale.png)
+**Build path is the dominant axis** — *every* client orphans ~5–10× more on locally-built slot-0 blocks than on relay-delivered ones (Nimbus 3.6% local vs 1.5% relay; Lighthouse 1.5% vs 0.08%). 
+But Nimbus does **not** self-build more than the rest (≈14% local, the same as Lighthouse and Prysm), and it stays the worst client in *both* strata — significantly above Lighthouse within the local-build set (p ≈ 5e-3), though not separable from Prysm there (small n). 
+So the Nimbus signal is not a build-path artifact; it is more likely operator population or blockprint's known minority-client error. Either way the build-path result is the load-bearing one: it is *where* a block is built, far more than *which client* builds it, that decides whether a slot-0 block survives — which is exactly the fixable lever.
+
+![Figure 10: pre-Electra slot-0 orphan rate by client × build path — locally-built blocks orphan ~5–10× more for every client; Nimbus is worst in both strata.](https://hackmd.io/_uploads/BkBjcBWXMg.png)
 
 **After Electra the signal is gone — and the cause is itself the finding.** Blockprint fingerprints a client by its attestation packing; EIP-7549, shipped *in the same Electra fork* whose reorgs this studies, collapsed that signal (~1,366 → ~22 attestations behind a supermajority), so the fingerprint is destroyed at the source.
 
@@ -111,7 +120,7 @@ Crucially, the verdict does not depend on naming the current client: "fixable, n
 
 ## Hypothesis: a few operators carry it
 
-![Figure 11: operator over-representation against each operator's own baseline — upbit orphans 31% of its own slot-0 blocks (~18% of all slot-0 orphans).](figures/fig_entity_over_representation_scale.png)
+![Figure 11: operator over-representation against each operator's own baseline — upbit orphans 31% of its own slot-0 blocks (~18% of all slot-0 orphans).](https://hackmd.io/_uploads/H1vjFgZ7zl.png)
 
 
 If this is fixable engineering it should be concentrated — and it is. 
@@ -123,18 +132,19 @@ For the dominant local-build set, though, the pattern is operator-specific and c
 
 ## The trend: a rising rate, not a steady one
 
-![Figure 12: daily slot-0 orphan rate over 21 months — the 2026-03-31 spike is a network-wide incident; underneath, the slot-0 rate trends upward.](figures/fig_jan2026_orphan_timeseries_scale.png)
+![Figure 12: daily slot-0 orphan rate over 21 months — the 2026-03-31 spike is a network-wide incident; underneath, the slot-0 rate trends upward.](https://hackmd.io/_uploads/Sya0teWQfx.png)
 
 
 A search for a dramatic incident turns up exactly one in 21 months: on 2026-03-31, 24.6% of slot-0 blocks were orphaned — but that day's *all-slot* rate was 23.2%, a network-wide event, not a slot-0 phenomenon. 
 
 Removing it *raises* the slot-0 risk ratio (to 8.87), so it is conservative for the argument. Underneath the noise, the slot-0 rate is not steady — it has roughly tripled, climbing by half-year from **0.58% (2024-H2) → 0.83% → 1.43% → 1.73% (2026-H1)** while the all-slot baseline stayed near 0.15–0.29%. For a dial being set now for a future fork, the decision-relevant number is the *current* regime (~1.7%), not the 21-month pooled 1.17% — and the upward trend makes fixing the slow path more urgent, not less.
 
-![Figure 13: slot-0 orphan rate by half-year — a near-tripling (0.58% → 1.73%) while the all-slot baseline stays flat.](figures/fig_half_year_trend_scale.png)
+![Figure 13: slot-0 orphan rate by half-year — a near-tripling (0.58% → 1.73%) while the all-slot baseline stays flat.](https://hackmd.io/_uploads/SkiM9gbQMe.png)
 
 And the rising rate is not a mystery: the blocks themselves are growing. Over the same window the average slot-0 beacon block grew **~60% (106 → 170 KB)** and blob loads rose with it, while the all-slot orphan baseline stayed flat — so the slot-0 reorg rate climbs in step with the propagation burden, exactly the mechanism the sections above describe. This is also why ePBS *helps*, and helps more as blocks grow: gas-limit increases, Fusaka's 14/21 blobs, and Glamsterdam's block-level access lists all enlarge the block — and ePBS moves every bit of that (payload, blobs, BAL) out of the small beacon block attesters actually vote on. The bigger blocks get, the more the attestation-relevant object shrinks relative to them, and the more headroom a post-ePBS deadline reclaims. The growth cuts toward the thesis, not against it.
 
-![Figure 14: average slot-0 beacon-block size and blob count by half-year — block size grew ~60% as the reorg rate rose, the burden ePBS removes from the attestation-relevant block.](figures/fig_blob_size_trend_scale.png)
+![Figure 14: average slot-0 beacon-block size and blob count by half-year — block size grew ~60% as the reorg rate rose, the burden ePBS removes from the attestation-relevant block.](https://hackmd.io/_uploads/BJej7nS-7Gl.png)
+
 
 ## Back to the dial: what should Glamsterdam set?
 
@@ -147,7 +157,7 @@ deadline still collects most votes. Read them as risk exposure, not casualty cou
 
 Two reviewer points sharpen the 2s line — and the data sharpens them back. First, today's first-seen carries some relay/timing-game overhead a locally-built (or post-ePBS) block would not; but in our data that overhead is modest, not the second sometimes assumed — among *surviving* slot-0 blocks the relay-delivered ones are only ~**190ms** later at the median than locally-built ones, and lower-blob blocks are only marginally faster (42% vs 39% seen by 2s). Second, and more decisive: those at-risk shares are the *current* big-block regime, and ePBS sheds the payload, blobs, and BAL from the block attesters vote on, so the same proposers should land earlier after the fork. Both say the 2s exposure here **over-states** the post-ePBS world — which is the case for *measuring* 2s after Glamsterdam rather than assuming it now.
 
-![Figure 15: attestation arrival on the slot-31 parents of orphaned slot-0s (unaggregated single attestations — a participation proxy) — only ~29% of eventual voters are observed by 3s.](figures/fig_slow_attesters_scale.png)
+![Figure 15: attestation arrival on the slot-31 parents of orphaned slot-0s (unaggregated single attestations — a participation proxy) — only ~29% of eventual voters are observed by 3s.](https://hackmd.io/_uploads/B1kr9eWQMe.png)
 
 
 One more constraint argues against an aggressive cut, with a provenance caveat. Part of the budget is owed not to proposers but to **slow attesters**. 
