@@ -50,6 +50,69 @@ PROVENANCE = (
     "and without manual pebble compaction; state-actor is synthetically generated state."
 )
 
+# Facts mined from the three container_*.log files (geth's own stdout, 914/974/999
+# container lifecycles). Embedded as verified constants for the same reason the rest of
+# the container-log facts are: those logs are geth's testimony, not benchmarkoor's
+# measurements, and the report parses only the latter. Source: investigation-log.md §6.
+LOGMINE = [
+    ("container lifecycles", "914", "974", "999"),
+    ("journal at startup", "loaded", "loaded", 'FAILED — err="journal not found", 999/999'),
+    ("journal at shutdown", "380.15 MiB, layers=4248", "380.15 MiB, layers=4248",
+     "39.80 MiB, layers=3"),
+    ("triecache / statecache / buffer", "1023.00 MiB / 0.00 B / 256.00 MiB",
+     "1023.00 MiB / 0.00 B / 256.00 MiB", "1023.00 MiB / 0.00 B / 256.00 MiB"),
+    ("trie memory caches", "clean 1023.00 MiB, dirty 1.00 GiB",
+     "clean 1023.00 MiB, dirty 1.00 GiB", "clean 1023.00 MiB, dirty 1.00 GiB"),
+    ("db cache / handles / format", "2.00 GiB / 536,870,908 / v1",
+     "2.00 GiB / 536,870,908 / v1", "2.00 GiB / 536,870,908 / v1"),
+    ("snapshot / flat-state lines", "0", "0", "0"),
+    ("compaction / SST / level lines", "0", "0", "0"),
+    ("Unclean shutdown detected", "9140", "9740", "0"),
+]
+
+# Hypothesis, verdict, and what settled it. Order: dead first, then survivors, so the
+# report reads as elimination before explanation.
+DISCARDED = [
+    ("Larger or unique code takes a different read path", "dead",
+     "Under BALANCE geth reads one fixed-shape leaf — nonce, balance, storage root, code "
+     "hash. Code lives in a separate table and is never touched. Corroborated: the measured "
+     "CODE delta is ≈7 ms/Mgas for JUMPDEST and DIFF_MAX in <em>all three</em> databases."),
+    ("state-actor is missing the target accounts", "dead",
+     "value_sent=1 gas pricing separates existing from non-existing <em>within</em> each "
+     "database; compacted's own DIFF_MAX ÷ NON_EXISTING is 3.36/0.47 = 7.1×."),
+    ("The three runs did different amounts of work", "dead",
+     "<code>block.gas_used</code> is bit-identical across all three runs on 406/406 "
+     "common tests."),
+    ("CPU, thermal, or host contention", "dead",
+     "overhead_baseline median <code>execution_ms</code> is 33.1 / 33.8 / 32.9 ms."),
+    ("Time drift or warm-up over run position", "dead",
+     "compacted ÷ uncompacted tracks the account class measured (0.24–1.22×), not run "
+     "position."),
+    ("The generator dropped the large classes on a size cap", "dead",
+     "<code>specbuild/build.go:243</code> — the 2 GiB limit is a warning by design, the cap "
+     "is 64 GiB, and the YAML creates every class at 150,000."),
+    ("Different derived addresses between the two fixture bundles", "dead",
+     "Addresses derive from fixed constants — the Bittrex CREATE-preimage chain, sequential "
+     "EOAs from <code>0x1000</code>, <code>keccak256(\"random\")</code> — not from the "
+     "bundle hash."),
+    ("Snapshot / flat-state availability differs", "dead",
+     "Zero matches for <code>snapshot</code>, <code>generat</code>, <code>Rebuilding</code> "
+     "or <code>flat</code> in any of the three container logs, across windows spanning every "
+     "file. All three run <code>scheme=path</code>; no snapshot layer is involved."),
+    ("Trie cache sizing differs between the containers", "dead",
+     "Every tunable is byte-identical across the three runs — see the table above. No second "
+     "variant of either allocation line appears anywhere in 291,000 lines of log."),
+    ("Unclean-shutdown recovery repopulates memory", "dead",
+     "The counts are ten <em>static</em> 2025 timestamps replayed once per lifecycle "
+     "(914×10≈9140, 974×10≈9740); <code>crashesToKeep = 10</code> caps the list. "
+     "<code>NewShutdownTracker</code> is documented as having no side-effect and "
+     "<code>MarkStartup</code> only reports. No repair follows."),
+    ("On-disk layout changed by manual compaction", "parked",
+     "All three logs contain zero compaction, SST or level lines, which was this "
+     "hypothesis's stated kill condition. It survives as the only candidate for the "
+     "compacted-vs-uncompacted deltas, but nothing available evidences it."),
+]
+
 MODES = [
     "NON_EXISTING_ACCOUNT",
     "EXISTING_EOA",
@@ -947,15 +1010,19 @@ def main():
     w("</ul></details></div>")
 
     dm = DM
-    w("<div class=card><h3>H2 — DIFF_MAX leaves are memory-resident on jochemnet"
-      '<span class=chip>supported — inference, needs metrics scrape</span></h3>')
+    w("<div class=card><h3>H2 — DIFF_MAX leaves are served from memory on jochemnet"
+      '<span class=chip>tier confirmed from geth logs and source — per-class attribution '
+      'still inferred</span></h3>')
     w(f"<p>DIFF_MAX account leaves read at {fnum(us[dm]['c'],1)}&nbsp;µs (compacted) and "
       f"{fnum(us[dm]['u'],1)}&nbsp;µs (uncompacted) against {fnum(us[dm]['sa'],1)}&nbsp;µs on "
       "state-actor — while every other class on the same compacted database costs "
       f"~{fnum(us['EXISTING_CONTRACT_MINIMAL']['c'],0)}&nbsp;µs. Manual pebble compaction "
       "destroyed every other fast path in the uncompacted database but left this one intact. "
-      "Compaction rewrites SSTables on disk and cannot touch RAM, so a fast path that survives "
-      "it is not on disk: these leaves are served from memory.</p>")
+      "Compaction rewrites SSTables on disk and cannot touch RAM, so a fast path that "
+      "survives it is not on disk. <b>The tier is now identified</b> — see <em>Origin of "
+      "the divergence</em> below: jochemnet rehydrates a 380.15 MiB pathdb journal on every "
+      "restart, and with <code>statecache=0.00 B</code> it is the only warm tier that "
+      "exists.</p>")
     w(figure(*figs["compaction-dumbbell"]))
     w(figure(*figs["cost-curves"]))
     w("<details><summary>Evidence</summary><ul class=tight>")
@@ -1000,6 +1067,75 @@ def main():
       f"the {LABEL[miss_absent[0]]} run never executed it, while "
       + " and ".join(LABEL[k] for k in miss_ran)
       + " both did.</caption></table>")
+
+    # 7b. origin of the divergence
+    w("<h2>Origin of the divergence — what we discarded, and what survived</h2>")
+    w("<p>The framing above is the wrong way round, and correcting it is what made the "
+      "cause findable. state-actor is not the anomaly: it is the <em>uniform</em> run, "
+      f"costing {fnum(min(us[m]['sa'] for m in MODES),1)}–"
+      f"{fnum(max(us[m]['sa'] for m in MODES),1)}&nbsp;µs on every class including the "
+      "address range that exists in no database. jochemnet is the run with anomalously "
+      "<em>fast</em> classes. So the question is not why state-actor is slow but why "
+      "jochemnet is fast, and why manual compaction removed some of that speed but not "
+      "all of it.</p>")
+    w("<p>One deduction removes most candidate answers before any evidence is needed: "
+      "under BALANCE geth reads a single account leaf — nonce, balance, storage root, code "
+      "hash — whose shape does not change whether the account's code is one byte, a 24 KB "
+      "blob shared by 150,000 accounts, or a byte-unique 24 KB blob. Code lives in a "
+      "separate table that BALANCE never reads. <b>Structurally identical leaves cannot "
+      "differ 7× because of what they point at</b>, so the explanation has to be which "
+      "storage tier answers the read.</p>")
+    w("<h3>What geth's own logs say</h3>")
+    w("<table><tr><th>observation</th>" + db_headers(numeric=False) + "</tr>")
+    for row in LOGMINE:
+        w("<tr>" + "".join(f"<td>{esc(c)}</td>" for c in row) + "</tr>")
+    w("<caption>Mined from the three <code>container_*.log</code> files — geth's own "
+      "stdout across 914 / 974 / 999 container lifecycles, never parsed before this pass. "
+      "Every tunable is identical; the single configuration-level difference in the whole "
+      "corpus is whether a journal is found at startup.</caption></table>")
+    w("<h3>The read path that explains it</h3>")
+    w("<p><code>triedb/pathdb/journal.go:162</code> forks on exactly one condition. If the "
+      "journal loads, geth returns the reconstructed layer stack; if it does not, it logs "
+      "<code>Failed to load journal, discard it</code> and returns a <b>single disk layer "
+      "with an empty write buffer</b>. And <code>journal.go:197</code> shows the journal is "
+      "not metadata: it decodes straight into a live buffer, <b>rehydrating the "
+      "not-yet-written state</b>.</p>")
+    w("<p><code>disklayer.go:171</code> then reads tiers in order — write buffer, clean "
+      "state cache, disk. Because the measured <code>statecache</code> is "
+      "<b>0.00 B in all three runs</b>, <code>newDiskLayer</code> leaves the clean state "
+      "cache nil, so <b>the journal-restored buffer is the only warm tier that exists</b>. "
+      "A run without a journal therefore serves every account read from disk.</p>")
+    w("<h3>Cause</h3>")
+    w("<p><b>Proven.</b> state-actor's image ships with no pathdb journal, and the "
+      "benchmark restarts geth for every test, so all 999 lifecycles begin with an empty "
+      "buffer and no warm tier — hence one flat cost for every class. jochemnet's image "
+      "ships a 380.15 MiB journal holding 4,248 diff layers, rehydrated on every restart, "
+      "so part of its state answers from RAM. Manual compaction cannot touch that: the "
+      "journal is a separate file from the SSTables.</p>")
+    w("<p><b>This is a provenance artifact, not a property of either database.</b> The "
+      "jochemnet image was captured from a running geth that still held unflushed dirty "
+      "state — corroborated by the ten static 2025 unclean-shutdown markers baked into the "
+      "same image. state-actor's was synthesised by a tool that writes SSTables directly "
+      "and never runs a geth that would journal.</p>")
+    w("<p><b>Inferred, not proven.</b> That the fast classes are precisely the ones "
+      "resident in jochemnet's journal. The speed ordering on uncompacted — DIFF_MAX 2.4 &lt; "
+      "SAME_MAX 2.6 &lt; JUMPDEST 3.1 &lt; MINIMAL 3.2 &lt; EOA 8.3 &lt; NON_EXISTING "
+      "17.3&nbsp;µs — is exactly a hit-depth gradient over a 4,248-layer stack, and geth "
+      "meters that as <code>dirtyStateHitDepthHist</code>, but the journal's contents were "
+      "never read.</p>")
+    w("<p><b>Still open.</b> Why compaction cost uncompacted four of its five fast classes "
+      "while leaving DIFF_MAX at ~2&nbsp;µs, and why it made NON_EXISTING faster "
+      "(17.3 → 14.3&nbsp;µs). Both jochemnet runs load an identical journal, so the "
+      "diff-layer tier cannot be the differentiator; on-disk layout is the remaining "
+      "candidate and this corpus cannot evaluate it.</p>")
+    w("<h3>Hypotheses discarded, and what killed each</h3>")
+    w("<table><tr><th>hypothesis</th><th>verdict</th><th>what settled it</th></tr>")
+    for name, verdict, killer in DISCARDED:
+        cls = " good" if verdict == "dead" else ""
+        w(f"<tr><td>{name}</td><td class=\"n{cls}\">{verdict}</td><td>{killer}</td></tr>")
+    w("<caption>Eliminated first, from facts already verified, so no exploration was spent "
+      "on dead hypotheses. Full reasoning in "
+      "<code>investigation-log.md</code>.</caption></table>")
 
     # 8. refuted
     w("<details><summary>Four refuted hypotheses and what killed them</summary>")
@@ -1131,8 +1267,13 @@ def main():
     w("<h2>Next steps</h2><ol class=tight>")
     w("<li><code>eth_getCode</code> probe over sampled max_diff/max_same CREATE2 addresses in "
       "both databases — converts the existence argument from inference to direct read.</li>")
-    w("<li>Scrape geth metrics (<code>127.0.0.1:8008</code>, <code>trie/memcache/clean/*</code>) "
-      "per test to turn the H2 residency inference into a measurement.</li>")
+    w("<li>Scrape the meters geth already emits at "
+      "<code>127.0.0.1:8008/debug/metrics</code> — <code>dirtyStateHitMeter</code>, "
+      "<code>dirtyStateMissMeter</code>, <code>cleanStateHitMeter</code>, "
+      "<code>dirtyStateHitDepthHist</code> — per test. Those settle which classes sit in "
+      "the journal and at what depth, converting the last inference into a measurement. An "
+      "earlier draft named <code>trie/memcache/clean/*</code>; those are the wrong meters "
+      "for account reads.</li>")
     w("<li>Rerun state-actor on fixture bundle <code>6142626aac06abc4</code> to remove the "
       "bundle difference as an H1 candidate.</li>")
     w("<li>Record compaction state and journal/triediffs/triedirty size as an explicit benchmark "
