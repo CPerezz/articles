@@ -1,0 +1,6 @@
+# python
+__pycache__/
+*.pyc
+
+# os
+.DS_Store

@@ -1,0 +1,1033 @@
+{
+ "generated": "2026-08-26",
+ "runs": {
+  "c": {
+   "label": "compacted",
+   "run_id": "a20c0626",
+   "date": "2026-08-19",
+   "log": "data/benchmarkoor_logs_compacted_db.log"
+  },
+  "u": {
+   "label": "uncompacted",
+   "run_id": "eb893b14",
+   "date": "2026-08-18",
+   "log": "data/benchmarkoor_uncompacted_db.log"
+  },
+  "sa": {
+   "label": "state-actor",
+   "run_id": "9cef3be5",
+   "date": "2026-08-21",
+   "log": "data/benchmarkoor_logs_state_actor.log"
+  }
+ },
+ "counts": {
+  "common": 406,
+  "baseline": 165,
+  "clean": 175,
+  "value_sent_1": 66,
+  "gas_mismatches": 0
+ },
+ "us_per_lookup": {
+  "NON_EXISTING": {
+   "compacted": 14.3120836938182,
+   "uncompacted": 17.280064880000005,
+   "state-actor": 15.68409215809089
+  },
+  "EOA": {
+   "compacted": 15.148591940181802,
+   "uncompacted": 8.340649481272715,
+   "state-actor": 16.728455859818144
+  },
+  "MINIMAL": {
+   "compacted": 14.221958196727252,
+   "uncompacted": 3.1711191909090863,
+   "state-actor": 15.230496048181823
+  },
+  "SAME_MAX": {
+   "compacted": 13.826180912818183,
+   "uncompacted": 2.6263344805454563,
+   "state-actor": 15.253648895727261
+  },
+  "JUMPDEST": {
+   "compacted": 13.870721616818189,
+   "uncompacted": 3.1380675749090905,
+   "state-actor": 15.49495646754543
+  },
+  "DIFF_MAX": {
+   "compacted": 2.117613338454549,
+   "uncompacted": 2.44198378745455,
+   "state-actor": 16.32009975700002
+  }
+ },
+ "slope_ms_per_Mgas": {
+  "BALANCE": {
+   "NON_EXISTING": {
+    "compacted": 5.504647574545461,
+    "uncompacted": 6.646178800000001,
+    "state-actor": 6.032343137727265
+   },
+   "EOA": {
+    "compacted": 5.826381515454539,
+    "uncompacted": 3.2079421081818134,
+    "state-actor": 6.43402148454544
+   },
+   "MINIMAL": {
+    "compacted": 5.469983921818174,
+    "uncompacted": 1.2196612272727254,
+    "state-actor": 5.8578830954545476
+   },
+   "SAME_MAX": {
+    "compacted": 5.317761889545455,
+    "uncompacted": 1.010128646363637,
+    "state-actor": 5.8667880368181775
+   },
+   "JUMPDEST": {
+    "compacted": 5.3348929295454575,
+    "uncompacted": 1.206949067272727,
+    "state-actor": 5.959598641363627
+   },
+   "DIFF_MAX": {
+    "compacted": 0.8144666686363649,
+    "uncompacted": 0.9392245336363654,
+    "state-actor": 6.2769614450000075
+   }
+  },
+  "CALL": {
+   "NON_EXISTING": {
+    "compacted": 5.905610660454543,
+    "uncompacted": 7.056604971363648,
+    "state-actor": 6.282081830909091
+   },
+   "EOA": {
+    "compacted": 5.826372537727267,
+    "uncompacted": 3.25796752454546,
+    "state-actor": 6.412907744090912
+   },
+   "MINIMAL": {
+    "compacted": 5.712351170000004,
+    "uncompacted": 1.1439813649999997,
+    "state-actor": 5.904953550454537
+   },
+   "SAME_MAX": {
+    "compacted": 5.536420850000005,
+    "uncompacted": 1.3718128431818164,
+    "state-actor": 6.099375130000008
+   },
+   "JUMPDEST": {
+    "compacted": 13.135707506363643,
+    "uncompacted": 8.07476577045456,
+    "state-actor": 13.649600378636363
+   },
+   "DIFF_MAX": {
+    "compacted": 8.409258642272716,
+    "uncompacted": 6.4316845050000175,
+    "state-actor": 12.999997745454557
+   }
+  },
+  "CALLCODE": {
+   "MINIMAL": {
+    "compacted": 5.584447577272734,
+    "uncompacted": 1.3217282418181835,
+    "state-actor": 6.091580013636361
+   },
+   "SAME_MAX": {
+    "compacted": 5.7796188821212136,
+    "uncompacted": 1.4261433784848503,
+    "state-actor": 6.026292046060616
+   },
+   "JUMPDEST": {
+    "compacted": 13.210219159545485,
+    "uncompacted": 8.457061578636374,
+    "state-actor": 13.616423887272727
+   },
+   "DIFF_MAX": {
+    "compacted": 8.778121565909101,
+    "uncompacted": 6.472417827272726,
+    "state-actor": 13.04470114136364
+   }
+  }
+ },
+ "code_delta_ms_per_Mgas": {
+  "NON_EXISTING": {
+   "compacted": 0.4009630859090816,
+   "uncompacted": 0.410426171363647,
+   "state-actor": 0.2497386931818255
+  },
+  "EOA": {
+   "compacted": -8.977727271819447e-06,
+   "uncompacted": 0.050025416363646436,
+   "state-actor": -0.02111374045452763
+  },
+  "MINIMAL": {
+   "compacted": 0.24236724818183042,
+   "uncompacted": -0.07567986227272572,
+   "state-actor": 0.04707045499998941
+  },
+  "SAME_MAX": {
+   "compacted": 0.21865896045455013,
+   "uncompacted": 0.3616841968181794,
+   "state-actor": 0.2325870931818308
+  },
+  "JUMPDEST": {
+   "compacted": 7.800814576818185,
+   "uncompacted": 6.867816703181833,
+   "state-actor": 7.690001737272736
+  },
+  "DIFF_MAX": {
+   "compacted": 7.594791973636351,
+   "uncompacted": 5.492459971363652,
+   "state-actor": 6.72303630045455
+  }
+ },
+ "vs1_call_slope": {
+  "NON_EXISTING": {
+   "compacted": 0.46606542909091,
+   "uncompacted": 0.6735462800000009,
+   "state-actor": 0.9277058940909088
+  },
+  "EOA": {
+   "compacted": 6.550962317272728,
+   "uncompacted": 4.797466075000007,
+   "state-actor": 7.48939302909091
+  },
+  "MINIMAL": {
+   "compacted": 6.2989835390909,
+   "uncompacted": 3.7806724677272756,
+   "state-actor": 7.560374094545456
+  },
+  "SAME_MAX": {
+   "compacted": 6.635099372727273,
+   "uncompacted": 3.6925612472727325,
+   "state-actor": 7.506756229090897
+  },
+  "JUMPDEST": {
+   "compacted": 8.605849222272711,
+   "uncompacted": 5.457353542272725,
+   "state-actor": 9.807059075909073
+  },
+  "DIFF_MAX": {
+   "compacted": 3.362697902272725,
+   "uncompacted": 3.3369171022727224,
+   "state-actor": 9.616739572727267
+  }
+ },
+ "vs1_ratio_vs_own_non_existing": {
+  "NON_EXISTING": 1.0,
+  "EOA": 8.073025165405493,
+  "MINIMAL": 8.14953763116287,
+  "SAME_MAX": 8.091741441879085,
+  "JUMPDEST": 10.57130189468005,
+  "DIFF_MAX": 10.366151205874406
+ },
+ "baseline": {
+  "slope_ms_per_Mgas": {
+   "compacted": 0.12254014872727233,
+   "uncompacted": 0.1534941829090908,
+   "state-actor": 0.15401305666666687
+  },
+  "median_execution_ms": {
+   "compacted": 33.058415,
+   "uncompacted": 33.797698,
+   "state-actor": 32.944841
+  }
+ },
+ "agreement": {
+  "metric": "state-actor / compacted, slope ms per 1M gas",
+  "categories": [
+   {
+    "opcode": "BALANCE",
+    "account_mode": "NON_EXISTING",
+    "ratio": 1.0958636417746286
+   },
+   {
+    "opcode": "BALANCE",
+    "account_mode": "EOA",
+    "ratio": 1.1042911397887571
+   },
+   {
+    "opcode": "BALANCE",
+    "account_mode": "MINIMAL",
+    "ratio": 1.0709141341511366
+   },
+   {
+    "opcode": "BALANCE",
+    "account_mode": "SAME_MAX",
+    "ratio": 1.1032438380424836
+   },
+   {
+    "opcode": "BALANCE",
+    "account_mode": "JUMPDEST",
+    "ratio": 1.1170980786434257
+   },
+   {
+    "opcode": "CALL",
+    "account_mode": "NON_EXISTING",
+    "ratio": 1.0637480511499842
+   },
+   {
+    "opcode": "CALL",
+    "account_mode": "EOA",
+    "ratio": 1.1006690187703718
+   },
+   {
+    "opcode": "CALL",
+    "account_mode": "MINIMAL",
+    "ratio": 1.0337168312526088
+   },
+   {
+    "opcode": "CALL",
+    "account_mode": "SAME_MAX",
+    "ratio": 1.1016819882830986
+   },
+   {
+    "opcode": "CALL",
+    "account_mode": "JUMPDEST",
+    "ratio": 1.0391218266715945
+   },
+   {
+    "opcode": "CALLCODE",
+    "account_mode": "MINIMAL",
+    "ratio": 1.0908115671866139
+   },
+   {
+    "opcode": "CALLCODE",
+    "account_mode": "SAME_MAX",
+    "ratio": 1.0426798321775967
+   },
+   {
+    "opcode": "CALLCODE",
+    "account_mode": "JUMPDEST",
+    "ratio": 1.0307492799946265
+   }
+  ],
+  "exceptions": [
+   {
+    "opcode": "BALANCE",
+    "account_mode": "DIFF_MAX",
+    "ratio": 7.706836494008184
+   },
+   {
+    "opcode": "CALL",
+    "account_mode": "DIFF_MAX",
+    "ratio": 1.5459148420176467
+   },
+   {
+    "opcode": "CALLCODE",
+    "account_mode": "DIFF_MAX",
+    "ratio": 1.4860469911950545
+   }
+  ],
+  "range": [
+   1.0307492799946265,
+   1.1170980786434257
+  ],
+  "median": 1.0908115671866139
+ },
+ "per_gas_ratio": [
+  {
+   "gas_M": 100,
+   "tests": 13,
+   "median": 1.339326180009172,
+   "min": 1.250585714711937,
+   "max": 1.4299265306646354
+  },
+  {
+   "gas_M": 120,
+   "tests": 13,
+   "median": 1.3130673278856773,
+   "min": 1.2474887738147205,
+   "max": 1.3649620816783026
+  },
+  {
+   "gas_M": 140,
+   "tests": 13,
+   "median": 1.2775622688839061,
+   "min": 1.2151442995974697,
+   "max": 1.3267116518057165
+  },
+  {
+   "gas_M": 160,
+   "tests": 13,
+   "median": 1.2512513085074242,
+   "min": 1.1940931597115887,
+   "max": 1.3365115508238214
+  },
+  {
+   "gas_M": 180,
+   "tests": 13,
+   "median": 1.243825905304549,
+   "min": 1.173009222366305,
+   "max": 1.285552493642825
+  },
+  {
+   "gas_M": 200,
+   "tests": 13,
+   "median": 1.2283737679163527,
+   "min": 1.1881951264465145,
+   "max": 1.2898893316776054
+  },
+  {
+   "gas_M": 220,
+   "tests": 13,
+   "median": 1.2106742032928464,
+   "min": 1.171917657553125,
+   "max": 1.2517865279077163
+  },
+  {
+   "gas_M": 240,
+   "tests": 13,
+   "median": 1.1965528465627273,
+   "min": 1.1583364279426298,
+   "max": 1.2416725719449058
+  },
+  {
+   "gas_M": 260,
+   "tests": 13,
+   "median": 1.1952798984317852,
+   "min": 1.1550199770714815,
+   "max": 1.236755117838594
+  },
+  {
+   "gas_M": 280,
+   "tests": 13,
+   "median": 1.1940141495189318,
+   "min": 1.123532446632791,
+   "max": 1.235510509924989
+  },
+  {
+   "gas_M": 300,
+   "tests": 12,
+   "median": 1.1824095575888753,
+   "min": 1.1393283007320203,
+   "max": 1.2428696913643122
+  }
+ ],
+ "per_test_buckets": {
+  "diffmax": 33,
+  "flat": 92,
+  "other": 50
+ },
+ "worst_15": [
+  {
+   "account_mode": "DIFF_MAX",
+   "opcode": "BALANCE",
+   "gas_M": 160,
+   "mgas_per_sec": {
+    "compacted": 1417.972996318305,
+    "uncompacted": 843.449092039556,
+    "state-actor": 116.8358809458615
+   },
+   "ratio": 0.08239640758266903
+  },
+  {
+   "account_mode": "DIFF_MAX",
+   "opcode": "BALANCE",
+   "gas_M": 140,
+   "mgas_per_sec": {
+    "compacted": 1150.9848739108356,
+    "uncompacted": 960.2025322095435,
+    "state-actor": 114.73532292046649
+   },
+   "ratio": 0.09968447502756217
+  },
+  {
+   "account_mode": "DIFF_MAX",
+   "opcode": "BALANCE",
+   "gas_M": 120,
+   "mgas_per_sec": {
+    "compacted": 1072.9970950474974,
+    "uncompacted": 1055.1272100608837,
+    "state-actor": 107.61050092965384
+   },
+   "ratio": 0.10028964796488134
+  },
+  {
+   "account_mode": "DIFF_MAX",
+   "opcode": "BALANCE",
+   "gas_M": 180,
+   "mgas_per_sec": {
+    "compacted": 1204.2779630811224,
+    "uncompacted": 980.5668531626437,
+    "state-actor": 121.41935262545744
+   },
+   "ratio": 0.10082336167209131
+  },
+  {
+   "account_mode": "DIFF_MAX",
+   "opcode": "BALANCE",
+   "gas_M": 280,
+   "mgas_per_sec": {
+    "compacted": 1221.3075075825602,
+    "uncompacted": 1085.5612183446763,
+    "state-actor": 135.40769635700366
+   },
+   "ratio": 0.11087109144610749
+  },
+  {
+   "account_mode": "DIFF_MAX",
+   "opcode": "BALANCE",
+   "gas_M": 200,
+   "mgas_per_sec": {
+    "compacted": 1098.7110665815567,
+    "uncompacted": 1062.9392310603118,
+    "state-actor": 126.2244010427377
+   },
+   "ratio": 0.11488407178373326
+  },
+  {
+   "account_mode": "DIFF_MAX",
+   "opcode": "BALANCE",
+   "gas_M": 220,
+   "mgas_per_sec": {
+    "compacted": 1109.6744401856095,
+    "uncompacted": 1039.9030575839904,
+    "state-actor": 127.5466086604613
+   },
+   "ratio": 0.11494056638731559
+  },
+  {
+   "account_mode": "DIFF_MAX",
+   "opcode": "BALANCE",
+   "gas_M": 260,
+   "mgas_per_sec": {
+    "compacted": 1161.9384499006578,
+    "uncompacted": 979.1444964051718,
+    "state-actor": 134.87805593517842
+   },
+   "ratio": 0.11608020712862208
+  },
+  {
+   "account_mode": "DIFF_MAX",
+   "opcode": "BALANCE",
+   "gas_M": 240,
+   "mgas_per_sec": {
+    "compacted": 1123.995707092668,
+    "uncompacted": 1054.5467535702255,
+    "state-actor": 131.98135710922497
+   },
+   "ratio": 0.11742158468790642
+  },
+  {
+   "account_mode": "DIFF_MAX",
+   "opcode": "BALANCE",
+   "gas_M": 300,
+   "mgas_per_sec": {
+    "compacted": 1181.384950922942,
+    "uncompacted": 1071.3082657482416,
+    "state-actor": 140.33468522150872
+   },
+   "ratio": 0.11878827905491265
+  },
+  {
+   "account_mode": "DIFF_MAX",
+   "opcode": "BALANCE",
+   "gas_M": 100,
+   "mgas_per_sec": {
+    "compacted": 991.8292371077634,
+    "uncompacted": 1338.2094496519899,
+    "state-actor": 126.4873410242269
+   },
+   "ratio": 0.12752935313045616
+  },
+  {
+   "account_mode": "DIFF_MAX",
+   "opcode": "CALLCODE",
+   "gas_M": 100,
+   "mgas_per_sec": {
+    "compacted": 94.1797399728736,
+    "uncompacted": 103.82453491396102,
+    "state-actor": 44.84880182462795
+   },
+   "ratio": 0.47620434965679087
+  },
+  {
+   "account_mode": "DIFF_MAX",
+   "opcode": "CALL",
+   "gas_M": 100,
+   "mgas_per_sec": {
+    "compacted": 93.53125697911857,
+    "uncompacted": 97.91810372080897,
+    "state-actor": 44.950063299662816
+   },
+   "ratio": 0.4805886796720608
+  },
+  {
+   "account_mode": "DIFF_MAX",
+   "opcode": "CALL",
+   "gas_M": 200,
+   "mgas_per_sec": {
+    "compacted": 101.30285390880339,
+    "uncompacted": 113.67735585794235,
+    "state-actor": 52.96429673025375
+   },
+   "ratio": 0.5228312400550352
+  },
+  {
+   "account_mode": "DIFF_MAX",
+   "opcode": "CALLCODE",
+   "gas_M": 200,
+   "mgas_per_sec": {
+    "compacted": 99.63542700579197,
+    "uncompacted": 115.56914528408281,
+    "state-actor": 53.78482672530552
+   },
+   "ratio": 0.5398162916708223
+  }
+ ],
+ "census": {
+  "overhead_baseline/BALANCE/MINIMAL": 11,
+  "overhead_baseline/BALANCE/SAME_MAX": 11,
+  "overhead_baseline/BALANCE/JUMPDEST": 11,
+  "overhead_baseline/BALANCE/DIFF_MAX": 11,
+  "overhead_baseline/CALL/MINIMAL": 22,
+  "overhead_baseline/CALL/SAME_MAX": 22,
+  "overhead_baseline/CALL/JUMPDEST": 22,
+  "overhead_baseline/CALL/DIFF_MAX": 22,
+  "overhead_baseline/CALLCODE/MINIMAL": 11,
+  "overhead_baseline/CALLCODE/JUMPDEST": 11,
+  "overhead_baseline/CALLCODE/DIFF_MAX": 11,
+  "value_sent=0/BALANCE/NON_EXISTING": 11,
+  "value_sent=0/BALANCE/EOA": 11,
+  "value_sent=0/BALANCE/MINIMAL": 11,
+  "value_sent=0/BALANCE/SAME_MAX": 11,
+  "value_sent=0/BALANCE/JUMPDEST": 11,
+  "value_sent=0/BALANCE/DIFF_MAX": 11,
+  "value_sent=0/CALL/NON_EXISTING": 11,
+  "value_sent=0/CALL/EOA": 11,
+  "value_sent=0/CALL/MINIMAL": 11,
+  "value_sent=0/CALL/SAME_MAX": 11,
+  "value_sent=0/CALL/JUMPDEST": 11,
+  "value_sent=0/CALL/DIFF_MAX": 11,
+  "value_sent=0/CALLCODE/MINIMAL": 11,
+  "value_sent=0/CALLCODE/SAME_MAX": 10,
+  "value_sent=0/CALLCODE/JUMPDEST": 11,
+  "value_sent=0/CALLCODE/DIFF_MAX": 11,
+  "value_sent=1/CALL/NON_EXISTING": 11,
+  "value_sent=1/CALL/EOA": 11,
+  "value_sent=1/CALL/MINIMAL": 11,
+  "value_sent=1/CALL/SAME_MAX": 11,
+  "value_sent=1/CALL/JUMPDEST": 11,
+  "value_sent=1/CALL/DIFF_MAX": 11
+ },
+ "test_id_prefix": "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_",
+ "test_ids": {
+  "NON_EXISTING": [
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]"
+  ],
+  "EOA": [
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]"
+  ],
+  "MINIMAL": [
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]"
+  ],
+  "SAME_MAX": [
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]"
+  ],
+  "JUMPDEST": [
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]"
+  ],
+  "DIFF_MAX": [
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_100M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_120M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_140M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_180M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_200M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_220M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_260M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_280M]",
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_300M]"
+  ]
+ }
+}
