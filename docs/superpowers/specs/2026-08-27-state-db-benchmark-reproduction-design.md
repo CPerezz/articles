@@ -68,9 +68,26 @@ root-owned directory. The original runs used `mount_point=/schelk`.
   `mount_point`, runs `schelk restore -y`, verifies the mount. `Cleanup()` runs
   `schelk recover -y`. With `rollback_strategy: container-recreate` this happens
   **per iteration**.
-- A binary with schelk support is already built at `~/benchmarkoor/bin/benchmarkoor`
-  (commit `9b8a5d8`). The original runs used `v0.1.0-201-g1e0b9d4` — a different
-  commit; the delta must be reviewed and recorded as a possible confound.
+- The prebuilt binary at `~/benchmarkoor/bin/benchmarkoor` is commit `9b8a5d8`,
+  which is **53 commits OLDER** than the `1e0b9d4` the original runs used
+  (`git merge-base --is-ancestor 9b8a5d8 1e0b9d4` passes). It is **unusable for
+  this plan**: `promote_post_pre_runs` is absent from the tree entirely, runner
+  `PreRuns` support is absent, and `fixtures_url` is only partially wired (1
+  reference vs 5 at `1e0b9d4`). The jochemnet choreography cannot be expressed
+  against it.
+- **Build at `1e0b9d4`** by cross-compiling: `go.mod` declares `go 1.24.5` /
+  `toolchain go1.24.11`, and the workstation has `go1.24.11 darwin/arm64`, so
+  `GOOS=linux GOARCH=amd64 go build ./cmd/benchmarkoor` produces the binary
+  without installing Go on the host or building in a container. Verify with the
+  `version` subcommand (there is no `--version` flag — see `fcca6d2`).
+- The 53-commit gap contains machinery this plan depends on: `135f30c` (#296)
+  resolves the pre-run bundle inside the fixtures artifact, which is exactly how
+  the jochemnet tarball ships it; `0e1856a` (#297) keeps the client alive after a
+  container-recreate schelk promote; `93e70fc` (#298) skips the per-test pre-run
+  replay once the baseline already carries it; `2137e47` (#306) verifies the
+  datadir head for a bundle inside the fixtures artifact; `1e0b9d4` (#307) fixes
+  the replay anchor. Also `65c967f` (#300): a run that benchmarked nothing must
+  not exit 0 — a silent-failure guard worth having.
 - `ClientInstance.ExtraMounts` (`extra_mounts: [{source,target,read_only}]`) exists,
   consumed at `pkg/runner/lifecycle.go:268`.
 - `runner.benchmark.tests.filter` supports run-time fixture selection.
@@ -140,12 +157,19 @@ failure is attributable to the fixtures — which is the open state-actor questi
 
 - Archive and remove the stale `/var/lib/schelk/state.json`.
 - Install rootful podman; create the `benchmarkoor` network; verify the image pulls.
-- Read five behaviours out of the benchmarkoor source on the host (no toolchain
-  needed): whether pre-run execution is gated; whether promote fires with zero
-  `pre_runs`; whether promote fires after a **failed** pre-run; exactly what is
-  mounted into the container; how env expansion disables live reporting.
-- Compute the benchmarkoor `1e0b9d4` -> `9b8a5d8` delta off-host; record any change
-  to timing or run-loop semantics as a confound.
+- **Cross-compile benchmarkoor at `1e0b9d4`** on the workstation
+  (`GOOS=linux GOARCH=amd64`), scp it to the host, verify with the `version`
+  subcommand. The prebuilt `9b8a5d8` binary is not a fallback — it lacks
+  `promote_post_pre_runs` and runner `PreRuns` entirely.
+- Read five behaviours out of the benchmarkoor source at `1e0b9d4` (reading needs
+  no toolchain): whether pre-run execution is gated; whether promote fires with
+  zero `pre_runs`; whether promote fires after a **failed** pre-run; exactly what
+  is mounted into the container; how env expansion disables live reporting.
+- **Read `93e70fc` (#298) specifically** — "skip the per-test pre-run replay once
+  the baseline carries it". If it does what its subject says, the Phase 2/Phase 3
+  config split below is unnecessary and upstream's config can be used verbatim,
+  which is strictly more faithful. Confirm from the code, not the subject line;
+  keep the split as the fallback.
 - Download both fixture tarballs to `/data`.
 - **Static anchor check**: enumerate the actual fixture schema, then compare each
   bundle's anchor fields against the corresponding DB head. jochemnet is an
@@ -190,6 +214,14 @@ enabled here, and the resulting head **H** becomes the baseline for the full run
 
 Config: merged single YAML, `pre_runs` present, `promote_post_pre_runs: true`,
 `tests.filter` selecting ~5 fixtures.
+
+**Conditional on Phase 0's reading of `93e70fc` (#298).** If the runner at
+`1e0b9d4` already skips the per-test replay once the baseline carries it, then
+Phase 2 and Phase 3 share one unmodified upstream config and differ only by
+`tests.filter` — no `pre_runs` removal, no `promote_post_pre_runs` flip. That is
+the preferred outcome: fewer deviations, and the double-replay hazard is handled
+by the same code the original runs used. The split described in Phase 3 is the
+fallback for the case where #298 does not cover it.
 
 **Before the first promote, archive the pristine virgin to `/data`.** `promote`
 overwrites the virgin irreversibly and the original directory is already gone; the
@@ -378,7 +410,7 @@ carries information, and which one is fixed in advance.
 | `ancient/state` escaping rollback would cause silent drift | Kept inside the volume |
 | Leaky recover indistinguishable from signal | B1 sentinel hashes at #1/#100/last |
 | Wrong fork schedule yields valid-looking wrong numbers | Hard gate in Phase 0 |
-| benchmarkoor commit differs from the original | Delta reviewed and recorded in Phase 0 |
+| Prebuilt host binary silently lacks `promote_post_pre_runs` and `PreRuns` | Resolved: cross-compile `1e0b9d4`, the exact commit the original runs used; prebuilt `9b8a5d8` is not a fallback |
 | Different host from the original runs | Absolute numbers ruled out; only structure claimed |
 | state-actor built from a dirty tree | Its arm is a generalization test, never a reproduction |
 | Different fixture bundle per arm | Reproduced deliberately; named in C4; the expected follow-up |
