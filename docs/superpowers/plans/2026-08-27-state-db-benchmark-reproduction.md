@@ -35,8 +35,7 @@
 | `/root/bench/state-actor.yaml` (host) | merged runner config, state-actor arm |
 | `/root/bench/sentinels.txt` (host) | fixed sentinel file list + baseline sha256 |
 | `/schelk-vols/*.img` (host, on `/`) | loopback backing files for virgin/scratch |
-| `/ancient-store/jochemnet/24402727/chain` (host, on `/`) | hoisted chain freezer, bind-mounted read-only |
-| `/sa-store/` (host, on `/`) | state-actor datadir while the jochemnet arm runs |
+| `/data/sa-store/` (host, HDD) | state-actor datadir while the jochemnet arm runs |
 | `/data/bench-results/<arm>/` (host, HDD) | benchmarkoor results, off-mount |
 | `/data/archive/` (host, HDD) | pristine + promoted virgin archives |
 | `docs/superpowers/specs/2026-08-27-...-preregistration.md` (articles repo) | pre-registered predictions, committed before any run |
@@ -330,44 +329,49 @@ git log --oneline -1
 ## Task 7: Relocate both datadirs out of `/schelk` and build the jochemnet volume
 
 **Files:**
-- Move: `/schelk/state-actor` → `/sa-store`
-- Move: `.../chaindata/ancient/chain` → `/ancient-store/jochemnet/24402727/chain`
+- Move: `/schelk/state-actor` → `/data/sa-store` (HDD, frees 553 G of NVMe)
 - Create: `/schelk-vols/jochemnet-virgin.img`, `/schelk-vols/jochemnet-scratch.img`
 
 **Interfaces:**
 - Produces: a schelk mount at `/schelk` whose filesystem root contains `snapshots/geth/jochemnet/24402727/geth/...`, so that `source_dir=/schelk/snapshots/geth/jochemnet/24402727` resolves. Task 10's config depends on this exact layout.
 
-- [ ] **Step 1: Move state-actor out of the shadow path**
+**OPTION 1 (reverted from Option 2).** `extra_mounts` is an uncommitted local patch
+on the host checkout, absent from upstream at every commit, so the freezer cannot
+live outside the volume with the clean `1e0b9d4` binary. `ancient/` therefore stays
+inside, exactly as the original runs necessarily had it. There is no freezer hoist.
 
-Mounting schelk at `/schelk` hides every plain directory beneath it. Both moves are renames on one filesystem — instant, no copying.
+- [ ] **Step 1: Move state-actor off NVMe entirely**
 
-```bash
-tsh ssh root@stateless-bloatnet-benchmarks 'set -e; mkdir -p /sa-store && mv /schelk/state-actor /sa-store/ && ls /sa-store/state-actor/v1/geth/geth/'
-```
+Mounting schelk at `/schelk` hides every plain directory beneath it, so state-actor
+must leave regardless. Under Option 1 it goes to HDD rather than staying on `/`:
+the two 1.2 T volumes plus a 1.1 T datadir do not leave workable headroom
+otherwise (0.3 T vs 0.85 T free during an unattended 10 h run).
 
-Expected: `chaindata` listed.
-
-- [ ] **Step 2: Hoist the chain freezer**
-
-```bash
-tsh ssh root@stateless-bloatnet-benchmarks 'set -e
-A=/schelk/snapshots/geth/jochemnet/24402727/geth/chaindata/ancient
-mkdir -p /ancient-store/jochemnet/24402727
-mv $A/chain /ancient-store/jochemnet/24402727/chain
-mkdir -p $A/chain
-du -sh /ancient-store/jochemnet/24402727/chain $A/state
-du -sh /schelk/snapshots/geth/jochemnet/24402727'
-```
-
-Expected: `700G` chain, `6.0G` state, and the datadir now ~385 G. The empty `$A/chain` directory left behind is the mountpoint Task 10's `extra_mounts` targets.
-
-- [ ] **Step 3: Create the virgin loop file**
-
-Size from Task 4 step 2's measured overhead; 500 G gives ~115 G internal slack over 385 G of content.
+This is not additive work — Task 13 has to rsync the state-actor datadir into its
+own virgin volume anyway; sourcing that rsync from HDD instead of NVMe is the only
+difference, and it happens once.
 
 ```bash
 tsh ssh root@stateless-bloatnet-benchmarks 'set -e
-fallocate -l 500G /schelk-vols/jochemnet-virgin.img
+mkdir -p /data/sa-store
+rsync -aHAX --numeric-ids --info=progress2 /schelk/state-actor/ /data/sa-store/state-actor/
+du -sh /data/sa-store/state-actor
+rm -rf /schelk/state-actor
+df -h /'
+```
+
+Expected: ~553 G on `/data`, and `/` free rises from 1.6 T to ~2.15 T. Run under
+zellij — this is an HDD write, roughly an hour.
+
+- [ ] **Step 2: Create the virgin loop file**
+
+Measured ext4 overhead is 0.17% (`-m 0`), so a 1.2 T volume holds ~1.198 T usable
+against 1.1 T of content — roughly 98 G of internal slack for geth's writes
+between recovers.
+
+```bash
+tsh ssh root@stateless-bloatnet-benchmarks 'set -e
+fallocate -l 1200G /schelk-vols/jochemnet-virgin.img
 V=$(losetup --find --show /schelk-vols/jochemnet-virgin.img)
 echo "virgin=$V"
 mkfs.ext4 -q -m 0 -L jochemnet-virgin $V
@@ -375,7 +379,7 @@ mkdir -p /mnt/virgin && mount $V /mnt/virgin
 df -h /mnt/virgin'
 ```
 
-- [ ] **Step 4: Populate the virgin, mirroring the `/schelk`-relative path**
+- [ ] **Step 3: Populate the virgin, mirroring the `/schelk`-relative path**
 
 The volume root becomes `/schelk`, so the interior path must be `snapshots/geth/jochemnet/24402727/`.
 
@@ -388,36 +392,39 @@ rsync -aHAX --numeric-ids --info=progress2 \
 du -sh /mnt/virgin/snapshots/geth/jochemnet/24402727'
 ```
 
-Expected: ~385 G. Run this under zellij — it is tens of minutes.
+Expected: ~1.1 T including the 706 G freezer. Run under zellij — this is the long
+step, roughly an hour of NVMe-to-NVMe copying.
 
-- [ ] **Step 5: Verify the copy, then unmount**
+- [ ] **Step 4: Verify the copy, then unmount**
 
 ```bash
 tsh ssh root@stateless-bloatnet-benchmarks 'set -e
 D=/mnt/virgin/snapshots/geth/jochemnet/24402727/geth
 md5sum $D/triedb/merkle.journal
-test -d $D/chaindata/ancient/chain && echo "chain mountpoint present"
-test -d $D/chaindata/ancient/state && echo "state freezer inside volume"
+du -sh $D/chaindata/ancient/chain $D/chaindata/ancient/state
+ls $D/chaindata/*.sst | wc -l
 umount /mnt/virgin'
 ```
 
-Expected: md5 `5663fcb106f4d2bb42e4009a9ed0efa0`, both directory checks print. **Do not proceed if the md5 differs.**
+Expected: md5 `5663fcb106f4d2bb42e4009a9ed0efa0`, freezer 700 G + 6.0 G, 9184 SSTs.
+**Do not proceed if the md5 differs.**
 
-- [ ] **Step 6: Delete the original and create the scratch — the irreversible step**
+- [ ] **Step 5: Delete the original and create the scratch — the irreversible step**
 
 ```bash
 tsh ssh root@stateless-bloatnet-benchmarks 'set -e
 rm -rf /schelk/snapshots/geth/jochemnet/24402727
 df -h /
-fallocate -l 500G /schelk-vols/jochemnet-scratch.img
+fallocate -l 1200G /schelk-vols/jochemnet-scratch.img
 S=$(losetup --find --show /schelk-vols/jochemnet-scratch.img)
 echo "scratch=$S"
 df -h /'
 ```
 
-Expected: free space rises ~385 G after the delete, then falls ~500 G. Roughly 1.1 T free at the end.
+Expected: free rises ~1.1 T after the delete, then falls ~1.2 T. Roughly 0.85 T
+free at the end.
 
-- [ ] **Step 7: Initialise schelk**
+- [ ] **Step 6: Initialise schelk**
 
 ```bash
 tsh ssh root@stateless-bloatnet-benchmarks 'set -e
@@ -427,9 +434,9 @@ schelk init-from --virgin /dev/loopN --scratch /dev/loopM --ramdisk /dev/ram0 \
   --state-path /var/lib/schelk/state.json -y'
 ```
 
-Substitute the actual loop devices printed in steps 3 and 6. `init-from` adopts the pre-populated virgin and copies it to scratch — this is where a too-small ramdisk surfaces. If schelk rejects the ramdisk, `modprobe -r brd && modprobe brd rd_size=<larger>`, or raise `--granularity` to `65536`.
+Substitute the actual loop devices printed in steps 2 and 5. `init-from` adopts the pre-populated virgin and copies it to scratch — this is where a too-small ramdisk surfaces. If schelk rejects the ramdisk, `modprobe -r brd && modprobe brd rd_size=<larger>`, or raise `--granularity` to `65536`.
 
-- [ ] **Step 8: Confirm the mount and the resolvable source_dir**
+- [ ] **Step 7: Confirm the mount and the resolvable source_dir**
 
 ```bash
 tsh ssh root@stateless-bloatnet-benchmarks 'schelk status; ls /schelk/snapshots/geth/jochemnet/24402727/geth/'
@@ -551,10 +558,6 @@ runner:
         - --engine.maxreorgdepth=1024
         - --override.amsterdam=${AMSTERDAM_ACTIVATION_TS}
         - --debug.logslowblock=0
-      extra_mounts:
-        - source: /ancient-store/jochemnet/24402727/chain
-          target: /data/geth/chaindata/ancient/chain
-          read_only: true
 ```
 
 - [ ] **Step 2: Verify it parses**
@@ -630,10 +633,10 @@ echo "trie caches:"; grep -m1 "Allocated trie memory caches" $L'
 
 Expected: drop-cache lines present per iteration (A4); zero live-report attempts; ≥2 recover cycles; `cache=2.00GiB handles=536,870,908 version=v1` and `clean=1023.00MiB dirty=1.00GiB` (A2).
 
-- [ ] **Step 7: Verify the read-only ancient mount held (A5)**
+- [ ] **Step 7: Verify the freezer was not written (A5)**
 
 ```bash
-tsh ssh root@stateless-bloatnet-benchmarks 'find /ancient-store/jochemnet/24402727/chain -newermt "-2 hours" | head'
+tsh ssh root@stateless-bloatnet-benchmarks 'D=/schelk/snapshots/geth/jochemnet/24402727/geth/chaindata/ancient; find $D/chain -newermt "-2 hours" | head'
 ```
 
 Expected: no output. If geth failed to boot because the freezer was read-only, set `read_only: false` in the config, re-run, and hash the directory before/after instead.
