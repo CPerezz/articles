@@ -10,12 +10,12 @@ Everything needed to reproduce or re-cut the analysis lives in this folder.
 
 | Path | What |
 |---|---|
-| `state-db-perf-report.html` | The deliverable. Self-contained, zero JS, opens offline. |
+| `state-db-perf-report.html` | The deliverable. Zero JS, single file. Only external fetches are the site's Google-Font stylesheets (degrades to system monospace offline). |
 | `gen_state_db_report.py` | Parser, computations, and HTML/SVG/JSON emission. Python 3 stdlib only. |
 | `report_svg.py` | Inline-SVG primitives (scales, axes, dots, lines, bands). Has its own self-check. |
 | `data/benchmarkoor_*.log` | The three raw benchmarkoor run logs — the only inputs. |
 | `data/report_data.json` | Every computed value the report renders, for reuse in prose. |
-| `figures/fig_*.svg` | The four charts as standalone files, palette and dark-mode inlined. |
+| `figures/fig_*.svg` | The four charts as standalone files, site palette inlined (dark-only, no external fetches). |
 | `decision-log.md` | Ledger of the review passes: findings, rulings, and what each one cost. |
 
 ## Regenerate

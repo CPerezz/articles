@@ -408,103 +408,129 @@ def db_headers(after="", numeric=True):
 
 
 CSS = """
+/* Site theme — mirrors build_site.py CRT_VARS and the ARTICLE stylesheet so the
+   report reads as one of the site's pages. Dark-only, like the site. */
 :root {
-  --bg:#fff; --fg:#16181d; --muted:#5c6470; --line:#dfe3ea; --panel:#f6f8fb;
-  --accent:#2d5be3; --bad-bg:#fdecec; --bad-fg:#a4232b; --good-bg:#e9f7ee;
-  --good-fg:#1d6f3f; --barbg:#e3e8f0; --chip:#eef1f7;
-  --db-c:#1f6fb2; --db-u:#b8730a; --db-sa:#7a4fc0;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg:#14161a; --fg:#e6e9ee; --muted:#9aa4b2; --line:#2b2f37; --panel:#1b1e24;
-    --accent:#7ea1ff; --bad-bg:#3a1d20; --bad-fg:#ff9a9f; --good-bg:#16301f;
-    --good-fg:#7fd9a2; --barbg:#272c34; --chip:#232831;
-    --db-c:#6fb2e8; --db-u:#e8a83a; --db-sa:#b491f0;
-  }
+  --bg:#000000; --fg:#e2e6e2; --muted:#aab0aa; --dim:#5c645c; --line:#182818;
+  --panel:#0a120a; --accent:#33ff33; --green-dim:#28d128; --green-muted:#1a5a1a;
+  --bad-bg:#2a1214; --bad-fg:#ff9a9f; --good-bg:#0f2a12; --good-fg:#7fd98f;
+  --barbg:#182818; --chip:#0f1f0f;
+  --db-c:#6fb2e8; --db-u:#e8a83a; --db-sa:#b491f0;
+  --glow:rgba(51,255,51,.30);
+  --crt:'VT323',monospace; --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
 }
 * { box-sizing: border-box; }
 body {
-  background: var(--bg); color: var(--fg); max-width: 1100px; margin: auto;
-  padding: 28px 20px 80px;
-  font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-        "Helvetica Neue", Arial, sans-serif;
+  background: var(--bg); color: var(--fg); max-width: 960px; margin: auto;
+  padding: 28px 20px 80px; font: 15px/1.65 var(--mono);
+  -webkit-font-smoothing: antialiased;
 }
-h1 { font-size: 25px; margin: 0 0 6px; letter-spacing: -.2px; }
-h2 { font-size: 18px; margin: 34px 0 10px; }
-h3 { font-size: 15px; margin: 20px 0 8px; }
-.sub { color: var(--muted); font-size: 13.5px; margin: 0 0 4px; }
-code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-       font-size: .9em; background: var(--panel); padding: 1px 4px; border-radius: 4px; }
-table { border-collapse: collapse; width: 100%; margin: 10px 0 6px; font-size: 14px; }
-th, td { border-bottom: 1px solid var(--line); padding: 6px 9px; text-align: left;
-         vertical-align: middle; }
-th { font-weight: 600; font-size: 12.5px; text-transform: uppercase;
-     letter-spacing: .04em; color: var(--muted); }
-td.n, th.n { text-align: right; font-variant-numeric: tabular-nums;
-             font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
-td.bad { background: var(--bad-bg); color: var(--bad-fg); font-weight: 600; }
-td.good { background: var(--good-bg); color: var(--good-fg); font-weight: 600; }
-caption { caption-side: bottom; color: var(--muted); font-size: 13px;
-          text-align: left; padding: 8px 0 0; }
-.bar { background: var(--barbg); border-radius: 3px; height: 8px; width: 110px;
-       overflow: hidden; display: inline-block; }
-.bar > i { display: block; height: 100%; }
-.legend { display:flex; gap:18px; flex-wrap:wrap; margin:14px 0 24px; font-size:13.5px; }
+body::before { content:''; position:fixed; inset:0; z-index:100; pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,255,0,.006) 3px,rgba(0,255,0,.006) 6px); }
+body::after { content:''; position:fixed; inset:0; z-index:101; pointer-events:none;
+  background:radial-gradient(ellipse at center,transparent 62%,rgba(0,0,0,.45) 100%); }
+::selection { background: rgba(51,255,51,.22); color:#fff; }
+a { color: var(--green-dim); text-decoration: none; border-bottom: 1px solid rgba(51,255,51,.25); }
+a:hover { color: var(--accent); border-bottom-color: var(--accent); text-shadow: 0 0 6px var(--glow); }
+@media (prefers-reduced-motion: reduce){ *,*::before,*::after{animation-duration:.01ms!important} }
+.topbar { display:flex; justify-content:space-between; font-family:var(--crt);
+  font-size:1.05rem; color:var(--green-muted); margin-bottom:1.6rem; }
+.topbar a { border:none; color:var(--green-muted); }
+.topbar a:hover { color:var(--accent); }
+.eyebrow { font-family:var(--crt); letter-spacing:.22em; color:var(--accent); opacity:.55;
+  font-size:1rem; text-shadow:0 0 8px rgba(51,255,51,.2); margin-bottom:.5rem; }
+h1 { font-family:var(--crt); font-weight:400; color:var(--accent); line-height:1.06;
+  font-size:clamp(2rem,4.6vw,3rem); margin:0 0 6px;
+  text-shadow:0 0 7px var(--glow),0 0 24px rgba(51,255,51,.08); }
+.sub { color:var(--muted); font-size:13.5px; margin:0 0 4px; }
+.meta { font-size:.72rem; letter-spacing:.05em; color:var(--dim); border-top:1px solid var(--line);
+  border-bottom:1px solid var(--line); padding:.6rem 0; margin:14px 0 26px; }
+.meta .tag { color:var(--muted); }
+h2 { font-family:var(--mono); font-weight:700; color:var(--accent); font-size:19px;
+  margin:40px 0 10px; text-shadow:0 0 5px rgba(51,255,51,.18); }
+h2::after { content:''; display:block; height:1px; margin-top:.55rem; opacity:.3;
+  background:linear-gradient(90deg,var(--green-muted),transparent 65%); }
+h3 { font-weight:600; color:#d9ffd9; font-size:15.5px; margin:22px 0 8px; }
+h3::before { content:':: '; color:var(--green-muted); }
+code { font-family:var(--mono); font-size:.9em; background:rgba(51,255,51,.07);
+  border:1px solid var(--line); border-radius:3px; padding:.05em .35em; color:#bfeecf; }
+table { border-collapse:collapse; width:100%; margin:10px 0 6px; font-size:13.5px; line-height:1.55; }
+th, td { border:1px solid var(--line); padding:6px 9px; text-align:left; vertical-align:middle; }
+th { font-family:var(--crt); font-size:1.02rem; font-weight:400; letter-spacing:.05em;
+  color:var(--accent); background:rgba(51,255,51,.05); text-shadow:0 0 5px rgba(51,255,51,.15); }
+tr:nth-child(even) td { background:rgba(51,255,51,.02); }
+tr:hover td { background:rgba(51,255,51,.045); }
+td.n, th.n { text-align:right; font-variant-numeric:tabular-nums; }
+td.bad { background:var(--bad-bg); color:var(--bad-fg); font-weight:600; }
+td.good { background:var(--good-bg); color:var(--good-fg); font-weight:600; }
+caption { caption-side:bottom; color:var(--muted); font-size:12.5px; text-align:left;
+  padding:8px 0 0; line-height:1.55; }
+.bar { background:var(--barbg); border-radius:2px; height:8px; width:110px;
+  overflow:hidden; display:inline-block; }
+.bar > i { display:block; height:100%; }
+.legend { display:flex; gap:18px; flex-wrap:wrap; margin:14px 0 10px; font-size:13px; }
 .legend b { font-weight:600; }
-.sw { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:6px; }
+.sw { display:inline-block; width:10px; height:10px; border-radius:2px; margin-right:6px; }
 th.db { border-bottom-width:2px; }
-details { border: 1px solid var(--line); border-radius: 8px; padding: 4px 14px;
-          margin: 12px 0; background: var(--panel); }
-details[open] { padding-bottom: 12px; }
-summary { cursor: pointer; font-weight: 600; padding: 9px 2px; }
-summary::marker { color: var(--accent); }
-.card { border: 1px solid var(--line); border-radius: 8px; padding: 4px 18px 14px;
-        margin: 16px 0; }
-.card details { background: var(--bg); }
-.chip { display: inline-block; background: var(--chip); border: 1px solid var(--line);
-        border-radius: 999px; padding: 2px 10px; font-size: 12.5px;
-        color: var(--muted); vertical-align: middle; margin-left: 8px; }
-.note { color: var(--muted); font-size: 13.5px; }
-ul.tight li { margin: 5px 0; }
+details { border:1px solid var(--line); border-radius:2px; padding:4px 14px;
+  margin:12px 0; background:var(--panel); }
+details[open] { padding-bottom:12px; }
+summary { cursor:pointer; font-weight:600; color:#d9ffd9; padding:9px 2px; }
+summary::marker { color:var(--accent); }
+.card { border:1px solid var(--line); border-left:3px solid var(--green-muted);
+  border-radius:2px; padding:4px 18px 14px; margin:16px 0; background:var(--panel); }
+.card details { background:var(--bg); }
+.chip { display:inline-block; background:var(--chip); border:1px solid var(--green-muted);
+  border-radius:3px; padding:2px 10px; font-size:12px; color:var(--muted);
+  vertical-align:middle; margin-left:8px; }
+.note { color:var(--muted); font-size:13px; }
+ul.tight { list-style:none; padding-left:0; }
+ul.tight li { position:relative; padding-left:1.3rem; margin:5px 0; }
+ul.tight li::before { content:'▸'; position:absolute; left:0; color:var(--green-dim); }
+ol.tight li { margin:5px 0; }
+ol.tight li::marker { color:var(--green-dim); }
 .tip { position:relative; border-bottom:1px dotted var(--muted); cursor:help; }
 .tip > .bub { display:none; }
 .tip:hover > .bub, .tip:focus > .bub, .tip:focus-within > .bub { display:block; }
 .bub { position:absolute; left:0; top:1.7em; z-index:9; width:360px; max-width:70vw;
-       background:var(--bg); color:var(--fg); border:1px solid var(--line);
-       border-radius:8px; padding:10px 12px; font-size:13px; line-height:1.45;
-       font-weight:400; text-align:left; white-space:normal;
-       box-shadow:0 8px 24px rgba(0,0,0,.22); }
-.bub b { display:block; margin-bottom:4px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
-.bub .src { display:block; margin-top:6px; color:var(--muted); font-size:12px; }
-svg.chart { width:100%; height:auto; margin:6px 0 2px; overflow:visible;
-            font:11px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  background:#050805; color:var(--fg); border:1px solid var(--green-muted); border-radius:3px;
+  padding:10px 12px; font-size:12.5px; line-height:1.5; font-weight:400; text-align:left;
+  white-space:normal; box-shadow:0 0 18px rgba(51,255,51,.10); }
+.bub b { display:block; margin-bottom:4px; font-family:var(--mono); }
+.bub .src { display:block; margin-top:6px; color:var(--dim); font-size:11.5px; }
+svg.chart { width:100%; height:auto; margin:6px 0 2px; overflow:visible; font:11px var(--mono); }
 svg.chart text { fill:var(--fg); }
 svg.chart text.tick, svg.chart text.ax { fill:var(--muted); }
 svg.chart text.big { font-size:12px; font-weight:600; }
-figure { margin:14px 0 6px; }
-figcaption { color:var(--muted); font-size:13px; margin-top:4px; }
-pre.idpre { background:var(--panel); border:1px solid var(--line); border-radius:6px;
-            padding:8px 10px; overflow-x:auto; font-size:11.5px; line-height:1.5;
-            white-space:pre-wrap; word-break:break-all; }
+figure { margin:16px 0 8px; border:1px solid var(--line); background:#050805; padding:10px 12px; }
+figure:hover { border-color:var(--green-muted); box-shadow:0 0 22px rgba(51,255,51,.06); }
+figcaption { color:var(--muted); font-size:12.5px; margin-top:6px; line-height:1.55; }
+pre.idpre { background:#050805; border:1px solid var(--line); border-radius:3px;
+  padding:8px 10px; overflow-x:auto; font-size:11.5px; line-height:1.5;
+  white-space:pre-wrap; word-break:break-all; }
+.endbar { margin-top:48px; padding-top:1.2rem; border-top:1px solid var(--line);
+  font-family:var(--crt); font-size:1rem; color:var(--green-muted);
+  display:flex; justify-content:space-between; flex-wrap:wrap; gap:.6rem; }
+.endbar a { border:none; }
+.cursor { display:inline-block; width:.5em; height:.9em; background:var(--accent);
+  vertical-align:-2px; margin-left:2px; animation:blink 1s step-end infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 """
 
 
 # The standalone .svg files carry no page around them, so the chart variables and
-# text rules have to travel inside each file. Both palettes are derived from CSS
+# text rules have to travel inside each file. The palette is derived from CSS
 # above rather than restated, so a colour change here cannot drift from the report.
 def _css_vars(block):
     return dict(re.findall(r"(--[a-z-]+):\s*(#[0-9a-fA-F]{3,8})", block))
 
 
-SVG_VARS = (
-    _css_vars(re.search(r":root \{(.*?)\}", CSS, re.S).group(1)),
-    _css_vars(re.search(r"prefers-color-scheme: dark.*?:root \{(.*?)\}", CSS, re.S).group(1)),
-)
-assert all("--db-c" in v and "--accent" in v for v in SVG_VARS), \
+SVG_VARS = _css_vars(re.search(r":root \{(.*?)\}", CSS, re.S).group(1))
+assert "--db-c" in SVG_VARS and "--accent" in SVG_VARS, \
     "chart palette no longer derivable from CSS"
 
 SVG_TEXT_CSS = (
-    'svg{font:11px -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}'
+    "svg{font:11px 'IBM Plex Mono',ui-monospace,Menlo,monospace}"
     'text{fill:var(--fg)}text.tick,text.ax{fill:var(--muted)}'
     'text.big{font-size:12px;font-weight:600}'
 )
@@ -517,13 +543,12 @@ def figure(svg, caption):
 def standalone_svg(svg):
     """Same chart markup, wrapped so the file renders on its own in any viewer.
 
-    In the report the page supplies the background; a bare .svg does not, so a
-    dark-scheme viewer would otherwise paint light text onto its own white page.
-    The file carries its own background rect to stay legible either way.
+    In the report the page supplies the background; a bare .svg does not, so the
+    file carries its own background rect plus the site palette (dark, like the
+    site — the report is dark-only).
     """
-    light, dark = ("".join(f"{k}:{v};" for k, v in v.items()) for v in SVG_VARS)
-    style = (f"<style>svg{{{light}}}{SVG_TEXT_CSS}"
-             f"@media(prefers-color-scheme:dark){{svg{{{dark}}}}}</style>")
+    vars_css = "".join(f"{k}:{v};" for k, v in SVG_VARS.items())
+    style = f"<style>svg{{{vars_css}}}{SVG_TEXT_CSS}</style>"
     head, rest = svg.split(">", 1)
     return (f'{head} xmlns="http://www.w3.org/2000/svg">{style}'
             f'<rect width="100%" height="100%" fill="var(--bg)"/>{rest}')
@@ -911,11 +936,26 @@ def main():
 
     w("<!doctype html><html lang=en><head><meta charset=utf-8>")
     w('<meta name=viewport content="width=device-width,initial-scale=1">')
+    w('<meta name="description" content="Identical EEST bloatnet runs report wildly '
+      'different MGas/s on three geth databases — the cause is a 380 MiB pathdb '
+      'journal shipped inside one snapshot, a provenance artifact rather than a '
+      'property of either database.">')
+    w('<link rel="preconnect" href="https://fonts.googleapis.com">'
+      '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
+      '<link href="https://fonts.googleapis.com/css2?family=VT323&'
+      'family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" '
+      'rel="stylesheet">')
     w("<title>State-DB performance divergence — benchmarkoor bloatnet runs</title>")
     w(f"<style>{CSS}</style></head><body>")
 
     # 1. header
+    w('<div class=topbar><a href="../">&larr; all articles</a>'
+      '<span>EXECUTION · STATE DB</span></div>')
+    w('<div class=eyebrow>// REPORT</div>')
     w("<h1>State-DB performance divergence — benchmarkoor bloatnet runs</h1>")
+    w('<div class=meta><span class=tag>Ethereum · geth · pathdb · benchmarking</span> · 2026 · '
+      '<a href="https://github.com/CPerezz/articles/tree/main/state-db-perf-divergence">'
+      'reproducible pipeline &amp; data &rarr;</a></div>')
     w(f"<p class=sub>{len(common)} tests common to all three runs · generated {today}</p>")
     w("<div class=legend>")
     for k, (label, var) in DB.items():
@@ -1282,6 +1322,10 @@ def main():
       "cache counters).</li>")
     w("</ol>")
 
+    w('<div class=endbar><a href="../">&larr; all articles</a>'
+      '<a href="https://github.com/CPerezz/articles/tree/main/state-db-perf-divergence">'
+      'source &amp; data</a></div>')
+    w('<span class=cursor style="position:fixed;bottom:1.4rem;right:1.4rem;z-index:6"></span>')
     w("</body></html>")
 
     def rel(path):
