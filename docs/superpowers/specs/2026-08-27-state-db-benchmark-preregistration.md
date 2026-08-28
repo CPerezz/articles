@@ -152,3 +152,92 @@ Restore fell to **17.3 s** and the steady-state cycle to **38.2 s/test** (restor
 17.3 s, container+boot ~10 s, test 3.7-11.1 s, stop ~6.4 s) — against the
 original's 25.1 s/test. The residual 1.5× is attributed to loop devices over a
 shared RAID1 pair rather than dedicated raw block devices.
+
+## Methodology correction (2026-08-28, operator ruling)
+
+The person who produced the original results confirmed the compaction protocol:
+**compact once after the pre-runs, not after every test's setup payload.** That
+is what the runs now do.
+
+The reasoning behind the question was sound — a setup payload's writes land in
+the memtable and shallow LSM levels, so the accounts the benchmark then reads
+are cheaper to find than the cold bottom-level accounts it means to measure, and
+dropping the page cache does not fix that because it is on-disk level placement,
+not cache residency. It simply is not what the original protocol did.
+
+What was actually applied:
+
+- **Baseline compacted once after the pre-run, then promoted.** `geth db compact`
+  on the post-pre-run head took 413 s and took the datadir from 9,346 to 8,438
+  SSTs; `schelk promote` then copied 147.82 GB in 3m32s at 714 MB/s to make it
+  the baseline every test restores to. This removes the *larger* warming source:
+  7,736 blocks of pre-run writes sitting in shallow levels.
+- **No per-test compaction.** Verified in the run log: occurrences of
+  "Compacted chain database" = 0.
+- **state-actor gets no compaction at all** — it has no pre-runs and no setup
+  transactions, so there is nothing to undo, and it is benchmarked in the shape
+  state-actor produced it, as the original did.
+
+A per-test compaction path was built and measured before the ruling arrived. It
+remains in the binary but is **disabled**: `benchmarkoor
+v0.1.0-201-g1e0b9d4-compact` calls `debug_chaindbCompact` between setup and test
+only when `BENCHMARKOOR_COMPACT_BETWEEN_STEPS=1`, which is not set. Measured cost
+was 21-26 s per test (~49 h per arm). Retained because it is the mechanism any
+future "is setup warming the measurement?" experiment would need.
+
+### Recorded asymmetry
+
+jochemnet is fully L6-compacted; state-actor is in whatever LSM shape its
+generator left. This asymmetry existed in the original runs too, so reproducing
+it is faithful — but it is part of what the cross-arm comparison measures and
+must not be read as a pure database-engine difference.
+
+## Storage characterisation (why this host is 1.4x slower)
+
+Measured across 142 real tests, against the original runs' logs:
+
+| phase | ours | original |
+| --- | --- | --- |
+| `schelk restore` | 17.8 s median | 14.6-16.5 s |
+| boot (ready -> executing) | 9.2 s median | — |
+| full cycle | 35.3 s median | 25.1 s |
+| projected 1463 tests | 14.3 h | 10.2 h |
+
+The hardware is not the constraint: 2x Samsung MZQL23T8HCLS (PM9A3) NVMe,
+`dd` to md2 sustains 1.9 GB/s. The gap is structural to how schelk had to be
+installed here:
+
+- `md2` is **RAID1**, so every write goes to both drives — write bandwidth is one
+  drive's worth.
+- virgin and scratch are loop files on that **same** pair, so `recover` reads
+  virgin while writing scratch on the same spindles. schelk's own docs assume two
+  *separate* block devices; this host has no spare partitions, everything is
+  inside md2/md3.
+- loop -> ext4 indirection that raw block devices do not have.
+
+`schelk restore` is nonetheless already at near-parity, so the schelk layer is
+not where the time goes; the remainder is boot+test+stop. Fixing the layout would
+mean breaking the root mirror, which is not worth 1.4x.
+
+## Incident: aborted run at test 142 of 1463
+
+The first full attempt aborted with `could not prepare the client for 3
+consecutive tests`, root cause `Failed to unmount /schelk: target is busy`.
+
+Self-inflicted: a watchdog was running `sha256sum -c` sentinel checks against the
+live mount. Those open file handles blocked `schelk recover`'s unmount, and
+benchmarkoor's #299 guard correctly aborted the suite. No data was damaged — B1
+came back 20/20 and the baseline was intact.
+
+Two rules now enforced in the orchestrator: **nothing may touch /schelk while a
+run is live** (in-flight monitoring is log-parsing only, B1 runs after the process
+exits), and only **one** controller process runs at a time.
+
+### Sentinel set corrected
+
+The original set included `CURRENT`, `MANIFEST-*` and `OPTIONS-*`. Pebble mints a
+new MANIFEST and OPTIONS and rewrites CURRENT on *every* DB open, which under
+`container-recreate` is every test, so those three produced a false B1 failure
+(3/25) while all 20 SSTs passed. Sentinels are now **SSTs only** — the only files
+immutable once written, and therefore the only ones that can witness a leaky
+recover.
