@@ -75,8 +75,17 @@ everything else: the different fixture bundles and the different host.
   parameterisation — identity only, not magnitude.
 - **C4** The 13 non-DIFF_MAX categories cluster in a narrow cross-arm band. Report:
   [1.031, 1.117]. Band = that interval widened by **±3σ**, where σ is measured at
-  the smoke from 3-5 repeats of one non-DIFF_MAX fixture. **The rule is fixed now;
-  only the numeric value of σ is filled in later.** Directional and confounded.
+  the smoke from 3-5 repeats of one non-DIFF_MAX fixture. Directional and
+  confounded.
+
+  **σ MEASURED 2026-08-28** (T10, 5 repeats of BALANCE ×
+  EXISTING_CONTRACT_MINIMAL @160 Mgas, jochemnet arm, granularity 65536):
+  variant a — n=5, mean 72.83 MGas/s, sd 2.55, **CV 3.50%**;
+  variant b — n=5, mean 313.73 MGas/s, sd 17.27, **CV 5.51%**.
+  A cross-arm ratio combines two independent measurements, so
+  σ_ratio ≈ √(0.035² + 0.055²) ≈ 6.5%, giving ±3σ ≈ ±19.6% and a C4 band of
+  approximately **[0.83, 1.34]**. Wide, but it is the honest noise floor of this
+  host and it was fixed before any full run.
 - **C5** Instrumentation defects reproduce: negative `timing.execution_ms` on
   value-transfer blocks, and constant `state_reads`/`state_writes` per block shape.
   Same geth build, so these should reappear; bundle-independent.
@@ -102,3 +111,44 @@ host — all push toward *less* divergence.
   journal-provenance as the sole root cause.
 
 Only one outcome carries information. Which one is fixed here, in advance.
+
+## T10 smoke results (2026-08-28) — recorded before the full runs
+
+- **A1 PASS, exact.** geth logged `Persisted dirty state to file
+  path=/data/geth/triedb/merkle.journal size=380.15MiB` with `layers=4248` — the
+  report's published pair to the digit, against a prediction of ±10%. A second
+  observation read 380.23 MiB / layers=4246. The promoted baseline H therefore
+  carries journal 398,702,082 B, md5 `bd14b81952c22c6f5f341389c2de33b7`.
+- **A2 PARTIAL.** `cache=2.00GiB`, `version=v1`, `clean=1023.00MiB dirty=1.00GiB`
+  all match. `handles=524,288` does NOT match the original's `536,870,908`: this
+  host's kernel caps NOFILE at 1,048,576 where the original's allowed
+  1,073,741,816. Functionally irrelevant (9,346 SSTs << 524,288 handles) but
+  recorded as an environmental deviation.
+- **A4 PASS.** Silent at `log_level: info` because the success path logs at Debug;
+  failure logs at Warn and there were zero. Verified empirically as root: `Cached`
+  fell 537,528 kB → 365,420 kB on write to `/proc/sys/vm/drop_caches`.
+- Tests passed 2/2; `schelk restore`/`recover` fired once per test as
+  container-recreate requires.
+- **Choreography confirmed.** The second invocation logged `Pre-run bundle already
+  applied to this datadir; skipping the replay` and `... nothing to promote`, so
+  the full run reuses ONE unmodified config. The Phase 2/3 split is not needed.
+- **`ancient/chain` is NOT immutable.** It grew 700 G → 701 G during the pre-run:
+  advancing the head 7,736 blocks pushes blocks past geth's 90,000-confirmation
+  freezer threshold. Option 2 (freezer hoisted outside the volume, read-only)
+  would therefore have failed outright or drifted silently. Option 1 is not merely
+  the faithful choice, it is the only correct one for this workload.
+
+## Recorded deviation: dm-era granularity 4096 → 65536
+
+At the default 4096, `schelk restore` cost **173 s** per test against the original
+runs' measured **14.6-16.5 s**, making a 1463-test arm ~74 h. Diagnosis by
+measurement, not assumption: a restore with a clean scratch took only 17.9 s, so
+the cost was data-proportional dirty-block copying (every test's geth shutdown
+writes the ~380 MiB journal plus up to 1 GiB of dirty trie cache), issued as ~4 KB
+random I/O across two loop devices sharing one RAID1 pair.
+
+Re-initialised with `--granularity 65536` (virgin, and therefore H, preserved).
+Restore fell to **17.3 s** and the steady-state cycle to **38.2 s/test** (restore
+17.3 s, container+boot ~10 s, test 3.7-11.1 s, stop ~6.4 s) — against the
+original's 25.1 s/test. The residual 1.5× is attributed to loop devices over a
+shared RAID1 pair rather than dedicated raw block devices.
