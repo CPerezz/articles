@@ -50,8 +50,9 @@ any run:
   **Sentinel set**, fixed once at baseline and reused unchanged within an arm:
   `CURRENT`, `MANIFEST-*`, `OPTIONS-*`, `triedb/merkle.journal` (jochemnet only),
   and the 20 largest `.sst` files at baseline, recorded by path and sha256 in
-  `/root/bench/sentinels.txt` (jochemnet, 24 entries) and
-  `/root/bench/sa-sentinels.txt` (state-actor, 23 entries).
+  `/root/bench/sentinels.txt` (jochemnet, **25 entries** as built — the datadir
+  carries two `OPTIONS-*` files, not one) and `/root/bench/sa-sentinels.txt`
+  (state-actor, count recorded when built at Task 13).
 - **B2** |Spearman ρ| between per-test residual and iteration index < 0.2.
 - **B3** `recover` duration shows no monotonic growth beyond 2× first-decile to
   last-decile.
