@@ -1,3 +1,12 @@
+> **ERRATUM (2026-08-30, post-adjudication).** The "Interpretation" section
+> below is **retracted** — see `2026-08-30-adjudication-and-claim-table.md`.
+> Adversarial review, verified against raw telemetry, showed the opposite:
+> the pre-run deterministically REWRITES the journal (380.15 MiB / 4248
+> layers, present at every one of 1463 jochemnet boots), and jochemnet
+> DIFF_MAX tests read ~12.6 kB/Mgas from disk vs ~19 MB/Mgas for every other
+> mode — journal-residency is the CONFIRMED proximate mechanism, not a
+> refuted one. The measured PASS results (A1-A5, B1-B5, C1-C6) stand.
+
 # Task 16 — pre-registration evaluation and independent re-derivation
 
 Both arms complete 2026-08-30T03:11:40+02:00. jochemnet: 1463/1463, 0 failed,
