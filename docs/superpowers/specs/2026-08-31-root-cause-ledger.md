@@ -55,3 +55,30 @@ pre-run blocks stay in the journal's layer window; earlier ones are flushed).
 Predicts: DIFF_MAX deploys sit in late pre-run blocks (≥ 24406217), others
 earlier; code bytes bypass the journal → CALL's partial 2.8× (leaf RAM, 24KB
 code disk) is explained.
+## R2 — When did the pre-run deploy each class?
+
+**Hypothesis** (from R1): DIFF_MAX receivers were deployed in the pre-run's
+last ≤4248 blocks, so their leaves live in the journal's layer window;
+earlier classes were flushed to disk.
+
+**Test**: stream all 15,472 payloads of the 9.4 GB pre-run bundle; classify
+every create2-factory tx by initcode keccak (pure-python; 5 distinct
+initcodes total); report per-class deploy block ranges vs the window
+(head 24410463, window ≥ 24406216).
+
+**Result**: MINIMAL 100k deploys in blocks 24402731..24402749 (flushed);
+SAME_MAX 100k in 24402749..24406595 (only the last ~9.9k salts in-window);
+**DIFF_MAX 100k in 24406595..24410441 — entirely in-window**. Benchmark
+calldata decodes to salt ranges ~0..54k, so the in-window SAME_MAX tail
+(salts ~90k+) is never read — consistent with SAME_MAX measuring disk-cold.
+Plus the two EIP-8282 predeploys at 24402729.
+
+**Verdict**: CONFIRMED. The class selector is deploy order: the journal
+holds the last 4248 blocks of trie writes, and only DIFF_MAX's leaves were
+written there. Explains the leaf/code split too (code goes straight to
+pebble; only trie nodes ride the journal → CALL 2.8× vs BALANCE 23×).
+
+**New anomaly**: zero factory deploys match H_jumpdest anywhere in the
+bundle. Either JUMPDEST receivers were created via internal calls (invisible
+to calldata scanning) or jochemnet's JUMPDEST benchmarks read non-existent
+accounts. R3's live-geth probe will settle it (getCode on derived addresses).
