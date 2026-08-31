@@ -82,3 +82,80 @@ pebble; only trie nodes ride the journal → CALL 2.8× vs BALANCE 23×).
 bundle. Either JUMPDEST receivers were created via internal calls (invisible
 to calldata scanning) or jochemnet's JUMPDEST benchmarks read non-existent
 accounts. R3's live-geth probe will settle it (getCode on derived addresses).
+## R3 — The discriminating experiment: journal present vs deleted
+
+**Hypothesis**: DIFF_MAX leaves are served from the pathdb journal loaded at
+boot; without the journal they are not merely slow — they do not exist
+(R2 showed the disk layer sits at ~24406217, below DIFF_MAX's first deploy).
+
+**Test**: rebuild the exact final-run baseline from the promoted archive
+(verified byte-exact: ssts=8438, journal 398,702,082, md5 bd14b819…); boot
+the benchmark geth image directly on the schelk scratch; per class, drop OS
+caches then 150 sequential cold `eth_getBalance` + `getCode` + `getProof`,
+recording wall time and geth's `/proc/<pid>/io` read_bytes. Then
+`schelk recover`, delete `triedb/merkle.journal`, boot again, repeat.
+
+**Probe A — journal present (head 24410463):**
+
+| class | ms/call | disk read | code | proof nodes |
+| --- | --- | --- | --- | --- |
+| MINIMAL | 1.12 | 3.5 MB | 1 B | 9 |
+| SAME_MAX | 1.06 | 2.9 MB | 24576 B | 8 |
+| JUMPDEST | 1.07 | 2.8 MB | 24576 B | 8 |
+| **DIFF_MAX** | 0.65 | **0.0 MB** | 24576 B | 8 |
+| EOA | 1.00 | 2.6 MB | 0 (bal>0) | 9 |
+| NON_EXISTING | 0.97 | 2.5 MB | 0 | 8 |
+
+Equal proof depths kill any trie-depth explanation. JUMPDEST contracts exist
+(R2's "missing deploys" were internal calls, invisible to calldata scans).
+
+**Probe B — journal deleted:** geth logs "Failed to load journal, discard it"
+and the head rewinds to **24406217 — exactly the disk-layer block predicted
+by R2's window math**. Then:
+
+| class | ms/call | disk read | code |
+| --- | --- | --- | --- |
+| MINIMAL | 1.18 | 7.2 MB | 1 B |
+| SAME_MAX | 1.27 | 6.5 MB | 24576 B |
+| JUMPDEST | 1.17 | 6.8 MB | 24576 B |
+| **DIFF_MAX** | 1.17 | 5.2 MB | **0 B — the accounts no longer exist** |
+| EOA | 1.49 | 7.4 MB | 0 (bal>0) |
+| NON_EXISTING | 1.20 | 9.7 MB | 0 |
+
+**Verdict**: CONFIRMED, terminally. DIFF_MAX's state exists ONLY in the
+journal; with it, reads are pure memory (0 disk); without it, the accounts
+vanish and every class is identically disk-bound. Scratch recovered to the
+intact baseline afterward.
+
+---
+
+# ROOT CAUSE (found at round 3 of 50)
+
+The DIFF_MAX performance divergence is a **benchmark-pipeline artifact**, not
+a database property:
+
+1. EEST's `test_setup_contracts` pre-run deploys receiver classes
+   **sequentially**, and DIFF_MAX — the most expensive class — goes **last**:
+   blocks 24406595..24410441 of a chain ending at 24410463 (R2).
+2. This geth build retains the last **4248 blocks** of trie diffs in pathdb
+   layers and journals them at shutdown (`--engine.maxreorgdepth=1024`-scaled
+   retention). The disk layer stops at 24406217.
+3. Therefore every DIFF_MAX account leaf lives **only in the journal** (R3-B:
+   delete it and the accounts cease to exist).
+4. benchmarkoor's promote/restore cycle hands that journal to **every** test
+   boot (1463/1463 loads), so DIFF_MAX leaf reads (BALANCE, EXTCODEHASH) are
+   served from memory: 0 disk bytes (R3-A), 12.6 kB/Mgas at benchmark scale
+   (run 1) — ~23× on this host.
+5. Code blobs live in pebble, not the journal → CALL/CALLCODE only partially
+   accelerate (2.8×). state-actor generates receivers inside its bulk state
+   and ships no journal → nothing resident → flat (1.02×).
+6. The original runs measured the same mechanism — their published
+   380.15 MiB / 4248-layer journal is the same deterministic pre-run rewrite
+   we reproduce to the digit — with the ratio (≈8-12× there, ≈23× here)
+   scaled by each host's disk-vs-RAM gap.
+
+**Fix directions** (for the follow-up discussion): flush/compact the pathdb
+journal into the disk layer after the pre-run (the trie-level analogue of the
+`geth db compact` already applied to the LSM); or randomise/interleave EEST's
+receiver deploy order; or run benchmarks against a baseline whose journal has
+been drained. Any of the three makes all four contract classes equally cold.
