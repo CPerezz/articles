@@ -1381,18 +1381,6 @@ def main():
       "collapse to ≈1.0.</p></details>")
 
     # 12. instrumentation defects
-    w("<h2>Appendix &mdash; instrumentation defects found</h2><ul class=tight>")
-    w(f"<li><code>timing.execution_ms</code> is a derived field and goes negative in "
-      f"{neg_exec} of the {3*len(common)} measured blocks ({neg_c}/{neg_u}/{neg_sa} per run) — "
-      "every one of them a value-transfer block. Unusable as a measurement; all timing in this "
-      "report uses <code>timing.total_ms</code>.</li>")
-    w("<li><code>state_reads</code> / <code>state_writes</code> / cache counters are constant "
-      "per block shape (<code>accounts=4, code=0</code>) even for a CALL into 24 KB of code, so "
-      "they cannot be used to attribute cost.</li>")
-    w("<li>benchmarkoor logs the cgroup path but never samples utilization, so host contention "
-      "cannot be ruled out from the logs alone.</li>")
-    w("</ul>")
-
     # 13. conclusion
     w("<h2>Benchmark worst cases on generated state</h2>")
     w("<p>The lesson generalises well beyond one account class. A worst-case "
@@ -1416,6 +1404,19 @@ def main():
       "the journal, compact the store, promote, and only then believe the numbers. "
       "Otherwise the benchmark measures the order in which the fixtures were "
       "deployed.</p>")
+
+    w("<h2>Appendix &mdash; instrumentation defects found</h2><ul class=tight>")
+    w(f"<li><code>timing.execution_ms</code> is a derived field and goes negative in "
+      f"{neg_exec} of the {3*len(common)} measured blocks ({neg_c}/{neg_u}/{neg_sa} per run) — "
+      "every one of them a value-transfer block. Unusable as a measurement; all timing in this "
+      "report uses <code>timing.total_ms</code>.</li>")
+    w("<li><code>state_reads</code> / <code>state_writes</code> / cache counters are constant "
+      "per block shape (<code>accounts=4, code=0</code>) even for a CALL into 24 KB of code, so "
+      "they cannot be used to attribute cost.</li>")
+    w("<li>benchmarkoor logs the cgroup path but never samples utilization, so host contention "
+      "cannot be ruled out from the logs alone.</li>")
+    w("</ul>")
+
 
     w('<div class=endbar><a href="../">&larr; all articles</a>'
       '<a href="https://github.com/CPerezz/articles/tree/main/state-db-perf-divergence">'
