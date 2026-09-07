@@ -13,9 +13,12 @@ Everything needed to reproduce or re-cut the analysis lives in this folder.
 | `state-db-perf-report.html` | The deliverable. Zero JS, single file. Only external fetches are the site's Google-Font stylesheets (degrades to system monospace offline). |
 | `gen_state_db_report.py` | Parser, computations, and HTML/SVG/JSON emission. Python 3 stdlib only. |
 | `report_svg.py` | Inline-SVG primitives (scales, axes, dots, lines, bands). Has its own self-check. |
-| `data/benchmarkoor_*.log` | The three raw benchmarkoor run logs — the only inputs. |
+| `data/benchmarkoor_*.log` | The three raw benchmarkoor run logs — the original inputs. |
+| `data/db_inspect_*.txt` | Raw `geth db inspect` of both stores. The state-actor store is byte-identical to the one its benchmark ran on; the jochemnet store was inspected after the fix, so ~380 MiB of trie state sits in the key-value store rather than the journal file. |
+| `data/drained_verdict.json` | The verdict run: the same 32 cells on the original jochemnet baseline, on the drained + compacted one, and on state-actor. Provenance embedded. |
+| `collect_verdict.py` | Collector that produced `drained_verdict.json` on the bench host. |
 | `data/report_data.json` | Every computed value the report renders, for reuse in prose. |
-| `figures/fig_*.svg` | The four charts as standalone files, site palette inlined (dark-only, no external fetches). |
+| `figures/fig_*.svg` | The five charts as standalone files, site palette inlined (dark-only, no external fetches). |
 | `decision-log.md` | Ledger of the review passes: findings, rulings, and what each one cost. |
 
 ## Regenerate
@@ -40,12 +43,21 @@ instead of hiding it. A 13th WARN means something actually regressed.
 
 ## Findings
 
+The investigation is closed. Root cause: **journal residency**, not a property of either
+database.
+
+- Geth keeps its most recent trie writes in memory and saves them to
+  `triedb/merkle.journal` at shutdown. The pre-run's last 4,248 blocks never reached disk,
+  and the pipeline handed that journal back to every test.
+- EEST deploys receiver classes in order, and DIFF_MAX goes last — entirely inside that
+  window. So DIFF_MAX account reads were served from RAM (0.0 MB of disk per 150 cold
+  reads) while every sibling class paid megabytes. Delete the journal and those accounts
+  stop existing.
+- Draining the journal into the disk layer and compacting the store collapses the anomaly:
+  BALANCE/DIFF_MAX at 160M gas goes 380 → 272 (drain) → 18.5 MGas/s (compact), against
+  state-actor's 16.5. The MINIMAL control does not move.
 - No missing state in `state-actor`: value_sent=1 gas pricing separates existing from
   non-existing accounts by 8.1–10.6x inside that database itself.
-- Outside the DIFF_MAX account class, `compacted` and `state-actor` agree to within
-  1.03–1.12x across all 13 remaining categories.
-- The one real divergence is DIFF_MAX account-leaf reads, which jochemnet serves at ~2 µs
-  against ~14 µs for its own other classes. It survives compaction, which cannot touch RAM —
-  a memory-residency signature, inferred rather than measured.
-- Consequence: the benchmark currently measures how recently state was written about as much
-  as it measures intrinsic access cost.
+- Consequence: a replayed-snapshot baseline measures how recently state was written about
+  as much as it measures intrinsic access cost. Generated state (state-actor) has no such
+  recency gradient, which is why it is the sound basis for worst-case benchmarks.
