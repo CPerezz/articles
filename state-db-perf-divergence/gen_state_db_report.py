@@ -933,6 +933,7 @@ def main():
     o = []
     w = o.append
     today = datetime.date.today().isoformat()
+    dm = DM
 
     w("<!doctype html><html lang=en><head><meta charset=utf-8>")
     w('<meta name=viewport content="width=device-width,initial-scale=1">')
@@ -964,8 +965,21 @@ def main():
     w("</div>")
     w(f'<p class=note>{esc(PROVENANCE)}</p>')
 
+    figs = {
+        "ratio-dots": chart_ratio_dots(by_op),
+        "compaction-dumbbell": chart_dumbbell(us),
+        "cost-curves": chart_slope_lines(meas, P, clean),
+        "convergence": chart_convergence(gas_rows, agree_med, len(agree)),
+    }
+    # The guard sees the geometry only: captions are prose and legitimately
+    # contain words like "inference".
+    for name, (svg, _) in figs.items():
+        assert svg.count("<circle") >= 6, f"{name}: too few plotted points"
+        assert "NaN" not in svg and "inf" not in svg, f"{name}: non-finite geometry"
+
     # 5. headline table
-    w("<h2>Headline</h2>")
+    w("<h2>The behaviour</h2>")
+    w("<p>Three runs of the same EEST suite, on the same host, against three\n      geth state databases. Two of them are the same snapshot &mdash; one\n      compacted, one not; the third was generated from scratch by\n      state-actor. If the databases were equivalent, every category below\n      would sit near 1.0&times;. One family of categories does not, and the\n      rest of this report is the hunt for why.</p>".replace("\n     ", " "))
     w(f"<p class=note>{tip('µs per account lookup', METRIC_DOC['us'])}</p>")
     w("<table><tr><th>account_mode</th>"
       + db_headers(after="<th></th>")
@@ -1013,77 +1027,15 @@ def main():
       "equivalent; the divergence is the leaf.</caption></table>")
     w(f"<p class=note>{CITE['pattern']}</p></details>")
 
-    figs = {
-        "ratio-dots": chart_ratio_dots(by_op),
-        "compaction-dumbbell": chart_dumbbell(us),
-        "cost-curves": chart_slope_lines(meas, P, clean),
-        "convergence": chart_convergence(gas_rows, agree_med, len(agree)),
-    }
-    # The guard sees the geometry only: captions are prose and legitimately
-    # contain words like "inference".
-    for name, (svg, _) in figs.items():
-        assert svg.count("<circle") >= 6, f"{name}: too few plotted points"
-        assert "NaN" not in svg and "inf" not in svg, f"{name}: non-finite geometry"
-
-    # 7. hypothesis cards
-    w("<h2>Hypotheses</h2>")
-
-    w("<div class=card><h3>H1 — flat run-level offset on state-actor"
-      '<span class=chip>supported — cause not yet isolated</span></h3>')
-    w("<p>On 5 of 6 account classes state-actor is a flat "
-      f"{fnum(min(us[m]['sa']/us[m]['c'] for m in MODES if m != 'EXISTING_CONTRACT_DIFF_MAX'),2)}"
-      f"–{fnum(max(us[m]['sa']/us[m]['c'] for m in MODES if m != 'EXISTING_CONTRACT_DIFF_MAX'),2)}"
-      "&times; slower than compacted jochemnet — including NON_EXISTING_ACCOUNT, where the "
-      "target address never exists in either database and state layout therefore cannot matter. "
-      "A uniform multiplier on a range where there is no state to lay out is a property of the "
-      "<em>run</em>, not of the database contents.</p>")
+    w("<p>Plotted, the shape of the problem is immediate. Every category is\n      one row: how much slower state-actor is than compacted jochemnet on\n      the same work.</p>".replace("\n     ", " "))
     w(figure(*figs["ratio-dots"]))
-    w("<details><summary>Evidence</summary><ul class=tight>")
-    w("<li>state-actor ÷ compacted ratio column of the headline table: "
-      + ", ".join(f"{SHORT[m]} {fnum(us[m]['sa']/us[m]['c'],2)}" for m in MODES) + ".</li>")
-    w("<li>NON_EXISTING targets are <code>keccak256(\"random\")</code> addresses — absent in "
-      "all three DBs — yet still show the offset.</li>")
-    w("<li>Open candidates, none isolated: state-actor executes 3 blocks per test vs 2 on "
-      "jochemnet; <code>Nil finalized block cannot evict old blobs</code> fires 2,995&times; on "
-      "state-actor vs 0&times; on jochemnet; state-actor ran a different fixture bundle "
-      "(1461 vs 1463 tests).</li>")
-    w("</ul></details></div>")
-
-    dm = DM
-    w("<div class=card><h3>H2 — DIFF_MAX leaves are served from memory on jochemnet"
-      '<span class=chip>tier confirmed from geth logs and source — per-class attribution '
-      'still inferred</span></h3>')
-    w(f"<p>DIFF_MAX account leaves read at {fnum(us[dm]['c'],1)}&nbsp;µs (compacted) and "
-      f"{fnum(us[dm]['u'],1)}&nbsp;µs (uncompacted) against {fnum(us[dm]['sa'],1)}&nbsp;µs on "
-      "state-actor — while every other class on the same compacted database costs "
-      f"~{fnum(us['EXISTING_CONTRACT_MINIMAL']['c'],0)}&nbsp;µs. Manual pebble compaction "
-      "destroyed every other fast path in the uncompacted database but left this one intact. "
-      "Compaction rewrites SSTables on disk and cannot touch RAM, so a fast path that "
-      "survives it is not on disk. <b>The tier is now identified</b> — see <em>Origin of "
-      "the divergence</em> below: jochemnet rehydrates a 380.15 MiB pathdb journal on every "
-      "restart, and with <code>statecache=0.00 B</code> it is the only warm tier that "
-      "exists.</p>")
+    w("<p>The next two ask what compaction did. Manual compaction rewrites\n      every SSTable on disk, so any fast path it destroys was on disk &mdash;\n      and any fast path that survives it was not.</p>".replace("\n     ", " "))
     w(figure(*figs["compaction-dumbbell"]))
     w(figure(*figs["cost-curves"]))
-    w("<details><summary>Evidence</summary><ul class=tight>")
-    w("<li>Compaction destroyed uncompacted's other fast paths "
-      "(µs per lookup, uncompacted → compacted): " +
-      ", ".join(f"{SHORT[m]} {fnum(us[m]['u'],1)}&nbsp;→&nbsp;{fnum(us[m]['c'],1)}"
-                for m in ["EXISTING_CONTRACT_MINIMAL", "EXISTING_CONTRACT_SAME_MAX",
-                          "EXISTING_CONTRACT_JUMPDEST", "EXISTING_EOA"]) +
-      f" — but not DIFF_MAX ({fnum(us[dm]['u'],1)}&nbsp;→&nbsp;{fnum(us[dm]['c'],1)}).</li>")
-    w("<li>Compaction rewrites only on-disk SSTables; it cannot evict or warm RAM.</li>")
-    w("<li>Both jochemnet runs load an identical in-memory working set: "
-      "<code>merkle.journal</code> 380.15 MiB, triediffs 217.25 MiB, triedirty 157.55 MiB.</li>")
-    w("<li>state-actor has effectively none of it: triediffs 0.05 MiB, triedirty 0 B in 415/415 "
-      "tests, <code>journal not found</code> — and no fast path on any class.</li>")
-    w("<li><b>Residency is inferred, not measured.</b> The Slow-block cache counters are dead "
-      "(constant across every block), so this needs a geth metrics scrape to confirm.</li>")
-    w("</ul></details></div>")
 
     # everything except DIFF_MAX agrees
-    w(f"<h2>Outside DIFF_MAX, compacted and state-actor agree to within "
-      f"{(agree_hi - 1) * 100:.0f}%</h2>")
+    w(f"<h3>Outside DIFF_MAX, the two databases agree to within "
+      f"{(agree_hi - 1) * 100:.0f}%</h3>")
     w(f"<p>Of the {len(agree) + len(exceptions)} slope categories in the common set, "
       f"<b>{len(agree)}</b> put state-actor between {agree_lo:.2f}x and {agree_hi:.2f}x of "
       f"compacted (median {agree_med:.2f}x) — a flat run-level offset, not a state-layout "
@@ -1107,6 +1059,66 @@ def main():
       f"the {LABEL[miss_absent[0]]} run never executed it, while "
       + " and ".join(LABEL[k] for k in miss_ran)
       + " both did.</caption></table>")
+
+    # 10. worst 15
+    w(f"<details><summary>Worst 15 divergent tests (state-actor ÷ compacted throughput) — "
+      f"the top {worst_lead} rows are DIFF_MAX + BALANCE</summary>")
+    w("<table><tr><th>account_mode</th><th>opcode</th><th class=n>gas</th>"
+      + "".join(f'<th class="n db" style="color:var({var});border-color:var({var})">'
+                 f'MGas/s {label}</th>' for label, var in DB.values())
+      + "<th class=n>state-actor ÷ compacted</th></tr>")
+    for t in worst:
+        r = mgas("sa", t) / mgas("c", t)
+        w(f"<tr>{mode_cell(P[t]['mode'])}<td>{esc(P[t]['opcode'])}</td>"
+          f"<td class=n>{P[t]['gas']}M</td>"
+          f"<td class=n>{mgas('c',t):.0f}</td><td class=n>{mgas('u',t):.0f}</td>"
+          f"<td class=n>{mgas('sa',t):.0f}</td>"
+          f'<td class="n{ratio_cls(r)}">{r:.2f}</td></tr>')
+    w("<caption>Ranked ascending by state-actor throughput relative to compacted, over the "
+      f"{len(clean)} value_sent=0 non-baseline common tests.</caption></table></details>")
+
+    # 11. scatter
+    w("<details><summary>Per-test scatter — why category slopes are the sound comparison"
+      "</summary>")
+    w(f"<p>Of the {len(clean)} value_sent=0 non-baseline common tests, per-test "
+      f"<code>total_ms</code> ratios (state-actor ÷ compacted) fall into: "
+      f"<b>{len(buckets['flat'])}</b> flat (≤1.25&times;), <b>{len(buckets['other'])}</b> above "
+      f"1.25&times;, <b>{len(buckets['diffmax'])}</b> DIFF_MAX (the real divergence).</p>")
+    w("<p class=note>Per-test ratios include the fixed per-block overhead, which inflates the "
+      "ratio at low gas targets where the constant dominates the state work. The slope fit "
+      "removes that intercept, which is why the category slopes — not the per-test ratios — are "
+      "the sound comparison.</p></details>")
+
+    # test-id mapping
+    w(f"<details><summary>Test-id mapping — which EEST tests back each ACCOUNT_MODE "
+      f"({len(common)} common tests, {len(census)} parameter categories)</summary>")
+    w("<p class=note>Every measured test is "
+      "<code>benchmark/stateful/bloatnet/test_account_query.py::test_account_access</code>. "
+      f"All ids share this {len(prefix)}-character prefix, elided as <code>…</code> "
+      "below:</p>")
+    w(f"<pre class=idpre>{esc(prefix)}</pre>")
+    w("<table><tr><th>account_mode</th><th>opcode</th><th>population</th>"
+      "<th class=n>tests</th><th class=n>gas levels</th></tr>")
+    for pop, op, m in sorted(census, key=lambda x: (MODES.index(x[2]), x[1], x[0])):
+        ts = census[(pop, op, m)]
+        n_lv = levels[(pop, op, m)]
+        w(f"<tr>{mode_cell(m)}<td>{esc(op)}</td><td>{esc(pop)}</td>"
+          f"<td class=n>{len(ts)}</td>"
+          f"<td class=n>{n_lv}{'' if n_lv == full_levels else ' &#9888;'}</td></tr>")
+    w(f"<caption>&#9888; the value_sent=0 {esc(miss_op)}/{esc(SHORT[miss_mode])} category has "
+      f"{full_levels - 1} gas levels, not {full_levels}: the {LABEL[miss_absent[0]]} run never "
+      f"executed that cell at {short_gas}M, so it cannot enter the common set. The "
+      f"{'/'.join(bl_ops)} overhead_baseline categories hold {bl_n} tests because the baseline "
+      f"runs at both value_sent=0 and value_sent=1. CALLCODE never pairs with "
+      f"{' or '.join(cc_absent)} in the common set.</caption></table>")
+    for m in MODES:
+        ids = sorted(t for t in common if P[t]["mode"] == m)
+        w(f"<details><summary>{esc(SHORT[m])} — {len(ids)} test ids</summary>"
+          f"<pre class=idpre>")
+        for t in ids:
+            w(esc(t[len(prefix):]))
+        w("</pre></details>")
+    w("</details>")
 
     # 7b. origin of the divergence
     w("<h2>Origin of the divergence — what we discarded, and what survived</h2>")
@@ -1229,66 +1241,6 @@ def main():
     w(f"<p class=note>Unit: {tip('ms per 1M gas', METRIC_DOC['slope'])}</p>")
     w(f"<p class=note>{CITE['new']} If state-actor's targets were absent, all rows would "
       "collapse to ≈1.0.</p></details>")
-
-    # 10. worst 15
-    w(f"<details><summary>Worst 15 divergent tests (state-actor ÷ compacted throughput) — "
-      f"the top {worst_lead} rows are DIFF_MAX + BALANCE</summary>")
-    w("<table><tr><th>account_mode</th><th>opcode</th><th class=n>gas</th>"
-      + "".join(f'<th class="n db" style="color:var({var});border-color:var({var})">'
-                 f'MGas/s {label}</th>' for label, var in DB.values())
-      + "<th class=n>state-actor ÷ compacted</th></tr>")
-    for t in worst:
-        r = mgas("sa", t) / mgas("c", t)
-        w(f"<tr>{mode_cell(P[t]['mode'])}<td>{esc(P[t]['opcode'])}</td>"
-          f"<td class=n>{P[t]['gas']}M</td>"
-          f"<td class=n>{mgas('c',t):.0f}</td><td class=n>{mgas('u',t):.0f}</td>"
-          f"<td class=n>{mgas('sa',t):.0f}</td>"
-          f'<td class="n{ratio_cls(r)}">{r:.2f}</td></tr>')
-    w("<caption>Ranked ascending by state-actor throughput relative to compacted, over the "
-      f"{len(clean)} value_sent=0 non-baseline common tests.</caption></table></details>")
-
-    # 11. scatter
-    w("<details><summary>Per-test scatter — why category slopes are the sound comparison"
-      "</summary>")
-    w(f"<p>Of the {len(clean)} value_sent=0 non-baseline common tests, per-test "
-      f"<code>total_ms</code> ratios (state-actor ÷ compacted) fall into: "
-      f"<b>{len(buckets['flat'])}</b> flat (≤1.25&times;), <b>{len(buckets['other'])}</b> above "
-      f"1.25&times;, <b>{len(buckets['diffmax'])}</b> DIFF_MAX (the real divergence).</p>")
-    w("<p class=note>Per-test ratios include the fixed per-block overhead, which inflates the "
-      "ratio at low gas targets where the constant dominates the state work. The slope fit "
-      "removes that intercept, which is why the category slopes — not the per-test ratios — are "
-      "the sound comparison.</p></details>")
-
-    # test-id mapping
-    w(f"<details><summary>Test-id mapping — which EEST tests back each ACCOUNT_MODE "
-      f"({len(common)} common tests, {len(census)} parameter categories)</summary>")
-    w("<p class=note>Every measured test is "
-      "<code>benchmark/stateful/bloatnet/test_account_query.py::test_account_access</code>. "
-      f"All ids share this {len(prefix)}-character prefix, elided as <code>…</code> "
-      "below:</p>")
-    w(f"<pre class=idpre>{esc(prefix)}</pre>")
-    w("<table><tr><th>account_mode</th><th>opcode</th><th>population</th>"
-      "<th class=n>tests</th><th class=n>gas levels</th></tr>")
-    for pop, op, m in sorted(census, key=lambda x: (MODES.index(x[2]), x[1], x[0])):
-        ts = census[(pop, op, m)]
-        n_lv = levels[(pop, op, m)]
-        w(f"<tr>{mode_cell(m)}<td>{esc(op)}</td><td>{esc(pop)}</td>"
-          f"<td class=n>{len(ts)}</td>"
-          f"<td class=n>{n_lv}{'' if n_lv == full_levels else ' &#9888;'}</td></tr>")
-    w(f"<caption>&#9888; the value_sent=0 {esc(miss_op)}/{esc(SHORT[miss_mode])} category has "
-      f"{full_levels - 1} gas levels, not {full_levels}: the {LABEL[miss_absent[0]]} run never "
-      f"executed that cell at {short_gas}M, so it cannot enter the common set. The "
-      f"{'/'.join(bl_ops)} overhead_baseline categories hold {bl_n} tests because the baseline "
-      f"runs at both value_sent=0 and value_sent=1. CALLCODE never pairs with "
-      f"{' or '.join(cc_absent)} in the common set.</caption></table>")
-    for m in MODES:
-        ids = sorted(t for t in common if P[t]["mode"] == m)
-        w(f"<details><summary>{esc(SHORT[m])} — {len(ids)} test ids</summary>"
-          f"<pre class=idpre>")
-        for t in ids:
-            w(esc(t[len(prefix):]))
-        w("</pre></details>")
-    w("</details>")
 
     # 12. instrumentation defects
     w("<h2>Instrumentation defects found</h2><ul class=tight>")
