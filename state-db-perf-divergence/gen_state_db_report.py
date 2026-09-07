@@ -43,6 +43,31 @@ FIGS = os.path.join(HERE, "figures")
 OUT = os.path.join(HERE, "state-db-perf-report.html")
 JSON_OUT = os.path.join(DATA, "report_data.json")
 VERDICT_IN = os.path.join(DATA, "drained_verdict.json")
+INSPECT_IN = {k: os.path.join(DATA, f"db_inspect_{k}.txt")
+              for k in ("jochemnet", "state_actor")}
+
+
+def parse_db_inspect(path):
+    """Rows of a `geth db inspect` table: (store, category, size, items).
+
+    Sizes stay as printed ("56.22 GiB") so the report shows exactly what the
+    tool said. Log lines and rule lines are skipped by the cell-count test.
+    """
+    rows = []
+    with open(path) as fh:
+        for line in fh:
+            if not line.startswith("|"):
+                continue
+            cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            if len(cells) != 4 or cells[1] in ("Category", ""):
+                continue
+            rows.append(tuple(cells))
+    assert len(rows) >= 8, f"{path}: parsed only {len(rows)} inspect rows"
+    assert any(r[1] == "Total" for r in rows), f"{path}: no Total row"
+    return rows
+
+
+INSPECT = {k: parse_db_inspect(v) for k, v in INSPECT_IN.items()}
 
 # The verdict run: the same cells measured on the original jochemnet baseline,
 # on the drained + compacted one, and on state-actor. Collected by
@@ -1199,6 +1224,129 @@ def main():
       "stdout across 914 / 974 / 999 container lifecycles. Every tunable matches. In the "
       "whole corpus there is exactly one configuration-level difference between the runs: "
       "whether a journal is found at startup.</caption></table>")
+    w("<h2>What we ruled out first</h2>")
+    w("<p>Before the journal there were plainer suspects, and each one had to die "
+      "on its own evidence. What follows is one subsection per suspect: why it "
+      "looked plausible, what we measured, and what the measurement said. None of "
+      "them survived — but each one narrowed where the answer could be hiding.</p>")
+
+    w("<h3>The databases themselves</h3>")
+    w("<p>The dullest explanation is that the two stores simply hold different "
+      "things, or hold them differently. That is what <code>geth db inspect</code> "
+      "is for, so we ran it on both and put the key-value stores side by side "
+      "(state-actor keeps everything there; more on its empty freezer in a "
+      "moment):</p>")
+    kv = {}
+    for store, rows in INSPECT.items():
+        for db_, cat, size, items in rows:
+            if db_.startswith("Key-Value") or cat == "Total":
+                kv.setdefault(cat, {})[store] = (size, items)
+    w("<table><tr><th>category</th><th class=n>jochemnet size</th>"
+      "<th class=n>jochemnet items</th><th class=n>state-actor size</th>"
+      "<th class=n>state-actor items</th></tr>")
+    shown = 0
+    for cat, per in kv.items():
+        j = per.get("jochemnet", ("&mdash;", "&mdash;"))
+        a = per.get("state_actor", ("&mdash;", "&mdash;"))
+        if j[0] in ("0.00 B", "&mdash;") and a[0] in ("0.00 B", "&mdash;"):
+            continue
+        shown += 1
+        strong = cat == "Total"
+        cell = (lambda v: f"<b>{esc(v)}</b>") if strong else (lambda v: esc(v))
+        w(f"<tr><td>{cell(cat)}</td><td class=n>{cell(j[0])}</td>"
+          f"<td class=n>{cell(j[1])}</td><td class=n>{cell(a[0])}</td>"
+          f"<td class=n>{cell(a[1])}</td></tr>")
+    w(f"<caption>Raw output committed as <code>data/db_inspect_*.txt</code>; "
+      f"{shown} categories shown, all-zero rows omitted. jochemnet&rsquo;s Total "
+      f"includes its 700&nbsp;GiB frozen chain; state-actor&rsquo;s ancient store "
+      f"is 36&nbsp;KB, because a generator writes state, not history &mdash; all "
+      f"of its data is in the key-value store. The jochemnet store was inspected "
+      f"after the fix described below, so ~380&nbsp;MiB of trie state now sits in "
+      f"the key-value store rather than in the journal file.</caption></table>")
+    w("<p>Both stores hold billions of trie nodes and hundreds of gigabytes of "
+      "state, with the same table shapes and totals of the same order. There are "
+      "real differences &mdash; different generators make different tries &mdash; "
+      "but nothing here is the kind of difference that makes <i>one account class</i> "
+      "twenty times faster while its five siblings stay flat. Bulk composition was "
+      "not the answer.</p>")
+
+    w("<h3>Trie shape</h3>")
+    w("<p>The next suspect is depth. A deeper path means more node reads per "
+      "lookup, so if DIFF_MAX addresses happened to sit shallower in jochemnet's "
+      "trie, they would be cheaper for entirely boring reasons. "
+      "<code>eth_getProof</code> hands you the actual path, so we asked it for a "
+      "target from every class, on both databases. Every class came back at "
+      "<b>8&ndash;9 nodes</b>, DIFF_MAX included. Same depth, same work. Depth was "
+      "not the answer either.</p>")
+
+    w("<h3>What the fixtures actually touch</h3>")
+    w("<p>Maybe the fast class was not doing the same work: fewer distinct targets, "
+      "a tighter loop, some accidental address reuse. We decoded the setup and "
+      "benchmark transactions of all six account modes straight from the fixture "
+      "bundle. They use the same factory contract, the same CREATE2 salt walk over "
+      "the same range, and the same 64-byte calldata; the only thing that differs "
+      "is the code each receiver is given, which is the entire point of the "
+      "parameter. And the accounts really are what their names claim &mdash; the "
+      "value_sent=1 pricing below separates existing from non-existing accounts "
+      "inside each database on its own:</p>")
+    # 9. existence proof
+    w("<details><summary>Existence proof — value_sent=1 pricing separates existing from "
+      "non-existing accounts inside every database</summary>")
+    w("<table><tr><th>account_mode</th>"
+      + db_headers()
+      + "<th class=n>state-actor ÷ its own NON_EXISTING</th></tr>")
+    for m in MODES:
+        cat = call1[m]
+        w(f"<tr>{mode_cell(m)}" +
+          "".join(f"<td class=n>{fnum(cat[k])}</td>" for k in KEYS) +
+          f"<td class=n>{fnum(vs1_ratio['sa'][m],2)}</td></tr>")
+    w(f"<caption>CALL slopes, value_sent=1, ms per 1M gas. A value-bearing CALL to a "
+      "<em>non-existent</em> account additionally pays account-creation gas, so its loop "
+      "iterates far fewer times per 1M gas — the low NON_EXISTING slope is the signature of a "
+      f"genuinely absent account, and every other class differs from it by {sep_lo:.1f}–"
+      f"{sep_hi:.1f}&times; on "
+      "state-actor.</caption></table>")
+    w(f"<p class=note>Unit: {tip('ms per 1M gas', METRIC_DOC['slope'])}</p>")
+    w(f"<p class=note>{CITE['new']} If state-actor's targets were absent, all rows would "
+      "collapse to ≈1.0.</p></details>")
+
+
+    w("<h3>The 380 MiB file inside the snapshot</h3>")
+    w("<p>By now the logs had pointed at the journal, and the jochemnet snapshot "
+      "ships one: <code>triedb/merkle.journal</code>, 380.15&nbsp;MiB, right there "
+      "in the tarball. The obvious story wrote itself &mdash; the image was "
+      "captured from a node that still held unflushed state, and the benchmark had "
+      "been re-warming that captured memory ever since. It is a good story. It is "
+      "also wrong, and proving it wrong is what actually cracked the case.</p>")
+    w("<p>We measured the journal at the promoted head, after the pre-run: "
+      "<b>380.15&nbsp;MiB across 4,248 layers</b> &mdash; the published pair, to "
+      "the digit, on a file the pre-run had just rewritten from scratch. The "
+      "shipped artifact is not the cause: it is a coincidence of size, reproduced "
+      "deterministically by the pipeline itself. Which meant the culprit was not "
+      "something baked into a tarball months ago, but something the benchmark does "
+      "to itself on every run &mdash; and that is a much better kind of bug, "
+      "because it is one we can go and reproduce.</p>")
+
+    w("<h3>Broken meters</h3>")
+    w("<p>A benchmark can also lie through its instruments, and this harness has "
+      "real defects: negative <code>execution_ms</code> on value-transfer blocks, "
+      "cache counters frozen at zero, <code>state_reads</code> that never move. So "
+      "before trusting any ratio we counted the defects per arm. They appear at the "
+      "same rates on both sides &mdash; the appendix lists them. A meter that is "
+      "broken identically for every contestant cannot change the ranking between "
+      "them: a confound to disclose, not the cause we were hunting.</p>")
+
+    w("<h3>Where the data sits in the LSM tree</h3>")
+    w("<p>The last plain suspect was on-disk layout. Compaction alone moves these "
+      "numbers by 3&times; &mdash; that is the whole compacted-versus-uncompacted "
+      "spread above &mdash; so perhaps DIFF_MAX simply occupied a lucky corner of "
+      "the LSM tree. We patched the harness to run a full pebble compaction "
+      "<i>between every test's setup and its measurement</i>, which flattens exactly "
+      "that kind of advantage, and re-ran. The anomaly stood. Layout turned out to "
+      "matter, but as an accomplice rather than the principal &mdash; it comes back "
+      "in the fix, and we did not see why until we knew what the journal was "
+      "doing.</p>")
+
     w("<h2>The root cause: the pathdb journal</h2>")
     w(f"<p>Geth's path-based state database keeps recent trie changes in memory: "
       f"up to <a href='{G}/triedb/pathdb/config.go#L70'>128 diff layers</a> plus an "
@@ -1320,67 +1468,6 @@ def main():
       f"<code>collect_verdict.py</code>; baseline drained with "
       f"<a href='{TOOL}'>drainjournal</a> then compacted, and promoted through "
       f"the harness exactly as the original baseline was.</caption></table></details>")
-    w("<h3>Hypotheses discarded, and what killed each</h3>")
-    w("<table><tr><th>hypothesis</th><th>verdict</th><th>what settled it</th></tr>")
-    for name, verdict, killer in DISCARDED:
-        cls = " good" if verdict == "dead" else ""
-        w(f"<tr><td>{name}</td><td class=\"n{cls}\">{verdict}</td><td>{killer}</td></tr>")
-    w("<caption>Eliminated first, from facts already verified, so no exploration was spent "
-      "on dead hypotheses. Full reasoning in "
-      "<code>investigation-log.md</code>.</caption></table>")
-
-    # 8. refuted
-    w("<details><summary>Four refuted hypotheses and what killed them</summary>")
-    w("<table><tr><th>hypothesis</th><th>what killed it</th></tr>")
-    refuted = [
-        ("state-actor is missing the accounts under test",
-         "value_sent=1 gas pricing separates EXISTING from NON_EXISTING by "
-         f"{sep_lo:.1f}–{sep_hi:.1f}&times; on state-actor "
-         "itself; the generator YAML creates every class at 150k; and DIFF_MAX CALL pays a "
-         f"{fnum(delta[dm]['sa'])} ms/Mgas code delta, i.e. it really loads 24 KB of unique "
-         "code."),
-        ("CPU throttling or thermal drift on the state-actor host",
-         "overhead_baseline tests do no state work and run at median "
-         f"execution_ms {fnum(base_exec['c'],1)} / {fnum(base_exec['u'],1)} / "
-         f"{fnum(base_exec['sa'],1)} ms (slopes {fnum(base_slope['c'])} / "
-         f"{fnum(base_slope['u'])} / {fnum(base_slope['sa'])} ms/Mgas) — the hosts are "
-         "equivalent."),
-        ("Time drift / warm-up over run position",
-         "named metric: per-category median per-test throughput ratio (MGas/s; ratio "
-         "above 1 means the numerator database is faster). Compacted &divide; uncompacted "
-         f"spans {drift_cu_lo:.2f}\u2013{drift_cu_hi:.2f}&times; and tracks "
-         "<em>which</em> account class is measured, not <em>when</em> it runs: compacted "
-         f"comes out ahead on {len(cu_faster)} of the {len(drift)} categories "
-         f"({cu_faster_txt}) and behind on the rest. state-actor "
-         "&divide; compacted, DIFF_MAX excluded, stays a flat "
-         f"{drift_sc_lo:.2f}\u2013{drift_sc_hi:.2f}&times; over that same ordering."),
-        ("The generator silently rejected the large account classes on a size cap",
-         f"{CITE['warncap']} {CITE['cap']} The 150k-per-class YAML is well inside it."),
-    ]
-    for h, k in refuted:
-        w(f"<tr><td>{h}</td><td>{k}</td></tr>")
-    w("</table></details>")
-
-    # 9. existence proof
-    w("<details><summary>Existence proof — value_sent=1 pricing separates existing from "
-      "non-existing accounts inside every database</summary>")
-    w("<table><tr><th>account_mode</th>"
-      + db_headers()
-      + "<th class=n>state-actor ÷ its own NON_EXISTING</th></tr>")
-    for m in MODES:
-        cat = call1[m]
-        w(f"<tr>{mode_cell(m)}" +
-          "".join(f"<td class=n>{fnum(cat[k])}</td>" for k in KEYS) +
-          f"<td class=n>{fnum(vs1_ratio['sa'][m],2)}</td></tr>")
-    w(f"<caption>CALL slopes, value_sent=1, ms per 1M gas. A value-bearing CALL to a "
-      "<em>non-existent</em> account additionally pays account-creation gas, so its loop "
-      "iterates far fewer times per 1M gas — the low NON_EXISTING slope is the signature of a "
-      f"genuinely absent account, and every other class differs from it by {sep_lo:.1f}–"
-      f"{sep_hi:.1f}&times; on "
-      "state-actor.</caption></table>")
-    w(f"<p class=note>Unit: {tip('ms per 1M gas', METRIC_DOC['slope'])}</p>")
-    w(f"<p class=note>{CITE['new']} If state-actor's targets were absent, all rows would "
-      "collapse to ≈1.0.</p></details>")
 
     # 12. instrumentation defects
     # 13. conclusion

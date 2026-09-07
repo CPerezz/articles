@@ -1,0 +1,43 @@
++-----------------------+-----------------------------+------------+------------+
+|       Database        |          Category           |    Size    |   Items    |
++-----------------------+-----------------------------+------------+------------+
+|    Key-Value store    |           Headers           |  647.00 B  |     1      |
+|    Key-Value store    |           Bodies            |  45.00 B   |     1      |
+|    Key-Value store    |        Receipt lists        |  42.00 B   |     1      |
+|    Key-Value store    |  Difficulties (deprecated)  |   0.00 B   |     0      |
+|    Key-Value store    |     Block number->hash      |  42.00 B   |     1      |
+|    Key-Value store    |     Block hash->number      |  41.00 B   |     1      |
+|    Key-Value store    |      Block accessList       |   0.00 B   |     0      |
+|    Key-Value store    |      Transaction index      |   0.00 B   |     0      |
+|    Key-Value store    |  Log index filter-map rows  |   0.00 B   |     0      |
+|    Key-Value store    | Log index last-block-of-map |   0.00 B   |     0      |
+|    Key-Value store    |     Log index block-lv      |   0.00 B   |     0      |
+|    Key-Value store    | Log bloombits (deprecated)  |   0.00 B   |     0      |
+|    Key-Value store    |       Contract codes        | 48.98 GiB  | 134442676  |
+|    Key-Value store    |       Hash trie nodes       |   0.00 B   |     0      |
+|    Key-Value store    |   Path trie state lookups   |  41.00 B   |     1      |
+|    Key-Value store    |   Path trie account nodes   | 71.09 GiB  | 597796181  |
+|    Key-Value store    |   Path trie storage nodes   | 337.49 GiB | 3027665463 |
+|    Key-Value store    |      Verkle trie nodes      |   0.00 B   |     0      |
+|    Key-Value store    |  Verkle trie state lookups  |   0.00 B   |     0      |
+|    Key-Value store    |       Trie preimages        |   0.00 B   |     0      |
+|    Key-Value store    |      Account snapshot       | 23.38 GiB  | 430696738  |
+|    Key-Value store    |      Storage snapshot       | 193.33 GiB | 2214312331 |
+|    Key-Value store    |   Historical state index    |   0.00 B   |     0      |
+|    Key-Value store    |    Historical trie index    |   0.00 B   |     0      |
+|    Key-Value store    |     Beacon sync headers     |   0.00 B   |     0      |
+|    Key-Value store    |      Clique snapshots       |   0.00 B   |     0      |
+|    Key-Value store    |     Singleton metadata      |  967.00 B  |     10     |
+| Ancient store (Chain) |           Headers           |   6.00 B   |     0      |
+| Ancient store (Chain) |           Hashes            |   6.00 B   |     0      |
+| Ancient store (Chain) |           Bodies            |   6.00 B   |     0      |
+| Ancient store (Chain) |          Receipts           |   6.00 B   |     0      |
+| Ancient store (Chain) |            Bals             |   6.00 B   |     0      |
+| Ancient store (State) |        History.Meta         |   6.00 B   |     0      |
+| Ancient store (State) |        Account.Index        |   6.00 B   |     0      |
+| Ancient store (State) |        Storage.Index        |   6.00 B   |     0      |
+| Ancient store (State) |        Account.Data         |   6.00 B   |     0      |
+| Ancient store (State) |        Storage.Data         |   6.00 B   |     0      |
++-----------------------+-----------------------------+------------+------------+
+|                       |            Total            | 674.25 GiB | 6404913405 |
++-----------------------+-----------------------------+------------+------------+
