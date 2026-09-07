@@ -159,3 +159,57 @@ journal into the disk layer after the pre-run (the trie-level analogue of the
 `geth db compact` already applied to the LSM); or randomise/interleave EEST's
 receiver deploy order; or run benchmarks against a baseline whose journal has
 been drained. Any of the three makes all four contract classes equally cold.
+## R4 — The fix, applied: drain the journal post-pre-run, then compact
+
+**Request** (operator): implement journal draining in the pipeline, run the
+jochemnet arm on a drained baseline, and check whether the data now matches
+state-actor.
+
+**Implementation**
+- `drainjournal` (tools/drainjournal-main.go), built from the client fork at
+  the image's exact commit (`4d92c8e`, verified via embedded buildinfo):
+  opens the datadir the way the node does, resolves the head (ancient-store
+  top when the KV head pointers are absent, as in these snapshots), then
+  `triedb.Commit(headRoot)` = pathdb `tree.cap(root, 0)`: flattens all 128
+  diff layers and force-flushes the ~380 MiB write buffer into pebble
+  (8438 → 8541 SSTs). Idempotent; removes the then-obsolete journal file.
+- benchmarkoor support: branch `state-db-journal-drain` (c3c46f1 on top of
+  the runs' 1e0b9d4; tools/benchmarkoor-post-prerun-hook.patch):
+  `BENCHMARKOOR_POST_PRERUN_CMD` runs between "pre-run complete, client
+  stopped, fs synced" and `schelk promote`, so future from-scratch runs bake
+  a drained baseline automatically. Hook failure aborts before promote.
+
+**Operational traps hit and documented** (all recoverable via dm-era
+recover; scratch destroyed once, virgin never touched):
+- The fork carries a pebble v1/v2 duality: this snapshot's store is legacy
+  v1-format (no format markers). The v2 opener treats it as "no database" -
+  read-only opens error out, read-write opens *initialize a fresh store and
+  GC the 8k+ existing SSTs as orphans*. The node goes through
+  `pebble.NeedsV1 -> NewV1`; the tool now does the same.
+- The snapshot KV's freshest entries (incl. the pathdb disk root) lived only
+  in the store's WAL in a layout offline openers could not see; one clean
+  node boot+stop flushed them durably. Head pointers are absent by
+  provenance; boots derive the head from the ancient store (whole chain is
+  frozen: 24,410,464 items).
+
+**Probe C - drained only** (150 cold reads/class): DIFF_MAX accounts exist
+(code 24576) and read 1.2 MB - real I/O but still below the 2.4-3.7 MB
+sibling band. Benchmark smoke: BALANCE/DIFF_MAX/160M = **272 MGas/s** (from
+~410 journal-resident). Partial: the drain wrote all its state into ~103
+fresh, dense SSTs - LSM recency is physical locality, a private hot layout.
+
+**Probe D - drained + `geth db compact`** (2m2s, 8524 -> 8515 SSTs):
+DIFF_MAX 0.96 ms / 2.6 MB - statistically inside the sibling band on every
+axis. Benchmark smoke: BALANCE/DIFF_MAX/160M = **18.3 MGas/s**, landing in
+the state-actor band (~15-18) - a 22x collapse from the journal-resident
+number, matching the report's cross-arm anomaly magnitude (23x).
+
+**Recipe** (both legs required): after the pre-run, before promote:
+`drainjournal --datadir <D>` then `geth db compact`; 390 -> 272 (drain)
+-> 18.3 (compact).
+
+**Verdict run**: full `test_account_access` surface (1100 fixtures, the
+report's analytical superset) launched on the drained+compacted promoted
+baseline - config `jochemnet-drained.yaml`, labels `journal=drained`,
+results `/data/bench-results/jochemnet-drained`. Cross-arm comparison vs
+state-actor run 1 follows as the final verdict.
