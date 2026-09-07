@@ -1127,14 +1127,16 @@ def main():
           f"<td class=n>{mgas('c',t):.0f}</td><td class=n>{mgas('u',t):.0f}</td>"
           f"<td class=n>{mgas('sa',t):.0f}</td>"
           f'<td class="n{ratio_cls(r)}">{r:.2f}</td></tr>')
-    w("<caption>Ranked ascending by state-actor throughput relative to compacted, over the "
+    w("<caption>The worst offenders, ranked by state-actor throughput relative to "
+      "compacted, over the "
       f"{len(clean)} value_sent=0 non-baseline common tests.</caption></table></details>")
 
     # 11. scatter
     w("<details><summary>Per-test scatter — why category slopes are the sound comparison"
       "</summary>")
-    w(f"<p>Of the {len(clean)} value_sent=0 non-baseline common tests, per-test "
-      f"<code>total_ms</code> ratios (state-actor ÷ compacted) fall into: "
+    w(f"<p>Category slopes could still be hiding per-test weirdness, so here is every "
+      f"test on its own. Of the {len(clean)} value_sent=0 non-baseline common tests, "
+      f"per-test <code>total_ms</code> ratios (state-actor ÷ compacted) fall into: "
       f"<b>{len(buckets['flat'])}</b> flat (≤1.25&times;), <b>{len(buckets['other'])}</b> above "
       f"1.25&times;, <b>{len(buckets['diffmax'])}</b> DIFF_MAX (the real divergence).</p>")
     w("<p class=note>Per-test ratios include the fixed per-block overhead, which inflates the "
@@ -1175,28 +1177,28 @@ def main():
 
     # 7b. origin of the divergence
     w("<h2>What geth's own logs say</h2>")
-    w("<p>The framing above is the wrong way round, and correcting it is what made the "
-      "cause findable. state-actor is not the anomaly: it is the <em>uniform</em> run, "
+    w("<p>Our first framing was backwards, and turning it around is what made the "
+      "cause findable. state-actor is not the odd one out: it is the <em>uniform</em> run, "
       f"costing {fnum(min(us[m]['sa'] for m in MODES),1)}–"
       f"{fnum(max(us[m]['sa'] for m in MODES),1)}&nbsp;µs on every class including the "
-      "address range that exists in no database. jochemnet is the run with anomalously "
-      "<em>fast</em> classes. So the question is not why state-actor is slow but why "
-      "jochemnet is fast, and why manual compaction removed some of that speed but not "
-      "all of it.</p>")
-    w("<p>One deduction removes most candidate answers before any evidence is needed: "
-      "under BALANCE geth reads a single account leaf — nonce, balance, storage root, code "
-      "hash — whose shape does not change whether the account's code is one byte, a 24 KB "
-      "blob shared by 150,000 accounts, or a byte-unique 24 KB blob. Code lives in a "
-      "separate table that BALANCE never reads. <b>Structurally identical leaves cannot "
-      "differ 7× because of what they point at</b>, so the explanation has to be which "
-      "storage tier answers the read.</p>")
+      "address range that exists in no database. jochemnet is the run with a handful of "
+      "suspiciously <em>fast</em> classes. So the question was never why state-actor is "
+      "slow. It is why jochemnet is fast &mdash; and why compaction took away some of "
+      "that speed but not all of it.</p>")
+    w("<p>Before measuring anything, one deduction clears most of the field. Under "
+      "BALANCE geth reads a single account leaf — nonce, balance, storage root, code "
+      "hash — and that leaf has the same shape whether the account's code is one byte, "
+      "a 24 KB blob shared by 150,000 accounts, or a byte-unique 24 KB blob. Code lives "
+      "in a different table, one BALANCE never opens. <b>Identical leaves cannot differ "
+      "7× because of what they point at</b> — so whatever is going on, it is about "
+      "<i>which storage tier answers the read</i>. That is the thread we pulled.</p>")
     w("<table><tr><th>observation</th>" + db_headers(numeric=False) + "</tr>")
     for row in LOGMINE:
         w("<tr>" + "".join(f"<td>{esc(c)}</td>" for c in row) + "</tr>")
     w("<caption>Mined from the three <code>container_*.log</code> files — geth's own "
-      "stdout across 914 / 974 / 999 container lifecycles, never parsed before this pass. "
-      "Every tunable is identical; the single configuration-level difference in the whole "
-      "corpus is whether a journal is found at startup.</caption></table>")
+      "stdout across 914 / 974 / 999 container lifecycles. Every tunable matches. In the "
+      "whole corpus there is exactly one configuration-level difference between the runs: "
+      "whether a journal is found at startup.</caption></table>")
     w("<h2>The root cause: the pathdb journal</h2>")
     w(f"<p>Geth's path-based state database keeps recent trie changes in memory: "
       f"up to <a href='{G}/triedb/pathdb/config.go#L70'>128 diff layers</a> plus an "
