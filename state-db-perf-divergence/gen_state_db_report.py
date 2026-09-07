@@ -1014,9 +1014,10 @@ def main():
     w("<!doctype html><html lang=en><head><meta charset=utf-8>")
     w('<meta name=viewport content="width=device-width,initial-scale=1">')
     w('<meta name="description" content="Identical EEST bloatnet runs report wildly '
-      'different MGas/s on three geth databases — the cause is a 380 MiB pathdb '
-      'journal shipped inside one snapshot, a provenance artifact rather than a '
-      'property of either database.">')
+      'different MGas/s on three geth databases. Root cause: the benchmark\'s own '
+      'pre-run leaves its last 4,248 blocks of state in geth\'s pathdb journal, so '
+      'the accounts deployed last are served from RAM in every test. Draining and '
+      'compacting the baseline removes the divergence entirely.">')
     w('<link rel="preconnect" href="https://fonts.googleapis.com">'
       '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
       '<link href="https://fonts.googleapis.com/css2?family=VT323&'
