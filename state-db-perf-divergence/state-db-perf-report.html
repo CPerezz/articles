@@ -116,7 +116,7 @@ pre.idpre { background:#050805; border:1px solid var(--line); border-radius:3px;
 <div class=eyebrow>// REPORT</div>
 <h1>State-DB performance divergence — benchmarkoor bloatnet runs</h1>
 <div class=meta><span class=tag>Ethereum · geth · pathdb · benchmarking</span> · 2026 · <a href="https://github.com/CPerezz/articles/tree/main/state-db-perf-divergence">reproducible pipeline &amp; data &rarr;</a></div>
-<p class=sub>406 tests common to all three runs · generated 2026-09-07</p>
+<p class=sub>406 tests common to all three runs · generated 2026-09-07 · updated with the root-cause investigation</p>
 <div class=legend>
 <span><i class=sw style="background:var(--db-c)"></i><b>compacted</b> <code>a20c0626</code> 2026-08-19</span>
 <span><i class=sw style="background:var(--db-u)"></i><b>uncompacted</b> <code>eb893b14</code> 2026-08-18</span>
@@ -797,18 +797,15 @@ CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhe
 <caption>CALL slopes, value_sent=1, ms per 1M gas. A value-bearing CALL to a <em>non-existent</em> account additionally pays account-creation gas, so its loop iterates far fewer times per 1M gas — the low NON_EXISTING slope is the signature of a genuinely absent account, and every other class differs from it by 8.1–10.6&times; on state-actor.</caption></table>
 <p class=note>Unit: <span class=tip tabindex=0>ms per 1M gas<span class=bub>Ordinary-least-squares slope of <code>timing.total_ms</code> against the gas target in millions, fitted over the category's 11 gas levels (100M…300M). The slope drops the fixed per-block intercept, so it is the marginal cost of state work only — which is why slopes, not per-test ratios, are the sound comparison.</span></span></p>
 <p class=note>EEST <code>tests/benchmark/stateful/bloatnet/test_account_query.py:215-219</code> — <code>account_new</code> gas is budgeted only when <code>opcode == Op.CALL and value_sent &gt; 0 and account_mode == AccountMode.NON_EXISTING_ACCOUNT</code>. If state-actor's targets were absent, all rows would collapse to ≈1.0.</p></details>
-<h2>Instrumentation defects found</h2><ul class=tight>
+<h2>Appendix &mdash; instrumentation defects found</h2><ul class=tight>
 <li><code>timing.execution_ms</code> is a derived field and goes negative in 176 of the 1218 measured blocks (55/55/66 per run) — every one of them a value-transfer block. Unusable as a measurement; all timing in this report uses <code>timing.total_ms</code>.</li>
 <li><code>state_reads</code> / <code>state_writes</code> / cache counters are constant per block shape (<code>accounts=4, code=0</code>) even for a CALL into 24 KB of code, so they cannot be used to attribute cost.</li>
 <li>benchmarkoor logs the cgroup path but never samples utilization, so host contention cannot be ruled out from the logs alone.</li>
 </ul>
-<h2>Next steps</h2><ol class=tight>
-<li><code>eth_getCode</code> probe over sampled max_diff/max_same CREATE2 addresses in both databases — converts the existence argument from inference to direct read.</li>
-<li>Scrape the meters geth already emits at <code>127.0.0.1:8008/debug/metrics</code> — <code>dirtyStateHitMeter</code>, <code>dirtyStateMissMeter</code>, <code>cleanStateHitMeter</code>, <code>dirtyStateHitDepthHist</code> — per test. Those settle which classes sit in the journal and at what depth, converting the last inference into a measurement. An earlier draft named <code>trie/memcache/clean/*</code>; those are the wrong meters for account reads.</li>
-<li>Rerun state-actor on fixture bundle <code>6142626aac06abc4</code> to remove the bundle difference as an H1 candidate.</li>
-<li>Record compaction state and journal/triediffs/triedirty size as an explicit benchmark axis — they currently move results more than the code under test.</li>
-<li>Fix the geth instrumentation defects above (<code>execution_ms</code>, dead state and cache counters).</li>
-</ol>
+<h2>Benchmark worst cases on generated state</h2>
+<p>The lesson generalises well beyond one account class. A worst-case benchmark is a claim about <i>cold</i> performance, and a baseline built by replaying blocks cannot help carrying its own history with it: whatever was written last is still warm &mdash; in the journal, in the write buffer, in the youngest levels of the LSM tree. None of that appears in a config file. Here it was worth 23&times; on exactly the workload the suite was built to stress, and it took three rounds of measurement to find.</p>
+<p>state-actor avoids the entire class of problem by construction. It generates the whole state up front, before any benchmark runs, so no account is more recent than any other: nothing is journal-resident, nothing sits in a privileged stratum, and a cold read costs what a cold read costs &mdash; the same for every class. That uniformity is exactly what the numbers above show the replayed snapshot lacked, and it is why generated state is the right way to benchmark a client's worst case. The one caveat is the mirror image of the same point: generated state is uniform, so it tells you nothing about how a real node's aged, fragmented store behaves. It is the right tool for worst-case bounds, not for typical-case fidelity.</p>
+<p>If a replayed snapshot is unavoidable, this report is the checklist: drain the journal, compact the store, promote, and only then believe the numbers. Otherwise the benchmark measures the order in which the fixtures were deployed.</p>
 <div class=endbar><a href="../">&larr; all articles</a><a href="https://github.com/CPerezz/articles/tree/main/state-db-perf-divergence">source &amp; data</a></div>
 <span class=cursor style="position:fixed;bottom:1.4rem;right:1.4rem;z-index:6"></span>
 </body></html>

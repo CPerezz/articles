@@ -1008,7 +1008,8 @@ def main():
     w('<div class=meta><span class=tag>Ethereum · geth · pathdb · benchmarking</span> · 2026 · '
       '<a href="https://github.com/CPerezz/articles/tree/main/state-db-perf-divergence">'
       'reproducible pipeline &amp; data &rarr;</a></div>')
-    w(f"<p class=sub>{len(common)} tests common to all three runs · generated {today}</p>")
+    w(f"<p class=sub>{len(common)} tests common to all three runs · generated "
+      f"{today} · updated with the root-cause investigation</p>")
     w("<div class=legend>")
     for k, (label, var) in DB.items():
         w(f'<span><i class=sw style="background:var({var})"></i><b>{label}</b> '
@@ -1380,7 +1381,7 @@ def main():
       "collapse to ≈1.0.</p></details>")
 
     # 12. instrumentation defects
-    w("<h2>Instrumentation defects found</h2><ul class=tight>")
+    w("<h2>Appendix &mdash; instrumentation defects found</h2><ul class=tight>")
     w(f"<li><code>timing.execution_ms</code> is a derived field and goes negative in "
       f"{neg_exec} of the {3*len(common)} measured blocks ({neg_c}/{neg_u}/{neg_sa} per run) — "
       "every one of them a value-transfer block. Unusable as a measurement; all timing in this "
@@ -1392,24 +1393,29 @@ def main():
       "cannot be ruled out from the logs alone.</li>")
     w("</ul>")
 
-    # 13. next steps
-    w("<h2>Next steps</h2><ol class=tight>")
-    w("<li><code>eth_getCode</code> probe over sampled max_diff/max_same CREATE2 addresses in "
-      "both databases — converts the existence argument from inference to direct read.</li>")
-    w("<li>Scrape the meters geth already emits at "
-      "<code>127.0.0.1:8008/debug/metrics</code> — <code>dirtyStateHitMeter</code>, "
-      "<code>dirtyStateMissMeter</code>, <code>cleanStateHitMeter</code>, "
-      "<code>dirtyStateHitDepthHist</code> — per test. Those settle which classes sit in "
-      "the journal and at what depth, converting the last inference into a measurement. An "
-      "earlier draft named <code>trie/memcache/clean/*</code>; those are the wrong meters "
-      "for account reads.</li>")
-    w("<li>Rerun state-actor on fixture bundle <code>6142626aac06abc4</code> to remove the "
-      "bundle difference as an H1 candidate.</li>")
-    w("<li>Record compaction state and journal/triediffs/triedirty size as an explicit benchmark "
-      "axis — they currently move results more than the code under test.</li>")
-    w("<li>Fix the geth instrumentation defects above (<code>execution_ms</code>, dead state and "
-      "cache counters).</li>")
-    w("</ol>")
+    # 13. conclusion
+    w("<h2>Benchmark worst cases on generated state</h2>")
+    w("<p>The lesson generalises well beyond one account class. A worst-case "
+      "benchmark is a claim about <i>cold</i> performance, and a baseline built by "
+      "replaying blocks cannot help carrying its own history with it: whatever was "
+      "written last is still warm &mdash; in the journal, in the write buffer, in "
+      "the youngest levels of the LSM tree. None of that appears in a config file. "
+      "Here it was worth 23&times; on exactly the workload the suite was built to "
+      "stress, and it took three rounds of measurement to find.</p>")
+    w("<p>state-actor avoids the entire class of problem by construction. It "
+      "generates the whole state up front, before any benchmark runs, so no account "
+      "is more recent than any other: nothing is journal-resident, nothing sits in a "
+      "privileged stratum, and a cold read costs what a cold read costs &mdash; the "
+      "same for every class. That uniformity is exactly what the numbers above show "
+      "the replayed snapshot lacked, and it is why generated state is the right way "
+      "to benchmark a client's worst case. The one caveat is the mirror image of the "
+      "same point: generated state is uniform, so it tells you nothing about how a "
+      "real node's aged, fragmented store behaves. It is the right tool for "
+      "worst-case bounds, not for typical-case fidelity.</p>")
+    w("<p>If a replayed snapshot is unavoidable, this report is the checklist: drain "
+      "the journal, compact the store, promote, and only then believe the numbers. "
+      "Otherwise the benchmark measures the order in which the fixtures were "
+      "deployed.</p>")
 
     w('<div class=endbar><a href="../">&larr; all articles</a>'
       '<a href="https://github.com/CPerezz/articles/tree/main/state-db-perf-divergence">'
