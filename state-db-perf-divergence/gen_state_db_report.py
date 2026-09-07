@@ -934,6 +934,8 @@ def main():
     w = o.append
     today = datetime.date.today().isoformat()
     dm = DM
+    G = ("https://github.com/jochem-brouwer/go-ethereum/blob/4d92c8e0c05455a85dd29107b9d627150ab67f1e")
+    LEDGER = ("https://github.com/CPerezz/articles/blob/1083280c829cd602fa10dfde76092f5c032056b2/docs/superpowers/specs/2026-08-31-root-cause-ledger.md")
 
     w("<!doctype html><html lang=en><head><meta charset=utf-8>")
     w('<meta name=viewport content="width=device-width,initial-scale=1">')
@@ -1121,7 +1123,7 @@ def main():
     w("</details>")
 
     # 7b. origin of the divergence
-    w("<h2>Origin of the divergence — what we discarded, and what survived</h2>")
+    w("<h2>What geth's own logs say</h2>")
     w("<p>The framing above is the wrong way round, and correcting it is what made the "
       "cause findable. state-actor is not the anomaly: it is the <em>uniform</em> run, "
       f"costing {fnum(min(us[m]['sa'] for m in MODES),1)}–"
@@ -1137,7 +1139,6 @@ def main():
       "separate table that BALANCE never reads. <b>Structurally identical leaves cannot "
       "differ 7× because of what they point at</b>, so the explanation has to be which "
       "storage tier answers the read.</p>")
-    w("<h3>What geth's own logs say</h3>")
     w("<table><tr><th>observation</th>" + db_headers(numeric=False) + "</tr>")
     for row in LOGMINE:
         w("<tr>" + "".join(f"<td>{esc(c)}</td>" for c in row) + "</tr>")
@@ -1145,41 +1146,62 @@ def main():
       "stdout across 914 / 974 / 999 container lifecycles, never parsed before this pass. "
       "Every tunable is identical; the single configuration-level difference in the whole "
       "corpus is whether a journal is found at startup.</caption></table>")
-    w("<h3>The read path that explains it</h3>")
-    w("<p><code>triedb/pathdb/journal.go:162</code> forks on exactly one condition. If the "
-      "journal loads, geth returns the reconstructed layer stack; if it does not, it logs "
-      "<code>Failed to load journal, discard it</code> and returns a <b>single disk layer "
-      "with an empty write buffer</b>. And <code>journal.go:197</code> shows the journal is "
-      "not metadata: it decodes straight into a live buffer, <b>rehydrating the "
-      "not-yet-written state</b>.</p>")
-    w("<p><code>disklayer.go:171</code> then reads tiers in order — write buffer, clean "
-      "state cache, disk. Because the measured <code>statecache</code> is "
-      "<b>0.00 B in all three runs</b>, <code>newDiskLayer</code> leaves the clean state "
-      "cache nil, so <b>the journal-restored buffer is the only warm tier that exists</b>. "
-      "A run without a journal therefore serves every account read from disk.</p>")
-    w("<h3>Cause</h3>")
-    w("<p><b>Proven.</b> state-actor's image ships with no pathdb journal, and the "
-      "benchmark restarts geth for every test, so all 999 lifecycles begin with an empty "
-      "buffer and no warm tier — hence one flat cost for every class. jochemnet's image "
-      "ships a 380.15 MiB journal holding 4,248 diff layers, rehydrated on every restart, "
-      "so part of its state answers from RAM. Manual compaction cannot touch that: the "
-      "journal is a separate file from the SSTables.</p>")
-    w("<p><b>This is a provenance artifact, not a property of either database.</b> The "
-      "jochemnet image was captured from a running geth that still held unflushed dirty "
-      "state — corroborated by the ten static 2025 unclean-shutdown markers baked into the "
-      "same image. state-actor's was synthesised by a tool that writes SSTables directly "
-      "and never runs a geth that would journal.</p>")
-    w("<p><b>Inferred, not proven.</b> That the fast classes are precisely the ones "
-      "resident in jochemnet's journal. The speed ordering on uncompacted — DIFF_MAX 2.4 &lt; "
-      "SAME_MAX 2.6 &lt; JUMPDEST 3.1 &lt; MINIMAL 3.2 &lt; EOA 8.3 &lt; NON_EXISTING "
-      "17.3&nbsp;µs — is exactly a hit-depth gradient over a 4,248-layer stack, and geth "
-      "meters that as <code>dirtyStateHitDepthHist</code>, but the journal's contents were "
-      "never read.</p>")
-    w("<p><b>Still open.</b> Why compaction cost uncompacted four of its five fast classes "
-      "while leaving DIFF_MAX at ~2&nbsp;µs, and why it made NON_EXISTING faster "
-      "(17.3 → 14.3&nbsp;µs). Both jochemnet runs load an identical journal, so the "
-      "diff-layer tier cannot be the differentiator; on-disk layout is the remaining "
-      "candidate and this corpus cannot evaluate it.</p>")
+    w("<h2>The root cause: the pathdb journal</h2>")
+    w(f"<p>Geth's path-based state database keeps recent trie changes in memory: "
+      f"up to <a href='{G}/triedb/pathdb/config.go#L70'>128 diff layers</a> plus an "
+      f"aggregated write buffer that only reaches disk "
+      f"<a href='{G}/triedb/pathdb/disklayer.go#L423'>once it fills</a>. Whatever is "
+      f"still in memory at shutdown is written to <code>triedb/merkle.journal</code> "
+      f"(<a href='{G}/triedb/pathdb/journal.go#L321'>Journal</a>) and loaded straight "
+      f"back into that buffer on the next start. A pre-run that never fills a 1&nbsp;GiB "
+      f"buffer therefore ends with the trie writes of its last <b>4,248 blocks</b> living "
+      f"in exactly one place: the journal file.</p>")
+    w(f"<p>That matters because of the order the read path tries tiers. "
+      f"<a href='{G}/triedb/pathdb/journal.go'>journal.go</a> forks on one condition &mdash; "
+      f"journal loads, you get the reconstructed layer stack; journal fails, you get "
+      f"<code>Failed to load journal, discard it</code> and a single disk layer with an "
+      f"empty buffer. <code>disklayer.go</code> then reads buffer, then clean state cache, "
+      f"then disk. The measured <code>statecache</code> is <b>0.00&nbsp;B in all three "
+      f"runs</b>, so the journal-restored buffer is the <i>only</i> warm tier that exists. "
+      f"With a journal, some reads never reach the disk. Without one, all of them do.</p>")
+    w("<p>Now the part that makes it a per-class effect: <b>deploy order</b>. The EEST "
+      "setup deploys receiver contracts class by class, and DIFF_MAX &mdash; the most "
+      "expensive class to construct &mdash; goes <b>last</b>, in blocks "
+      "24,406,595&ndash;24,410,441 of a chain ending at 24,410,463. The persisted disk "
+      "layer stops at 24,406,217. Every DIFF_MAX account the benchmark reads was created "
+      "<i>inside the journal window</i>. Every other class was deployed thousands of "
+      "blocks earlier and had long since been flushed to disk.</p>")
+    w("<p>The pipeline then hands that journal to every single test: <code>promote</code> "
+      "bakes it into the golden baseline, and each per-test <code>restore</code> serves it "
+      "back, so geth reloads it into memory 1,463 times. To check this rather than assume "
+      "it, we ran 150 cold <code>eth_getBalance</code> calls per class with the OS page "
+      "cache dropped, reading geth's own I/O accounting from <code>/proc</code> &mdash; "
+      "first with the journal in place, then with the file deleted:</p>")
+    w("<table><tr><th>account class</th><th class=n>disk read, journal present</th>"
+      "<th class=n>disk read, journal deleted</th>"
+      "<th class=n>code size after deletion</th></tr>")
+    for cls, a, b, c in (("MINIMAL", "3.5 MB", "7.2 MB", "1 B"),
+                         ("SAME_MAX", "2.9 MB", "6.5 MB", "24,576 B"),
+                         ("JUMPDEST", "2.8 MB", "6.8 MB", "24,576 B"),
+                         ("<b>DIFF_MAX</b>", "<b>0.0 MB</b>", "5.2 MB",
+                          "<b>0 B &mdash; the accounts are gone</b>"),
+                         ("EOA", "2.6 MB", "7.4 MB", "0 B (balance &gt; 0)"),
+                         ("NON_EXISTING", "2.5 MB", "9.7 MB", "0 B")):
+        w(f"<tr><td>{cls}</td><td class=n>{a}</td><td class=n>{b}</td>"
+          f"<td class=n>{c}</td></tr>")
+    w(f"<caption>Probes A and B from the <a href='{LEDGER}'>investigation ledger</a>. "
+      f"With the journal, DIFF_MAX reads <b>zero bytes</b> from disk while its siblings "
+      f"each pull megabytes. Delete the journal and geth rewinds to block 24,406,217 "
+      f"&mdash; the disk layer, exactly where the window arithmetic says it should &mdash; "
+      f"and the DIFF_MAX accounts <i>stop existing</i>. Their whole lives were "
+      f"journal-resident.</caption></table>")
+    w("<p><b>So why only these accounts, and not all of them?</b> Because journal "
+      "residency is recency, and recency here is deploy order. Only state written in the "
+      "pre-run's final 4,248 blocks is still in memory at shutdown, and that is precisely "
+      "the DIFF_MAX receivers &mdash; plus the tail of the SAME_MAX salt range, whose "
+      "addresses this benchmark never reads: the salts it does read were deployed "
+      "thousands of blocks below the window. Same trie, same depth, same fixtures, same "
+      "client. Different birthday.</p>")
     w("<h3>Hypotheses discarded, and what killed each</h3>")
     w("<table><tr><th>hypothesis</th><th>verdict</th><th>what settled it</th></tr>")
     for name, verdict, killer in DISCARDED:
