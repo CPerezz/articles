@@ -213,3 +213,41 @@ report's analytical superset) launched on the drained+compacted promoted
 baseline - config `jochemnet-drained.yaml`, labels `journal=drained`,
 results `/data/bench-results/jochemnet-drained`. Cross-arm comparison vs
 state-actor run 1 follows as the final verdict.
+
+## R4 verdict — drained jochemnet vs state-actor (final)
+
+80-test verdict run (all 8 opcodes x {DIFF_MAX, MINIMAL control} x
+{160M, 300M} gas, value_sent=0, overhead_baseline=False; run exit 0;
+results `/data/bench-results/jochemnet-drained`, plus 32 bonus results from
+the aborted full-surface run in `...-drained-headstart`). Cross-arm ratio =
+jochemnet / state-actor, per cell:
+
+| mode | opcode class | orig/SA | **drained/SA** |
+| --- | --- | --- | --- |
+| MINIMAL (control) | all 8 opcodes | 1.11-1.13x | **1.10-1.14x** |
+| DIFF_MAX | leaf-readers (BALANCE, EXTCODEHASH) | 22.4-23.1x | **1.11-1.12x** |
+| DIFF_MAX | code-readers (CALL, CALLCODE, DELEGATECALL, STATICCALL, EXTCODESIZE, EXTCODECOPY) | 2.80-2.91x | **1.18-1.22x** |
+
+- The control is untouched by the fix (orig 1.12x median, drained 1.12x) -
+  no collateral distortion from draining + compacting.
+- The 23x leaf-read anomaly collapses exactly into the host band.
+- The predicted secondary fingerprint confirms: partially-accelerated
+  code-reading rows (2.8x) also collapse, to 1.18-1.22x - a ~6% residual
+  above the 1.12x band, uniform across all six opcodes (plausibly code-blob
+  key adjacency from the late pre-run inserts; within noise of the verdict).
+- Within-arm structure now matches SA row-for-row (e.g. DIFF_MAX slower
+  than MINIMAL on CALL-class opcodes in BOTH arms - real work, 24 KiB vs
+  1 B code reads).
+
+# FINAL VERDICT
+
+With the pathdb journal drained into the disk layer and the store compacted
+after the pre-run (`drainjournal` + `geth db compact`, wired as
+benchmarkoor's post-pre-run hook), the jochemnet arm reproduces the
+state-actor arm across the entire tested surface inside the same
+~1.1-1.2x host band that every non-anomalous category always showed.
+The DIFF_MAX divergence is eliminated at its root: it was never a property
+of either database - it was pre-run deploy recency served from the
+journal's RAM-resident layers, amplified by LSM recency locality. Both
+legs of the fix are required: 410 -> 272 MGas/s (drain) -> 18.3 (compact),
+landing on state-actor's 16.5.
