@@ -42,6 +42,25 @@ DATA = os.path.join(HERE, "data")
 FIGS = os.path.join(HERE, "figures")
 OUT = os.path.join(HERE, "state-db-perf-report.html")
 JSON_OUT = os.path.join(DATA, "report_data.json")
+VERDICT_IN = os.path.join(DATA, "drained_verdict.json")
+
+# The verdict run: the same cells measured on the original jochemnet baseline,
+# on the drained + compacted one, and on state-actor. Collected by
+# collect_verdict.py; the bands below fail loudly if that file is ever
+# regenerated wrong.
+with open(VERDICT_IN) as _fh:
+    VERDICT = json.load(_fh)
+assert len(VERDICT["cells"]) == 32, "verdict: expected 32 cells"
+LEAF_OPS = ("BALANCE", "EXTCODEHASH")
+_leaf = [c["drained"] / c["sa"] for c in VERDICT["cells"]
+         if c["mode"].endswith("DIFF_MAX") and c["opcode"] in LEAF_OPS]
+_code = [c["drained"] / c["sa"] for c in VERDICT["cells"]
+         if c["mode"].endswith("DIFF_MAX") and c["opcode"] not in LEAF_OPS]
+_ctrl = [c["drained"] / c["sa"] for c in VERDICT["cells"]
+         if c["mode"].endswith("MINIMAL")]
+assert all(1.05 <= r <= 1.25 for r in _leaf), f"verdict leaf band broke: {_leaf}"
+assert all(1.10 <= r <= 1.30 for r in _code), f"verdict code band broke: {_code}"
+assert all(1.05 <= r <= 1.20 for r in _ctrl), f"verdict control band broke: {_ctrl}"
 
 # What the three database names mean; rendered once beside the legend because the
 # prose below says "jochemnet" and nothing else defines it.
@@ -554,6 +573,34 @@ def standalone_svg(svg):
             f'<rect width="100%" height="100%" fill="var(--bg)"/>{rest}')
 
 
+def chart_verdict(v):
+    """Cross-arm ratio per DIFF_MAX cell, before and after the fix."""
+    cells = sorted((c for c in v["cells"] if c["mode"].endswith("DIFF_MAX")),
+                   key=lambda c: (c["opcode"], c["gas"]))
+    ctrl = [c["drained"] / c["sa"] for c in v["cells"]
+            if c["mode"].endswith("MINIMAL")]
+    W, LEFT, RIGHT, TOP = 760, 200, 46, 16
+    H = TOP + 20 * len(cells) + 34
+    lo, hi = 0.9, 30.0
+    sc = S.LogScale(lo, hi, LEFT, W - RIGHT)
+    body = [S.band(sc.to(min(ctrl)), sc.to(max(ctrl)), TOP - 6, H - 34, "--db-sa", 0.12),
+            S.hgrid(sc, [1, 1.2, 2, 3, 5, 10, 23], TOP - 6, H - 34, lambda t: f"{t:g}x"),
+            S.line(sc.to(1.0), TOP - 6, sc.to(1.0), H - 34, "--muted", 1, "3 3")]
+    for i, c in enumerate(cells):
+        y = TOP + 14 + 20 * i
+        before, after = c["orig"] / c["sa"], c["drained"] / c["sa"]
+        body.append(S.label(LEFT - 10, y + 4, f'{c["opcode"]}  {c["gas"]}', "end"))
+        body.append(S.line(sc.to(after), y, sc.to(before), y, "--dim", 1.5))
+        body.append(S.dot(sc.to(before), y, 4.5, "--db-u", f"before {before:.2f}x"))
+        body.append(S.dot(sc.to(after), y, 6, "--accent", f"after {after:.2f}x"))
+        body.append(S.label(sc.to(before) + 9, y + 4, f"{before:.1f}x", "start", "tick"))
+    return (S.svg(W, H, "".join(body)),
+            f"Cross-arm ratio (jochemnet \u00f7 state-actor) for every DIFF_MAX cell: "
+            f"amber before the fix, green after. The shaded band is the MINIMAL "
+            f"control ({min(ctrl):.2f}\u2013{max(ctrl):.2f}\u00d7), which the fix "
+            f"leaves exactly where it was.")
+
+
 def chart_ratio_dots(by_op):
     rows = [(op, m, by_op[op][m]["sa"] / by_op[op][m]["c"])
             for op in OPCODES for m in MODES if by_op[op][m]["n"]]
@@ -935,6 +982,8 @@ def main():
     today = datetime.date.today().isoformat()
     dm = DM
     G = ("https://github.com/jochem-brouwer/go-ethereum/blob/4d92c8e0c05455a85dd29107b9d627150ab67f1e")
+    PR_URL = "https://github.com/ethpandaops/benchmarkoor/pull/315"
+    TOOL = ("https://github.com/CPerezz/articles/blob/1083280c829cd602fa10dfde76092f5c032056b2/tools/drainjournal-main.go")
     LEDGER = ("https://github.com/CPerezz/articles/blob/1083280c829cd602fa10dfde76092f5c032056b2/docs/superpowers/specs/2026-08-31-root-cause-ledger.md")
 
     w("<!doctype html><html lang=en><head><meta charset=utf-8>")
@@ -972,6 +1021,7 @@ def main():
         "compaction-dumbbell": chart_dumbbell(us),
         "cost-curves": chart_slope_lines(meas, P, clean),
         "convergence": chart_convergence(gas_rows, agree_med, len(agree)),
+        "verdict": chart_verdict(VERDICT),
     }
     # The guard sees the geometry only: captions are prose and legitimately
     # contain words like "inference".
@@ -1202,6 +1252,71 @@ def main():
       "addresses this benchmark never reads: the salts it does read were deployed "
       "thousands of blocks below the window. Same trie, same depth, same fixtures, same "
       "client. Different birthday.</p>")
+    w("<h2>The fix, and the proof</h2>")
+    w(f"<p>If journal residency is the cause, the fix writes itself: after the "
+      f"pre-run and before the baseline is promoted, <b>drain the journal into the "
+      f"disk layer</b> &mdash; flatten every diff layer and push the write buffer "
+      f"into the key-value store. Geth already has the code path "
+      f"(<code>tree.cap(root,&nbsp;0)</code>); we packaged it as a small tool, "
+      f"<a href='{TOOL}'>drainjournal</a>, built against the exact client commit "
+      f"these runs used, and wired it into the harness as a post-pre-run hook "
+      f"(<a href='{PR_URL}'>draft PR</a>). The head does not move; only <i>where "
+      f"the state lives</i> changes.</p>")
+    sm = VERDICT["smoke_drain_only"][0]["mgas_s"]
+    b160 = next(c for c in VERDICT["cells"] if c["opcode"] == "BALANCE"
+                and c["gas"] == "160M" and c["mode"].endswith("DIFF_MAX"))
+    w(f"<p>Draining alone was not enough, and the way it failed is instructive. "
+      f"BALANCE/DIFF_MAX at 160M gas fell from {b160['orig']:.0f} to "
+      f"{sm:.0f}&nbsp;MGas/s &mdash; better, nowhere near fixed. The drain had "
+      f"written all that state into about a hundred fresh, densely packed SSTables, "
+      f"and in an LSM tree recency <i>is</i> physical locality: the class had simply "
+      f"traded a memory advantage for an on-disk one. One "
+      f"<code>geth db compact</code> later, those leaves were merged into the same "
+      f"cold strata as everybody else's, and the number landed at "
+      f"{b160['drained']:.1f} &mdash; against state-actor's {b160['sa']:.1f}. Both "
+      f"legs are needed: {b160['orig']:.0f} &rarr; {sm:.0f} (drain) &rarr; "
+      f"{b160['drained']:.1f} (compact).</p>")
+    w(figure(*figs["verdict"]))
+    leaf = [c for c in VERDICT["cells"] if c["mode"].endswith("DIFF_MAX")
+            and c["opcode"] in LEAF_OPS]
+    code = [c for c in VERDICT["cells"] if c["mode"].endswith("DIFF_MAX")
+            and c["opcode"] not in LEAF_OPS]
+    ctrl = [c for c in VERDICT["cells"] if c["mode"].endswith("MINIMAL")]
+    rr = lambda rows, f: (min(f(c) for c in rows), max(f(c) for c in rows))
+    b4 = lambda c: c["orig"] / c["sa"]
+    af = lambda c: c["drained"] / c["sa"]
+    w(f"<p>Across all {len(VERDICT['cells'])} cells of the verdict run &mdash; every "
+      f"opcode, two gas budgets, the anomalous class and a control class that was "
+      f"never journal-resident:</p>")
+    w("<table><tr><th>group</th><th class=n>cells</th><th class=n>before (orig \u00f7 SA)</th>"
+      "<th class=n>after (drained \u00f7 SA)</th></tr>")
+    for name, rows in (("DIFF_MAX, leaf-reading opcodes", leaf),
+                       ("DIFF_MAX, code-reading opcodes", code),
+                       ("MINIMAL control", ctrl)):
+        lo1, hi1 = rr(rows, b4)
+        lo2, hi2 = rr(rows, af)
+        w(f"<tr><td>{name}</td><td class=n>{len(rows)}</td>"
+          f"<td class=n>{lo1:.2f}&ndash;{hi1:.2f}&times;</td>"
+          f"<td class=n>{lo2:.2f}&ndash;{hi2:.2f}&times;</td></tr>")
+    w("<caption>The control does not move: the fix is not a global slowdown. "
+      "The anomaly does.</caption></table>")
+    w(f"<details><summary>All {len(VERDICT['cells'])} verdict cells (MGas/s)</summary>")
+    w("<table><tr><th>opcode</th><th>account_mode</th><th class=n>gas</th>"
+      "<th class=n>jochemnet orig</th><th class=n>jochemnet drained</th>"
+      "<th class=n>state-actor</th><th class=n>orig \u00f7 SA</th>"
+      "<th class=n>drained \u00f7 SA</th></tr>")
+    for c in sorted(VERDICT["cells"], key=lambda c: (c["mode"], c["opcode"], c["gas"])):
+        short = "DIFF_MAX" if c["mode"].endswith("DIFF_MAX") else "MINIMAL"
+        w(f"<tr><td>{esc(c['opcode'])}</td><td>{short}</td>"
+          f"<td class=n>{c['gas']}</td><td class=n>{c['orig']:.1f}</td>"
+          f"<td class=n>{c['drained']:.1f}</td><td class=n>{c['sa']:.1f}</td>"
+          f"<td class=n>{b4(c):.2f}&times;</td>"
+          f'<td class="n{ratio_cls(af(c))}">{af(c):.2f}&times;</td></tr>')
+    w(f"<caption>value_sent=0, overhead_baseline=False, the primary measurement. "
+      f"Source: <code>data/drained_verdict.json</code>, collected by "
+      f"<code>collect_verdict.py</code>; baseline drained with "
+      f"<a href='{TOOL}'>drainjournal</a> then compacted, and promoted through "
+      f"the harness exactly as the original baseline was.</caption></table></details>")
     w("<h3>Hypotheses discarded, and what killed each</h3>")
     w("<table><tr><th>hypothesis</th><th>verdict</th><th>what settled it</th></tr>")
     for name, verdict, killer in DISCARDED:
