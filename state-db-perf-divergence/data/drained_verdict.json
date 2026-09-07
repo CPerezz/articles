@@ -1,0 +1,281 @@
+{
+ "provenance": {
+  "host": "stateless-bloatnet-benchmarks",
+  "collected": "2026-09-07",
+  "runs": {
+   "orig": "/data/bench-results/jochemnet/runs/1787952270_6621b826_geth-bal-full",
+   "drained": "/data/bench-results/jochemnet-drained/runs",
+   "sa": "/data/bench-results/state-actor/runs/1788015169_bc76d34c_geth-bal-full"
+  },
+  "binary": "benchmarkoor 1e0b9d4 (+ post-pre-run hook c3c46f1, dormant: baseline pre-drained)",
+  "baseline": "jochemnet drained (drainjournal @ geth 4d92c8e) + geth db compact, schelk-promoted",
+  "selection": "value_sent=0, overhead_baseline=False, gas in {160M,300M}",
+  "smoke_note": "smoke_drain_only measured on the drain-only baseline (before the post-drain compaction), run jochemnet-drained-smoke"
+ },
+ "cells": [
+  {
+   "opcode": "BALANCE",
+   "mode": "EXISTING_CONTRACT_DIFF_MAX",
+   "gas": "160M",
+   "orig": 379.969,
+   "drained": 18.524,
+   "sa": 16.487
+  },
+  {
+   "opcode": "BALANCE",
+   "mode": "EXISTING_CONTRACT_DIFF_MAX",
+   "gas": "300M",
+   "orig": 405.217,
+   "drained": 19.589,
+   "sa": 17.71
+  },
+  {
+   "opcode": "BALANCE",
+   "mode": "EXISTING_CONTRACT_MINIMAL",
+   "gas": "160M",
+   "orig": 18.569,
+   "drained": 18.655,
+   "sa": 16.595
+  },
+  {
+   "opcode": "BALANCE",
+   "mode": "EXISTING_CONTRACT_MINIMAL",
+   "gas": "300M",
+   "orig": 19.721,
+   "drained": 19.928,
+   "sa": 17.669
+  },
+  {
+   "opcode": "CALL",
+   "mode": "EXISTING_CONTRACT_DIFF_MAX",
+   "gas": "160M",
+   "orig": 27.171,
+   "drained": 11.348,
+   "sa": 9.343
+  },
+  {
+   "opcode": "CALL",
+   "mode": "EXISTING_CONTRACT_DIFF_MAX",
+   "gas": "300M",
+   "orig": 28.604,
+   "drained": 12.12,
+   "sa": 10.233
+  },
+  {
+   "opcode": "CALL",
+   "mode": "EXISTING_CONTRACT_MINIMAL",
+   "gas": "160M",
+   "orig": 18.538,
+   "drained": 18.591,
+   "sa": 16.357
+  },
+  {
+   "opcode": "CALL",
+   "mode": "EXISTING_CONTRACT_MINIMAL",
+   "gas": "300M",
+   "orig": 19.866,
+   "drained": 19.964,
+   "sa": 17.816
+  },
+  {
+   "opcode": "CALLCODE",
+   "mode": "EXISTING_CONTRACT_DIFF_MAX",
+   "gas": "160M",
+   "orig": 27.067,
+   "drained": 11.326,
+   "sa": 9.365
+  },
+  {
+   "opcode": "CALLCODE",
+   "mode": "EXISTING_CONTRACT_DIFF_MAX",
+   "gas": "300M",
+   "orig": 28.878,
+   "drained": 12.04,
+   "sa": 10.203
+  },
+  {
+   "opcode": "CALLCODE",
+   "mode": "EXISTING_CONTRACT_MINIMAL",
+   "gas": "160M",
+   "orig": 18.766,
+   "drained": 18.425,
+   "sa": 16.765
+  },
+  {
+   "opcode": "CALLCODE",
+   "mode": "EXISTING_CONTRACT_MINIMAL",
+   "gas": "300M",
+   "orig": 19.831,
+   "drained": 19.833,
+   "sa": 17.874
+  },
+  {
+   "opcode": "DELEGATECALL",
+   "mode": "EXISTING_CONTRACT_DIFF_MAX",
+   "gas": "160M",
+   "orig": 26.919,
+   "drained": 11.313,
+   "sa": 9.521
+  },
+  {
+   "opcode": "DELEGATECALL",
+   "mode": "EXISTING_CONTRACT_DIFF_MAX",
+   "gas": "300M",
+   "orig": 28.56,
+   "drained": 11.967,
+   "sa": 10.167
+  },
+  {
+   "opcode": "DELEGATECALL",
+   "mode": "EXISTING_CONTRACT_MINIMAL",
+   "gas": "160M",
+   "orig": 18.507,
+   "drained": 18.461,
+   "sa": 16.622
+  },
+  {
+   "opcode": "DELEGATECALL",
+   "mode": "EXISTING_CONTRACT_MINIMAL",
+   "gas": "300M",
+   "orig": 19.984,
+   "drained": 19.558,
+   "sa": 17.799
+  },
+  {
+   "opcode": "EXTCODECOPY",
+   "mode": "EXISTING_CONTRACT_DIFF_MAX",
+   "gas": "160M",
+   "orig": 28.451,
+   "drained": 11.817,
+   "sa": 9.86
+  },
+  {
+   "opcode": "EXTCODECOPY",
+   "mode": "EXISTING_CONTRACT_DIFF_MAX",
+   "gas": "300M",
+   "orig": 30.371,
+   "drained": 12.724,
+   "sa": 10.79
+  },
+  {
+   "opcode": "EXTCODECOPY",
+   "mode": "EXISTING_CONTRACT_MINIMAL",
+   "gas": "160M",
+   "orig": 19.759,
+   "drained": 19.55,
+   "sa": 17.459
+  },
+  {
+   "opcode": "EXTCODECOPY",
+   "mode": "EXISTING_CONTRACT_MINIMAL",
+   "gas": "300M",
+   "orig": 20.9,
+   "drained": 20.943,
+   "sa": 18.834
+  },
+  {
+   "opcode": "EXTCODEHASH",
+   "mode": "EXISTING_CONTRACT_DIFF_MAX",
+   "gas": "160M",
+   "orig": 378.893,
+   "drained": 18.444,
+   "sa": 16.582
+  },
+  {
+   "opcode": "EXTCODEHASH",
+   "mode": "EXISTING_CONTRACT_DIFF_MAX",
+   "gas": "300M",
+   "orig": 399.393,
+   "drained": 19.678,
+   "sa": 17.804
+  },
+  {
+   "opcode": "EXTCODEHASH",
+   "mode": "EXISTING_CONTRACT_MINIMAL",
+   "gas": "160M",
+   "orig": 18.42,
+   "drained": 18.649,
+   "sa": 16.371
+  },
+  {
+   "opcode": "EXTCODEHASH",
+   "mode": "EXISTING_CONTRACT_MINIMAL",
+   "gas": "300M",
+   "orig": 19.744,
+   "drained": 19.698,
+   "sa": 17.575
+  },
+  {
+   "opcode": "EXTCODESIZE",
+   "mode": "EXISTING_CONTRACT_DIFF_MAX",
+   "gas": "160M",
+   "orig": 27.649,
+   "drained": 11.65,
+   "sa": 9.546
+  },
+  {
+   "opcode": "EXTCODESIZE",
+   "mode": "EXISTING_CONTRACT_DIFF_MAX",
+   "gas": "300M",
+   "orig": 29.483,
+   "drained": 12.347,
+   "sa": 10.502
+  },
+  {
+   "opcode": "EXTCODESIZE",
+   "mode": "EXISTING_CONTRACT_MINIMAL",
+   "gas": "160M",
+   "orig": 19.156,
+   "drained": 18.922,
+   "sa": 17.028
+  },
+  {
+   "opcode": "EXTCODESIZE",
+   "mode": "EXISTING_CONTRACT_MINIMAL",
+   "gas": "300M",
+   "orig": 20.519,
+   "drained": 20.354,
+   "sa": 18.33
+  },
+  {
+   "opcode": "STATICCALL",
+   "mode": "EXISTING_CONTRACT_DIFF_MAX",
+   "gas": "160M",
+   "orig": 27.233,
+   "drained": 11.372,
+   "sa": 9.358
+  },
+  {
+   "opcode": "STATICCALL",
+   "mode": "EXISTING_CONTRACT_DIFF_MAX",
+   "gas": "300M",
+   "orig": 28.646,
+   "drained": 12.046,
+   "sa": 10.153
+  },
+  {
+   "opcode": "STATICCALL",
+   "mode": "EXISTING_CONTRACT_MINIMAL",
+   "gas": "160M",
+   "orig": 18.633,
+   "drained": 18.418,
+   "sa": 16.52
+  },
+  {
+   "opcode": "STATICCALL",
+   "mode": "EXISTING_CONTRACT_MINIMAL",
+   "gas": "300M",
+   "orig": 19.966,
+   "drained": 20.016,
+   "sa": 17.781
+  }
+ ],
+ "smoke_drain_only": [
+  {
+   "opcode": "BALANCE",
+   "mode": "EXISTING_CONTRACT_DIFF_MAX",
+   "gas": "160M",
+   "mgas_s": 272.226
+  }
+ ]
+}
