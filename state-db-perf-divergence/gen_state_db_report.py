@@ -69,6 +69,30 @@ def parse_db_inspect(path):
 
 INSPECT = {k: parse_db_inspect(v) for k, v in INSPECT_IN.items()}
 
+# Where the pre-run put each receiver class, and where the persisted disk layer
+# stops. The deploy ranges come from classifying every CREATE2 in the 9.4 GB
+# pre-run bundle by initcode; the disk-layer block is where geth itself rewound
+# to when the journal was deleted. Both are recorded in the root-cause ledger.
+# Like LOGMINE, these are facts about the fixture bundle and the client, not
+# measurements the run logs contain - so they live here as constants and feed
+# both the figure and the prose, which cannot then disagree.
+PRERUN = {"first": 24402728, "head": 24410463, "disk_layer": 24406217,
+          "journal_layers": 4248, "journal_mib": 380.15}
+DEPLOYS = [
+    ("MINIMAL", 24402731, 24402749),
+    ("SAME_MAX", 24402749, 24406595),
+    ("DIFF_MAX", 24406595, 24410441),
+]
+assert PRERUN["first"] < PRERUN["disk_layer"] < PRERUN["head"], "window bounds"
+assert all(PRERUN["first"] <= lo < hi <= PRERUN["head"] for _, lo, hi in DEPLOYS), \
+    "a deploy range falls outside the pre-run"
+assert DEPLOYS[-1][1] > PRERUN["disk_layer"], \
+    "the last-deployed class is no longer inside the journal window"
+
+
+def thousands(n):
+    return f"{n:,}"
+
 # The verdict run: the same cells measured on the original jochemnet baseline,
 # on the drained + compacted one, and on state-actor. Collected by
 # collect_verdict.py; the bands below fail loudly if that file is ever
@@ -637,6 +661,58 @@ def standalone_svg(svg):
             f'<rect width="100%" height="100%" fill="var(--bg)"/>{rest}')
 
 
+def chart_journal_window():
+    """When each receiver class was deployed, against the journal window.
+
+    One row per class: the blocks in which the pre-run created it, drawn on the
+    chain axis. Everything left of the disk-layer marker was flushed to disk;
+    everything right of it existed only in the journal geth writes at shutdown.
+    """
+    first, head, cut = PRERUN["first"], PRERUN["head"], PRERUN["disk_layer"]
+    W, LEFT, RIGHT, TOP, ROW = 760, 128, 132, 40, 30
+    H = TOP + ROW * len(DEPLOYS) + 44
+    sc = S.Scale(first, head, LEFT, W - RIGHT)
+    y0, y1 = TOP - 12, TOP + ROW * len(DEPLOYS) - 2
+    body = [S.band(sc.to(cut), sc.to(head), y0, y1, "--db-u", 0.13)]
+    body.append(S.label((sc.to(cut) + sc.to(head)) / 2, y0 - 8,
+                        f'journal — {PRERUN["journal_mib"]:.0f} MiB held in RAM',
+                        "middle", "tick"))
+    body.append(S.line(sc.to(cut), y0, sc.to(cut), y1 + 10, "--muted", 1, "3 3"))
+    for i, (name, lo, hi) in enumerate(DEPLOYS):
+        y = TOP + ROW * i + 6
+        # a class deployed in a handful of blocks would otherwise vanish
+        xlo, xhi = sc.to(lo), max(sc.to(hi), sc.to(lo) + 7)
+        xcut = min(max(sc.to(cut), xlo), xhi)
+        if xcut > xlo:                       # the part that reached disk
+            body.append(S.band(xlo, xcut, y - 6, y + 6, "--db-c", 0.95))
+        if xhi > xcut:                       # the part left in the journal
+            body.append(S.band(xcut, xhi, y - 6, y + 6, "--db-u", 0.95))
+        body.append(S.dot(xlo, y, 3.5, "--fg", f"{name} first deploy: block {lo:,}"))
+        body.append(S.dot(xhi, y, 3.5, "--fg", f"{name} last deploy: block {hi:,}"))
+        body.append(S.label(LEFT - 12, y + 4, name, "end",
+                            "big" if lo > cut else ""))
+        verdict = ("entirely in journal" if lo > cut else
+                   "tail in journal" if hi > cut else "flushed to disk")
+        body.append(S.label(W - RIGHT + 12, y + 4, verdict, "start", "tick"))
+    axis_y = TOP + ROW * len(DEPLOYS) + 12
+    body.append(S.line(LEFT, axis_y, W - RIGHT, axis_y, "--line", 1))
+    for blk, anchor in ((first, "start"), (cut, "middle"), (head, "end")):
+        x = sc.to(blk)
+        body.append(S.line(x, axis_y, x, axis_y + 5, "--line", 1))
+        body.append(S.label(x, axis_y + 18, f"{blk:,}", anchor, "tick"))
+    body.append(S.label(sc.to(cut), axis_y + 32, "disk layer stops here",
+                        "middle", "tick"))
+    return (S.svg(W, H, "".join(body)),
+            f'Where the pre-run put each receiver class. Blue reached disk; amber '
+            f'existed only in the journal that geth writes at shutdown and reloads '
+            f'on every boot. MINIMAL is deployed and gone in '
+            f'{DEPLOYS[0][2] - DEPLOYS[0][1]} blocks; SAME_MAX leaves only its tail '
+            f'inside the window, and the benchmark reads salts from well below it. '
+            f'DIFF_MAX &mdash; deployed last, because it is the most expensive class '
+            f'to build &mdash; lands wholly inside. That is the whole anomaly: same '
+            f'trie, same depth, same fixtures, different birthday.')
+
+
 def chart_verdict(v):
     """Cross-arm ratio per DIFF_MAX cell, before and after the fix."""
     cells = sorted((c for c in v["cells"] if c["mode"].endswith("DIFF_MAX")),
@@ -1105,6 +1181,7 @@ def main():
         "cost-curves": chart_slope_lines(meas, P, clean),
         "convergence": chart_convergence(gas_rows, agree_med, len(agree)),
         "verdict": chart_verdict(VERDICT),
+        "journal-window": chart_journal_window(),
     }
     # The guard sees the geometry only: captions are prose and legitimately
     # contain words like "inference".
@@ -1427,13 +1504,16 @@ def main():
       f"then disk. The measured <code>statecache</code> is <b>0.00&nbsp;B in all three "
       f"runs</b>, so the journal-restored buffer is the <i>only</i> warm tier that exists. "
       f"With a journal, some reads never reach the disk. Without one, all of them do.</p>")
-    w("<p>Now the part that makes it a per-class effect: <b>deploy order</b>. The EEST "
-      "setup deploys receiver contracts class by class, and DIFF_MAX &mdash; the most "
-      "expensive class to construct &mdash; goes <b>last</b>, in blocks "
-      "24,406,595&ndash;24,410,441 of a chain ending at 24,410,463. The persisted disk "
-      "layer stops at 24,406,217. Every DIFF_MAX account the benchmark reads was created "
-      "<i>inside the journal window</i>. Every other class was deployed thousands of "
-      "blocks earlier and had long since been flushed to disk.</p>")
+    dm_lo, dm_hi = DEPLOYS[-1][1], DEPLOYS[-1][2]
+    w(f"<p>Now the part that makes it a per-class effect: <b>deploy order</b>. The EEST "
+      f"setup deploys receiver contracts class by class, and DIFF_MAX &mdash; the most "
+      f"expensive class to construct &mdash; goes <b>last</b>, in blocks "
+      f"{thousands(dm_lo)}&ndash;{thousands(dm_hi)} of a chain ending at "
+      f"{thousands(PRERUN['head'])}. The persisted disk layer stops at "
+      f"{thousands(PRERUN['disk_layer'])}. Every DIFF_MAX account the benchmark reads "
+      f"was created <i>inside the journal window</i>. Every other class was deployed "
+      f"thousands of blocks earlier and had long since been flushed to disk.</p>")
+    w(figure(*figs["journal-window"]))
     w("<p>The pipeline then hands that journal to every single test: <code>promote</code> "
       "bakes it into the golden baseline, and each per-test <code>restore</code> serves it "
       "back, so geth reloads it into memory 1,463 times. To check this rather than assume "
