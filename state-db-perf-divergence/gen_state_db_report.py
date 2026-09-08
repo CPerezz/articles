@@ -559,6 +559,17 @@ pre.idpre { background:#050805; border:1px solid var(--line); border-radius:3px;
 .cursor { display:inline-block; width:.5em; height:.9em; background:var(--accent);
   vertical-align:-2px; margin-left:2px; animation:blink 1s step-end infinite; }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.deck { color:var(--muted); font-size:15.5px; line-height:1.6; margin:2px 0 14px; }
+nav.toc { border:1px solid var(--line); background:var(--panel); padding:12px 16px;
+  margin:18px 0 26px; font-size:13.5px; }
+nav.toc .toch { color:var(--accent); letter-spacing:.08em; text-transform:uppercase;
+  font-size:11.5px; margin-bottom:8px; }
+nav.toc ul { list-style:none; margin:0; padding:0; }
+nav.toc li { margin:3px 0; }
+nav.toc li.sub { padding-left:20px; font-size:12.5px; }
+nav.toc li.sub a { color:var(--muted); }
+nav.toc a { text-decoration:none; }
+nav.toc a:hover { text-decoration:underline; }
 """
 
 
@@ -582,6 +593,34 @@ SVG_TEXT_CSS = (
 
 def figure(svg, caption):
     return f"<figure>{svg}<figcaption>{caption}</figcaption></figure>"
+
+
+def add_toc(doc):
+    """Give every navigable heading an id and build the contents list.
+
+    Headings inside a <details> are supporting material rather than
+    navigation targets, so they are left alone.
+    """
+    entries = []
+
+    def tag(m):
+        level, inner = m.group(1), m.group(2)
+        before = doc[:m.start()]
+        if before.count("<details") > before.count("</details>"):
+            return m.group(0)
+        slug = re.sub(r"[^a-z0-9]+", "-",
+                      html.unescape(re.sub(r"<[^>]+>", "", inner)).lower()).strip("-")
+        entries.append((level, slug, inner))
+        return f'<h{level} id="{slug}">{inner}</h{level}>'
+
+    doc = re.sub(r"<h([23])>(.*?)</h\1>", tag, doc, flags=re.S)
+    assert entries, "table of contents: no headings found"
+    items = "".join(
+        f'<li{" class=sub" if lvl == "3" else ""}><a href="#{slug}">{text}</a></li>'
+        for lvl, slug, text in entries)
+    nav = f'<nav class=toc><div class=toch>Contents</div><ul>{items}</ul></nav>'
+    assert doc.count("<!--TOC-->") == 1, "table of contents: marker missing"
+    return doc.replace("<!--TOC-->", nav)
 
 
 def standalone_svg(svg):
@@ -902,6 +941,20 @@ def main():
     gas_rows = [(gv, len(v), median(v), min(v), max(v))
                 for gv, v in sorted(per_gas.items())]
 
+    # The same per-test ratio restricted to DIFF_MAX, so the gas sweep can be
+    # compared like for like: the honest categories converge with gas, this one
+    # does not.
+    dm_per_gas = collections.defaultdict(list)
+    for t in clean:
+        if P[t]["mode"] != DM:
+            continue
+        dm_per_gas[P[t]["gas"]].append(
+            meas["sa"][t]["timing"]["total_ms"] / meas["c"][t]["timing"]["total_ms"])
+    dm_gas_rows = [(gv, median(v)) for gv, v in sorted(dm_per_gas.items())]
+    assert len(dm_gas_rows) >= 8, f"DIFF_MAX gas sweep too sparse: {dm_gas_rows}"
+    print(f"DIFF_MAX per-gas median ratio: {dm_gas_rows[0][1]:.2f}x at "
+          f"{dm_gas_rows[0][0]}M -> {dm_gas_rows[-1][1]:.2f}x at {dm_gas_rows[-1][0]}M")
+
     assert len(agree) == 13 and len(exceptions) == 3
     assert agree_hi < 1.15, f"non-DIFF_MAX category exceeded 1.15x: {agree_hi:.3f}"
     print(f"agreement: {len(agree)} categories {agree_lo:.3f}-{agree_hi:.3f}x "
@@ -1023,14 +1076,18 @@ def main():
       '<link href="https://fonts.googleapis.com/css2?family=VT323&'
       'family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" '
       'rel="stylesheet">')
-    w("<title>State-DB performance divergence — benchmarkoor bloatnet runs</title>")
+    w("<title>How can two databases holding the same state differ 7\u00d7 in "
+      "performance? — state-actor vs a mainnet snapshot</title>")
     w(f"<style>{CSS}</style></head><body>")
 
     # 1. header
     w('<div class=topbar><a href="../">&larr; all articles</a>'
       '<span>EXECUTION · STATE DB</span></div>')
     w('<div class=eyebrow>// REPORT</div>')
-    w("<h1>State-DB performance divergence — benchmarkoor bloatnet runs</h1>")
+    w("<h1>How can two databases holding the same state differ 7&times; in "
+      "performance?</h1>")
+    w("<p class=deck>A case study on state-actor versus a mainnet-snapshot "
+      "database &mdash; and on how a benchmark can measure its own setup.</p>")
     w('<div class=meta><span class=tag>Ethereum · geth · pathdb · benchmarking</span> · 2026 · '
       '<a href="https://github.com/CPerezz/articles/tree/main/state-db-perf-divergence">'
       'reproducible pipeline &amp; data &rarr;</a></div>')
@@ -1042,6 +1099,7 @@ def main():
           f'<code>{RUN_ID[k]}</code> {RUN_DATE[k]}</span>')
     w("</div>")
     w(f'<p class=note>{esc(PROVENANCE)}</p>')
+    w('<!--TOC-->')
 
     figs = {
         "ratio-dots": chart_ratio_dots(by_op),
@@ -1126,7 +1184,25 @@ def main():
         w(f"<tr><td>{esc(op)}</td>{mode_cell(m)}"
           f'<td class="n{ratio_cls(r)}">{r:.2f}x</td></tr>')
     w("</table>")
+    exc_hi = max(r for _, _, r in exceptions)
+    exc_op = max(exceptions, key=lambda e: e[2])[0]
+    w(f"<p>And it is not an artifact of one gas budget. Sweep the target from "
+      f"{gas_rows[0][0]}M to {gas_rows[-1][0]}M and the honest categories converge on "
+      f"the same place: per-test ratios start at {gas_rows[0][2]:.2f}x at the smallest "
+      f"budget and fall monotonically to {gas_rows[-1][2]:.2f}x at the largest, heading "
+      f"for the {agree_med:.2f}x slope value. That drift is not the state cost changing "
+      f"&mdash; it is the fixed per-block overhead every test pays, shrinking as a share "
+      f"of a bigger budget, and it is exactly the intercept the slope fit removes.</p>")
+    w(f"<p>DIFF_MAX pays that same overhead and shows the same drift "
+      f"({dm_gas_rows[0][1]:.1f}x at {dm_gas_rows[0][0]}M to {dm_gas_rows[-1][1]:.1f}x at "
+      f"{dm_gas_rows[-1][0]}M) &mdash; but it never joins the band. At every single "
+      f"budget it sits roughly half again above the honest categories, and once the "
+      f"intercept is gone it is the <i>only</i> family outside the band at all, reaching "
+      f"{exc_hi:.2f}x on {esc(exc_op)}. Whatever is happening is indifferent to how much "
+      f"gas we spend, which already rules out a gas-accounting artifact and points at "
+      f"something structural about these accounts.</p>")
     w(figure(*figs["convergence"]))
+    w("<details><summary>Per-gas-target ratios behind that curve</summary>")
     w("<table><tr><th class=n>gas target</th><th class=n>tests</th>"
       "<th class=n>median</th><th class=n>min</th><th class=n>max</th></tr>")
     for gv, n, md, mn, mx in gas_rows:
@@ -1137,7 +1213,7 @@ def main():
       f"{esc(miss_op)}/{esc(SHORT[miss_mode])} cell is absent from the common set because "
       f"the {LABEL[miss_absent[0]]} run never executed it, while "
       + " and ".join(LABEL[k] for k in miss_ran)
-      + " both did.</caption></table>")
+      + " both did.</caption></table></details>")
 
     # 10. worst 15
     w(f"<details><summary>Worst 15 divergent tests (state-actor ÷ compacted throughput) — "
@@ -1156,19 +1232,6 @@ def main():
     w("<caption>The worst offenders, ranked by state-actor throughput relative to "
       "compacted, over the "
       f"{len(clean)} value_sent=0 non-baseline common tests.</caption></table></details>")
-
-    # 11. scatter
-    w("<details><summary>Per-test scatter — why category slopes are the sound comparison"
-      "</summary>")
-    w(f"<p>Category slopes could still be hiding per-test weirdness, so here is every "
-      f"test on its own. Of the {len(clean)} value_sent=0 non-baseline common tests, "
-      f"per-test <code>total_ms</code> ratios (state-actor ÷ compacted) fall into: "
-      f"<b>{len(buckets['flat'])}</b> flat (≤1.25&times;), <b>{len(buckets['other'])}</b> above "
-      f"1.25&times;, <b>{len(buckets['diffmax'])}</b> DIFF_MAX (the real divergence).</p>")
-    w("<p class=note>Per-test ratios include the fixed per-block overhead, which inflates the "
-      "ratio at low gas targets where the constant dominates the state work. The slope fit "
-      "removes that intercept, which is why the category slopes — not the per-test ratios — are "
-      "the sound comparison.</p></details>")
 
     # test-id mapping
     w(f"<details><summary>Test-id mapping — which EEST tests back each ACCOUNT_MODE "
@@ -1518,7 +1581,7 @@ def main():
         return os.path.relpath(path, HERE)
 
     with open(OUT, "w") as fh:
-        fh.write("\n".join(o))
+        fh.write(add_toc("\n".join(o)))
     print(f"\nwrote {rel(OUT)} ({os.path.getsize(OUT)} bytes)")
 
     os.makedirs(FIGS, exist_ok=True)
