@@ -482,3 +482,92 @@ block-probe residual (~5%). Round 9 already supplies the strongest available
 version of that test: per account type the records cost the same, and the
 whole difference is carried by the mix and by how heavy an average EOA is.
 
+## Round 12 — is it block-cache pressure from more SSTables?
+
+**Hypothesis.** state-actor has 33% more SSTables (11,304 vs 8,515), each with
+index and filter blocks competing for one fixed block cache. More metadata
+than the cache holds would raise misses per lookup - linear in store size,
+not logarithmic in tree depth, which answers the objection that a 21% bigger
+tree is only 0.07 of a trie level.
+
+**Test.** Re-run the steady-state probe on both stores at `--cache 512` and
+`--cache 16384`. If cache pressure drives it, the gap must shrink at 16 GB.
+
+**Result.**
+
+| cache | store | nodes/read | blocks/node | misses/node | miss rate |
+| --- | --- | --- | --- | --- | --- |
+| 512 MB | jochemnet | 8.80 | 1.84 | 0.895 | 48.7% |
+| 512 MB | state-actor | 8.87 | 1.85 | 0.925 | 50.0% |
+| 16 GB | jochemnet | 8.80 | 1.84 | 0.895 | 48.7% |
+| 16 GB | state-actor | 8.87 | 1.85 | 0.925 | 50.0% |
+
+**Verdict. REFUTED.** A 32x larger cache changes nothing - these are
+compulsory cold misses on a 500 GB store, so cache size is irrelevant. And
+with the cache flag set explicitly the gap is only **+3.4%** (0.895 vs 0.925),
+not the +12% round 5 suggested. Note also that jochemnet carries ~54 GiB of
+transaction index, log index and preimages that the benchmark never reads -
+dead weight inflating its file count while it remains the *faster* arm, which
+independently kills any file-count story.
+
+## Round 13 — physical bytes per cold read
+
+**Hypothesis (the rounds 6-9 story).** Fatter, less compressible records mean
+each block read moves more physical bytes.
+
+**Test.** Sample real account hashes across the *whole* keyspace (500 seek
+points, not a contiguous prefix), close the store to discard pebble's block
+cache, drop the OS page cache, reopen, then read 5,000 at random and measure
+`/proc/self/io` read_bytes. md3's readahead was temporarily set to 128 KB to
+match the loop device, then restored.
+
+Three earlier attempts at this measurement were wrong and are recorded as
+such: a contiguous sample (fits in cache), no store reopen (pebble's own
+cache retains the blocks), and unrefreshed gauges.
+
+**Result.**
+
+| cold random account read | jochemnet | state-actor |
+| --- | --- | --- |
+| mean value bytes | 17.00 | 25.53 |
+| **physical disk bytes per read** | **5,056** | **5,079 (+0.5%)** |
+| us per read | 91.9 (NVMe) | 4,608 (HDD) |
+
+**Verdict. ROUNDS 6-9 ARE RETRACTED.** A point lookup pulls one ~5 KB block
+whatever the size of the records inside it. Fatter records and worse
+compression therefore do **not** produce more physical bytes per read - the
+measured difference is 0.5%, not 17%. The round-7 agreement between +12.8%
+physical/logical and the +17.1% penalty was a coincidence, and the aggregate
+ratio it rested on was confounded anyway: jochemnet holds ~54 GiB of index
+and preimage data that state-actor lacks entirely, so that ratio partly
+measured category mix rather than compressibility.
+
+The original objection stands and is now backed by measurement: **a 21%
+larger tree cannot cost 10%, and it does not.**
+
+## Round 14 — eliminating the client
+
+**Test.** Diff the actual client invocation between the two reproduction runs.
+
+**Result.** Byte-identical: `cache=2.00GiB handles=524,288`, `clean=1023.00MiB
+dirty=1.00GiB`, `triecache=1023.00MiB statecache=0.00B buffer=256.00MiB
+state-history="last 90000 blocks"`, `gas cap 50,000,000`, same build. Also
+worth noting `statecache=0.00B` on both: the flat-state clean cache is
+disabled, so every snapshot read goes to pebble.
+
+**Verdict. Client configuration eliminated.**
+
+### Where this leaves the investigation
+
+A genuine contradiction, stated plainly:
+
+- identical logical work per lookup (nodes 8.80 vs 8.87, depth 8, same disk fraction)
+- identical physical bytes per cold lookup (5,056 vs 5,079)
+- identical lookup count per test (same salts, same 5,393-iteration loop, same gas)
+- identical client configuration
+- yet **+17.1% bytes, +13.6% IOPS, +23.8% CPU per Mgas** in the real runs
+
+At least one of those four "identical"s must be false under the real
+workload. The probes so far test *random* accounts; the benchmark reads
+*specific* CREATE2 receivers. Round 15 must measure the real addresses.
+
