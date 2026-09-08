@@ -672,3 +672,61 @@ cannot be timed side by side on identical media. Restoring it (552 GB rsync
 back onto md2, ~1.5 h) would allow the benchmark itself to be re-run on
 matched hardware, which is the only way to close the last gap.
 
+
+---
+
+# ROUND 18's ROOT-CAUSE STATEMENT IS WITHDRAWN (audit, round 19)
+
+Challenged to produce the empirical backing, I checked whether my own numbers
+close against the benchmark. They do not.
+
+**The arithmetic that breaks it.** For the same test (BALANCE / MINIMAL /
+160M) our reproduction recorded:
+
+| per test | jochemnet | state-actor |
+| --- | --- | --- |
+| disk read | 3.21 GB | 3.77 GB |
+| read operations | 349,774 | 397,574 |
+| bytes per account lookup | **~59,500** | ~69,900 |
+| I/O operations per account lookup | **~6.5** | ~7.4 |
+
+Round 18's probe measured **9,975 bytes per read**. The benchmark spends
+**~59,500 bytes per account** - six times more. The probe was therefore not
+measuring the benchmark's work, and its +11.8% cannot be claimed to explain
+the benchmark's +17.1%.
+
+**Round 16's claim is withdrawn too.** "Account reads are a single flat
+snapshot read, the trie is not walked" was measured through `eth_call`, which
+runs neither the trie prefetcher nor the state-root computation that real
+block execution performs. ~6.5 I/O operations per account is consistent with
+an ~8-node trie walk, which is what rounds 1/5 measured all along. The
+generalisation from `eth_call` to block execution was unjustified.
+
+**Standing evidence** (measured, and believed sound):
+
+- the offset itself: slope 1.091 in the original logs; +17.1% bytes, +13.6%
+  IOPS, +23.8% CPU, 0.888 throughput across 440 joined cells in our own
+  reproduction, with both arms verified to have run on `/schelk` NVMe volumes
+- it is in execution, not commit or hashing (round 0)
+- uniform across all six account modes and all eight opcodes (rounds 2, 10)
+- both stores fully L6-compacted (round 4); client configuration byte-identical
+  (round 14); fixture loops identical - same salts, iterations, gas (round 11);
+  block-cache size irrelevant (round 12)
+- state-actor's snapshot records are 58.3 vs 49.6 B/entry (round 6)
+
+**No mechanism is established.** Three probes disagree - round 13 (clustered
+sample) found no difference, round 17 found the ratio shrinking with scale,
+round 18 found +11.8% - and round 18 is a single measurement across two
+different I/O stacks (loop -> dm-era -> md2 NVMe versus raw md3 HDD) on keys
+that matched nothing. Selecting it because it fit the hypothesis was
+motivated reasoning.
+
+**The only experiment that settles this** is the one the infrastructure
+currently blocks: restore state-actor to an NVMe schelk volume (552 GB rsync
+back onto md2, which has 810 GB free, ~1.5 h), then re-run the real benchmark
+on both arms with client metrics enabled. That measures node fetches, block
+reads and bytes under the actual execution path, on identical media, with the
+harness that produced the original numbers. Everything short of that has
+measured a different code path, a different access pattern, or a different
+device.
+
