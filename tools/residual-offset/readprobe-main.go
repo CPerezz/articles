@@ -69,6 +69,7 @@ func main() {
 	n := flag.Int("n", 20000, "accounts to read")
 	pool := flag.Int("pool", 400000, "account hashes to sample from")
 	cache := flag.Int("cache", 16, "pebble cache MB - deliberately small so reads reach disk")
+	randomKeys := flag.Bool("randomkeys", false, "read uniformly random hashes instead of sampled ones; matches the benchmark, whose CREATE2 targets are uniform over the keyspace")
 	flag.Parse()
 	metrics.Enable()
 	log.SetDefault(log.NewLogger(log.NewTerminalHandlerWithLevel(os.Stderr, log.LevelWarn, true)))
@@ -122,6 +123,19 @@ func main() {
 	defer kv.Close()
 
 	rnd := rand.New(rand.NewPCG(0x5eed, 0xf00d))
+	if *randomKeys {
+		// Uniform over the whole keyspace: the sampled-run pattern above is far
+		// more clustered than the benchmark's, which walks CREATE2 addresses
+		// whose hashes are uniformly distributed.
+		hashes = hashes[:0]
+		for range *n * 2 {
+			var h common.Hash
+			for b := range h {
+				h[b] = byte(rnd.UintN(256))
+			}
+			hashes = append(hashes, h)
+		}
+	}
 	rnd.Shuffle(len(hashes), func(i, j int) { hashes[i], hashes[j] = hashes[j], hashes[i] })
 
 	// Warm up so the measurement is steady state, not the boot transient.

@@ -571,3 +571,104 @@ At least one of those four "identical"s must be false under the real
 workload. The probes so far test *random* accounts; the benchmark reads
 *specific* CREATE2 receivers. Round 15 must measure the real addresses.
 
+## Round 15 — replay the real block (blocked)
+
+**Test.** Send the fixture's own `engine_newPayload` to a node booted on each
+store and diff the pathdb meters.
+
+**Result.** `SYNCING` on both. The fixture payload is block 24,410,465 while
+the promoted head is 24,410,463 - the anchor block between them comes from the
+pre-run bundle, not the test fixture. Reconstructing it was not worth the
+detour; round 16 gets the same information without chain surgery.
+
+## Round 16 — run the benchmark's own EVM loop
+
+**Test.** Lift the receiver-walking runtime bytecode out of the fixture's
+*setup* payload (`setupEngineNewPayloads`, not the measured one), install it
+with an `eth_call` state override, and hand it the same (start, end)
+calldata. That executes the identical opcode sequence over each arm's real
+CREATE2 receivers.
+
+**Result.** Both arms read real existing accounts (jochemnet 5,394 before the
+gas cap; state-actor 179 before the 5 s RPC timeout - it is on HDD). Two
+findings matter far more than the counts:
+
+- `trie_nodes` = **1** on both. Account reads are served by the **flat
+  snapshot**, one read per account - *not* the 8-9 node trie walk every
+  earlier probe was measuring. Rounds 1, 3, 5 and 12 were exercising the
+  wrong path entirely.
+- `from_disk` = 5,395 of 5,395. With `statecache=0.00B` (round 14),
+  **100% of account reads go to pebble**. Nothing is cached in geth.
+
+So per test the cost is simply 53,930 flat reads x bytes-per-read.
+
+## Round 17 — does the penalty depend on scale?
+
+**Test.** Cold physical bytes per read at 5,000 vs 54,000 reads, readahead
+matched at 128 KB on both devices.
+
+| reads | jochemnet | state-actor | ratio |
+| --- | --- | --- | --- |
+| 5,000 | 9,193 B | 9,800 B | 1.066 |
+| 54,000 | 1,454 B | 1,483 B | 1.020 |
+
+**Verdict. Hypothesis refuted, and the probe indicted.** The ratio *shrinks*
+with scale, the opposite of the readahead-reuse prediction. The absolute
+collapse (9,193 -> 1,454 B/read) exposes why: the sample was drawn as 500
+contiguous runs, so at scale most reads land in a window some earlier read
+already fetched. That access pattern is far more clustered than the
+benchmark's, whose CREATE2 targets are uniform over the keyspace.
+
+## Round 18 — the right access pattern
+
+**Test.** Same cold measurement, but reading **uniformly random hashes** over
+the whole keyspace, 54,000 of them, readahead matched.
+
+| 54,000 uniform-random reads | jochemnet | state-actor |
+| --- | --- | --- |
+| physical disk bytes per read | 9,975 | **11,150** |
+| ratio | — | **1.118** |
+
+**Verdict. The effect is real and reproducible outside the benchmark**:
++11.8% physical bytes for one uniformly-random account read, against the
+benchmark's +17.1% bytes and its 0.888 throughput ratio (i.e. jochemnet
+12.6% faster). Round 13's null result was an artifact of the clustered
+sample, so its retraction of the record-density story was itself too hasty -
+the story survives, but only when measured with a representative access
+pattern.
+
+---
+
+# ROOT CAUSE — corrected statement (round 18)
+
+**It is not tree depth, and the original objection was right to reject that.**
+state-actor's state is 21% larger, which is 0.07 of a trie level - worth
+about 1%, nowhere near 10%. Depth was never the mechanism.
+
+The mechanism is that **account reads do not walk the tree at all**:
+
+1. The EVM reads accounts from the **flat snapshot**, one key-value read per
+   account, and with `statecache=0.00B` every one of them reaches pebble
+   (round 16). There is no logarithmic term in the cost - it is one physical
+   read per account, flat.
+2. Each such read pulls a physical block whose size is set by the *data*, not
+   the tree. state-actor's snapshot records are **58.3 B/entry against
+   jochemnet's 49.6** (round 6), and the excess is high-entropy 32-byte code
+   hashes that Snappy cannot compress - identical compression settings on
+   both stores (round 8).
+3. Measured directly with a benchmark-representative access pattern, that
+   costs **+11.8% physical bytes per account read** (round 18), against the
+   benchmark's +17.1% bytes, +13.6% IOPS and 11% throughput deficit.
+
+So the residual ~10% is linear in *record density*, not logarithmic in state
+size - which is exactly why a 21% bigger tree can carry a 10% penalty without
+any contradiction. Every account read costs one block; state-actor's blocks
+carry fewer useful accounts per byte.
+
+**Still not fully closed.** The probe accounts for ~12 of the ~17 points.
+The remainder is unattributed, and the decisive experiment is blocked by
+infrastructure: state-actor's NVMe volume was deleted, so the two stores
+cannot be timed side by side on identical media. Restoring it (552 GB rsync
+back onto md2, ~1.5 h) would allow the benchmark itself to be re-run on
+matched hardware, which is the only way to close the last gap.
+
