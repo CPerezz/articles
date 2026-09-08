@@ -1184,21 +1184,20 @@ def main():
     w("</table>")
     exc_hi = max(r for _, _, r in exceptions)
     exc_op = max(exceptions, key=lambda e: e[2])[0]
-    w(f"<p>And it is not an artifact of one gas budget. Sweep the target from "
-      f"{gas_rows[0][0]}M to {gas_rows[-1][0]}M and the honest categories converge on "
-      f"the same place: per-test ratios start at {gas_rows[0][2]:.2f}x at the smallest "
-      f"budget and fall monotonically to {gas_rows[-1][2]:.2f}x at the largest, heading "
-      f"for the {agree_med:.2f}x slope value. That drift is not the state cost changing "
-      f"&mdash; it is the fixed per-block overhead every test pays, shrinking as a share "
-      f"of a bigger budget, and it is exactly the intercept the slope fit removes.</p>")
-    w(f"<p>DIFF_MAX pays that same overhead and shows the same drift "
-      f"({dm_gas_rows[0][1]:.1f}x at {dm_gas_rows[0][0]}M to {dm_gas_rows[-1][1]:.1f}x at "
-      f"{dm_gas_rows[-1][0]}M) &mdash; but it never joins the band. At every single "
-      f"budget it sits roughly half again above the honest categories, and once the "
-      f"intercept is gone it is the <i>only</i> family outside the band at all, reaching "
-      f"{exc_hi:.2f}x on {esc(exc_op)}. Whatever is happening is indifferent to how much "
-      f"gas we spend, which already rules out a gas-accounting artifact and points at "
-      f"something structural about these accounts.</p>")
+    w(f"<p>Does the gas budget change the picture? No. As we raise the target from "
+      f"{gas_rows[0][0]}M to {gas_rows[-1][0]}M, the normal categories all drift the "
+      f"same way: {gas_rows[0][2]:.2f}x at the smallest budget, {gas_rows[-1][2]:.2f}x "
+      f"at the largest, heading for the {agree_med:.2f}x the slopes give. The drift is "
+      f"easy to explain. Every test pays a fixed cost per block on top of the state "
+      f"work, and the bigger the budget, the less that fixed cost matters. Fitting a "
+      f"slope strips it out &mdash; which is why we compare slopes.</p>")
+    w(f"<p>DIFF_MAX drifts too, for the same reason: {dm_gas_rows[0][1]:.1f}x at "
+      f"{dm_gas_rows[0][0]}M, {dm_gas_rows[-1][1]:.1f}x at {dm_gas_rows[-1][0]}M. What "
+      f"it never does is join the others. At every budget it sits about half again "
+      f"above them, and with the fixed cost stripped out it is the only family left "
+      f"outside the band at all &mdash; up to {exc_hi:.2f}x on {esc(exc_op)}. So the gap "
+      f"does not care how much gas we spend. That rules out gas accounting, and points "
+      f"at something about the accounts themselves.</p>")
     w(figure(*figs["convergence"]))
     w("<details><summary>Per-gas-target ratios behind that curve</summary>")
     w("<table><tr><th class=n>gas target</th><th class=n>tests</th>"
@@ -1303,6 +1302,7 @@ def main():
         for db_, cat, size, items in rows:
             if db_.startswith("Key-Value") or cat == "Total":
                 kv.setdefault(cat, {})[store] = (size, items)
+    w("<details><summary>Both stores, category by category</summary>")
     w("<table><tr><th>category</th><th class=n>jochemnet size</th>"
       "<th class=n>jochemnet items</th><th class=n>state-actor size</th>"
       "<th class=n>state-actor items</th></tr>")
@@ -1324,7 +1324,8 @@ def main():
       f"is 36&nbsp;KB, because a generator writes state, not history &mdash; all "
       f"of its data is in the key-value store. The jochemnet store was inspected "
       f"after the fix described below, so ~380&nbsp;MiB of trie state now sits in "
-      f"the key-value store rather than in the journal file.</caption></table>")
+      f"the key-value store rather than in the journal file."
+      f"</caption></table></details>")
     w("<p>Both stores hold billions of trie nodes and hundreds of gigabytes of "
       "state, with the same table shapes and totals of the same order. There are "
       "real differences &mdash; different generators make different tries &mdash; "
@@ -1390,14 +1391,13 @@ def main():
       "because it is one we can go and reproduce.</p>")
 
     w("<h3>Broken meters</h3>")
-    w("<p>A benchmark can also lie through its instruments, and this harness has "
-      "real defects: negative <code>execution_ms</code> on value-transfer blocks, "
-      "cache counters frozen at zero, <code>state_reads</code> that never move. So "
-      "before trusting any ratio we counted the defects per arm. They appear at the "
-      "same rates on both sides &mdash; the appendix lists them. A meter that is "
-      "broken identically for every contestant cannot change the ranking between "
-      "them: a confound to disclose, not the cause we were hunting.</p>")
-
+    w(f"<p>A benchmark can also lie through its own instruments, and this one has "
+      f"real bugs: <code>execution_ms</code> goes negative in {neg_exec} of the "
+      f"{3 * len(common)} measured blocks, and the cache and state-read counters "
+      f"never move at all. But they misbehave at the same rates on both arms. A "
+      f"meter that is broken the same way for everyone cannot change who wins, so "
+      f"this is something to disclose, not the thing we were looking for &mdash; and "
+      f"it is why every timing here comes from <code>total_ms</code>.</p>")
     w("<h3>Where the data sits in the LSM tree</h3>")
     w("<p>The last plain suspect was on-disk layout. Compaction alone moves these "
       "numbers by 3&times; &mdash; that is the whole compacted-versus-uncompacted "
@@ -1555,19 +1555,6 @@ def main():
       "the journal, compact the store, promote, and only then believe the numbers. "
       "Otherwise the benchmark measures the order in which the fixtures were "
       "deployed.</p>")
-
-    w("<h2>Appendix &mdash; instrumentation defects found</h2><ul class=tight>")
-    w(f"<li><code>timing.execution_ms</code> is a derived field and goes negative in "
-      f"{neg_exec} of the {3*len(common)} measured blocks ({neg_c}/{neg_u}/{neg_sa} per run) — "
-      "every one of them a value-transfer block. Unusable as a measurement; all timing in this "
-      "report uses <code>timing.total_ms</code>.</li>")
-    w("<li><code>state_reads</code> / <code>state_writes</code> / cache counters are constant "
-      "per block shape (<code>accounts=4, code=0</code>) even for a CALL into 24 KB of code, so "
-      "they cannot be used to attribute cost.</li>")
-    w("<li>benchmarkoor logs the cgroup path but never samples utilization, so host contention "
-      "cannot be ruled out from the logs alone.</li>")
-    w("</ul>")
-
 
     w('<div class=endbar><a href="../">&larr; all articles</a>'
       '<a href="https://github.com/CPerezz/articles/tree/main/state-db-perf-divergence">'
