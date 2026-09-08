@@ -1091,8 +1091,6 @@ def main():
     w('<div class=meta><span class=tag>Ethereum · geth · pathdb · benchmarking</span> · 2026 · '
       '<a href="https://github.com/CPerezz/articles/tree/main/state-db-perf-divergence">'
       'reproducible pipeline &amp; data &rarr;</a></div>')
-    w(f"<p class=sub>{len(common)} tests common to all three runs · generated "
-      f"{today} · updated with the root-cause investigation</p>")
     w('<!--TOC-->')
     w("<div class=legend>")
     for k, (label, var) in DB.items():
