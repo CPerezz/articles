@@ -184,3 +184,54 @@ average 119.7 B against jochemnet's 107.3 B (+11.5%), and its account nodes
 127.7 B against 123.3 B (+3.5%). CPU rising faster than bytes (1.238 vs
 1.171) also fits: bigger nodes cost more to decode.
 
+## Round 3 — where do the extra bytes go? (first attempt: instrument failure)
+
+**Hypothesis.** If the node count is equal but the byte count is not, the
+extra bytes are spent inside the storage engine: more pebble blocks touched
+per trie node, or less effective bloom filtering.
+
+**Test.** Extend the round-1 probe to also diff geth's pebble meters
+(`cache/block/{hit,miss}`, `cache/table/{hit,miss}`, `filter/{hit,miss}`,
+`disk/read`).
+
+**Result — INVALID, and worth recording.** jochemnet reported 246 block-cache
+lookups against 2641 node fetches, which is impossible. geth refreshes the
+pebble gauges from a background timer, and the jochemnet workload finishes in
+0.8 s - inside a single refresh interval - while the state-actor workload
+takes 98 s on HDD and spans many. The comparison measured sampling windows,
+not databases.
+
+**Fix.** Settle 12 s before the baseline scrape and 12 s after the workload,
+so both snapshots are refreshed. Re-run as round 3b.
+
+## Round 3b — the storage engine, measured properly
+
+**Result.**
+
+| measure | jochemnet | state-actor |
+| --- | --- | --- |
+| trie nodes fetched | 2641 | 2662 |
+| block-cache hit | 2282 | 2193 |
+| block-cache miss | 3490 | **9694** |
+| **pebble block lookups per node** | **2.19** | **4.47** |
+| block-cache miss rate | 60.5% | 81.6% |
+
+**Verdict. CONFIRMED, and the layer is now located.** For the same logical
+trie work, state-actor asks the storage engine for **2.04x more blocks per
+node** and misses the block cache on 2.78x more of them. The trie is not the
+problem; the LSM underneath it is. This is exactly the shape needed to
+explain round 2: more physical reads (+17% bytes, +14% IOPS) and more CPU
+(+24%, from decompressing, checksumming and binary-searching more blocks)
+for identical logical work.
+
+`filter/hit` and `filter/miss` stayed at zero on both arms, so bloom
+effectiveness could not be read directly and remains untested.
+
+**The obvious suspect for round 4.** A pebble Get probes candidate SSTables
+level by level; a well-compacted store has few overlapping files and a
+mostly-L6 shape, an uncompacted one has many. The jochemnet arm is
+*compacted* - the article's whole "compacted" label, plus our own post-drain
+`geth db compact`. The state-actor store has **never been compacted**: it was
+written by the generator and benchmarked as-is. We may simply be comparing a
+compacted LSM against an uncompacted one.
+

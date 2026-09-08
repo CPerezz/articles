@@ -22,7 +22,11 @@ KEEP = ("pathdb/state/account/inex/total", "pathdb/state/account/inex/disk",
         "pathdb/clean/node/hit", "pathdb/clean/node/miss",
         "pathdb/clean/state/hit", "pathdb/clean/state/miss",
         "pathdb/dirty/node/hit", "pathdb/dirty/node/miss",
-        "pathdb/dirty/state/hit", "pathdb/dirty/state/miss")
+        "pathdb/dirty/state/hit", "pathdb/dirty/state/miss",
+        "eth/db/chaindata/disk/read", "eth/db/chaindata/disk/size",
+        "eth/db/chaindata/cache/block/hit", "eth/db/chaindata/cache/block/miss",
+        "eth/db/chaindata/cache/table/hit", "eth/db/chaindata/cache/table/miss",
+        "eth/db/chaindata/filter/hit", "eth/db/chaindata/filter/miss")
 
 
 def rpc(method, params):
@@ -39,7 +43,7 @@ def metrics():
         raw = json.load(fh)
     out = {}
     for k in KEEP:
-        v = raw.get(k + ".count", raw.get(k))
+        v = raw.get(k + ".count", raw.get(k + ".value", raw.get(k)))
         if isinstance(v, dict):
             out[k] = v.get("count", v.get("Count", v.get("value")))
         elif v is not None:
@@ -55,6 +59,10 @@ def addrs(n):
 def main():
     label = sys.argv[1]
     a = addrs(N)
+    # geth refreshes the pebble gauges on a background timer, so a workload
+    # shorter than one refresh interval records almost nothing. Settle before
+    # and after so both scrapes see a refreshed snapshot.
+    time.sleep(12)
     before = metrics()
     depths, t0 = [], time.time()
     for addr in a:
@@ -62,6 +70,7 @@ def main():
         if "result" in r:
             depths.append(len(r["result"]["accountProof"]))
     wall = time.time() - t0
+    time.sleep(12)
     after = metrics()
     delta = {k: (after.get(k, 0) or 0) - (before.get(k, 0) or 0) for k in KEEP}
     inex_t = delta.get("pathdb/state/account/inex/total", 0)
@@ -82,7 +91,18 @@ def main():
         "nodes_per_read": round(nodes / max(len(depths), 1), 2),
         "clean_node_hit": delta.get("pathdb/clean/node/hit", 0),
         "clean_node_miss": delta.get("pathdb/clean/node/miss", 0),
+        "db_bytes_read": delta.get("eth/db/chaindata/disk/read", 0),
+        "bytes_per_node": round(delta.get("eth/db/chaindata/disk/read", 0)
+                                / max(nodes, 1), 1),
+        "bytes_per_read": round(delta.get("eth/db/chaindata/disk/read", 0)
+                                / max(len(depths), 1), 1),
+        "blockcache_hit": delta.get("eth/db/chaindata/cache/block/hit", 0),
+        "blockcache_miss": delta.get("eth/db/chaindata/cache/block/miss", 0),
+        "filter_hit": delta.get("eth/db/chaindata/filter/hit", 0),
+        "filter_miss": delta.get("eth/db/chaindata/filter/miss", 0),
         "raw_delta": delta,
+        "raw_after_db": {k: v for k, v in after.items()
+                          if k.startswith("eth/db")},
     }, sys.stdout, indent=1)
     print()
 
