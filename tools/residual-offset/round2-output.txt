@@ -1,0 +1,25 @@
+joined cells: 528  honest: 440  DIFF_MAX: 88
+
+=== HONEST MODES (the residual) ===
+metric                      jochemnet  state-actor   sa/joc   paired
+mgas_s                          18.93        16.81    0.888    0.889
+read_kb_per_mgas             19125.23     22389.26    1.171    1.172
+read_iops_per_mgas            2134.84      2424.97    1.136    1.133
+cpu_us_per_mgas              79002.76     97796.81    1.238    1.227
+write_kb_per_mgas                4.98         2.95    0.592    0.682
+
+=== DIFF_MAX ===
+metric                      jochemnet  state-actor   sa/joc   paired
+mgas_s                          28.27        10.04    0.355    0.346
+read_kb_per_mgas             10453.46     36840.96    3.524    3.659
+read_iops_per_mgas            1532.97      4216.92    2.751    2.882
+cpu_us_per_mgas              82098.56    174620.75    2.127    2.217
+write_kb_per_mgas                4.87         4.02    0.826    0.892
+
+=== per-mode throughput ratio (state-actor / jochemnet) ===
+  EXISTING_CONTRACT_DIFF_MAX       mgas/s  0.346   cpu  2.217   read_kb   3.659   n=88
+  EXISTING_CONTRACT_JUMPDEST       mgas/s  0.845   cpu  1.161   read_kb   1.286   n=88
+  EXISTING_CONTRACT_MINIMAL        mgas/s  0.891   cpu  1.238   read_kb   1.168   n=88
+  EXISTING_CONTRACT_SAME_MAX       mgas/s  0.890   cpu  1.236   read_kb   1.168   n=88
+  EXISTING_EOA                     mgas/s  0.888   cpu  1.236   read_kb   1.172   n=88
+  NON_EXISTING_ACCOUNT             mgas/s  0.891   cpu  1.220   read_kb   1.170   n=88

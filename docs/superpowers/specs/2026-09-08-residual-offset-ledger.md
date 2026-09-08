@@ -142,3 +142,45 @@ storage slots, or contract code (state-actor holds 48.98 GiB of code in
 134 M entries against jochemnet's 17.25 GiB in 2.4 M, a 55x difference in
 entry count) - or it is not logical work at all but cost per unit of work.
 
+## Round 2 — I/O volume vs CPU, on symmetric hardware
+
+**Hypothesis.** Round 1 removed logical node count as the cause on the
+absence path. Either state-actor moves more bytes per unit of work, or burns
+more CPU, or neither (and the original offset was a property of the original
+operator's host). Our own reproduction settles it: both arms ran on NVMe
+schelk loop volumes on the same RAID pair, and the harness records per-test
+`disk_read_bytes`, `disk_read_iops` and `cpu_delta_usec`.
+
+**Test.** Join our two full reproduction runs on (opcode, mode, gas),
+value_sent=0, non-baseline, and normalise every resource counter by the gas
+actually executed. 528 cells joined, 440 of them non-DIFF_MAX.
+
+**Result — honest modes:**
+
+| per Mgas | jochemnet | state-actor | ratio | paired |
+| --- | --- | --- | --- | --- |
+| throughput (MGas/s) | 18.93 | 16.81 | 0.888 | 0.889 |
+| disk read (kB) | 19,125 | 22,389 | **1.171** | 1.172 |
+| read IOPS | 2,135 | 2,425 | 1.136 | 1.133 |
+| CPU (us) | 79,003 | 97,797 | **1.238** | 1.227 |
+| disk write (kB) | 4.98 | 2.95 | 0.592 | 0.682 |
+
+**Per mode** (state-actor ÷ jochemnet): the read-volume penalty is uniform -
+NON_EXISTING 1.170, EOA 1.172, MINIMAL 1.168, SAME_MAX 1.168, JUMPDEST 1.286,
+DIFF_MAX 3.659. CPU tracks it: 1.220 / 1.236 / 1.238 / 1.236 / 1.161 / 2.217.
+
+**Verdict. CONFIRMED that state-actor does more work** - and the offset
+reproduces on symmetric hardware, so it is not an artifact of the original
+operator's host. It reads 17% more bytes, issues 14% more read operations and
+burns 24% more CPU for the same executed gas.
+
+**The contradiction that defines round 3.** Round 1 measured *identical*
+logical node fetches per lookup (8.80 vs 8.87) on the absence path, yet the
+real workload moves 17% more bytes. Both cannot be true unless the extra
+bytes are spent **per node fetched**, not on extra nodes: larger nodes,
+larger physical blocks per node, or more index/filter reads per node. The
+inspect data is consistent with the first - state-actor's storage trie nodes
+average 119.7 B against jochemnet's 107.3 B (+11.5%), and its account nodes
+127.7 B against 123.3 B (+3.5%). CPU rising faster than bytes (1.238 vs
+1.171) also fits: bigger nodes cost more to decode.
+
