@@ -1,0 +1,27 @@
+non-DIFF_MAX cells joined: 440
+
+=== per OPCODE (state-actor / jochemnet), DIFF_MAX excluded ===
+opcode        reads code?     mgas/s   read_kb     iops      cpu   n
+BALANCE       no               0.887     1.169    1.130    1.234   55
+CALL          YES              0.887     1.173    1.137    1.226   55
+CALLCODE      YES              0.888     1.174    1.136    1.235   55
+DELEGATECALL  YES              0.889     1.174    1.135    1.220   55
+EXTCODECOPY   YES              0.887     1.172    1.135    1.242   55
+EXTCODEHASH   no               0.892     1.169    1.129    1.229   55
+EXTCODESIZE   YES              0.888     1.171    1.132    1.221   55
+STATICCALL    YES              0.889     1.173    1.134    1.223   55
+
+=== grouped ===
+  leaf-only (no code read)  mgas_s 0.890  read_kb 1.169  iops 1.130  cpu_us 1.231
+  code-reading              mgas_s 0.888  read_kb 1.173  iops 1.135  cpu_us 1.224
+
+=== absolute read_kb per Mgas, to see what dominates ===
+opcode           jochemnet  state-actor     delta
+BALANCE              18880        22038      3157
+CALL                 19296        22656      3360
+CALLCODE             19289        22666      3377
+DELEGATECALL         19309        22664      3355
+EXTCODECOPY          18376        21597      3221
+EXTCODEHASH          18890        22016      3126
+EXTCODESIZE          18871        22159      3287
+STATICCALL           19317        22670      3353
