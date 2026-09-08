@@ -235,3 +235,72 @@ mostly-L6 shape, an uncompacted one has many. The jochemnet arm is
 written by the generator and benchmarked as-is. We may simply be comparing a
 compacted LSM against an uncompacted one.
 
+## Round 4 — is jochemnet compacted and state-actor not?
+
+**Hypothesis.** A pebble Get probes candidate SSTables level by level. The
+jochemnet arm is compacted; the state-actor store never was. If its LSM has
+overlapping levels, every lookup probes more files - which is exactly the
+2.04x block-probe ratio round 3b measured.
+
+**Test.** (a) SST inventory and size histogram of both stores. (b) The live
+LSM shape from geth's `eth/db/chaindata/tables/levelN` gauges.
+
+**Result.**
+
+| | jochemnet | state-actor |
+| --- | --- | --- |
+| SST files | 8,515 | 11,304 |
+| mean SST size | 45.4 MB | 49.9 MB |
+| size 32-80 MB | 85% | 84% |
+| **tables in L0-L5** | **0** | **0** |
+| **tables in L6** | **8,515** | **11,304** |
+
+**Verdict. REFUTED.** Both stores are perfectly compacted - a single sorted
+run, every table in L6, nothing above it. The state-actor generator leaves a
+fully compacted store behind. LSM shape is not the difference.
+
+## Round 5 — round 3b was measuring boot history
+
+**Hypothesis.** Round 3b's table-cache numbers (0 misses vs 3,026) look like
+cache thrash, but the container's `ulimit -n` is 1,048,576, so geth allocates
+~524,288 handles on both arms - far more than either store's file count. Those
+"misses" are therefore *first-touch opens*, and jochemnet simply happened to
+have opened all 8,515 of its SSTables during boot while state-actor had not.
+If so, the 2.04x collapses once both nodes are warm.
+
+**Test.** Re-run with a 1,500-read warm-up before the measured 1,000 reads,
+so both arms are measured in steady state rather than in their boot
+transient.
+
+**Result.**
+
+| measure | jochemnet | state-actor |
+| --- | --- | --- |
+| nodes per read | 8.80 | 8.87 |
+| table-cache misses per node | 0.000 | 0.040 |
+| block lookups per node | 1.84 | 1.93 |
+| block-cache miss rate | 48.7% | 52.1% |
+
+**Verdict. Round 3b's 2.04x is RETRACTED** - it was a boot-history artifact,
+not a property of the databases. In steady state the storage engine does only
+~5% more work per node on state-actor, which is far too small to carry a 17%
+byte difference.
+
+**And it exposes a flaw in rounds 1, 3 and 5 alike.** `eth_getProof` forces
+the *trie* path. The EVM does not read accounts that way: it reads the **flat
+snapshot**. Every probe so far has measured the wrong keyspace.
+
+The inspect data for the right keyspace is suggestive on its own:
+
+| account snapshot | jochemnet | state-actor |
+| --- | --- | --- |
+| size | 16.40 GiB | 23.38 GiB |
+| entries | 354,792,873 | 430,696,738 |
+| **bytes per entry** | **49.6** | **58.3 (+17.4%)** |
+
+Round 2 measured disk read bytes per Mgas at **+17.1%**. That is a very close
+match to a structural prediction, and it is the hypothesis for round 6:
+state-actor's account records are simply fatter, because a generated bloatnet
+is full of contracts carrying a storage root and a code hash, while a mainnet
+snapshot is dominated by lean EOAs whose slim encoding omits both.
+
