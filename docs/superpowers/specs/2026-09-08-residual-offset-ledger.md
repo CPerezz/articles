@@ -95,3 +95,50 @@ Attribution has to come from geth's own pathdb meters.
   `pathdb/clean/{node,state}/{hit,miss}`; `pathdb/dirty/{node,state}/{hit,miss,depth}`.
 
 ---
+## Round 1 — is state-actor's read path doing more work?
+
+**Hypothesis.** state-actor holds 22% more trie (597 M vs 489 M account
+nodes, 3.03 B vs 2.47 B storage nodes) in the same cache budget, so each
+account read fetches more nodes and/or reaches disk more often. That would
+produce a roughly uniform penalty on all state-touching execution.
+
+**Test.** Boot each store under an ephemeral overlay with `--metrics`, drop
+the OS page cache, then issue an identical 300-address `eth_getProof`
+workload and diff geth's own pathdb meters. The addresses are a fixed
+pseudorandom set: they need no trie preimages (state-actor has none), they
+are byte-identical work on both arms, and they exercise the absence path -
+the NON_EXISTING category, whose offset (1.247x) is as large as any other.
+Counters, not milliseconds: the surviving state-actor copy is on HDD.
+
+**Result.**
+
+| measure | jochemnet | state-actor |
+| --- | --- | --- |
+| proof depth min / median / max | 7 / 8 / 9 | 7 / 8 / 9 |
+| absence reads, total | 1200 | 1200 |
+| absence reads served from disk | 300 | 300 |
+| disk fraction | 0.25 | 0.25 |
+| trie nodes fetched | 2641 | 2662 |
+| nodes per read | 8.80 | 8.87 |
+| clean node hit / miss | 1017 / 1624 | 1017 / 1645 |
+| ms per read | 2.70 | 84.36 |
+
+**Verdict. REFUTED.** The two stores demand the same logical read work -
+same depth, same node count within 0.8%, same disk fraction. The 22% larger
+trie costs nothing measurable per lookup, exactly as the depth arithmetic
+predicted (22% more nodes is ~0.07 of a trie level).
+
+Two by-products worth keeping:
+
+- The 31x wall-clock spread (2.70 vs 84.36 ms per read) is the NVMe/HDD
+  confound, now quantified. It is not a property of the databases, and it
+  rules out timing comparisons between the current copies for good.
+- Proof depths are now measured on **both** stores, not just jochemnet. The
+  article's "Trie shape" subsection can finally say that honestly.
+
+**What this leaves.** The gap is not node-fetch volume on the absence path.
+Either it is in a path this probe does not touch - existing-account reads,
+storage slots, or contract code (state-actor holds 48.98 GiB of code in
+134 M entries against jochemnet's 17.25 GiB in 2.4 M, a 55x difference in
+entry count) - or it is not logical work at all but cost per unit of work.
+
