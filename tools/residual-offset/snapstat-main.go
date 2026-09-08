@@ -44,10 +44,12 @@ func main() {
 	defer kv.Close()
 
 	var (
-		sizes                []int
-		total, contracts     int
+		sizes                 []int
+		total, contracts      int
 		withStorage, withCode int
-		codeBytes            int
+		codeBytes             int
+		eoaBytes, eoaN        int
+		codeAccBytes          int
 	)
 	it := rawdb.NewKeyLengthIterator(
 		kv.NewIterator(rawdb.SnapshotAccountPrefix, nil), len(rawdb.SnapshotAccountPrefix)+32)
@@ -68,8 +70,14 @@ func main() {
 			withCode++
 			codeBytes += 32
 		}
-		if acc.Root != types.EmptyRootHash || string(acc.CodeHash) != string(types.EmptyCodeHash.Bytes()) {
+		isContract := acc.Root != types.EmptyRootHash ||
+			string(acc.CodeHash) != string(types.EmptyCodeHash.Bytes())
+		if isContract {
 			contracts++
+			codeAccBytes += len(val)
+		} else {
+			eoaN++
+			eoaBytes += len(val)
 		}
 	}
 	if err := it.Error(); err != nil {
@@ -101,6 +109,12 @@ func main() {
 		out["with_storage_pct"] = 100 * float64(withStorage) / float64(total)
 		out["with_code_pct"] = 100 * float64(withCode) / float64(total)
 		out["contract_pct"] = 100 * float64(contracts) / float64(total)
+		if eoaN > 0 {
+			out["mean_bytes_eoa"] = float64(eoaBytes) / float64(eoaN)
+		}
+		if contracts > 0 {
+			out["mean_bytes_contract"] = float64(codeAccBytes) / float64(contracts)
+		}
 	}
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", " ")

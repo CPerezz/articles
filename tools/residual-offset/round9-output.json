@@ -1,0 +1,28 @@
+{
+ "contract_pct": 19.176,
+ "label": "jochemnet",
+ "max_bytes": 79,
+ "mean_bytes": 16.61416,
+ "mean_bytes_contract": 49.23967459324155,
+ "mean_bytes_eoa": 8.873552410175195,
+ "median_bytes": 11,
+ "min_bytes": 5,
+ "p90_bytes": 37,
+ "sampled": 200000,
+ "with_code_pct": 19.176,
+ "with_storage_pct": 7.035
+}
+{
+ "contract_pct": 31.312,
+ "label": "state-actor",
+ "max_bytes": 81,
+ "mean_bytes": 25.290695,
+ "mean_bytes_contract": 48.5647195963209,
+ "mean_bytes_eoa": 14.681035988819009,
+ "median_bytes": 16,
+ "min_bytes": 5,
+ "p90_bytes": 48,
+ "sampled": 200000,
+ "with_code_pct": 31.312,
+ "with_storage_pct": 1.787
+}

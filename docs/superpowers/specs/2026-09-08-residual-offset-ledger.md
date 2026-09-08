@@ -398,7 +398,36 @@ zstd_max_train_bytes=0; enabled=0`).
 
 ---
 
-# ROOT CAUSE (found at round 8 of 50)
+## Round 9 — composition, or fatter records of every kind?
+
+**Hypothesis.** If composition drives it, then *per account type* the records
+should cost the same on both stores and only the mix should differ. If
+records are fatter within a type too, the story needs refining.
+
+**Test.** Split the round-6 scan by account type.
+
+**Result.**
+
+| | mean | EOA records | contract records | contract share |
+| --- | --- | --- | --- | --- |
+| jochemnet | 16.61 B | **8.87 B** | 49.24 B | 19.2% |
+| state-actor | 25.29 B | **14.68 B** | 48.56 B | 31.3% |
+
+The decomposition reproduces both means exactly: 0.192x49.24 + 0.808x8.87 =
+16.62, and 0.313x48.56 + 0.687x14.68 = 25.29.
+
+**Verdict. PARTLY CONFIRMED, and the cause is broader than composition.** A
+contract record costs the same in both databases (49.24 vs 48.56 B, -1.4%),
+so contracts are not the differentiator by themselves. But state-actor's
+*EOA* records are **65% fatter** (14.68 vs 8.87 B) - its generated accounts
+carry substantial balances and nonces, where mainnet is full of near-empty
+accounts whose RLP is a couple of bytes.
+
+Holding state-actor's mix but giving it jochemnet's EOA size yields 21.29 B,
+so of the 8.68 B excess roughly **4.68 B (54%) is composition** (more
+contracts) and **4.00 B (46%) is that its EOAs are individually heavier**.
+
+# ROOT CAUSE (found at round 8 of 50, refined at round 9)
 
 The residual ~10% is **not a benchmark artifact and not a database defect**.
 It is a real, quantitatively explained property of the two datasets:
@@ -410,10 +439,14 @@ It is a real, quantitatively explained property of the two datasets:
 2. **It is not extra logical work.** Same trie depth (8), same nodes per
    lookup (8.80 vs 8.87), same disk-hit fraction, same fully-compacted LSM
    shape - every table in L6 on both (rounds 1, 4, 5).
-3. **state-actor's records are fatter.** A generated bloatnet is built out of
-   contracts: 31.3% of its accounts carry a code hash against jochemnet's
-   19.2%. Mean snapshot account record 25.29 B vs 16.61 B; with the 33-byte
-   key, 58.3 vs 49.6 B per entry, **+17.4%** (round 6).
+3. **state-actor's records are fatter, for two reasons.** Mean snapshot
+   account record 25.29 B vs 16.61 B; with the 33-byte key, 58.3 vs 49.6 B
+   per entry, **+17.4%** (round 6). Round 9 splits that: 31.3% of its
+   accounts carry a code hash against jochemnet's 19.2% (54% of the excess),
+   and its EOAs are individually 65% fatter - 14.68 vs 8.87 B, because
+   generated accounts carry real balances where mainnet is full of
+   near-empty ones (46% of the excess). A contract record itself costs the
+   same on both stores.
 4. **And they compress worse, for the same reason.** A 32-byte code hash is
    high-entropy and near-incompressible, while an EOA record is small
    integers and zero padding. Same Snappy settings on both stores, yet
@@ -442,9 +475,10 @@ account snapshot) rather than compression alone. Separating those two would
 need a store with matched composition but different size, which does not
 exist here.
 
-**What would falsify this.** Re-encode the state-actor snapshot with the same
-composition but EOA-shaped records (no code hash) and the penalty should fall
-to roughly the block-probe residual (~5%). Equivalently: a jochemnet-derived
-store filtered to only code-bearing accounts should show the state-actor
-physical/logical ratio.
+**What would falsify this.** Re-encode the state-actor snapshot with
+jochemnet's record-size distribution - same account count, mainnet-shaped
+balances and code-hash share - and the penalty should fall to roughly the
+block-probe residual (~5%). Round 9 already supplies the strongest available
+version of that test: per account type the records cost the same, and the
+whole difference is carried by the mix and by how heavy an average EOA is.
 
