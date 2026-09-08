@@ -304,3 +304,50 @@ state-actor's account records are simply fatter, because a generated bloatnet
 is full of contracts carrying a storage root and a code hash, while a mainnet
 snapshot is dominated by lean EOAs whose slim encoding omits both.
 
+## Round 6 — are state-actor's account records fatter?
+
+**Hypothesis.** The EVM reads accounts from the flat snapshot, and a snapshot
+account is slim-encoded: an EOA drops its empty storage root and code hash, a
+contract carries 33 bytes of each. A generated bloatnet should be far more
+contract-heavy than a mainnet snapshot, so every account read moves more
+bytes.
+
+**Test, first attempt — FAILED.** `debug_accountRange` timed out on both arms
+(`-32002 request timed out`): it seeks a multi-hundred-GB trie from a random
+start key. Replaced with a direct measurement, which is better anyway - it
+reads the true on-disk value bytes instead of estimating an encoding.
+`snapstat` (committed beside this ledger) iterates the account-snapshot
+keyspace and decodes each record. Account hashes are uniformly distributed, so
+the first 200,000 in hash order are an unbiased sample.
+
+**Result.**
+
+| account snapshot | jochemnet | state-actor |
+| --- | --- | --- |
+| sampled | 200,000 | 200,000 |
+| mean value bytes | 16.61 | **25.29 (+52%)** |
+| median value bytes | 11 | 16 |
+| p90 value bytes | 37 | 48 |
+| accounts with a code hash | 19.2% | **31.3%** |
+| accounts with a storage root | 7.0% | 1.8% |
+| **plus the 33-byte key = bytes per entry** | **49.6** | **58.3 (+17.4%)** |
+
+**Verdict. CONFIRMED, and it reconciles two independent measurements.** The
+direct scan (16.61 vs 25.29 value bytes) plus the 33-byte key reproduces the
+`db inspect` figures (49.6 vs 58.3 B/entry) exactly, and that +17.4% sits on
+top of round 2's measured **+17.1%** disk-read penalty per Mgas.
+
+The composition explains why: state-actor's state is 31.3% code-bearing
+accounts against jochemnet's 19.2%, because a generated bloatnet is built
+out of contracts while a mainnet snapshot is mostly lean EOAs. Interestingly
+the storage-root fraction runs the other way (1.8% vs 7.0%) - state-actor's
+contracts carry code but almost no storage.
+
+**Caveat, and the job for round 7.** A numeric coincidence is not a causal
+chain. Fatter records explain more bytes only if the reads are dense enough
+for record size to drive block traffic; for purely random point lookups every
+read costs one ~4 KB block whatever the record size, and the relevant quantity
+would instead be total snapshot size (16.40 vs 23.38 GiB, +43%) against the
+block cache. Round 7 must measure bytes actually read per account lookup
+rather than infer it.
+
