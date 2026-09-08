@@ -351,3 +351,100 @@ would instead be total snapshot size (16.40 vs 23.38 GiB, +43%) against the
 block cache. Round 7 must measure bytes actually read per account lookup
 rather than infer it.
 
+## Round 7 — does state-actor's data compress worse?
+
+**Hypothesis.** Round 5 showed the storage engine does only ~5% more logical
+work, yet round 2 measured +17% physical bytes. If the block count is nearly
+equal, the bytes per block must differ - i.e. one store's data compresses
+worse. A record carrying a 32-byte code hash is near-incompressible; a lean
+EOA record is mostly zeros and small integers.
+
+**Test.** Logical bytes (summed from the `db inspect` key-value rows) against
+physical bytes (summed SST file sizes), per store.
+
+**Result.**
+
+| | logical KV | physical SST | physical / logical |
+| --- | --- | --- | --- |
+| jochemnet | 521.1 GiB | 377.3 GiB | **0.724** |
+| state-actor | 674.3 GiB | 550.8 GiB | **0.817** |
+
+Per key-value record: jochemnet 91.4 B logical / **66.2 B physical**;
+state-actor 113.0 B logical / **92.3 B physical**.
+
+**Verdict. CONFIRMED.** state-actor stores **12.8% more physical bytes per
+logical byte**. Composed with round 5's +4.9% block probes per node:
+
+    1.128 x 1.049 = 1.184 predicted   vs   1.171 measured (round 2)
+
+Within 1.3 points of the measured penalty, from two independently measured
+quantities.
+
+## Round 8 — entropy or configuration?
+
+**Hypothesis.** Worse compression could be a *setting*, not a property of the
+data: the state-actor store was written by state-actor's own geth build,
+which might have configured pebble differently. That distinction matters
+enormously - a setting is a bug to fix, entropy is a fact about the state.
+
+**Test.** Read the compression name and option string out of the largest SST
+of each store.
+
+**Result.** Both report `Snappy`, with byte-identical option strings
+(`window_bits=-14; level=32767; strategy=0; max_dict_bytes=0;
+zstd_max_train_bytes=0; enabled=0`).
+
+**Verdict. Configuration is identical; the difference is the data itself.**
+
+---
+
+# ROOT CAUSE (found at round 8 of 50)
+
+The residual ~10% is **not a benchmark artifact and not a database defect**.
+It is a real, quantitatively explained property of the two datasets:
+
+1. **The gap lives in EVM execution, in the state-read path.** Harness, RPC,
+   gas accounting, commit and trie-hash paths are all identical or favour
+   state-actor (round 0). It reproduces on symmetric NVMe in our own
+   reproduction, so it is not the original operator's host (round 2).
+2. **It is not extra logical work.** Same trie depth (8), same nodes per
+   lookup (8.80 vs 8.87), same disk-hit fraction, same fully-compacted LSM
+   shape - every table in L6 on both (rounds 1, 4, 5).
+3. **state-actor's records are fatter.** A generated bloatnet is built out of
+   contracts: 31.3% of its accounts carry a code hash against jochemnet's
+   19.2%. Mean snapshot account record 25.29 B vs 16.61 B; with the 33-byte
+   key, 58.3 vs 49.6 B per entry, **+17.4%** (round 6).
+4. **And they compress worse, for the same reason.** A 32-byte code hash is
+   high-entropy and near-incompressible, while an EOA record is small
+   integers and zero padding. Same Snappy settings on both stores, yet
+   physical/logical is 0.817 vs 0.724 - **+12.8% physical bytes per logical
+   byte** (rounds 7, 8).
+5. **So every block read moves more bytes.** With ~5% more block probes on
+   top, the predicted penalty is 1.184 against a measured 1.171 in disk read
+   bytes per Mgas, 1.238 in CPU (decompressing and checksumming more bytes),
+   and 0.888 in throughput (round 2).
+
+**What this means for the benchmark.** Unlike the DIFF_MAX anomaly, there is
+nothing to fix here. Comparing a generated bloatnet against a mainnet
+snapshot compares two genuinely different state compositions, and the
+denser, more contract-heavy one costs ~10% more per unit of gas to read. The
+honest statement is "state-actor's state is heavier, so reads cost more", not
+"the benchmark is biased". The corollary for the article: its current claim
+that this offset "cannot be a state-layout effect because NON_EXISTING has no
+state" is wrong twice over - an absence proof still walks the trie, and the
+penalty is a per-block property of the whole store, which is exactly why it
+is uniform across every account mode.
+
+**What is not fully accounted for.** The composed prediction overshoots
+slightly (1.184 vs 1.171), and ~4 points of the penalty could equally be a
+page-cache hit-rate effect from the larger store (23.38 vs 16.40 GiB of
+account snapshot) rather than compression alone. Separating those two would
+need a store with matched composition but different size, which does not
+exist here.
+
+**What would falsify this.** Re-encode the state-actor snapshot with the same
+composition but EOA-shaped records (no code hash) and the penalty should fall
+to roughly the block-probe residual (~5%). Equivalently: a jochemnet-derived
+store filtered to only code-bearing accounts should show the state-actor
+physical/logical ratio.
+
