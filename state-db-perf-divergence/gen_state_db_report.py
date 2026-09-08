@@ -1093,13 +1093,13 @@ def main():
       'reproducible pipeline &amp; data &rarr;</a></div>')
     w(f"<p class=sub>{len(common)} tests common to all three runs · generated "
       f"{today} · updated with the root-cause investigation</p>")
+    w('<!--TOC-->')
     w("<div class=legend>")
     for k, (label, var) in DB.items():
         w(f'<span><i class=sw style="background:var({var})"></i><b>{label}</b> '
           f'<code>{RUN_ID[k]}</code> {RUN_DATE[k]}</span>')
     w("</div>")
     w(f'<p class=note>{esc(PROVENANCE)}</p>')
-    w('<!--TOC-->')
 
     figs = {
         "ratio-dots": chart_ratio_dots(by_op),
