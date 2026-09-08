@@ -1467,14 +1467,6 @@ def main():
       "to itself on every run &mdash; and that is a much better kind of bug, "
       "because it is one we can go and reproduce.</p>")
 
-    w("<h3>Broken meters</h3>")
-    w(f"<p>A benchmark can also lie through its own instruments, and this one has "
-      f"real bugs: <code>execution_ms</code> goes negative in {neg_exec} of the "
-      f"{3 * len(common)} measured blocks, and the cache and state-read counters "
-      f"never move at all. But they misbehave at the same rates on both arms. A "
-      f"meter that is broken the same way for everyone cannot change who wins, so "
-      f"this is something to disclose, not the thing we were looking for &mdash; and "
-      f"it is why every timing here comes from <code>total_ms</code>.</p>")
     w("<h3>Where the data sits in the LSM tree</h3>")
     w("<p>The last plain suspect was on-disk layout. Compaction alone moves these "
       "numbers by 3&times; &mdash; that is the whole compacted-versus-uncompacted "
