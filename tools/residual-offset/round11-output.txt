@@ -1,0 +1,20 @@
+=== jochemnet ===
+  file: /root/.cache/benchmarkoor/eest-url/6142626aac06abc4/fixtures/benchmarkoor-build-artifacts/eest-payloads/geth/blockchain_tests_stateful_engine/for_amsterdam_at_0160M/stateful/bloatnet/account_query/account_access.json
+  cases in file: 100   matching 'opcode_BALANCE-value_sent_0-account_mode...': 2
+  case: tests/benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_eng
+  payloads: 1
+    payload 0: txs=10 gasUsed=0x98960a4
+      tx0: 165 bytes  tail=00000000000000000000000000000000000000000000000000000000000000151025a04c94dd0e1aa271cc66c0c51c0422fdc0324669d23d998d8d198cf639ee6c43ada032a7015a84c676612bd502ec
+      tx1: 165 bytes  tail=110000000000000000000000000000000000000000000000000000000000002a2126a0d4b677a5649cb626ab13d114262fc224195f97866a3f87f8fc63621ba8fe20d2a02fa216d2941b7ec5fda89b17
+      tx2: 165 bytes  tail=220000000000000000000000000000000000000000000000000000000000003f3226a01324a1fb7fe874a8ecb2fecc186fa27765d0efca911c79db61f0b1a2baf2ed2ba011a96955a008277df09964cd
+  pre accounts: 0  largest code: 
+=== state-actor ===
+  file: /root/.cache/benchmarkoor/eest-url/3cf555c593bcb136/fixtures/benchmarkoor-build-artifacts/eest-payloads/geth/blockchain_tests_stateful_engine/for_amsterdam_at_0160M/stateful/bloatnet/account_query/account_access.json
+  cases in file: 100   matching 'opcode_BALANCE-value_sent_0-account_mode...': 2
+  case: tests/benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_eng
+  payloads: 1
+    payload 0: txs=10 gasUsed=0x98960a4
+      tx0: 169 bytes  tail=00000000000000000000000000000000000000000000000000000000001510820a96a0b99384d530bea261ee8311f6973860bca64dae623a5779dfc07227d60dc168e4a035b2d54c85534b707a844fcb
+      tx1: 169 bytes  tail=00000000000000000000000000000000000000000000000000000000002a21820a96a02794c00febfdaeff1cefb0422d6e9b8f7f107352f4a744f35e9b913c7bc83bf5a06a64e76532eb6b2a1342c439
+      tx2: 169 bytes  tail=00000000000000000000000000000000000000000000000000000000003f32820a96a037b4fe505eb31e173d737b5f276a40b408ee3343d2ef9a4a45e786621605c83ca0082e02ae1b988a1ae211e08d
+  pre accounts: 0  largest code: 
