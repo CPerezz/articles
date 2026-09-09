@@ -208,3 +208,43 @@ study needed.
   finding that account reads are one flat read (not an 8-node trie walk) should carry over.
 - `DB mode with code stored using code hash enabled = true` — relevant to F3: contract code is
   keyed by hash, and 32-byte hashes were the incompressible records that drove the geth residual.
+
+---
+
+## Round 3 — fork activation for the runner, and the arm configs
+
+**Why this round exists.** Round 20 of the geth study was lost to a fork-activation mismatch
+(`--override.amsterdam=1` on one arm vs `1769856769` on the other). Besu has **no
+`--override.amsterdam` flag at all** — its fork schedule lives in the genesis file — so the
+equivalent had to be located before writing configs, not after a failed run.
+
+**Found.** `pkg/config/config.go` defines `genesis_fork_override` on **`ClientInstance`**, the
+runner's per-instance struct, not just on builder targets. The comment on the builder copy
+confirms the intent: it patches genesis at filler boot *"identically to the runner"*.
+
+Mapping, arm for arm:
+
+| | geth (published study) | besu |
+|---|---|---|
+| state-actor arm | `--override.amsterdam=1` | `genesis_fork_override: { amsterdam: 1 }` |
+| jochemnet arm | `--override.amsterdam=1769856769` | `genesis_fork_override: { amsterdam: 1769856769 }` |
+
+The state-actor value must be `1`, not the jochemnet timestamp: state-actor synthesises genesis
+at `--fork=osaka` (confirmed in the boot log: `milestones: [Osaka:0]`) with `timestamp=0`, so
+Amsterdam is activated on top at 1 — exactly what the geth arm did.
+
+**Configs drafted:** `tools/besu-study/config.besu-{state-actor,jochemnet}.yaml`, derived from
+`/root/bench/{state-actor,jochemnet}.yaml` and changed only where Besu forces it: `datadirs.besu`
+with the datadir **root** as source (geth used `.../geth/chaindata`), the fork override above, and
+`BESU_OPTS="-Xms8g -Xmx8g -XX:+AlwaysPreTouch"` from the upstream besu target. Fixtures are
+deliberately **unchanged** — still the geth-filled bundles, including
+`pre-runs/geth/pre_run_bundle`.
+
+One arm file covers both jochemnet runs; untreated vs treated differs only by `results_dir` and
+whether `BENCHMARKOOR_POST_PRERUN_CMD` is exported, keeping the two runs otherwise identical.
+
+**Open item, flagged not guessed.** The geth jochemnet arm needed no genesis file — geth reads
+chain config from the datadir. Besu's spec declares `GenesisFlag() == "--genesis-file="`, so the
+jochemnet arm needs one from somewhere: the snapshot, `client.config.genesis`, or the fixtures.
+Resolve by inspecting the extracted tarball; do not assume. (The state-actor arm has no such
+problem — the generator emits `besu-chainspec.json` beside the store.)

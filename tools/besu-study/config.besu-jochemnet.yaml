@@ -1,0 +1,73 @@
+# Besu / jochemnet arm — the mainnet-snapshot side. Serves BOTH untreated and treated runs:
+# the treatment is applied by the pre-run hook, so the only per-run differences are
+# `results_dir` and whether BENCHMARKOOR_POST_PRERUN_CMD is exported.
+#
+#   untreated:  unset BENCHMARKOOR_POST_PRERUN_CMD          results_dir .../besu-jochemnet
+#   treated:    export BENCHMARKOOR_POST_PRERUN_CMD='...'   results_dir .../besu-jochemnet-treated
+#
+# The treatment mirrors geth's `drainjournal && geth db compact`, once after the pre-runs and
+# before promote — NOT per test payload (that is what the geth study actually did, and matching
+# it is what keeps the two studies comparable):
+#
+#   BENCHMARKOOR_POST_PRERUN_CMD='besu --data-path=$DATADIR \
+#     --genesis-file=$DATADIR/<genesis> --genesis-state-hash-cache-enabled=true \
+#     storage trie-log prune && rockscompact $DATADIR/database'
+#
+# --genesis-state-hash-cache-enabled=true is REQUIRED on offline storage subcommands, not just
+# at boot (round 2). rockscompact must run after Besu has opened the store at least once
+# (round 1) — true here by construction, since the pre-runs have already executed.
+#
+# OPEN ITEM (resolve when the tarball is extracted): where the jochemnet genesis file comes
+# from. The geth arm needed none — geth reads chain config from the datadir — but Besu's spec
+# declares GenesisFlag "--genesis-file=", so this arm needs one from the snapshot, from
+# client.config.genesis, or from the fixtures bundle. Do not guess; check the extracted tree.
+global:
+  log_level: info
+  env:
+    BESU_SNAPSHOT_DIR: /schelk/snapshots/besu/jochemnet/24402727
+
+runner:
+  client_logs_to_stdout: true
+  docker_network: benchmarkoor
+  cleanup_on_start: true
+  container_runtime: podman
+  live_reporting:
+    enabled: false
+  benchmark:
+    results_dir: /data/bench-results/besu-jochemnet
+    generate_results_index: true
+    generate_suite_stats: true
+    tests:
+      metadata:
+        labels:
+          name: besu-jochemnet-glamsterdam-devnet-7-stateful
+          block: "24402727"
+          test-type: stateful
+          context: repricing
+          fork: amsterdam
+          data-disk-type: schelk
+      source:
+        eest_fixtures:
+          fixtures_url: https://github.com/ethpandaops/benchmarkoor-tests/releases/download/eest-payloads-jochemnet-v1-amsterdam-stateful-d9ad55b3-20260807-000744/eest-payloads-jochemnet-v1-amsterdam-stateful-geth.tar.gz
+          fixtures_subdir: benchmarkoor-build-artifacts/eest-payloads/geth/blockchain_tests_stateful_engine
+          pre_runs:
+            fixtures_subdir: benchmarkoor-build-artifacts/pre-runs/geth/pre_run_bundle
+  client:
+    config:
+      rollback_strategy: container-recreate
+      drop_memory_caches: "steps"
+    datadirs:
+      besu:
+        source_dir: ${BESU_SNAPSHOT_DIR}
+        method: schelk
+        schelk_options:
+          promote_post_pre_runs: true
+  instances:
+    - id: besu-jochemnet
+      client: besu
+      image: docker.io/ethpandaops/besu:bal-devnet-7
+      # Real chain: Amsterdam activates at the jochemnet timestamp, the same value the geth
+      # arm passed as --override.amsterdam=1769856769.
+      genesis_fork_override: { amsterdam: 1769856769 }
+      environment:
+        BESU_OPTS: "-Xms8g -Xmx8g -XX:+AlwaysPreTouch"

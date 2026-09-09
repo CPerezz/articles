@@ -1,0 +1,63 @@
+# Besu / state-actor arm — the generated-state companion.
+#
+# Derived from the geth study's /root/bench/state-actor.yaml, changed only where Besu forces it:
+#
+#   geth                                   besu
+#   ------------------------------------   --------------------------------------------------
+#   --override.amsterdam=1 (extra_args)    genesis_fork_override: { amsterdam: 1 }
+#                                          (ClientInstance carries this field; Besu has no
+#                                           equivalent CLI flag — the fork lives in genesis)
+#   datadirs.geth, source .../geth/chaindata   datadirs.besu, source = datadir ROOT
+#   (implicit genesis)                     genesis: the state-actor-emitted besu-chainspec.json
+#
+# The fixtures are UNCHANGED and deliberately still the geth-filled bundle: payloads are
+# benchmarkoor's input, not a per-client artifact, and reusing them byte-for-byte is what makes
+# the Besu numbers comparable with the published geth ones.
+#
+# state-actor writes genesis with --fork=osaka (milestone "Osaka:0"), so Amsterdam must be
+# activated on top at timestamp 1 — exactly as the geth arm did with --override.amsterdam=1.
+global:
+  log_level: info
+  env:
+    STATE_ACTOR_DIR: /sa-besu/v1
+
+runner:
+  client_logs_to_stdout: true
+  docker_network: benchmarkoor
+  cleanup_on_start: true
+  container_runtime: podman
+  live_reporting:
+    enabled: false
+  benchmark:
+    results_dir: /data/bench-results/besu-state-actor
+    generate_results_index: true
+    generate_suite_stats: true
+    tests:
+      metadata:
+        labels:
+          name: besu-state-actor-glamsterdam-devnet-7-stateful
+          block: "0"
+          test-type: stateful
+          context: repricing
+          fork: amsterdam
+          data-disk-type: schelk
+      source:
+        eest_fixtures:
+          fixtures_url: https://github.com/ethpandaops/benchmarkoor-tests/releases/download/eest-payloads-state-actor-v1-amsterdam-stateful-2282c757-20260722-144218/eest-payloads-state-actor-v1-amsterdam-stateful-geth.tar.gz
+          fixtures_subdir: benchmarkoor-build-artifacts/eest-payloads/geth/blockchain_tests_stateful_engine
+  client:
+    config:
+      rollback_strategy: container-recreate
+      drop_memory_caches: "steps"
+    datadirs:
+      besu:
+        source_dir: ${STATE_ACTOR_DIR}
+        method: schelk
+  instances:
+    - id: besu-sa
+      client: besu
+      image: docker.io/ethpandaops/besu:bal-devnet-7
+      genesis: ${STATE_ACTOR_DIR}/besu-chainspec.json
+      genesis_fork_override: { amsterdam: 1 }
+      environment:
+        BESU_OPTS: "-Xms8g -Xmx8g -XX:+AlwaysPreTouch"
