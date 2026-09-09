@@ -730,3 +730,83 @@ harness that produced the original numbers. Everything short of that has
 measured a different code path, a different access pattern, or a different
 device.
 
+
+---
+
+## Round 20 — state-actor restored to NVMe
+
+551 GB rsynced from the HDD copy into a loop-backed ext4 image on md2, the
+same device and stack jochemnet uses (`fallocate`, then `mkfs.ext4 -E
+nodiscard`, then re-`fallocate`, because mkfs discards otherwise punch the
+image thin - the hazard a previous run hit). Verified: rsync rc=0, dry-run
+diff empty, 11,328 files and 551 G on both sides.
+
+Caution worth recording: the setup script ran `losetup -D`, which detaches
+*all* unused loop devices, and it dropped jochemnet-virgin's association.
+No data loss - the image is intact and schelk re-attaches on restore - but
+that was careless on a box with live volumes.
+
+## Round 21 — running the real block, and four harness bugs
+
+Getting the genuine execution path to run took four fixes, each of which had
+been silently corrupting earlier probes:
+
+1. **The setup block was missing.** Round 15's SYNCING was simply the test
+   payload being head+2; the fixture's `setupEngineNewPayloads` block sits
+   between. Send it first.
+2. **state-actor needs its pre-run block.** Its store is at genesis while its
+   fixtures start at block 1; that block lives in
+   `pre_run/<startBlockHash>.json`.
+3. **The fork override differs per arm.** jochemnet uses
+   `--override.amsterdam=1769856769`, state-actor `--override.amsterdam=1`
+   (Amsterdam from genesis, synthetic chain). Using jochemnet's value made
+   every state-actor block INVALID.
+4. **A store with no head marker starts in sync mode** and answers every
+   payload with `Ignoring payload while snap syncing ... forced head needed
+   for startup`. An initial forkchoiceUpdated on the node's own head fixes it.
+
+And the flags themselves were wrong. The harness launches geth with
+`--syncmode=full --snapshot=false --cache=2048` (pkg/client/geth.go @1e0b9d4);
+none of my probes used them.
+
+## Round 22 — the offset, isolated and reproduced
+
+Both arms, same NVMe device, harness flags, three runs each, caches dropped
+before the measured block.
+
+| | jochemnet | state-actor | ratio |
+| --- | --- | --- | --- |
+| wall time | 8.69 / 8.69 / 8.71 s | 9.58 / 9.64 / 9.67 s | **1.107** |
+| accounts read | ~51,565 | ~51,562 | 1.000 |
+| account reads served from disk | 51,536-51,547 | 51,546-51,557 | 1.000 |
+| trie nodes fetched | 44 | 39 | - |
+| disk bytes read | 0.471 GB (x3) | 0.527 GB (x3) | **1.119** |
+| **bytes per account read** | **9,131** | **10,216** | **1.119** |
+
+**This is the residual, isolated.** Identical logical work - the same ~51,540
+disk-backed account reads, to three significant figures - yet state-actor
+moves **11.9% more physical bytes** and takes **10.7% longer**. Time tracks
+bytes. Run-to-run variance is negligible (9,130 / 9,132 / 9,134 bytes per
+account).
+
+The 10.7% reproduces the full benchmark's 11.2% throughput deficit, in a
+ten-second experiment on matched hardware rather than a sixteen-hour run.
+
+**What it means.** The cost is not tree depth, not node count, not the number
+of reads - all three are equal. It is **bytes moved per read**. Each account
+read fetches one pebble block, and state-actor's blocks are physically larger
+for the same logical content: 0.817 physical/logical against jochemnet's
+0.724 (round 7, +12.8%) predicts the measured +11.9% closely, with identical
+Snappy settings on both stores (round 8). The underlying reason is
+composition - 31.3% of state-actor's accounts carry a high-entropy 32-byte
+code hash against jochemnet's 19.2%, and its records are 58.3 vs 49.6 B
+(round 6).
+
+Round 18's +11.8% - dismissed at the time as a single cross-device shot -
+turns out to have been right, and matches this to a tenth of a point.
+
+**Still one inferential step.** That the extra bytes come from block-level
+compressibility rather than some other layout property is consistent with
+every measurement but not directly proven; measuring compressed block sizes
+within the account-snapshot key range of each store would close it.
+
