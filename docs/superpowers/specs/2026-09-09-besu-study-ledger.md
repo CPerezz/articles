@@ -300,3 +300,61 @@ rounds 13/17/18 of the geth study (8× readahead difference, 2048 vs 256 KB).
 **Still unknown, and it sizes the images:** the extracted footprint of the Besu snapshot. The
 tarball is 1.003 TB zstd-compressed; geth's equivalent expanded to ~1.2 T. Size the images from
 the measured extract, not from a guess.
+
+---
+
+## Round 6 — inputs landed; the state-actor store is bit-for-bit the same state as geth's
+
+**Download.** Completed and verified (`rc=0`: byte count equals `Content-Length`
+1,003,259,660,471, then `zstd -t` clean).
+
+It failed once first, and the failure is worth recording: wget died at 72% with
+`Connection closed at byte 724134002688. Giving up.` (exit 4). Over a ~4-hour transfer the far
+end *will* drop the connection — the resumed run logged `(try: 7)`. Retry policy is mandatory,
+not optional: `--tries=0 --retry-connrefused --waitretry=10 --timeout=60 --read-timeout=120`,
+with `-c` doing the resuming. Six further drops were absorbed silently.
+
+(`zstd -l` to pre-measure the extracted size was abandoned — it scans the whole archive when
+the frame header carries no content size. Sparse schelk images make the measurement
+unnecessary anyway.)
+
+**Generation.** `rc=0` in **4 h 54 m**, **533 G** — against geth's 5 h 12 m and 553 G. The two
+arms are the same size to within 4%, which is itself a useful control.
+
+Pristine census, taken before any Besu process opened the store:
+
+| | |
+|---|---|
+| SST files | 8,447 (572,008,647,022 bytes) |
+| blob files | 1 (322 bytes) |
+| **WAL** | 1 file, **0 bytes** |
+
+The empty WAL matters: the generated store carries **no unflushed state**, exactly as geth's
+SA store carried no journal. Whatever P2 turns up on the jochemnet arm, the generated arm has
+no recency artifact to confound it. BlobDB is also effectively unused at 322 bytes, so the F3
+arithmetic can stay in SST geometry after all — the round-0 worry does not bite.
+
+Provenance is embedded in the store itself (`state-actor-manifest.json`): `version
+e4cb205-dirty`, `vcs_revision e4cb20588f3aac3ae7b6313c4cad5fe5b4135772`, `vcs_modified true`,
+and the full argv.
+
+### The anchor assertion — and an unexpectedly strong result
+
+```
+genesis hash  : 0xa9e61c12051aeda72581c40b1718fa76b80c0b5cc5f7b7ebe96e0b6d9669491b
+payload anchor: 0xa9e61c12051aeda72581c40b1718fa76b80c0b5cc5f7b7ebe96e0b6d9669491b   MATCH
+stateRoot     : 0x5b305cc0f85f9ffaf5eca1e72cfe0c82f92e14f121aed163cc4c0e784aa3b6e7
+```
+
+The genesis hash equals the `snapshotBlockHash` the cached payloads expect, so **the
+geth-filled payloads drive the Besu arm unchanged** — the reuse claim is now measured, not
+argued.
+
+The stronger result is the state root: `0x5b305cc0…b6e7` is the **same value the geth
+state-actor store reported** in its `db inspect` output. state-actor produced *the same logical
+state* for two different clients from `--seed=42`. The two studies are therefore a genuine
+controlled comparison — identical state, identical payloads, two storage engines — which is
+precisely the design F3 needs to be tested rather than assumed.
+
+**Phase 1 complete.** Next: archive the store to HDD, build the jochemnet schelk pair, extract,
+promote (Phase 2 → 3).
