@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Full offline compaction of a Besu RocksDB store — the `geth db compact` analogue.
+# Usage: rockscompact <datadir>            (the /database subdir is appended)
+#
+# Precondition: Besu must have opened the store at least once, so that OPTIONS is written by
+# Besu's rocksdb (10.6.2) rather than state-actor's (10.10). See round 1 of the ledger.
+set -euo pipefail
+DATADIR="${1:?usage: rockscompact <datadir>}"
+DB="$DATADIR/database"
+[ -d "$DB" ] || { echo "no rocksdb at $DB" >&2; exit 2; }
+
+exec docker run --rm \
+  -v /home/CPerezz/rockscompact:/w:ro \
+  -v "$DATADIR":/db \
+  -w /w \
+  eclipse-temurin:21-jdk \
+  java -cp .:rocksdbjni-10.6.2.jar Compact /db/database

@@ -248,3 +248,23 @@ chain config from the datadir. Besu's spec declares `GenesisFlag() == "--genesis
 jochemnet arm needs one from somewhere: the snapshot, `client.config.genesis`, or the fixtures.
 Resolve by inspecting the extracted tarball; do not assume. (The state-actor arm has no such
 problem — the generator emits `besu-chainspec.json` beside the store.)
+
+---
+
+## Round 4 — operational tooling
+
+`tools/besu-study/rockscompact` — one-word wrapper so the pre-run hook stays readable.
+
+`tools/besu-study/besu-inventory.sh <datadir> <genesis> <label>` — the per-store "before"
+snapshot, validated end to end. Emits, in one file: trie-log count; `rocksdb usage` per column
+family (keys, total, SST bytes, **blob bytes**); a physical file census (sst/blob/**wal** counts
+and bytes); and an SST size histogram.
+
+Two of those go beyond what the geth study could measure. Blob bytes are a BlobDB concept Pebble
+has no equivalent of. WAL bytes matter because `Processing WAL...` on open (round 2) is the
+leading P2 candidate — the Besu analogue of geth's journal reload — so the WAL census must be
+taken *before* Besu ever opens a store, or the evidence is destroyed by the act of measuring it.
+
+**Consequence for the pipeline:** the untreated jochemnet inventory must be taken with the file
+census only (no `besu storage` subcommand, since those open the store and replay/clear the WAL).
+The `besu`-driven half of the inventory is safe to run afterwards.
