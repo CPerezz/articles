@@ -190,14 +190,43 @@ worktrees. **Gate:** no Besu work starts until free space is confirmed.
 1a. **Download + extract** the Besu snapshot to HDD, then place on NVMe. Reuse the geth
 `fetch-jochemnet.sh` shape: `wget -c` (resumable), keep the tarball, `zstd -d` as the
 integrity check (upstream ships no `.sha256`), log phase markers. ~6 h.
-1b. **Generate the Besu state-actor store**, mirroring the geth invocation exactly:
+1b. **Generate the Besu state-actor store.** Three sub-steps, because the obvious one-liner
+does not work.
+
+**1b-i — the host binary cannot write Besu.** Verified by running it (2026-09-09):
 ```
-state-actor --db=<besu datadir root> --client=besu --target-size=350GB \
-            --spec=state-actor-spec-baseline.yaml --seed=42 --fork=osaka \
-            --gas-limit=1000000000
+$ /home/CPerezz/bin/state-actor --db=… --client=besu --target-size=1GB …
+Failed to populate Besu DB: client/besu: requires the cgo_besu build tag and librocksdb.
+--client=besu is Docker-only — build with `docker build -f Dockerfile.besu .`
 ```
-(geth used `--db=<datadir>/geth/chaindata`; Besu takes the root — §2.2.)
-With `BESU_OPTS="-Xms8g -Xmx8g -XX:+AlwaysPreTouch"`. Unknown runtime; geth took 5.5 h.
+The binary that produced the geth baseline advertises `-client` values
+`geth|nethermind|besu|reth|ethrex|erigon`, but the Besu writer is a cgo build linked against
+librocksdb and is shipped only as an image. `--fork` support is identical for both clients
+(`osaka`, `prague`), so `--fork=osaka` mirrors cleanly.
+
+**1b-ii — build the image from the same source state as the geth store.** `make docker-besu`
+in `/home/CPerezz/state-actor`, which is at commit `e4cb205` **with 31 uncommitted files** —
+the exact tree the geth baseline binary was built from, recorded in
+`state-actor-build-provenance.diff`. Building from a clean checkout instead would mean the two
+stores were produced by two different generators, which quietly undermines every cross-arm
+claim in the study. Record the image digest next to the geth binary's provenance.
+*Toolchain note:* the Makefile targets call `docker`; this box runs **podman**. Alias or
+transcribe the commands.
+
+**1b-iii — gate on upstream's own reproducer before spending hours.**
+`make smoke-besu TARGET_SIZE=4MB` generates a small store, boots `hyperledger/besu` against it,
+sends 100 dev-mode transactions and runs `validate-big-db-besu.sh`. Minutes, and it fails fast
+if the cgo writer is broken on this host.
+
+Then the real generation, mirroring the geth invocation — note `--db` is the **datadir root**
+for Besu (§2.2), which is also how upstream's own smoke target invokes it:
+```
+podman run -v <store>:/data -v <spec>:/spec.yaml:ro state-actor-besu:latest \
+  --client=besu --db=/data --target-size=350GB --spec=/spec.yaml \
+  --seed=42 --fork=osaka --gas-limit=1000000000
+```
+Run as the invoking user so the output datadir is not root-owned. Unknown runtime; geth took 5.5 h.
+
 **Acceptance:** store boots under Besu, `eth_blockNumber` answers, and its genesis state root
 **equals the anchor in the cached state-actor payload bundle** (§2.4). Check this the moment
 generation finishes — it is ten minutes of work that de-risks the whole state-actor arm.
@@ -252,7 +281,8 @@ findings is the payload; write the conclusion after Phase 5, never before.
 | risk | likelihood | mitigation |
 |---|---|---|
 | state-actor's besu store anchors to a different state root than the payloads | low | deterministic for a fixed seed; asserted at Phase 1b acceptance, ten minutes after generation |
-| state-actor's besu path is less trodden than geth's (OOM, slow, wrong root) | medium | 8 GB heap is pinned in the upstream config; erigon is the known OOM case, besu is enabled by default. Fails fast in Phase 1b |
+| state-actor's besu writer is cgo/Docker-only and less trodden than geth's | **confirmed, mitigated** | host binary cannot write Besu at all (§1b-i); image build + `make smoke-besu` gate it in minutes, before the 6–12 h run |
+| Besu store built from a different generator source than the geth store | medium | build from `e4cb205` + the 31 dirty files, per `state-actor-build-provenance.diff`; record the image digest |
 | No `besu db compact` → custom tool | **resolved** | version-matched JNI tool, §2.3 |
 | NVMe cannot hold all three arms | certain | sequence arms; rebuild volumes between them, as in the geth study |
 | Besu has no journal-equivalent and P2 is null | real, and fine | a null P2 is a *result*: it isolates F1 as geth-specific and strengthens F3's engine-independence |
