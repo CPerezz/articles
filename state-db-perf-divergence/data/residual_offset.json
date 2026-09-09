@@ -1,0 +1,109 @@
+{
+ "provenance": {
+  "host": "stateless-bloatnet-benchmarks",
+  "collected": "2026-09-09",
+  "replay_method": "single-block replay of the fixture BALANCE / EXISTING_CONTRACT_MINIMAL / 160M case against each store, both on the same NVMe device (md2, loop-backed ext4), launched with the harness client flags (--syncmode=full --snapshot=false --cache=2048); OS page cache dropped before the measured block",
+  "geometry_method": "pebble SST properties for 40 files per store whose first key falls in the account-snapshot keyspace (prefix a)",
+  "ledger": "docs/superpowers/specs/2026-09-08-residual-offset-ledger.md"
+ },
+ "replay": {
+  "jochemnet": [
+   {
+    "wall_s": 8.71,
+    "accounts_read": 51577,
+    "accounts_from_disk": 51572,
+    "trie_nodes": 44,
+    "disk_read_bytes": 470884352
+   },
+   {
+    "wall_s": 8.69,
+    "accounts_read": 51562,
+    "accounts_from_disk": 51557,
+    "trie_nodes": 44,
+    "disk_read_bytes": 470888448
+   },
+   {
+    "wall_s": 8.71,
+    "accounts_read": 51555,
+    "accounts_from_disk": 51550,
+    "trie_nodes": 44,
+    "disk_read_bytes": 470888448
+   }
+  ],
+  "state-actor": [
+   {
+    "wall_s": 9.58,
+    "accounts_read": 51556,
+    "accounts_from_disk": 51551,
+    "trie_nodes": 39,
+    "disk_read_bytes": 526700544
+   },
+   {
+    "wall_s": 9.64,
+    "accounts_read": 51567,
+    "accounts_from_disk": 51562,
+    "trie_nodes": 39,
+    "disk_read_bytes": 526729216
+   },
+   {
+    "wall_s": 9.67,
+    "accounts_read": 51562,
+    "accounts_from_disk": 51557,
+    "trie_nodes": 39,
+    "disk_read_bytes": 526794752
+   }
+  ]
+ },
+ "sst_geometry": {
+  "jochemnet": {
+   "compressed_bytes_per_block": 3467.0287622221363,
+   "compression": "Snappy",
+   "entries_per_block": 70.87165626897095,
+   "label": "jochemnet",
+   "mean_raw_record_bytes": 57.636977798886434,
+   "physical_over_logical": 0.8487575719753632,
+   "prefix": "a",
+   "ssts_sampled": 40
+  },
+  "state-actor": {
+   "compressed_bytes_per_block": 4042.7006977137944,
+   "compression": "Snappy",
+   "entries_per_block": 61.55937823651904,
+   "label": "state-actor",
+   "mean_raw_record_bytes": 66.28010774619563,
+   "physical_over_logical": 0.9908186188316964,
+   "prefix": "a",
+   "ssts_sampled": 40
+  }
+ },
+ "composition": {
+  "jochemnet": {
+   "contract_pct": 19.176,
+   "label": "jochemnet",
+   "max_bytes": 79,
+   "mean_bytes": 16.61416,
+   "mean_bytes_contract": 49.23967459324155,
+   "mean_bytes_eoa": 8.873552410175195,
+   "median_bytes": 11,
+   "min_bytes": 5,
+   "p90_bytes": 37,
+   "sampled": 200000,
+   "with_code_pct": 19.176,
+   "with_storage_pct": 7.035
+  },
+  "state-actor": {
+   "contract_pct": 31.312,
+   "label": "state-actor",
+   "max_bytes": 81,
+   "mean_bytes": 25.290695,
+   "mean_bytes_contract": 48.5647195963209,
+   "mean_bytes_eoa": 14.681035988819009,
+   "median_bytes": 16,
+   "min_bytes": 5,
+   "p90_bytes": 48,
+   "sampled": 200000,
+   "with_code_pct": 31.312,
+   "with_storage_pct": 1.787
+  }
+ }
+}
