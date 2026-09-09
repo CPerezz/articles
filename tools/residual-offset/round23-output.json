@@ -1,0 +1,20 @@
+{
+ "compressed_bytes_per_block": 3467.0287622221363,
+ "compression": "Snappy",
+ "entries_per_block": 70.87165626897095,
+ "label": "jochemnet",
+ "mean_raw_record_bytes": 57.636977798886434,
+ "physical_over_logical": 0.8487575719753632,
+ "prefix": "a",
+ "ssts_sampled": 40
+}
+{
+ "compressed_bytes_per_block": 4042.7006977137944,
+ "compression": "Snappy",
+ "entries_per_block": 61.55937823651904,
+ "label": "state-actor",
+ "mean_raw_record_bytes": 66.28010774619563,
+ "physical_over_logical": 0.9908186188316964,
+ "prefix": "a",
+ "ssts_sampled": 40
+}

@@ -810,3 +810,64 @@ compressibility rather than some other layout property is consistent with
 every measurement but not directly proven; measuring compressed block sizes
 within the account-snapshot key range of each store would close it.
 
+
+## Round 23 — why a bigger record costs anything at all
+
+**The objection.** Pebble serves a point lookup by fetching a whole block,
+~4 KB. Reading a 25-byte record instead of a 17-byte one should therefore be
+free, and round 22's +11.9% bytes cannot come from record size. Correct - and
+round 22 confirms the premise: both arms perform the same ~51,540 disk-backed
+reads, so the *number* of blocks is identical.
+
+**Test.** Read the real geometry out of the SST files, restricted to the
+account-snapshot keyspace (first-key prefix `a`), 40 files per store.
+
+| account-snapshot SSTs | jochemnet | state-actor |
+| --- | --- | --- |
+| compression | Snappy | Snappy |
+| **physical / logical** | **0.849** | **0.991** |
+| **compressed bytes per data block** | **3,467** | **4,043 (+16.6%)** |
+| records per block | 70.9 | 61.6 |
+| mean raw record (incl. 8-byte internal key suffix) | 57.6 B | 66.3 B |
+
+(57.6 - 8 = 49.6 and 66.3 - 8 = 58.3, reproducing round 6 exactly.)
+
+**Verdict.** The record size is not the cost, and neither is the block count.
+The cost is that **the block itself is physically larger**. state-actor's
+account records are effectively incompressible - Snappy recovers 0.9% against
+jochemnet's 15% - because a third of them carry a high-entropy 32-byte code
+hash. The same 4 KB logical block therefore lands as 4,043 bytes on disk
+instead of 3,467.
+
+That matters because I/O is quantised. A block of size S at arbitrary
+alignment touches on average `1 + (S-1)/4096` pages:
+
+- jochemnet 3,467 B -> **1.85 pages** (~7.6 kB)
+- state-actor 4,043 B -> **1.99 pages** (~8.1 kB), i.e. **+7.6%**
+
+Round 22 measured +11.9% bytes per account read in total. The page-boundary
+term accounts for roughly 8 of those points; the remainder is index and
+metadata traffic, where state-actor also carries 33% more SSTables. That
+decomposition is not measured separately and remains the one loose end.
+
+# ROOT CAUSE — final
+
+The residual ~10-11% is **not** tree depth, node count, read count, LSM shape,
+compaction state, cache size, the code table, the fixtures, or the client
+configuration - each measured and excluded. It is this:
+
+1. Both arms perform an identical number of account reads, each fetching one
+   pebble block (round 22: ~51,540 disk-backed reads, matched to three
+   significant figures).
+2. state-actor's account records are fatter (58.3 vs 49.6 B) and, more
+   importantly, **incompressible**: 31.3% carry a 32-byte code hash, so
+   Snappy recovers 0.9% against jochemnet's 15% (rounds 6, 23).
+3. Its data blocks are therefore physically larger - 4,043 vs 3,467 bytes -
+   and cross more 4 KB page boundaries per read (round 23).
+4. Measured on identical NVMe with the harness's own flags: **+11.9% bytes
+   per account read, +10.7% wall time** (round 22, three runs each,
+   negligible variance), reproducing the full benchmark's 11.2% throughput
+   deficit.
+
+The effect is linear in *compressed block size*, which is why a 21% larger
+tree - worth 0.07 of a trie level - was never the explanation.
