@@ -268,3 +268,35 @@ taken *before* Besu ever opens a store, or the evidence is destroyed by the act 
 **Consequence for the pipeline:** the untreated jochemnet inventory must be taken with the file
 census only (no `besu storage` subcommand, since those open the store and replay/clear the WAL).
 The `besu`-driven half of the inventory is safe to run afterwards.
+
+---
+
+## Round 5 — volume layout and arm sequencing
+
+`schelk init-new --virgin <img> --scratch <img> --ramdisk <path> --mount-point <path>` creates
+the ext4 golden image and clones it to scratch; the store is then populated on the mounted
+scratch and frozen with `promote`. The geth study's instance was `/schelk-vols/jochemnet-{virgin,
+scratch}.img` → dm-era `jochemnet_era2` → `/schelk`.
+
+**The constraint, computed before committing to a layout.** NVMe is 3.5 T total:
+
+| | size | note |
+|---|---|---|
+| jochemnet virgin + scratch | ~2.4 T | two copies, sized to the extracted snapshot |
+| state-actor store | ~0.55 T | geth's equivalent was 551 G |
+| state-actor virgin + scratch | ~1.1 T | needed only while that arm runs |
+
+All three arms cannot be resident at once (2.4 + 1.1 + 0.55 = 4.05 T > 3.5 T). Sequencing,
+which also preserves the matched-media rule that round 20 of the geth study established:
+
+1. Archive the generated state-actor store to HDD (~550 G, cheap against 11 T free).
+2. Build the jochemnet schelk pair, extract into it, promote. Run **untreated** then **treated**.
+3. Tear down the jochemnet pair; restore the state-actor store to NVMe; build its schelk pair;
+   run that arm.
+
+Every arm is therefore measured on md2 NVMe, never the HDD array — the failure that invalidated
+rounds 13/17/18 of the geth study (8× readahead difference, 2048 vs 256 KB).
+
+**Still unknown, and it sizes the images:** the extracted footprint of the Besu snapshot. The
+tarball is 1.003 TB zstd-compressed; geth's equivalent expanded to ~1.2 T. Size the images from
+the measured extract, not from a guess.
