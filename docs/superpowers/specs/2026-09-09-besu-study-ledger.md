@@ -102,3 +102,52 @@ Layout produced — `database/` (RocksDB), `besu-chainspec.json`, `DATABASE_META
 **Next:** on completion, assert the generated store's genesis state root equals the anchor in
 the cached state-actor payload bundle (`eest-url/3cf555c593bcb136`). That is the check which
 proves the geth-filled payloads drive the Besu arm unchanged.
+
+---
+
+## Round 1 — the compaction tool, and a version skew nobody would have predicted
+
+**Hypothesis.** Besu ships no `geth db compact` equivalent, so a full offline compaction needs
+a custom tool. Linking Besu's own `rocksdbjni-10.6.2.jar` and loading the store's own OPTIONS
+file should make it exactly faithful.
+
+**Test.** `tools/besu-study/Compact.java` — ~50 lines: `OptionsUtil.loadLatestOptions` →
+`RocksDB.open` with every column family → `compactRange(cf, null, null)` with
+`BottommostLevelCompaction.kForce` → close. Compiled in `eclipse-temurin:21-jdk` against the
+jar extracted from `ethpandaops/besu:bal-devnet-7`.
+
+Two design points, both load-bearing:
+- **Load OPTIONS, never guess.** These stores use BlobDB (`.blob` files). Opening with default
+  options would rewrite blob-separated values back into SSTs during compaction — a physical
+  layout change Besu never intended, which would corrupt the exact measurement the study
+  exists to make.
+- **`kForce`.** Without it RocksDB skips the bottommost level when it thinks it is already
+  compacted, so "compacted" would silently mean different things on different stores.
+
+**Result — works, but only on a store Besu has opened.** On a freshly generated store:
+```
+org.rocksdb.RocksDBException: Extra option not recognized: max_manifest_space_amp_pct
+```
+
+**Verdict — version skew between the generator and the client.** state-actor's image links
+**librocksdb 10.10**; Besu ships **rocksdbjni 10.6.2**. The generator writes an OPTIONS file
+with 10.10-only keys that 10.6.2 refuses to parse. Proven by the OPTIONS sequence on one store:
+
+| file | written by | has `max_manifest_space_amp_pct` |
+|---|---|---|
+| `OPTIONS-000007` | state-actor (10.10) | yes |
+| `OPTIONS-000021` | Besu 25.11.0, on first open | no |
+
+After Besu's first open the tool loads cleanly and compacts all 16 column families
+(`default`, `01`, `03`, `04`, `06`–`11` — Besu names them with single binary bytes, so the
+tool hex-encodes them).
+
+Note this does **not** affect Besu itself: it opens with explicitly-constructed options rather
+than by reading the OPTIONS file, which is why the generated store boots and matches its state
+root regardless. Only an external reader trips over it.
+
+**Consequence for the pipeline:** compaction must run *after* Besu has opened the store — which
+the real sequence does anyway, since the treatment happens after the pre-runs. The tool now
+exits 3 with the remedy spelled out rather than a raw RocksDB stack trace.
+
+**Also recorded:** the generator container runs as root, so generated stores are root-owned.
