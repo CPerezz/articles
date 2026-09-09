@@ -151,3 +151,60 @@ the real sequence does anyway, since the treatment happens after the pre-runs. T
 exits 3 with the remedy spelled out rather than a raw RocksDB stack trace.
 
 **Also recorded:** the generator container runs as root, so generated stores are root-owned.
+
+---
+
+## Round 2 — the inventory and treatment commands, validated
+
+**Hypothesis.** Besu's shipped `storage` subcommands can supply both halves of the geth
+protocol: `trie-log prune` as the journal-drain analogue, and something equivalent to
+`geth db inspect` for the side-by-side store table.
+
+**Test.** Both commands against a generated store.
+
+**First attempt failed**, informatively:
+```
+InvalidConfigurationException: Supplied genesis block does not match chain data stored in /data
+```
+The `storage` subcommands recompute the genesis state root from the chainspec alloc, and
+state-actor emits an **empty** alloc. `--genesis-state-hash-cache-enabled=true` is therefore
+mandatory for every offline command, not just for booting — exactly the case `pkg/client/besu.go`
+documents. Any script that omits it fails at the last step of a long run.
+
+**Result.** Both work.
+
+`storage trie-log count` on a generated store:
+```
+trieLog count: 0   (canonical 0, fork 0, orphaned 0)
+```
+A generator writes state, not history — so the state-actor arm carries **no trie logs at all**,
+precisely mirroring the geth SA store carrying no journal. The treatment is a no-op on that arm
+and only bites the jochemnet arm, which is the same asymmetry the geth study had.
+
+`storage rocksdb usage` — the `geth db inspect` analogue, and better, because the column
+families are named and keys are counted separately from bytes:
+
+| Column Family | Keys | Total Size |
+|---|---|---|
+| ACCOUNT_INFO_STATE | 4,798 | 294 KiB |
+| CODE_STORAGE | 1,500 | 545 KiB |
+| ACCOUNT_STORAGE_STORAGE | 19,566 | 1 MiB |
+| TRIE_BRANCH_STORAGE | 33,332 | 3 MiB |
+| VARIABLES | 1 | 1 KiB |
+
+It also reports **Blob Files Size** per family, which the geth study had no equivalent of.
+
+**Why this matters for P4.** The geth residual arithmetic ran
+`bytes ÷ entries → B/entry → compression → block size → pages`. `ACCOUNT_INFO_STATE` gives
+keys and bytes for the flat account keyspace directly, so the Besu B/entry figure (geth: 49.6
+vs 58.3) is a one-command measurement per store rather than the custom `snapstat` scan the geth
+study needed.
+
+**Boot-log observations worth carrying into P2/P3**, all from a single open:
+- `versionedStorageFormat=BaseVersionedStorageFormat{format=BONSAI, version=3}`
+- `Processing WAL...` — RocksDB replays its write-ahead log on open. This is the closest
+  structural analogue to geth's journal reload and is now the leading P2 candidate.
+- `Flat db mode found FULL` — reads serve from the flat keyspace, not the trie, so the geth
+  finding that account reads are one flat read (not an 8-node trie walk) should carry over.
+- `DB mode with code stored using code hash enabled = true` — relevant to F3: contract code is
+  keyed by hash, and 32-byte hashes were the incompressible records that drove the geth residual.
