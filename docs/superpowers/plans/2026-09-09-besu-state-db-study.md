@@ -59,7 +59,7 @@ full suites become confirmation and headline data rather than discovery.
   ```
 - **Amsterdam activation differs by client**: geth/erigon `--override.amsterdam`, besu/reth/ethrex
   `genesis_fork_override`, nethermind `genesis_eip_override`. Getting this wrong is exactly the
-  round-20 bug (`--override.amsterdam=1` vs `1769856769`) that cost a day. Pin it in Phase 3.
+  round-20 bug (`--override.amsterdam=1` vs `1769856769`) that cost a day. Pin it in Phase 2.
 
 ### 2.3 Besu's treatment tooling
 - `besu storage trie-log count | prune | export | import` — **shipped**. `prune` removes trie
@@ -76,23 +76,31 @@ full suites become confirmation and headline data rather than discovery.
   Rejected: building `ldb` from RocksDB source (version skew against 10.6.2, an hour of
   toolchain work); a Go/grocksdb tool (same skew plus cgo).
 
-### 2.4 Payloads: geth-only upstream — the one real gap
-Both cached bundles contain **only** `geth/` subtrees:
-```
-eest-url/6142626aac06abc4  (13G)  fixtures/benchmarkoor-build-artifacts/{pre-runs,eest-payloads}/geth
-eest-url/3cf555c593bcb136  (2.8G) fixtures/benchmarkoor-build-artifacts/{state-actor,eest-payloads}/geth
-```
-Release assets are per-client and only `-geth` is published:
-`eest-payloads-jochemnet-v1-amsterdam-stateful-geth.tar.gz`,
-`eest-payloads-state-actor-v1-amsterdam-stateful-geth.tar.gz`. No besu asset in either release.
+### 2.4 Payloads: already in hand, client-agnostic
+**Nothing to fill and nothing to download.** The payloads are benchmarkoor's input, not a
+per-client artifact, and the two cached bundles on the box (16 G total) are the complete
+input for the Besu runs too.
 
-**But reuse is likely and must be tested before filling.** Payloads are chain-level, not
-client-level: the jochemnet arm replays the same chain at the same height for both clients,
-and state-actor is seeded identically (`--seed=42`), so the synthetic state root should match
-across clients — the upstream config's STATUS line asserts exactly this for another pair
-(*"the geth/nethermind genesis state roots match"*). Phase 2 is a two-hour check that decides
-between reuse (cheap, and **methodologically better** — identical payloads make geth-vs-besu
-directly comparable) and filling (expensive detour).
+The `geth` in the asset name and the path is the **filler** that produced the payloads, not
+the client under test. The run config names the path literally:
+```yaml
+source:
+  eest_fixtures:
+    fixtures_url:    .../eest-payloads-state-actor-v1-amsterdam-stateful-geth.tar.gz
+    fixtures_subdir: benchmarkoor-build-artifacts/eest-payloads/geth/blockchain_tests_stateful_engine
+```
+`fixtures_subdir` is not derived from the client — it is a literal, and the upstream config
+labels the same knob `EEST_FIXTURES_RUNNER_SOURCE: geth   # which filler's fixtures the runner
+replays`. Both lines carry over to the Besu configs verbatim, pointing at the same two cached
+bundles: `eest-url/6142626aac06abc4` (jochemnet arm) and `eest-url/3cf555c593bcb136`
+(state-actor arm).
+
+One assertion this does impose, in Phase 1b: the generated Besu state-actor store must
+anchor to the **same** state root the payloads expect. state-actor is deterministic across
+clients for a given seed — the upstream config asserts it for another pair (*"the
+geth/nethermind genesis state roots match"*) — so `--seed=42` plus the same spec should
+reproduce the geth anchor exactly. A mismatch means the seed or spec drifted, and it must
+fail loudly at generation time rather than as a confusing `INVALID` mid-suite.
 
 ### 2.5 Space and hardware
 | mount | dev | size | free now | after teardown |
@@ -132,7 +140,7 @@ variant is a one-line hook change.
 
 | keep | size | why |
 |---|---|---|
-| `/root/.cache/benchmarkoor/eest-url/*` | 16 G | payloads — explicitly retained, and Phase 2 input |
+| `/root/.cache/benchmarkoor/eest-url/*` | 16 G | **the complete payload input for the Besu runs** (§2.4) |
 | `/data/fixtures` | 2.1 G | payloads |
 | `/data/bench-results`, `/data/archive/run1` | 14 G | **raw evidence behind a published article.** Deleting it to save 14 G of 10 T would be indefensible |
 | `/root/bench/*.yaml`, benchmarkoor binary | — | templates for the Besu configs |
@@ -190,17 +198,11 @@ state-actor --db=<besu datadir root> --client=besu --target-size=350GB \
 ```
 (geth used `--db=<datadir>/geth/chaindata`; Besu takes the root — §2.2.)
 With `BESU_OPTS="-Xms8g -Xmx8g -XX:+AlwaysPreTouch"`. Unknown runtime; geth took 5.5 h.
-**Acceptance:** store boots under Besu, `eth_blockNumber` answers, genesis state root recorded.
+**Acceptance:** store boots under Besu, `eth_blockNumber` answers, and its genesis state root
+**equals the anchor in the cached state-actor payload bundle** (§2.4). Check this the moment
+generation finishes — it is ten minutes of work that de-risks the whole state-actor arm.
 
-### Phase 2 — payload compatibility (2 h) — **gates everything downstream**
-Boot Besu on each store; record genesis/head state root and block hash. Compare against the
-`pre_run/0x….json` anchor and `startBlockHash` in the two cached geth bundles.
-- **Match →** reuse the geth-filled payloads unchanged. Record the equality as a first-class
-  result: it makes the two studies directly comparable.
-- **Mismatch →** fill Besu payloads via benchmarkoor's EEST stage (`EEST_FIXTURES_RUNNER_SOURCE`),
-  and re-plan: filling is a multi-hour detour per arm and needs its own acceptance gate.
-
-### Phase 3 — harness (4 h)
+### Phase 2 — harness (4 h)
 - Build the RocksDB compactor (§2.3); verify on a throwaway copy that SST count and level
   distribution move, and that Besu still boots after.
 - Wire `BENCHMARKOOR_POST_PRERUN_CMD='besu storage trie-log prune --data-path=$DATADIR && rocksdb-compact $DATADIR'`
@@ -215,19 +217,19 @@ Boot Besu on each store; record genesis/head state root and block hash. Compare 
   SST inventory per level, `caches/` contents. This is the Besu analogue of `geth db inspect`
   and it is the side-by-side table the article opens with.
 
-### Phase 4 — pilot (3 h) — **hard gate before spending 48 h**
+### Phase 3 — pilot (3 h) — **hard gate before spending 48 h**
 Run a handful of tests per arm end to end. Assert:
 - all three arms boot, execute the real block, and return `VALID` (not `SYNCING`/`INVALID`);
 - accounts-read counters are non-zero and equal across arms (P5's precondition);
 - the treatment measurably changes the store (trie-log count → 0, SST count drops).
 Any failure here is a config bug, and it is 100× cheaper to find now.
 
-### Phase 5 — the three suites (~48 h, unattended)
+### Phase 4 — the three suites (~48 h, unattended)
 `besu-jochemnet-virgin`, `besu-jochemnet-treated`, `besu-state-actor`. Same fixtures, same
 host, same NVMe device, three runs each where variance matters. Archive raw results
 immediately (the geth run-1 archive is why we can still audit that study).
 
-### Phase 6 — mechanism experiments (4 h) — short, targeted, from the pre-registration
+### Phase 5 — mechanism experiments (4 h) — short, targeted, from the pre-registration
 Ports of the geth tools, all already written and all fast:
 - `blockrun.py` — replay one real benchmark block per store, matched media, page cache
   dropped, three runs. Yields wall / accounts / disk bytes per arm. **This is the P3/P4 test
@@ -238,10 +240,10 @@ Ports of the geth tools, all already written and all fast:
 Each round: hypothesis, test, result, verdict — one commit each, into
 `docs/superpowers/specs/2026-09-XX-besu-residual-ledger.md`.
 
-### Phase 7 — article (8 h)
+### Phase 6 — article (8 h)
 `besu-state-db-divergence/` + generator + committed data JSON + fetch-free SVGs, same gates:
 oracle count, zero JS, self-check, live verification. The comparison table against the geth
-findings is the payload; write the conclusion after Phase 6, never before.
+findings is the payload; write the conclusion after Phase 5, never before.
 
 ---
 
@@ -249,12 +251,12 @@ findings is the payload; write the conclusion after Phase 6, never before.
 
 | risk | likelihood | mitigation |
 |---|---|---|
-| Payload mismatch forces a Besu fill | medium | Phase 2 gates it; fill path exists in benchmarkoor and is exercised for geth |
+| state-actor's besu store anchors to a different state root than the payloads | low | deterministic for a fixed seed; asserted at Phase 1b acceptance, ten minutes after generation |
 | state-actor's besu path is less trodden than geth's (OOM, slow, wrong root) | medium | 8 GB heap is pinned in the upstream config; erigon is the known OOM case, besu is enabled by default. Fails fast in Phase 1b |
 | No `besu db compact` → custom tool | **resolved** | version-matched JNI tool, §2.3 |
 | NVMe cannot hold all three arms | certain | sequence arms; rebuild volumes between them, as in the geth study |
 | Besu has no journal-equivalent and P2 is null | real, and fine | a null P2 is a *result*: it isolates F1 as geth-specific and strengthens F3's engine-independence |
-| Fork-activation mechanism differs (`genesis_fork_override`) | high if unpinned | Phase 3 pins it; Phase 4 catches it |
+| Fork-activation mechanism differs (`genesis_fork_override`) | high if unpinned | Phase 2 pins it; Phase 3 catches it |
 
 **Budget:** ~4–5 days wall clock, most of it unattended (6 h download, 6–12 h generation,
 48 h suites). Attended work is roughly 20 h.
