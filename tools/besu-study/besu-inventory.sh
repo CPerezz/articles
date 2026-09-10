@@ -11,6 +11,15 @@ LABEL="${3:?}"
 OUT="${4:-/root/bench/besu-inventory-$LABEL.txt}"
 IMG=hyperledger/besu:25.11.0
 
+# Fail loudly on an empty/unmounted path. `schelk promote` UNMOUNTS the scratch volume, so
+# /schelk/... silently becomes an empty directory on the root filesystem. Without this guard
+# the script cheerfully reports "sst files: 0" and a docker -v bind creates /genesis.json as a
+# directory — an inventory full of zeros is worse than no inventory.
+[ -d "$DATADIR/database" ] || {
+  echo "FATAL: no rocksdb at $DATADIR/database — is the schelk volume mounted?" >&2; exit 2; }
+[ -f "$GENESIS" ] || {
+  echo "FATAL: genesis file not found: $GENESIS" >&2; exit 2; }
+
 # --genesis-state-hash-cache-enabled is mandatory on offline storage subcommands, not just at
 # boot: state-actor emits an empty chainspec alloc, so the default recompute path aborts with
 # "Supplied genesis block does not match chain data stored".

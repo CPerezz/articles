@@ -358,3 +358,71 @@ precisely the design F3 needs to be tested rather than assumed.
 
 **Phase 1 complete.** Next: archive the store to HDD, build the jochemnet schelk pair, extract,
 promote (Phase 2 → 3).
+
+---
+
+## Round 7 — the state-actor arm is mounted, and the first cross-engine number
+
+**Volume built.** `schelk init-new --granularity 65536 --dm-era-name besu_sa_era` on two 640 G
+sparse images, mirroring the geth study's parameters (recovered from the stale
+`/var/lib/schelk/state.json`: `/dev/ram0` for dm-era metadata, 64 KiB granularity, mount at
+`/schelk`). Store copied in and verified byte-exact against the source —
+**572,069,603,242 bytes, 8,467 files** on both sides — then promoted:
+
+```
+Blocks promoted: 8824533   Bytes copied: 538.61 GB   12m 53.80s   712.76 MB/s
+```
+
+dm-era tracked only the changed blocks, so promote moved 538 GB rather than the full 640 G.
+
+**Two operational traps hit, both now fixed in the tooling.**
+
+1. **`schelk promote` unmounts the scratch volume.** `/schelk/...` silently reverts to an empty
+   directory on the root filesystem. The inventory script then reported `sst files: 0`,
+   `wal bytes: 0` and let `docker -v` create `/genesis.json` as a *directory*. An inventory full
+   of zeros is worse than no inventory, so `besu-inventory.sh` now hard-fails unless
+   `$DATADIR/database` exists and `$GENESIS` is a regular file.
+2. The failed run also left stray dirs under the mountpoint, which would have been shadowed
+   after remounting and quietly wasted root-filesystem space. Removed.
+
+**Inventory — `/schelk/state-actor/v1/besu`:**
+
+| Column family | Keys | Size |
+|---|---|---|
+| ACCOUNT_INFO_STATE | 430,696,738 | 24 GiB |
+| CODE_STORAGE | 134,442,676 | 43 GiB |
+| ACCOUNT_STORAGE_STORAGE | 2,214,312,331 | 147 GiB |
+| TRIE_BRANCH_STORAGE | 3,625,461,648 | 317 GiB |
+| VARIABLES | 2 | 2 KiB |
+| **total** | **6,404,913,395** | **532 GiB** |
+
+trie logs 0. SSTs 8,450 (572,008,650,893 B), mean 64.6 MB, 8,127 of them in the 32–80 MB band.
+Blob 322 B — BlobDB remains irrelevant here.
+
+### The result worth stopping on
+
+geth's state-actor store held **6,404,913,405 items in 674.25 GiB**. Besu's holds
+**6,404,913,395 items in 532 GiB**.
+
+The item counts differ by **10 out of 6.4 billion** — independent confirmation, from a
+completely different code path than the state root, that state-actor produced the same logical
+state for both clients. Yet Besu stores it in **21% less space**.
+
+`ACCOUNT_INFO_STATE` is the sharper comparison, because it is the exact analogue of the geth
+account snapshot the residual arithmetic ran on:
+
+| | entries | size | B/entry |
+|---|---|---|---|
+| geth state-actor (account snapshot) | 430.7 M | 23.38 GiB | 58.3 |
+| **besu state-actor (ACCOUNT_INFO_STATE)** | **430,696,738** | **24 GiB** | **≈59.8** |
+
+Within ~2.5% across two storage engines. That is the first evidence for P4: the *record shape*
+is a property of the data, not of the engine — which is exactly what F3 claims and what the
+jochemnet arm must now be measured against (geth's jochemnet figure was 49.6 B/entry).
+
+Treat 59.8 as provisional: `rocksdb usage` rounds to whole GiB. A precise figure needs the
+`snapstat` port, which is Phase 5 work.
+
+**Now running:** the source store is being archived to `/data/sa-besu-archive` (HDD) so the NVMe
+copy can be freed for the jochemnet pair later; the SA volumes must be destroyed to make room,
+and regenerating costs ~5 h.
