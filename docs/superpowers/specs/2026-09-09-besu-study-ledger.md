@@ -583,3 +583,47 @@ drops caches between steps.
 **Operational note for Phase 5.** `rollback_strategy: container-recreate` rotates the container
 per test, and the counters reset with it. Sampling must happen inside a single test window;
 scraping across tests silently yields a reset counter, not a delta.
+
+---
+
+## Round 11 — the jochemnet genesis, resolved rather than guessed
+
+This was flagged as an open item in the plan: the geth jochemnet arm needed **no** genesis file,
+because geth reads chain config from the datadir. Besu declares `GenesisFlag() == "--genesis-file="`,
+so the arm needs one from somewhere.
+
+**Eliminated first, by inspection:**
+- Neither cached bundle ships a genesis: `find` over both `eest-url` trees returns nothing for
+  `*genesis*` or `*chainspec*`.
+- So benchmarkoor's fallback chain — `instance.Genesis` → `cfg.GenesisURLs[client]` →
+  `GenesisProvider.GetGenesisPath(client)` — terminates empty, and Besu would boot against
+  mainnet defaults and reject the datadir.
+- Besu exposes no CLI fork-override flag (only `--genesis-file`, `--network`,
+  `--genesis-state-hash-cache-enabled`), so the override cannot be passed as an argument.
+
+**The answer comes from the fixtures themselves.** The jochemnet fixture config declares:
+
+```
+config = {'network': 'Amsterdam', 'chainid': '0x01'}
+```
+
+**Chain ID 1** — jochemnet is a mainnet shadowfork, so its genesis *is* mainnet's. The canonical
+Besu mainnet genesis (`hyperledger/besu:config/src/main/resources/mainnet.json`, 868,938 B,
+chainId 1, 8,893 alloc entries, forks through `osakaTime`/`bpo2Time`) is therefore the correct
+file, and it is geth-format, which is what `ApplyForkOverrides` requires:
+
+```go
+for fork, ts := range overrides { cfg[fork+"Time"] = ts; inheritBlobSchedule(cfg, fork) }
+```
+
+So `genesis_fork_override: { amsterdam: 1769856769 }` becomes `amsterdamTime: 1769856769` —
+the exact equivalent of the geth arm's `--override.amsterdam=1769856769`, same timestamp.
+
+**Configs written:** `besu-jochemnet.yaml` (untreated), `besu-jochemnet-treated.yaml`
+(identical but for `results_dir`; the treatment arrives via `BENCHMARKOOR_POST_PRERUN_CMD`), and
+a `-smoke.yaml` carrying the same one-category filter that caught the BAL mismatch on the
+state-actor arm.
+
+**To verify at pilot time, not assumed:** that Besu computes the mainnet genesis hash from this
+alloc and accepts the jochemnet datadir. `--genesis-state-hash-cache-enabled=true` is already in
+Besu's benchmarkoor defaults, which should let it trust the stored hash rather than recompute.

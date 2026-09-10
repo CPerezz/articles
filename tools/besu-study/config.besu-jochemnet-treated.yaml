@@ -20,7 +20,7 @@ runner:
   live_reporting:
     enabled: false
   benchmark:
-    results_dir: /data/bench-results/besu-jochemnet
+    results_dir: /data/bench-results/besu-jochemnet-treated
     generate_results_index: true
     generate_suite_stats: true
     tests:
