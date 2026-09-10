@@ -483,3 +483,55 @@ Real execution, not merely a non-failure — from `test.result-aggregated.json`:
 An early cross-client data point, offered as observation not finding: 159,998,116 gas in
 20.751 s ≈ **7.7 MGas/s** on BALANCE/DIFF_MAX@160M, against geth's ~16.5 MGas/s for the same
 category post-fix. Single cold measurement, not a median — do not quote it.
+
+---
+
+## Round 9 — SST geometry probe, and the F3 arithmetic will not transfer unchanged
+
+**Tool.** `tools/besu-study/SstGeom.java`, the Besu port of the geth study's `sstgeom`. Same
+version-matched `rocksdbjni-10.6.2.jar` as the compactor. It reads RocksDB's own table
+properties via `getPropertiesOfAllTables(cf)` rather than sampling files, so the numbers are
+exact and correctly CF-scoped, and it opens **read-only** so a store can be measured without
+mutating it.
+
+Column families are identified by **entry count**, not by guessing Besu's segment ids — the
+counts come from `storage rocksdb usage` and are unmistakable. Validated against the HDD
+archive (md3), deliberately not the live NVMe store, so the running suite's timings were not
+perturbed.
+
+**Result — state-actor store:**
+
+| cf | entries | = | ssts | mean raw record | compressed bytes/block | phys÷log |
+|---|---|---|---|---|---|---|
+| 06 | 430,696,738 | ACCOUNT_INFO_STATE | 228 | 119.7 B | 16,696.6 | 0.513 |
+| 07 | 134,442,676 | CODE_STORAGE | 714 | 398.1 B | 29,135.9 | 0.863 |
+| 08 | 2,214,312,331 | ACCOUNT_STORAGE_STORAGE | 2,381 | 99.7 B | 32,217.4 | 0.716 |
+| 09 | 3,625,461,648 | TRIE_BRANCH_STORAGE | 5,122 | 128.0 B | 29,636.7 | 0.734 |
+
+Every entry count matches the inventory exactly, so the identification is sound. The physical
+total also reconciles: 26,421,412,281 B of data for cf 06 against the 24 GiB `rocksdb usage`
+reported.
+
+### Why this matters, before the jochemnet arm lands
+
+The geth residual ran on this chain: 58.3 B/entry → Snappy 0.991 → **3,467 vs 4,043 byte
+blocks** → 1.85 vs 1.99 **4 KiB pages** per read → +7.6% pages against +11.9% measured bytes.
+Two of those terms do not carry over:
+
+- **Block size.** Besu's account blocks are **~16.7 KB compressed** (≈32 KB logical, ~272
+  records each), not ~4 KB. A lookup fetches a far larger unit, so the page-quantisation step
+  that made geth's arithmetic close cannot be reused as-is.
+- **Compressibility.** cf 06 compresses to **0.513** of logical, against geth's 0.991 for the
+  same logical state. Snappy on Besu's keyspace behaves nothing like Snappy on geth's.
+
+That is not a problem for the study — it is the point of running it. F3 claims the residual is
+a property of *the data*; if it reproduces on an engine whose block size is 4× larger and whose
+compression ratio is half, the claim is strong. If the residual vanishes here, F3 was
+Pebble-specific after all.
+
+**One caution recorded now, before the numbers tempt anyone.** `mean raw record` here is
+`(raw_key_size + raw_value_size) / entries` and so includes RocksDB's internal key bytes;
+119.7 B is *not* comparable with geth's 58.3 B/entry, which counted the account record. The
+comparable pair is physical size for the same logical state: 24 GiB (Besu cf 06) vs 23.38 GiB
+(geth account snapshot). The like-for-like decomposition is Phase 5 work, against the jochemnet
+arm, and must be done per store rather than across engines.
