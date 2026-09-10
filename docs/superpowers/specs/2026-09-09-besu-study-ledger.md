@@ -426,3 +426,60 @@ Treat 59.8 as provisional: `rocksdb usage` rounds to whole GiB. A precise figure
 **Now running:** the source store is being archived to `/data/sa-besu-archive` (HDD) so the NVMe
 copy can be freed for the jochemnet pair later; the SA volumes must be destroyed to make room,
 and regenerating costs ~5 h.
+
+---
+
+## Round 8 — the pilot gate earns its cost immediately
+
+**First attempt: 2 failed, 0 passed.** Not a typo-class failure — the chain wiring was correct
+and the block was rejected on consensus grounds:
+
+```
+Invalid new payload: number: 1, parentHash: 0xa9e61c12...9491b   (our genesis — correct)
+status: INVALID, validationError: Block access list hash mismatch
+  calculated: 0xb1d04db6fc05f7f1f213667b2d0e3d6a0b8797d5c03130178168d16a5037fc64
+  header:     0xbc207ccae7a10569a317cc3678a2b0b4e29ed0be27d40222833b60cbd26f4e98
+```
+
+Everything downstream then reported `SYNCING`, because the head was invalid — the same
+signature that cost a day in the geth study, from a completely different cause.
+
+**Cause: wrong image, and it was my error.** I lifted `ethpandaops/besu:bal-devnet-7` from the
+upstream *state-actor build* config, where the image only ever has to **write state**. It never
+has to execute a glamsterdam block. The tags tell the story:
+
+| tag | published | |
+|---|---|---|
+| `besu:bal-devnet-7` | **2026-07-03** | a BAL-specific proof-of-concept devnet |
+| `besu:glamsterdam-devnet-7` | **2026-08-13** | the pairing for the geth arm's `glamsterdam-devnet-7` build |
+
+Two months apart, and a different EIP-7928 revision — so Besu computed a BAL the geth-filled
+payload's header did not declare.
+
+**Fix:** `image: docker.io/ethpandaops/besu:glamsterdam-devnet-7`.
+
+**Second attempt: `failed=0 passed=2 total=2`** in 1m35s, no `INVALID`, no `SYNCING`.
+
+Real execution, not merely a non-failure — from `test.result-aggregated.json`:
+
+| | |
+|---|---|
+| gas_used_total | 159,998,116 (the 160M-gas category) |
+| time_total | 20.76 s |
+| disk_read_bytes | 17,063,342,080 |
+| disk_read_iops | 872,412 |
+| cpu_usec | 28,972,729 |
+
+**Two things this settles.**
+
+1. *The payload-reuse claim now holds end to end.* geth-filled payloads execute on Besu and
+   produce VALID blocks — but only against a client of the matching devnet. Payloads are
+   client-agnostic; they are **not** devnet-agnostic, and the BAL hash is what enforces that.
+2. *The gate was worth its ~10 minutes.* This failure is invisible to config review — the YAML
+   was correct, the store was correct, the payloads were correct. Only executing a block
+   surfaces it. Committing 16 h to the suite first would have produced a run of 1,400 `SYNCING`
+   failures.
+
+An early cross-client data point, offered as observation not finding: 159,998,116 gas in
+20.751 s ≈ **7.7 MGas/s** on BALANCE/DIFF_MAX@160M, against geth's ~16.5 MGas/s for the same
+category post-fix. Single cold measurement, not a median — do not quote it.
