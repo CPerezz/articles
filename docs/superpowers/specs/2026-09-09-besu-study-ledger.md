@@ -535,3 +535,51 @@ Pebble-specific after all.
 comparable pair is physical size for the same logical state: 24 GiB (Besu cf 06) vs 23.38 GiB
 (geth account snapshot). The like-for-like decomposition is Phase 5 work, against the jochemnet
 arm, and must be done per store rather than across engines.
+
+---
+
+## Round 10 — Besu's instrumentation works, and the flat-read model transfers
+
+**Why this round.** The geth study's appendix documented broken meters: cache counters frozen
+at zero, `state_reads` that never moved, `execution_ms` negative on 176 of 1,218 blocks. Before
+relying on any Besu counter, verify it moves under real load — the same discipline, applied
+before rather than after.
+
+**Counters found** (scraped from a live Besu on the throwaway store, names confirmed):
+
+```
+besu_blockchain_get_account_total
+besu_blockchain_get_account_flat_database_total
+besu_blockchain_get_account_missing_flat_database_total
+besu_blockchain_get_storagevalue_flat_database_total
+besu_blockchain_bonsai_cache_{hits,misses,requests,inserts}_total
+```
+
+**Verified live**, sampled from the running suite's own container mid-test:
+
+| metric | value |
+|---|---|
+| `get_account_total` | 9,439 |
+| `get_account_flat_database_total` | 9,423 |
+| `get_account_missing_flat_database_total` | 1 |
+| `bonsai_cache_hits / misses` | 7,303 / 62,547 |
+
+**Two results.**
+
+1. **The meters are sound.** They are non-zero and advancing under real execution. Besu's
+   instrumentation is materially better than what geth offered this study: account reads are
+   counted directly and split by flat-database hit/miss, so **P5** ("accounts read are identical
+   across arms") becomes a direct measurement rather than an inference.
+2. **The flat-read model transfers.** 9,423 of 9,439 account reads — **99.83%** — are served
+   from the flat database. The geth study's round 16 established that account reads are a single
+   flat-snapshot read rather than an 8-node trie walk, and that this is why the cost is flat in
+   state size rather than logarithmic. Bonsai behaves the same way. The objection that killed
+   rounds 1/3/5/12 of the geth study (probes driving `eth_getProof` down the *trie* path, which
+   the EVM never uses) would be the same mistake here, and is now pre-empted.
+
+The high cold-miss ratio (62,547 misses to 7,303 hits) is the intended condition — the harness
+drops caches between steps.
+
+**Operational note for Phase 5.** `rollback_strategy: container-recreate` rotates the container
+per test, and the counters reset with it. Sampling must happen inside a single test window;
+scraping across tests silently yields a reset counter, not a delta.
