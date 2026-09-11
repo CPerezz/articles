@@ -671,3 +671,66 @@ scheduled after the jochemnet suites, not squeezed alongside them.
 
 **Now running:** the changeover — teardown freed NVMe to 3.2 T, and the jochemnet pair is being
 created.
+
+---
+
+## Round 13 — the jochemnet store is nothing like the generated one, and the census caught it
+
+Changeover complete (`rc=0`): pair built, extracted, censused, promoted —
+**1,094.61 GB promoted in 25m23s at 735.76 MB/s**. NVMe 706 G free.
+
+**Pristine census, taken before any Besu process opened the store:**
+
+| | jochemnet (as shipped) | state-actor (generated) |
+|---|---|---|
+| SST files | 6,695 | 8,450 |
+| SST bytes | 382,863,226,174 | 572,008,650,893 |
+| **blob files** | **26,018** | 1 |
+| **blob bytes** | **760,163,958,951** | 322 |
+| **WAL files** | **21** | 1 |
+| **WAL bytes** | **1,258,464,804** | 156 |
+| caches/ | 246 files, 5.9 GB | absent |
+
+Three findings, in ascending order of importance.
+
+### 1. My round-9 note was wrong, and would have corrupted the F3 arithmetic
+
+Round 9 recorded "BlobDB remains irrelevant here" on the evidence of the state-actor store
+(1 blob file, 322 bytes). On the jochemnet store, **two-thirds of the data lives in blob files**
+— 760 GB of blobs against 383 GB of SSTs. `SstGeom` measures SST geometry only, so applying it
+to jochemnet would have silently described a third of the store and produced a
+bytes-per-record figure that looked authoritative and was meaningless.
+
+Retracted. The Phase 5 arithmetic must account for blob storage on the jochemnet side, or
+compare only like-for-like keyspaces.
+
+### 2. A configuration confound that must be settled before any ratio is quoted
+
+The two stores are not merely different data — they appear to be **differently configured
+RocksDB instances**. The snapshot was written by a real Besu node with its own options;
+state-actor wrote with its own. Key-value separation being on for one and effectively off for
+the other is exactly the class of confound the geth study spent rounds 4, 12 and 14 eliminating
+(LSM shape, cache size, byte-identical client config).
+
+Until this is measured, **no cross-arm bytes-per-read ratio means anything**. The comparison to
+make is `min_blob_size` and the rest of the two OPTIONS files, side by side. That is now a
+blocking item for Phase 5, not an optional check.
+
+### 3. The WAL — a 1.26 GB recency artifact, shipped inside the snapshot
+
+**21 WAL files totalling 1,258,464,804 bytes.** This is the structural analogue of the geth
+study's root cause, and it is **3.3× larger** than the 380.15 MiB pathdb journal that made
+recently-touched accounts 23× faster there.
+
+Besu logs `Processing WAL...` on open (round 2), so this is state that never reached an SST and
+which gets replayed into memtables — served from RAM — on first boot. That is precisely the
+mechanism the geth article describes, in a different engine.
+
+This is now the leading candidate for **P2**, and the census exists only because the tooling
+was ordered to take the file inventory *before* any `besu storage` subcommand could open the
+store and replay it away. Had the inventory run in the obvious order, the evidence would have
+been destroyed by the act of measuring.
+
+**Not yet known, and deliberately not guessed:** trie-log count (requires opening the store),
+and what the WAL looks like *after* the pre-runs and `promote` — which is the condition the
+benchmark actually measures, and the exact place the geth study found its 380 MiB.
