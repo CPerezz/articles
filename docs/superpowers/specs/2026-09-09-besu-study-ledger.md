@@ -833,3 +833,49 @@ store; round 13 called that wrong on the evidence of jochemnet's 760 GB. Both we
 blobs are irrelevant *to the state keyspaces on either store*, and dominant in *chain history*,
 which only one store has. The operative rule for Phase 5 is to measure CFs 06–09 and ignore
 whole-store totals.
+
+---
+
+## Round 16 — the cross-arm extractor, and two parsing traps
+
+`tools/besu-study/extract_arms.py` pulls per-test metrics from each arm's results into one
+comparable table. Two false starts, both worth recording because either would have produced a
+plausible-looking wrong answer rather than an error.
+
+**Trap 1 — result directory names are lossy.** They are truncated and hash-suffixed:
+
+```
+...-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_base-10a14f08e594b0ba
+```
+
+The name stops mid-field and the `gas-value_160M` label is simply absent. Parsing the path
+yields rows with no category — and, because the first version also overwrote the parsed `gas`
+label with the measured `gas_used_total`, it produced **1,341 "categories"** from 1,461 tests:
+one per test, each looking like a legitimate grouping. A silent wrong answer, not a crash.
+
+**Trap 2 — the metrics are already in `result.json`.** `tests[<full pytest id>]["steps"]["test"]
+["aggregated"]` carries `time_total`, `gas_used_total`, `gas_used_time_total` and
+`resource_totals` directly. So the correct implementation reads one file per arm and walks no
+directories at all. The `dir` field is empty for these entries, which is what made the
+path-based approach look necessary in the first place.
+
+**Validated against the completed state-actor arm** — 1,461 rows, **0 failed**, 1,100 in the
+account-access family and 361 in other families (sload/storage/transaction-type tests, which
+legitimately lack `opcode`/`account_mode`):
+
+| dimension | values |
+|---|---|
+| gas sweep | 100, 120, … 300 M (11 points) |
+| account modes | EXISTING_CONTRACT_{DIFF_MAX, JUMPDEST, MINIMAL, SAME_MAX}, EXISTING_EOA, NON_EXISTING_ACCOUNT |
+| opcodes | BALANCE, CALL, CALLCODE, DELEGATECALL, EXTCODECOPY, EXTCODEHASH, EXTCODESIZE, STATICCALL |
+| opcode × mode | 48 |
+
+This is the geth study's experimental structure exactly — same sweep, same six modes, same
+eight opcodes — which is the precondition for the two studies being comparable at all.
+
+Slowest categories on the generated store, for orientation only (the comparison that matters
+needs the jochemnet arm): `CALL/EXISTING_CONTRACT_JUMPDEST` 11.45 MGas/s,
+`CALL/EXISTING_CONTRACT_DIFF_MAX` 11.55, `BALANCE/EXISTING_CONTRACT_JUMPDEST` 13.23.
+
+`gas_used_time_total` is used rather than `time_total` so harness overhead is excluded, and the
+`setup` step is kept separate rather than summed into the measurement.
