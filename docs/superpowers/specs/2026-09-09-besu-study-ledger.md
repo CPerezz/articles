@@ -734,3 +734,50 @@ been destroyed by the act of measuring.
 **Not yet known, and deliberately not guessed:** trie-log count (requires opening the store),
 and what the WAL looks like *after* the pre-runs and `promote` — which is the condition the
 benchmark actually measures, and the exact place the geth study found its 380 MiB.
+
+---
+
+## Round 14 — jochemnet pilot: the genesis reasoning holds, after two Besu-specific repairs
+
+The round-11 chain worked on the first attempt where it mattered:
+
+```
+Loading genesis file  source=/root/bench/besu-mainnet-genesis.json
+Applied genesis fork-time overrides  forks=map[amsterdam:1769856769]
+```
+
+Two further failures, both in the genesis file rather than the reasoning, each fixed minimally:
+
+1. **`Invalid enode URL syntax 'enr:-Iu4Q...'`** — Besu's `mainnet.json` carries
+   `config.discovery` with 21 **ENR-format** bootnodes plus DNS, and Besu's enode parser
+   rejects ENR. The harness runs `--p2p-enabled=false --discovery-enabled=false --max-peers=0`,
+   so the whole section is dead weight that is nonetheless parsed. Removed `config.discovery`.
+2. **`Unknown consensus mechanism defined`** — the `main`-branch `mainnet.json` no longer
+   carries an `ethash` block, but this Besu (26.8-develop) still requires an explicit consensus
+   marker to resolve the pre-merge protocol schedule. Added `"ethash": {}`;
+   `terminalTotalDifficulty` was already present, so nothing about the merge changes.
+
+**Result: `failed=0 passed=2 total=2`** in 1m19s.
+
+That is the confirmation of round 11's reasoning, not merely a green run: Besu validates the
+stored genesis against the supplied file, so a wrong genesis fails with *"Supplied genesis block
+does not match chain data stored"*. It booted — therefore jochemnet's genesis really is
+mainnet's, and chain ID 0x01 in the fixtures was telling the truth.
+
+**Untreated jochemnet suite launched:**
+
+```
+Discovered EEST fixtures  count=1463
+Loaded pre-run bundle steps  files=1
+Pre-run bundle over the size limit  bytes=10,062,313,486
+```
+
+1,463 against the state-actor arm's 1,461 — the same two-test difference the geth study saw
+between these bundles. The pre-run is a **10.06 GB** bundle; in the geth study it was the
+pre-run that deployed the accounts whose trie changes stayed resident in the 380 MiB journal.
+
+**Scheduled, not improvised:** after this suite completes, `schelk restore` reproduces the
+*promoted post-pre-run* image, and the file census runs against it before the treated run
+rebuilds it. That image is the exact condition the benchmark measures, and it is where the geth
+study found its root cause. Censusing it mid-run is not an option — `besu storage` takes the
+RocksDB LOCK and would break the suite.
