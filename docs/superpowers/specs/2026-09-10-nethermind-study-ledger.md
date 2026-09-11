@@ -280,3 +280,82 @@ through the same mechanism and the residual can be attributed.
 Caveats on these specific figures: jochemnet is 31% complete, so most measured categories have
 n=1; and the control floor above means fine-grained per-category ordering is not yet meaningful.
 Re-classify when the arm finishes.
+
+---
+
+## Round 7 — RETRACTION: round 6's gap measures the state backend, not the state
+
+Challenged on the size of the gap ("40x is insane — it can only come from something like
+state-actor not using flat-state"). The challenge is correct. Round 6's headline is withdrawn
+as a statement about generated-vs-mainnet state.
+
+### The configs differ, and I let a number stand on that difference
+
+Audited diff of the two run configs — four deliberate deltas, one decisive:
+
+| delta | jochemnet | state-actor |
+|---|---|---|
+| **`--FlatDb.Enabled=true`** | **yes** | **no** |
+| `pre_runs` + `promote_post_pre_runs` | yes | no |
+| chainspec | upstream gist | generator-emitted |
+| eip_override timestamp | 1769856769 | 1 |
+
+### Chainspec ruled out
+
+54 vs 61 EIP keys, 48 shared keys with differing values — but the differences are all
+*historical schedule* (state-actor puts every fork at `0x0`; jochemnet carries real mainnet
+block numbers such as `0x6f1580`). At the head both arms run the same 14 Amsterdam EIPs.
+Not the cause.
+
+### The aggregate that settles it
+
+Medians over all measured (`overhead_baseline=False`) tests:
+
+| | jochemnet | state-actor | ratio |
+|---|---|---|---|
+| gas | 182.3 M | 198.9 M | 1.09 (comparable work) |
+| wall | 0.749 s | 11.405 s | **15.2×** |
+| cpu | 4.44 s | 18.88 s | 4.3× |
+| disk read | 233.1 MB | 6,885.1 MB | **29.5×** |
+| **cpu/wall** | **5.93** | **1.66** | — |
+
+`cpu/wall` is the tell. jochemnet keeps ~6 cores busy and is compute/parallel-bound;
+state-actor sits at 1.66 and is **I/O-bound**, stalled on 29.5× more physical bytes for 9% more
+gas. That is a read-path difference — flat DB (one block per account) versus patricia trie
+(multiple node reads per account, caches dropped between steps) — not a data property.
+
+### The control was misread
+
+Round 6 treated the control's 1.6× as a noise floor. In absolute terms it is ~85 ms
+(0.107 s vs 0.193 s) on 4.9 vs 6.0 Mgas, where fixed per-block overhead dominates and MGas/s is
+a meaningless ratio. The control is too small to carry the interpretation put on it; it neither
+supports nor refutes anything. Withdrawn.
+
+### What is still standing
+
+- The three-client state identity (round 1) — unaffected.
+- The store-size progression 674 / 532 / 409 GiB — unaffected.
+- The EIP-list finding (round 2) — unaffected.
+- The **structural** finding of round 4 — strengthened, and now quantified: the arms cannot
+  share a backend, and the cost of that asymmetry is 15× wall / 29.5× bytes. It dwarfs the
+  ~1.1× effect the study is actually hunting.
+
+### Consequence for sequencing
+
+No data conclusion is available from this pair as configured, and none should be quoted. The
+generated store must be given a flat DB before the arms are comparable:
+
+1. let the jochemnet arm finish (running it concurrently with anything else would pollute its
+   timings — the rounds 13/17/18 mistake);
+2. mount the state-actor volume and boot Nethermind once with
+   `--FlatDb.Enabled=true --FlatDb.ImportFromPruningTrieState=true` to build `flat/`, verifying
+   the state root still equals `0x5b305cc0…b6e7`;
+3. `schelk promote` so the flat DB is in the golden image;
+4. re-run the state-actor suite with flat enabled;
+5. re-classify — only then is the residual attributable.
+
+The pre-run asymmetry (jochemnet replays a pre-run bundle and promotes; state-actor pre-deploys
+via the spec and has none) remains a second, independent confound, and is the same mechanism
+the geth study root-caused as journal residency. jochemnet's 400–530 MGas/s sits in the range of
+geth's pre-fix artefact numbers (380) rather than its honest ones (18.5) — worth testing after
+the backend is equalised.
