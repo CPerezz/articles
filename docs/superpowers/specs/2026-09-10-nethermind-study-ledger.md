@@ -203,3 +203,80 @@ progressing, but that cannot be verified without a shell.
 `tools/besu-study/classify.py` (added this round) will produce the per-category comparison —
 median MGas/s per (opcode, account_mode, gas) for each arm plus the ratio — as soon as the
 results directories are reachable.
+
+---
+
+## Round 6 — first round of baseline results (state-actor complete, jochemnet 31%)
+
+The suites ran straight through the SSH outage. **state-actor: `rc=0`, passed=1461, failed=0,
+9h58m13s, zero validation failures.** jochemnet at time of this snapshot: 448/1463, 0 failures.
+
+`tools/nethermind-study/classify.py` reads metrics inline from each run's `result.json`
+(`tests[<id>].steps.<step>.aggregated`; the `dir` field is empty and there are no per-test
+files). The `test` step is the measurement.
+
+### The control disagrees — by a lot
+
+`overhead_baseline=True` tests do **no account-state work**, so they are the control: the two
+arms should agree there whatever their data holds.
+
+| control (132 categories) | sa/joc |
+|---|---|
+| min | 0.282 |
+| **median** | **0.616** |
+| max | 1.289 |
+| within ±10% | **12 / 132** |
+
+A 1.6× median offset with 0.28–1.29 scatter on work that touches no account state. That is the
+noise/run-level floor for this pair, and it is enormous — differences smaller than ~1.6× cannot
+be attributed to anything about the data.
+
+### The measured gap is far outside that floor
+
+| median sa/joc by account_mode | | by opcode | |
+|---|---|---|---|
+| NON_EXISTING_ACCOUNT | 0.066 | BALANCE | 0.050 |
+| EXISTING_EOA | 0.090 | CALLCODE | 0.108 |
+| EXISTING_CONTRACT_SAME_MAX | 0.106 | CALL | 0.191 |
+| EXISTING_CONTRACT_MINIMAL | 0.108 | | |
+| EXISTING_CONTRACT_DIFF_MAX | 0.148 | | |
+| EXISTING_CONTRACT_JUMPDEST | 0.552 | | |
+
+state-actor is **10–20× slower** on account-touching work: e.g. BALANCE/NON_EXISTING@260M
+**529.71 vs 17.92 MGas/s**.
+
+### And the bytes explain it
+
+Median physical disk read per test:
+
+| | jochemnet | state-actor |
+|---|---|---|
+| BALANCE / NON_EXISTING @260M | 99.9 MB | **8,345.4 MB** |
+| BALANCE / SAME_MAX @300M | 231.8 MB | **10,140.1 MB** |
+
+**~40× more bytes read per test.** That is the signature of the backend asymmetry recorded in
+round 4, not of a data property: jochemnet serves an account from the **flat DB** (one block
+per lookup) while state-actor must walk the **patricia trie** (multiple node reads per lookup,
+caches dropped between steps).
+
+Supporting sub-structure, all consistent with "the penalty is per trie-walk":
+- `BALANCE` worst (0.050) — a bare account read, maximum trie exposure per unit gas.
+- `CALL` best of the opcodes (0.191) — more EVM work per account touch dilutes the read penalty.
+- `EXISTING_CONTRACT_JUMPDEST` the outlier mode (0.552) — code-dominated, and code lives in its
+  own DB on both arms, so the trie penalty is diluted.
+- `NON_EXISTING_ACCOUNT` among the worst (0.066) — proving absence still walks the trie, the
+  same observation the geth study made.
+
+### Verdict on this round
+
+**The number is real but not yet attributable.** It measures *flat-DB vs patricia-trie reads*
+at least as much as it measures *generated vs mainnet state*. Given a control that is itself
+1.6× off, no conclusion about data properties can be drawn from this pair as configured.
+
+The decisive experiment is the one round 4 already named: build a flat DB for the generated
+store (`--FlatDb.ImportFromPruningTrieState=true`), then re-run. Only then do both arms read
+through the same mechanism and the residual can be attributed.
+
+Caveats on these specific figures: jochemnet is 31% complete, so most measured categories have
+n=1; and the control floor above means fine-grained per-category ordering is not yet meaningful.
+Re-classify when the arm finishes.
