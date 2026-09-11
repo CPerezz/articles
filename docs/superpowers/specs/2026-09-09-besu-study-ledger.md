@@ -781,3 +781,55 @@ pre-run that deployed the accounts whose trie changes stayed resident in the 380
 rebuilds it. That image is the exact condition the benchmark measures, and it is where the geth
 study found its root cause. Censusing it mid-run is not an option — `besu storage` takes the
 RocksDB LOCK and would break the suite.
+
+---
+
+## Round 15 — the blob confound dissolves, and it was never a configuration difference
+
+Round 13 raised a blocking objection: jochemnet holds **760 GB in 26,018 blob files** while the
+generated store holds **322 bytes in one**, so the two arms might be differently-configured
+RocksDB instances, which would void every cross-arm byte ratio. Settled from the OPTIONS file
+rather than argued (`tools/besu-study/cfopts.py`):
+
+| cf | enable_blob_files | min_blob_size | compression | block_size |
+|---|---|---|---|---|
+| `01` | **true** | 100 | kLZ4 | 32768 |
+| `5c6e` | **true** | 100 | kLZ4 | 32768 |
+| `06` ACCOUNT_INFO_STATE | **false** | 0 | kLZ4 | 32768 |
+| `07` CODE_STORAGE | **false** | 0 | kLZ4 | 32768 |
+| `08` ACCOUNT_STORAGE_STORAGE | **false** | 0 | kLZ4 | 32768 |
+| `09` TRIE_BRANCH_STORAGE | **false** | 0 | kLZ4 | 32768 |
+| all other CFs | false | 0 | kLZ4 | 32768 |
+
+**The four state column families are blob-free on both stores, with byte-identical settings.**
+Key–value separation is enabled only on `01` and `5c6e`.
+
+`01` is the blockchain segment — blocks, receipts, headers. Independent support: in the
+generated store `01` holds **5 entries** (round 9), which is what a genesis-only synthetic store
+should contain, and its blob total is 322 bytes.
+
+**So the 760 GB of blobs is chain history, not state.** It is the exact analogue of the geth
+study's jochemnet store carrying ~700 GiB of frozen chain in the ancient store against a
+state-actor store that has no history at all — there recorded as 1.20 TiB / 6.12 B items versus
+674.25 GiB / 6.40 B items. Same asymmetry, different mechanism name.
+
+**Three consequences.**
+
+1. **Round 13's blocking item is cleared.** Identical per-CF settings, so no configuration
+   confound. Both stores are also opened by Besu with its own programmatically-constructed
+   options regardless of what the OPTIONS file records — which is why the librocksdb 10.10
+   file never broke Besu in the first place (round 1).
+2. **The like-for-like comparison is CFs 06–09**, and any whole-store byte ratio is meaningless
+   because one store carries mainnet history and the other carries none. This is the Besu
+   restatement of the geth study's decision to compare account-snapshot keyspaces rather than
+   `du`.
+3. **Compression is LZ4, not Snappy.** The geth residual ran through Snappy ratios (0.849 vs
+   0.991). Besu's state CFs use `kLZ4Compression` at `block_size=32768`. Both terms of the F3
+   arithmetic — algorithm and block size — differ from geth, which is precisely what makes the
+   P3/P4 test informative rather than a re-run.
+
+**Correction to round 9.** It described `blob_files` as irrelevant on the evidence of the SA
+store; round 13 called that wrong on the evidence of jochemnet's 760 GB. Both were half right:
+blobs are irrelevant *to the state keyspaces on either store*, and dominant in *chain history*,
+which only one store has. The operative rule for Phase 5 is to measure CFs 06–09 and ignore
+whole-store totals.
