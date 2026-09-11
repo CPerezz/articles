@@ -627,3 +627,47 @@ state-actor arm.
 **To verify at pilot time, not assumed:** that Besu computes the mainnet genesis hash from this
 alloc and accepts the jochemnet datadir. `--genesis-state-hash-cache-enabled=true` is already in
 Besu's benchmarkoor defaults, which should let it trust the stored hash rather than recompute.
+
+---
+
+## Round 12 — state-actor arm complete
+
+```
+Test execution completed  duration=22h3m31s  passed=1461  failed=0  total=1461
+```
+
+**Zero validation failures across the whole suite** — no `INVALID`, no `SYNCING`, nothing
+retried. The payload-reuse decision holds at full scale: 1,461 geth-filled payloads executed on
+Besu without a single rejection, once the client matched the devnet (round 8).
+
+Results archived immediately to `/data/archive/besu-sa/results-besu-state-actor.tar.gz`
+(934 MB) before the volumes were touched — the geth study's run-1 archive is the only reason
+that study is still auditable, and the changeover destroys this arm's volumes.
+
+**Data sanity, checked before committing another 44 h:**
+
+| | |
+|---|---|
+| tests carrying metrics | 1461 / 1461 |
+| MGas/s min / p25 / **median** / p75 / max | 7.63 / 13.88 / **16.51** / 26.34 / 630.65 |
+| gas executed | 2.022 × 10¹¹ |
+| disk read | 11,674 GB |
+
+The spread is the expected shape — compute-bound categories at the top, state-bound at the
+bottom — and every test produced resource counters, so `disk_read_bytes` is available per test.
+
+**A methodological simplification this enables.** The geth study needed a separate `blockrun`
+probe for the residual because its 16 h suite numbers were confounded by media (rounds 13/17/18,
+NVMe vs HDD). Here both arms run on the same md2 NVMe with the harness's own flags, and
+benchmarkoor already records `disk_read_bytes`, `cpu_usec` and IOPS per test. The bytes-per-read
+comparison should therefore come straight from the suite data, with the standalone replay kept
+only as a confirmation. Provisional until the jochemnet arm lands and account counts can be
+compared.
+
+**Timing note for Phase 5.** The state-actor store survives at `/data/sa-besu-archive/v1`
+(HDD). The matched-media replay needs both stores on NVMe at once — 533 G + ~1.1 T = ~1.63 T
+against 3.5 T, which fits comfortably once the schelk pairs are gone. That measurement is
+scheduled after the jochemnet suites, not squeezed alongside them.
+
+**Now running:** the changeover — teardown freed NVMe to 3.2 T, and the jochemnet pair is being
+created.
