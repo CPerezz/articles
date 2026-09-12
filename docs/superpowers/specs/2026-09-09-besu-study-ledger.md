@@ -970,3 +970,64 @@ compacted without draining.
 **Treated suite launched** with
 `BENCHMARKOOR_POST_PRERUN_CMD='/home/CPerezz/rockscompact/rockscompact $DATADIR'`, 1,463
 fixtures.
+
+---
+
+## Round 18 — untreated vs generated, with the contamination stated up front
+
+`compare_arms.py` pairs the two completed arms on the **full identity** of each workload
+(opcode, account_mode, gas, value_sent, overhead_baseline), so a ratio can never be formed
+across different work.
+
+**Workload control — exact:**
+
+```
+common workloads: 1100
+gas: jochemnet 1.304e+11   state_actor 1.304e+11   ratio 1.000000
+```
+
+Identical gas to six decimal places across 1,100 paired measurements. Whatever the arms differ
+by, it is not the work requested of them.
+
+**Result:**
+
+| | |
+|---|---|
+| throughput ratio (state-actor ÷ jochemnet), 48 categories | median **0.333**, min 0.110, max 0.518 |
+| disk bytes read per gas | jochemnet 6.26, state-actor 60.96 — **9.74×** |
+
+Extremes, both ends:
+
+| opcode | account_mode | jochemnet | state-actor | ratio |
+|---|---|---|---|---|
+| EXTCODESIZE | NON_EXISTING_ACCOUNT | 150.70 | 16.59 | 0.110 |
+| BALANCE | NON_EXISTING_ACCOUNT | 144.65 | 16.18 | 0.112 |
+| CALL | EXISTING_CONTRACT_MINIMAL | 33.24 | 15.54 | 0.468 |
+| CALL | NON_EXISTING_ACCOUNT | 163.92 | 84.95 | 0.518 |
+
+### What this is not
+
+**This is not the study's headline, and it must not be quoted as one.** The untreated jochemnet
+arm is contaminated *by construction* — it is the arm carrying the **1.24 GiB WAL** and 5.9 GB of
+`caches/` measured in round 17, i.e. exactly the recency artifact the geth study identified as
+its root cause. A fast untreated arm is the expected symptom, not a finding.
+
+The geth study's equivalent comparison ran 7.71× on its worst class before treatment and
+collapsed to ~1.09× after. The Besu number to compare against that is the **treated** one, which
+is running now.
+
+### What it does establish
+
+- **P5 holds.** Identical gas on identical payloads across both arms, so the arms are doing the
+  same requested work and per-test ratios are meaningful.
+- **P2 is strongly supported.** A 9.74× gap in bytes read per unit of gas is far too large to be
+  explained by the stores' 18% difference in account count (365.6 M vs 430.7 M) or by the
+  geometry of round 17. Something is serving jochemnet's reads without touching disk, and the
+  WAL plus caches is the candidate already measured in place.
+- The gap is **broad, not confined to one class** — every one of the 48 categories favours
+  jochemnet, ranging 0.110 to 0.518. In the geth study the untreated anomaly was concentrated in
+  DIFF_MAX; here it is everywhere, which is consistent with a WAL/memtable residency that is
+  indifferent to account class rather than a diff-layer that tracks recently-written accounts.
+
+**Held open until the treated arm lands:** how much of the 3× median survives flush + compaction.
+That difference is the actual result, and it is the only number that answers P1 and P2.
