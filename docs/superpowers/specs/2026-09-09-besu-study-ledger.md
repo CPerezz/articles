@@ -1031,3 +1031,79 @@ is running now.
 
 **Held open until the treated arm lands:** how much of the 3× median survives flush + compaction.
 That difference is the actual result, and it is the only number that answers P1 and P2.
+
+---
+
+## Round 19 — the treatment hook never fired, and why that was correct behaviour
+
+The first treated run was launched with
+`BENCHMARKOOR_POST_PRERUN_CMD='/home/CPerezz/rockscompact/rockscompact $DATADIR'` and produced
+**no hook output at all**. Tests started anyway, which would have yielded a "treated" arm
+identical to the untreated one — 23 h of data answering nothing.
+
+Caught at 55/1463 by grepping the log for the tool's own output rather than assuming the hook
+had run. The cause is in the log:
+
+```
+Datadir head matches the pre-run bundle  block=24410463  pre_runs_applied=true
+Pre-run bundle already applied to this datadir; skipping the replay
+```
+
+The virgin volume already carried the post-pre-run state, because the **untreated** run promoted
+it there (`promote_post_pre_runs: true`). With no pre-run phase to run, there was no
+*post*-pre-run hook to fire. benchmarkoor behaved correctly; the experiment design assumed a
+fresh snapshot per arm, as the geth study had.
+
+The binary does support the hook — `BENCHMARKOOR_POST_PRERUN_CMD` appears in its strings, and
+`ShouldPromotePostPreRuns` is in the symbol table. Nothing was broken except my sequencing.
+
+**Fix, and why it is equivalent rather than a shortcut.** Re-extracting the snapshot to get a
+virgin pre-pre-run image costs ~3 h. Instead the treatment was applied directly to the promoted
+image:
+
+1. `schelk restore` → scratch = virgin = post-pre-run, untreated
+2. run the treatment on the mounted store
+3. `schelk promote` → virgin = post-pre-run, **treated**
+4. run the suite (pre-runs correctly skipped again)
+
+That is exactly the geth study's compacted arm: pre-runs applied, then drain + compact, then
+promote. The two Besu arms now differ **only** by the treatment, which is the cleaner
+comparison — same pre-run execution, not merely an equivalent one.
+
+Restored state verified byte-for-byte against round 17's census before treating:
+`sst=6699 (382,737,542,760 B) wal=20 (1,329,617,075 B) blob=26083`.
+
+### The treatment, measured
+
+```
+loaded OPTIONS: 17 column families
+  flush (all cfs)     0.0s
+  cf=01             414.4s      cf=06   313.6s
+  cf=08            1477.3s      cf=07    90.4s
+  cf=09            3103.8s      cf=0a    34.7s
+total 5437.0s                   real 90m37s
+```
+
+| | before | after | Δ |
+|---|---|---|---|
+| SST files | 6,699 | 5,454 | −1,245 (−18.6%) |
+| SST bytes | 382,737,542,760 | 360,320,146,324 | −22.4 GB (−5.9%) |
+| **WAL bytes** | **1,329,617,075** | **23** | **−1.24 GiB** |
+| blob files | 26,083 | 26,077 | −6 |
+
+Promote: 5,797,073 blocks / 353.83 GB in 8m57s.
+
+**An unexpected mechanical finding: `flush (all cfs)` returned in 0.0s.** The memtables were
+already empty by the time the explicit flush ran, because RocksDB's *open* path recovers the WAL
+and flushes the recovered data itself. So on Besu, **opening the store is the drain** — every
+Besu boot already does what geth needed a purpose-built `drainjournal` tool to do.
+
+That reframes P2 and is worth stating carefully before the treated numbers arrive. If the
+untreated arm's advantage were pure WAL residency, it should not survive the first boot of each
+test, since every test boots Besu fresh. The advantage measured in round 18 is therefore more
+likely **LSM level placement** — the pre-run's recently-written accounts sit in a handful of
+young, small SSTs, cheap to locate, whereas the generated store's accounts are spread across
+8,450 files — than memtable residency as such. Compaction, not flushing, is the operative half
+of this treatment, and the treated arm is the measurement that will decide it.
+
+**Treated suite relaunched** against the treated golden image, 1,463 fixtures.
