@@ -39,13 +39,28 @@ public class Compact {
     System.out.printf("loaded OPTIONS: %d column families%n", cfDescs.size());
 
     final List<ColumnFamilyHandle> handles = new ArrayList<>();
-    final CompactRangeOptions cro = new CompactRangeOptions()
-        // Without kForce RocksDB skips the bottommost level when it believes it is already
-        // compacted, which would make "compacted" mean something different per store.
-        .setBottommostLevelCompaction(CompactRangeOptions.BottommostLevelCompaction.kForce);
+    final CompactRangeOptions cro = new CompactRangeOptions();
+    // kForce was tried and dropped. On the 1.1 TB jochemnet store it rewrites the bottommost
+    // level wholesale: >2 h elapsed having moved only 6,688 -> 5,864 SSTs, with hours still to
+    // run, which is not affordable inside a pre-run hook. The default still performs a
+    // full-range compaction that collapses L0-L5 into the bottom level, which is the property
+    // the study actually tests ("is the store in one sorted run?"). What kForce adds is
+    // rewriting an already-compacted L6 to purge tombstones -- irrelevant to read cost here.
 
     long start = System.currentTimeMillis();
     try (RocksDB db = RocksDB.open(dbOptions, path, cfDescs, handles)) {
+      // Flush first. This is the real analogue of geth's journal drain: the jochemnet snapshot
+      // ships a ~1.3 GB write-ahead log, i.e. state that never reached an SST and which
+      // RocksDB replays into memtables on open ("Processing WAL..."), so it is served from RAM.
+      // Compacting without flushing would leave that residency untouched and treat only the
+      // on-disk shape -- exactly the half-fix the geth study measured when it drained without
+      // compacting, and compacted without draining.
+      try (FlushOptions fo = new FlushOptions().setWaitForFlush(true)) {
+        final long tf = System.currentTimeMillis();
+        db.flush(fo, handles);
+        System.out.printf("  flush (all cfs)              %6.1fs%n",
+            (System.currentTimeMillis() - tf) / 1000.0);
+      }
       for (int i = 0; i < handles.size(); i++) {
         // Besu names its column families with single binary bytes, so render hex.
         final String cf = HexFormat.of().formatHex(cfDescs.get(i).getName());

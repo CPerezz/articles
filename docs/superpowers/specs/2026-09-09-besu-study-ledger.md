@@ -879,3 +879,94 @@ needs the jochemnet arm): `CALL/EXISTING_CONTRACT_JUMPDEST` 11.45 MGas/s,
 
 `gas_used_time_total` is used rather than `time_total` so harness overhead is excluded, and the
 `setup` step is kept separate rather than summed into the measurement.
+
+---
+
+## Round 17 — untreated arm complete, and P4 reproduces on a different storage engine
+
+```
+Test execution completed  duration=23h1m39s  passed=1463  failed=0  total=1463
+```
+
+Archived to `/data/archive/besu-joc/results-besu-jochemnet-untreated.tar.gz` (932 MB).
+
+### The promoted post-pre-run image
+
+`schelk restore` reproduces exactly what the benchmark measured. File census, taken before any
+Besu process could open it:
+
+| | as shipped | post-pre-run | Δ |
+|---|---|---|---|
+| SST bytes | 382,863,226,174 | 382,737,542,760 | −126 MB |
+| blob bytes | 760,163,958,951 | 760,283,875,964 | +120 MB |
+| **WAL bytes** | **1,258,464,804** | **1,329,617,075** | **+71 MB** |
+
+**The promoted image carries a 1.24 GiB write-ahead log** — state that never reached an SST,
+replayed into memtables on every test's boot. The geth study's root cause was a 380.15 MiB
+pathdb journal in exactly this position. This is 3.3× larger.
+
+### P4 — the residual mechanism reproduces, and closely
+
+`SstGeom` on both stores, `ACCOUNT_INFO_STATE` (cf 06) — the flat account keyspace, the exact
+analogue of the geth account snapshot the residual arithmetic ran on:
+
+| | jochemnet | state-actor | ratio |
+|---|---|---|---|
+| entries | 365,626,139 | 430,696,738 | 1.178 |
+| **phys ÷ log** | **0.438** | **0.513** | **1.171** |
+| **compressed bytes/block** | **14,255.7** | **16,696.6** | **1.171** |
+| SSTs | 305 | 228 | |
+
+Against the published geth figures:
+
+| | geth | besu |
+|---|---|---|
+| compression ratio, jochemnet vs generated | 0.849 → 0.991 = **1.167** | 0.438 → 0.513 = **1.171** |
+| block size ratio | 3,467 → 4,043 B = **1.166** | 14,255.7 → 16,696.6 B = **1.171** |
+
+**Different engine, different compression algorithm (LZ4 vs Snappy), 8× different block size
+(32 KB vs 4 KB) — and generated state is less compressible by the same factor to three
+significant figures.**
+
+This is the strongest available evidence for F3 as stated in the geth article: the residual is a
+property of *the data*, not of the storage engine. It was the falsifiable prediction registered
+as P4 before any Besu measurement existed, and it holds.
+
+Two cautions kept attached to the number: these are store-geometry ratios, not yet timings — the
+timing comparison needs both arms' suite data analysed together; and `rec_B` (113.2 vs 119.7)
+includes RocksDB internal key bytes, so it is *not* comparable with geth's 49.6/58.3 B/entry,
+as recorded in round 9.
+
+### Two self-inflicted findings
+
+**I destroyed the WAL evidence on the scratch with my own diagnostics.** Running
+`besu storage trie-log count` and `storage rocksdb usage` on the restored image opened RocksDB —
+both commands then *failed*, one on `Cannot store generated private key` and one on
+`You must provide the default column family` — but Besu had already logged `Processing WAL...`
+and replayed it. A re-census afterwards showed `wal=1 (179 B)` where minutes earlier there had
+been 20 files and 1.33 GB. Round 4 documented this exact hazard; I walked into it anyway. No
+data lost — the census was taken first and the virgin volume is untouched — but the ordering
+rule now has a second, harder statement: **run no Besu subcommand against a store whose WAL is
+evidence, not even a read-only-looking one.**
+
+`SstGeom` worked on the same store where both Besu subcommands failed, because it opens
+read-only through the rocksdbjni jar directly.
+
+**`kForce` dropped, with the measurement that justifies it.** On the 1.1 TB store, forcing
+bottommost compaction ran **>2 h having moved only 6,688 → 5,864 SSTs** (382.5 → 367.4 GB) with
+hours still to go — unaffordable inside a pre-run hook. The default still performs a full-range
+compaction collapsing L0–L5 into the bottom level, which is the property the study tests. What
+kForce adds is rewriting an already-compacted L6 to purge tombstones, irrelevant to read cost.
+Recorded rather than silently changed.
+
+### Treatment, and why it is now a true analogue
+
+`Compact.java` now **flushes all column families before compacting**
+(`db.flush(FlushOptions().setWaitForFlush(true), handles)`). Without it the 1.24 GiB WAL
+residency would survive the treatment untouched, and the run would measure only the on-disk
+shape — precisely the half-fix the geth study measured when it drained without compacting and
+compacted without draining.
+
+**Treated suite launched** with
+`BENCHMARKOOR_POST_PRERUN_CMD='/home/CPerezz/rockscompact/rockscompact $DATADIR'`, 1,463
+fixtures.
