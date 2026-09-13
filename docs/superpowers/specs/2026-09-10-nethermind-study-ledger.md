@@ -359,3 +359,98 @@ via the spec and has none) remains a second, independent confound, and is the sa
 the geth study root-caused as journal residency. jochemnet's 400–530 MGas/s sits in the range of
 geth's pre-fix artefact numbers (380) rather than its honest ones (18.5) — worth testing after
 the backend is equalised.
+
+---
+
+## Round 8 — symmetric pair, and the geth F1 mechanism reproduces on Nethermind
+
+The state-actor store was regenerated from state-actor HEAD `aef7bd8` (which carries `cdd7ffe`,
+the flat-state writer). All four self-assertions passed:
+
+```
+OK flat/ present (479G)      OK log reports flat column DB
+OK genesis hash unchanged (0xa9e61c12...9491b)
+OK state root unchanged (0x5b305cc0...b6e7)
+```
+
+`state/` collapsed 364 G -> **84 K**, `flat/` is **479 G** — the trie relocated, store 523 G.
+Both arms then logged the same thing for the first time:
+
+```
+state-actor: State backend: flat (existing flat DB detected)
+jochemnet  : State backend: flat (existing flat DB detected)
+```
+
+state-actor suite: `rc=0`, **passed=1461, failed=0**, 11h16m, 0 validation failures.
+jochemnet (unchanged, still valid): `rc=0`, passed=1463, 12h44m.
+
+### Aggregate, both arms flat, identical gas
+
+| | jochemnet | state-actor | ratio |
+|---|---|---|---|
+| gas | 198.9 M | 198.9 M | **1.00** |
+| wall | 0.684 s | 9.471 s | 13.8x |
+| cpu | 3.97 s | 9.52 s | 2.4x |
+| disk read | 229.5 MB | 3,875.2 MB | 16.9x |
+| cpu/wall | 5.80 | 1.00 | — |
+
+Equalising the backend **halved the byte gap** (29.5x -> 16.9x) but barely moved wall
+(15.2x -> 13.8x). So the backend was real but not the main term.
+
+### The category that cracks it
+
+Median sa/joc by account_mode (528 measured categories):
+
+| mode | sa/joc |
+|---|---|
+| EXISTING_EOA | 0.061 |
+| EXISTING_CONTRACT_SAME_MAX | 0.069 |
+| EXISTING_CONTRACT_MINIMAL | 0.072 |
+| EXISTING_CONTRACT_DIFF_MAX | 0.091 |
+| EXISTING_CONTRACT_JUMPDEST | 0.383 |
+| **NON_EXISTING_ACCOUNT** | **1.059** |
+
+**Non-existing accounts are at parity.** When the lookup proves absence, the arms agree within
+6%. Every category that reads a *real* account is 11–16x apart. That localises the difference
+to reading existing account data — not the harness, not the engine, not the absence path.
+
+### And the bytes say why
+
+BALANCE, measured, same category at two gas budgets:
+
+| | 160M | 300M |
+|---|---|---|
+| jochemnet read | 227.9 MB | 229.0 MB |
+| state-actor read | 3,112 MB | 5,775 MB |
+
+**jochemnet's read volume is flat in gas; state-actor's scales linearly.** Doubling the number
+of accounts touched costs jochemnet nothing and costs state-actor 1.9x. A store genuinely
+serving each account from disk cannot have a gas-independent read volume.
+
+The explanation is the one the geth study spent eighteen rounds reaching: the jochemnet arm's
+fixture accounts were **written moments earlier by the pre-run bundle and then promoted into the
+golden image**, so they occupy a small, dense, recently-written stratum (~230 MB) that satisfies
+every lookup. On geth that stratum was the pathdb journal (RAM-resident, 380 MGas/s before the
+drain, 18.5 after). Here it is a compact set of freshly written SSTs. Same mechanism, different
+storage layer.
+
+The corroborating detail: jochemnet runs 400–530 MGas/s on BALANCE, sitting squarely in the
+range of geth's **pre-fix artefact** (380) rather than its honest post-fix number (18.5), while
+state-actor sits at 17–19 MGas/s — almost exactly geth's honest 16.5.
+
+`NON_EXISTING_ACCOUNT` at parity is the control that proves it: those accounts were never
+written by the pre-run, so neither arm has them in a privileged stratum, and the advantage
+vanishes.
+
+### Verdict
+
+The remaining gap is **not** a property of generated state. It is the pre-run deployment
+artefact, reproduced on a third client and a third storage engine. The study's target effect
+(~1.1x on geth) is still buried beneath it.
+
+**Next, and it is the geth study's own fix:** apply the treatment to the jochemnet arm — compact
+its RocksDBs after the pre-run and before promote (the Nethermind analogue of
+`drainjournal && geth db compact`, via the per-directory compactor) — then re-measure.
+Prediction, recorded before running: jochemnet's 400–530 MGas/s collapses toward state-actor's
+~18, its read volume becomes gas-proportional instead of flat, and the honest ratio lands near
+1.0–1.2 rather than 0.09.
