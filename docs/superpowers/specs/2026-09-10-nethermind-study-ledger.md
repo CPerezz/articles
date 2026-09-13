@@ -690,3 +690,79 @@ the EIP-list finding, and the backend-asymmetry finding are unaffected.
 
 Tooling: `tools/nethermind-study/probe-flat-main.go` (modes `probe`/`seq`/`addr`/`keys`/`meta`/`locate`),
 `clientio.sh`, `clientio2.sh`, `pertest.py`, `rw.py`, `attrib.sh`.
+
+---
+
+## Round 12 - pipeline audit + causal proof + reconciliation with the geth study
+
+Anon challenged round 11 on two correct grounds: benchmarkoor **does** clear caches between the
+pre-run and the payload, and the Nethermind arm appends blocks so the last-256 preload misses
+test slots. Both are true. Round 11's wording ("fully cache-resident") was wrong; the finding is
+not about cache warmth and survives both mechanisms.
+
+### Pipeline, from source (not assumed)
+- `pkg/executor/executor.go:460` - `dropBetweenTests` is true for `"tests"` **and** `"steps"`;
+  `:518` drops between every test after the first; `:592` drops between setup and test step.
+  Both arms set `drop_memory_caches: "steps"`. Cache warmth is genuinely excluded.
+- Pre-run steps run once, before the test loop (`:465`), so only test 1 of 1,461 sees pre-run heat.
+- Both arms: `rollback_strategy: container-recreate`. **Only jochemnet** sets
+  `pre_runs: .../pre_run_bundle` and `schelk_options: promote_post_pre_runs: true`.
+- Pre-run bundle: single 10.06 GB NDJSON, **7,736 `engine_newPayloadV5` blocks x 64 txs**
+  (~495k txs), blocks 24,402,728 -> 24,410,463. The tail blocks are **not** empty fillers
+  (last 200 all carry 64 txs).
+
+**The reconciliation:** `promote_post_pre_runs: true` makes schelk promote the volume *after* the
+pre-run, freezing the post-pre-run **on-disk SST layout** into the golden image every test restores
+from. Cache-clearing and filler blocks defend against *warmth*; neither touches *placement*.
+And the amortisation is **intra-test**, not inter-test: each test independently re-pays a bounded
+~47 MB distinct-block footprint on jochemnet versus unbounded growth on state-actor. (The probe
+sets `fill_cache=false`, so the saturation measured is OS page-cache over distinct physical blocks,
+which is exactly what a single test experiences.)
+
+### Causal proof - single-variable intervention
+Forced full compaction of the **jochemnet** Account CF. No value changed, only placement:
+levels `map[3:4 4:36 5:304 6:20]` -> `map[6:196]`, 192.6 s.
+
+| N | BEFORE (clustered) | AFTER (compacted) | state-actor (reference) |
+|---|---|---|---|
+| 2,000 | 1.65 blk, 13.5 MB, 107 us | 1.80 blk, 14.7 MB, 169 us | 1.99 blk, 16.3 MB, 185 us |
+| 20,000 | 0.55 blk, 45.0 MB, 20 us | 1.78 blk, 146 MB, 216 us | 1.99 blk, 163 MB, 184 us |
+| 50,000 | **0.23 blk, 47.2 MB, 11 us** | **1.76 blk, 361 MB, 186 us** | 1.97 blk, 404 MB, 179 us |
+
+Compaction alone moved wall-clock **16.6x** and made jochemnet indistinguishable from state-actor.
+That is the benchmark's 16x gap, reproduced by changing nothing but where bytes sit on disk.
+Volume goes from saturating (45.0 -> 47.2 MB) to linear (146 -> 361 MB). Store restored afterwards
+via `schelk promote`.
+
+### Why the geth study saw "only a bit" - it didn't
+The geth report's own provenance: *"compacted and uncompacted are the same jochemnet mainnet
+shadowfork snapshot, with and without manual pebble compaction; state-actor is synthetically
+generated state."* Its headline metric is **state-actor / compacted** - i.e. measured against the
+arm whose clustering was **manually compacted away**. Against the *uncompacted* arm (the true
+analogue of the Nethermind jochemnet arm), geth's own numbers (us per account lookup):
+
+| category | compacted | uncompacted | state-actor | sa/compacted | **sa/uncompacted** |
+|---|---|---|---|---|---|
+| NON_EXISTING | 14.31 | 17.28 | 15.68 | 1.10 | **0.91** |
+| EOA | 15.15 | 8.34 | 16.73 | 1.10 | **2.01** |
+| MINIMAL | 14.22 | 3.17 | 15.23 | 1.07 | **4.80** |
+| SAME_MAX | 13.83 | 2.63 | 15.25 | 1.10 | **5.81** |
+| JUMPDEST | 13.87 | 3.14 | 15.49 | 1.12 | **4.94** |
+
+Same signature as Nethermind: `NON_EXISTING` at parity (0.91 vs our 1.05), every account-reading
+category diverging. Note also that **compacting made geth 4-5x slower** (15.15 vs 8.34, 14.22 vs
+3.17) - the same direction as our intervention. The geth study's journal root cause explains
+state-actor vs the snapshot pair; it cannot explain compacted vs uncompacted, since LOGMINE records
+the 380.15 MiB journal as `loaded` on **both**.
+
+So the answer to "why geth only a bit": the comparison differs, not the client. geth: 2.0-5.8x
+against its uncompacted arm; Nethermind: 2.6-16.4x. Residual amplitude is plausibly geth's much
+larger in-process absorption (1023 MiB clean trie cache + 2.00 GiB db cache, per LOGMINE) plus the
+fact that Nethermind's jochemnet arm is promoted *immediately* after a 7,736-block pre-run, which
+maximises clustering, whereas geth's snapshot was compacted by hand.
+
+### Standing conclusion
+Unchanged and now causally demonstrated: the generated store is not slow, and the gap is a
+benchmark-methodology artefact of comparing a freshly-pre-run, promoted, uncompacted snapshot
+against a generated store. Valid options: give both arms a pre-run, or compact both before
+measuring. Compacting both is the cheaper control and geth's compacted arm shows it lands at ~1.1x.

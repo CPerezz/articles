@@ -73,6 +73,20 @@ func openRO(path string) (*grocksdb.DB, []*grocksdb.ColumnFamilyHandle) {
 	return db, hs
 }
 
+func openRW(path string) (*grocksdb.DB, []*grocksdb.ColumnFamilyHandle) {
+	opts := grocksdb.NewDefaultOptions()
+	opts.SetCreateIfMissing(false)
+	cfOpts := make([]*grocksdb.Options, len(flat.ColumnNames))
+	for i := range cfOpts {
+		cfOpts[i] = grocksdb.NewDefaultOptions()
+	}
+	db, hs, err := grocksdb.OpenDbColumnFamilies(opts, path, flat.ColumnNames, cfOpts)
+	if err != nil {
+		log.Fatalf("open rw %s: %v", path, err)
+	}
+	return db, hs
+}
+
 func main() {
 	dbPath := flag.String("db", "", "path to the flat/ RocksDB directory")
 	mode := flag.String("mode", "sample", "sample | probe")
@@ -96,7 +110,13 @@ func main() {
 		log.Fatalf("unknown cf %q; have %v", *cfName, flat.ColumnNames)
 	}
 
-	db, handles := openRO(*dbPath)
+	var db *grocksdb.DB
+	var handles []*grocksdb.ColumnFamilyHandle
+	if *mode == "compact" {
+		db, handles = openRW(*dbPath)
+	} else {
+		db, handles = openRO(*dbPath)
+	}
 	defer db.Close()
 	cf := handles[cfIdx]
 	ro := grocksdb.NewDefaultReadOptions()
@@ -278,6 +298,26 @@ func main() {
 		fmt.Printf("  covering files : %d  (%.2f GB, %d entries)\n", len(covering), float64(coverSize)/1e9, coverEntries)
 		fmt.Printf("  covering levels: %v\n", byLevel)
 		fmt.Printf("  entries/key in covering files : %.0f\n", float64(coverEntries)/float64(len(keys)))
+
+	case "compact":
+		// Causal intervention: merge the column family into its bottom level. This destroys
+		// the clustering that a recent write burst leaves behind, without changing a single
+		// value. If clustering is what makes the fixture keys cheap, this alone must erase
+		// the advantage.
+		levels := func() map[int]int {
+			m := map[int]int{}
+			for _, f := range db.GetLiveFilesMetaData() {
+				if f.ColumnFamilyName == *cfName {
+					m[f.Level]++
+				}
+			}
+			return m
+		}
+		fmt.Printf("  levels before : %v\n", levels())
+		start := time.Now()
+		db.CompactRangeCF(cf, grocksdb.Range{Start: nil, Limit: nil})
+		fmt.Printf("  compaction    : %.1f s\n", time.Since(start).Seconds())
+		fmt.Printf("  levels after  : %v\n", levels())
 
 	case "keys":
 		// Dump raw key shapes so the two stores' encodings can be compared directly.
