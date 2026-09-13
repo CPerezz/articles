@@ -87,6 +87,43 @@ func openRW(path string) (*grocksdb.DB, []*grocksdb.ColumnFamilyHandle) {
 	return db, hs
 }
 
+
+// compactWholeDB compacts every column family of an arbitrary RocksDB directory. Used for
+// Nethermind's non-flat databases (code/, ...), which have their own CF sets.
+func compactWholeDB(path string) {
+	opts := grocksdb.NewDefaultOptions()
+	opts.SetCreateIfMissing(false)
+	names, err := grocksdb.ListColumnFamilies(opts, path)
+	if err != nil {
+		log.Fatalf("list cfs %s: %v", path, err)
+	}
+	cfOpts := make([]*grocksdb.Options, len(names))
+	for i := range cfOpts {
+		cfOpts[i] = grocksdb.NewDefaultOptions()
+	}
+	db, handles, err := grocksdb.OpenDbColumnFamilies(opts, path, names, cfOpts)
+	if err != nil {
+		log.Fatalf("open rw %s: %v", path, err)
+	}
+	defer db.Close()
+
+	shape := func() map[int]int {
+		m := map[int]int{}
+		for _, f := range db.GetLiveFilesMetaData() {
+			m[f.Level]++
+		}
+		return m
+	}
+	fmt.Printf("db=%s cfs=%v\n", path, names)
+	fmt.Printf("  levels before : %v\n", shape())
+	start := time.Now()
+	for i, h := range handles {
+		db.CompactRangeCF(h, grocksdb.Range{Start: nil, Limit: nil})
+		fmt.Printf("  compacted cf %-12s (%.1f s elapsed)\n", names[i], time.Since(start).Seconds())
+	}
+	fmt.Printf("  levels after  : %v\n", shape())
+}
+
 func main() {
 	dbPath := flag.String("db", "", "path to the flat/ RocksDB directory")
 	mode := flag.String("mode", "sample", "sample | probe")
@@ -98,6 +135,11 @@ func main() {
 	flag.Parse()
 	if *dbPath == "" {
 		log.Fatal("-db required")
+	}
+
+	if *mode == "compactdb" {
+		compactWholeDB(*dbPath)
+		return
 	}
 
 	cfIdx := -1

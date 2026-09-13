@@ -786,3 +786,53 @@ Impact is low, and partly favourable:
 the existing symmetric state-actor results. Predicted from the probe: the 16x gap collapses to
 ~1.1-1.2x. That would validate the placement finding end-to-end inside benchmarkoor rather than in
 a probe, and it costs one ~13 h arm since state-actor's side is already done.
+
+---
+
+## Round 13 - the intervention arm: remove the advantage, measure the residual
+
+Anon's actual goal (not a geth replication): modify one store so the perf-altering advantage is
+**removed**, then measure how far jochemnet still sits from state-actor. Launched 2026-09-13 13:22.
+
+### What was modified, and what deliberately was not
+| target | size | action | why |
+|---|---|---|---|
+| `flat/Account` | 16.25 -> 12.84 GB | **compacted**, `map[3:4 4:36 5:304 6:20]` -> `map[6:196]` | the CF carrying every divergent category |
+| `code/` | 7.6 GB | **compacted**, `map[0:3 5:6 6:117]` -> `map[6:115]` | 3 files sat at L0 - the pre-run's fresh code writes; JUMPDEST is code-dominated |
+| `flat/Storage` | 88.92 GB | left alone | storage already at parity (1.006); nothing to remove |
+| `flat/StorageNodes` | 195.21 GB | left alone | trie, bypassed by the flat backend; also > 117 GB free |
+| `flat/StateNodes` | 39.10 GB | left alone | same |
+
+### The config trap
+Re-running the arm as-is would have **re-created the clustering**: `pre_runs` replays 7,736 blocks
+x 64 txs, rewriting every fixture account into fresh L0 SSTs. So `nm-joc-compacted.yaml` drops
+`pre_runs` and `schelk_options.promote_post_pre_runs`. Their *state* effects are already baked into
+the promoted volume (head 24,410,463), so the arm starts from identical state without re-clustering.
+Diff vs the original config is exactly: results_dir, label, instance id, and those two blocks.
+Everything else byte-identical - image, genesis, `genesis_eip_override` (14 EIPs), `extra_args`
+(`--FlatDb.Enabled=true`), `drop_memory_caches: "steps"`, `rollback_strategy: container-recreate`,
+fixtures URL.
+
+Smoke (1 test, pre-run stripped): `rc=0`, `passed=1 failed=0`, `State backend: flat`, zero
+"pre-run" log lines. Full run discovered 1463 tests with **`pre_run_steps=0`**.
+
+### Prediction, recorded before results exist
+Basis: post-compaction probe parity - jochemnet 1.76 blk / 186 us vs state-actor 1.97 blk / 179 us;
+and geth's analogous compacted comparison landing at 1.03-1.12x.
+
+| category | before (sa/joc) | predicted after |
+|---|---|---|
+| EXISTING_EOA | 16.4x | **1.0-1.2x** |
+| EXISTING_CONTRACT_SAME_MAX | 14.5x | 1.0-1.2x |
+| EXISTING_CONTRACT_MINIMAL | ~14x | 1.0-1.2x |
+| EXISTING_CONTRACT_DIFF_MAX | 11.0x | 1.0-1.3x |
+| EXISTING_CONTRACT_JUMPDEST | 2.6x | 1.0-1.3x |
+| NON_EXISTING_ACCOUNT | 1.05x | **unchanged ~1.05x** (control) |
+| STORAGE slot | 1.006x | **unchanged ~1.0x** (control) |
+
+The two controls are the falsifier: if the account categories collapse to ~1x *and* the controls
+stay put, placement is confirmed as the whole mechanism. If the account categories stay high, the
+placement story is incomplete and something else is carrying the gap.
+
+Classify on completion with `tools/nethermind-study/buckets.py` /
+`classify.py <joc-compacted_results> <sa_results>`.
