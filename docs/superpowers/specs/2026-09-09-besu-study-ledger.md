@@ -1270,3 +1270,63 @@ working set**: a bigger budget means more lookups per block, so a larger fractio
 whatever the plain arm was serving from memory. It also explains why only 582 of 1,100 tests
 cross the 10% line while every category median sits near 0.35 — the low-gas end of each sweep
 is much closer to parity.
+
+---
+
+## Round 22 — what actually differs between plain and treated jochemnet
+
+The two arms are the **same database at the same block**, same payloads, same client image, same
+volume, same device, same flags; gas identical across arms to six significant figures. Exactly
+two things were done to one of them: flush all column families, then full-range compaction.
+
+### What changed, measured
+
+| | plain | treated |
+|---|---|---|
+| WAL | 20 files, 1,329,617,075 B | 1 file, **23 B** |
+| SST files | 6,699 | 5,454 |
+| SST bytes | 382,737,542,760 | 360,320,146,324 |
+| blob files | 26,083 | 26,077 |
+
+Per column family (`SstGeom`):
+
+| cf | | entries | SSTs | data bytes |
+|---|---|---|---|---|
+| 06 ACCOUNT_INFO_STATE | plain | 365,626,139 | 305 | 18,127,106,956 |
+| | treated | 354,792,873 | 269 | 17,441,333,066 |
+| 08 ACCOUNT_STORAGE | plain | 1,874,093,849 | 1,461 | 84,388,693,763 |
+| | treated | 1,822,629,119 | 1,255 | 81,594,326,888 |
+| 09 TRIE_BRANCH | plain | 3,098,085,111 | 4,301 | 235,047,482,585 |
+| | treated | 3,012,961,752 | 3,351 | 216,634,162,687 |
+
+Record shape is unchanged — cf 06 `rec_B` 113.2 both sides, `phys/log` 0.438 → 0.434. The
+treated store is **smaller, in fewer files, with fewer entries**.
+
+### The entry count is the tell
+
+Compaction removed **10,833,266 entries from cf 06**, 51.5 M from cf 08 and 85.1 M from cf 09.
+Those are obsolete *older/duplicate versions* of keys, purged when the levels merged.
+
+The 10.06 GB pre-run wrote the accounts the benchmark then reads. In the plain store those
+writes exist as the **newest versions sitting in young, small, top-of-tree SSTs**; a lookup for
+one of them is satisfied near the top of the LSM and never descends. Compaction merges them into
+the single bottom level, so the identical lookup now reads a 32 KB block out of a 360 GB sorted
+run with no locality to its neighbours.
+
+That is measured as **6.72× more bytes read for identical gas**, and it is the geth article's
+sentence restated in RocksDB terms — there, `geth db compact` "merged those leaves into the same
+cold strata as everybody else," taking BALANCE/DIFF_MAX from 272 to 18.5 MGas/s.
+
+Which is why the treatment makes the database *slower* while making it *smaller*: it is not an
+optimisation, it is the removal of an accident.
+
+### Which arm is right
+
+The treated one, on two independent grounds:
+
+- it is the state a normally-operating node converges to, rather than the state a
+  pre-run-then-snapshot fixture happens to freeze;
+- it is the only one comparable with the generated store — `sa/treated` is 0.952 and 0.958,
+  while `sa/plain` is 0.182 and 0.692.
+
+The plain arm's speed is a property of **how the fixture was built**, not of the database.
