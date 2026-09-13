@@ -1107,3 +1107,101 @@ young, small SSTs, cheap to locate, whereas the generated store's accounts are s
 of this treatment, and the treated arm is the measurement that will decide it.
 
 **Treated suite relaunched** against the treated golden image, 1,463 fixtures.
+
+---
+
+## Round 20 — all three arms complete; the pre-registered verdicts
+
+```
+state-actor  1461/1461 passed  22h03m31s
+untreated    1463/1463 passed  23h01m39s
+treated      1463/1463 passed  21h38m30s
+```
+
+Zero validation failures in any arm. All results archived. **1,100 workloads common to all
+three**, with gas identical across arms to six significant figures
+(`1.30409e+11` each) — the arms did the same work, measured.
+
+### Headline
+
+Per-category medians of per-workload ratios, split by account class because mixing them
+produces a median that describes neither (the geth study made the same split on a different
+class):
+
+| comparison | family | n | min | **median** | max |
+|---|---|---|---|---|---|
+| **state_actor / treated** | EXISTING_* | 40 | 0.901 | **0.949** | 0.979 |
+| | NON_EXISTING | 8 | 0.101 | 0.110 | 0.453 |
+| **treated / untreated** | EXISTING_* | 40 | 0.167 | **0.581** | 0.734 |
+| | NON_EXISTING | 8 | 1.014 | 1.076 | 1.090 |
+
+Bytes read per unit gas: `state_actor/treated` **1.4498**, `treated/untreated` **6.7208**,
+`state_actor/untreated` 9.7439.
+
+### Verdicts on the pre-registration
+
+**P1 — REFUTED, decisively.** Predicted the compaction spread would be *smaller* on Besu than
+geth's 1.031–1.117 (median 1.091), on the reasoning that RocksDB auto-compacts aggressively.
+Measured spread is **1.72×** (median 0.581), an order of magnitude larger than geth's 1.09×.
+Treatment state matters far *more* on Besu, not less.
+
+**P2 — CONFIRMED.** A large recency artifact exists in the promoted image. The untreated arm
+runs 1.72× faster on every state-reading class while moving **6.7× fewer bytes**, and the
+advantage disappears on treatment. Registered before any Besu measurement existed.
+
+**P3 — CONFIRMED.** The residual survives on a different storage engine: after treatment,
+state-actor is slower than the mainnet snapshot on **40 of 40** EXISTING categories,
+median **5.4%** (1/0.949), range 2.1%–11.0%.
+
+Against geth's published 1.031–1.117, median 1.091 — **9.1%** — across 13 categories. Same sign,
+same order of magnitude, different engine, different compression algorithm, 8× different block
+size.
+
+**P4 — the mechanism reproduces, the quantitative prediction does not.** P4 predicted a
+bytes-per-read ratio in **1.10–1.15**; measured **1.4498** bytes per gas. Recorded as a miss.
+
+What *did* land within a fraction of a percent is the store-geometry chain of round 17:
+compression ratio 0.438→0.513 = **1.171** and block size 14,256→16,697 B = **1.171**, against
+geth's **1.167** and **1.166**. So the *mechanism* — generated state is less compressible, so a
+block holds fewer records and a read moves more bytes — transfers exactly; the step from
+geometry to observed bytes-per-gas does not, and the prediction was made on the latter.
+
+**P5 — CONFIRMED on work, not yet on reads.** Gas is identical across arms to six significant
+figures on all 1,100 shared workloads. Account-read *counts* were not captured: benchmarkoor
+does not scrape Besu's metrics endpoint, and round 10 verified the counters exist and advance
+but reset per container. The claim rests on gas identity, which is strong but not the same
+statement.
+
+### The NON_EXISTING class does not measure the same thing on both stores
+
+Eight categories sit far outside the band, worst at `value_sent=0`:
+
+| account_mode | value_sent | treated | state-actor | ratio |
+|---|---|---|---|---|
+| NON_EXISTING | 0 | 145.66 | 16.28 | 0.113 |
+| NON_EXISTING | 1 | 230.73 | 103.01 | 0.484 |
+| every EXISTING_* | 0 and 1 | — | — | 0.904–0.982 |
+
+**The treatment leaves this class alone** — `treated/untreated` is 1.014–1.090 for NON_EXISTING
+while every other class moves by 1.4–6×. So its cost is insensitive to LSM shape, which is the
+signature of a lookup that is rejected by a bloom filter without reading a block.
+
+The most likely reading is therefore that these addresses are genuinely absent from the mainnet
+snapshot and **not absent from the generated store** — state-actor fills 430.7 M synthetic
+accounts, and a "non-existing" probe address that the fill happens to occupy becomes a real
+read. If so the class is not comparing like with like, and it belongs in the article as a
+caveat about generated state rather than as a performance finding.
+
+**Stated as a hypothesis, not a conclusion** — confirming it requires resolving the fixtures'
+probe addresses and querying both stores directly, which has not been done.
+
+### What this says about the geth article's claim
+
+The geth study concluded that a ~10% floor between a generated state and a mainnet snapshot
+"is not a defect in either one — it is what the two datasets are", and argued the mechanism is
+record incompressibility rather than tree shape or engine behaviour.
+
+On Besu that claim survives its strongest available test. A different storage engine, a
+different compression algorithm and a 4× larger block reproduce the compression ratio to three
+significant figures and leave a residual of the same sign and order. The headline number moves
+(5.4% vs 9.1%), so the *magnitude* is engine-dependent; the *existence and cause* are not.
