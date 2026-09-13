@@ -836,3 +836,25 @@ placement story is incomplete and something else is carrying the gap.
 
 Classify on completion with `tools/nethermind-study/buckets.py` /
 `classify.py <joc-compacted_results> <sa_results>`.
+
+### Round 13 operations - surviving this box's SSH stalls
+
+This machine drops interactive sessions under sustained benchmark I/O (five occurrences, always
+PAM/`systemd-logind` session setup starving on `md2` I/O, never a dead kernel or sshd). Every
+detached job has completed through every episode, so the run is structured to need no session:
+
+- **Suite**: `benchmarkoor` (pid 3266554) -> `run-joc-compacted.sh` -> **systemd(1)**, `TT=?`,
+  own session id, **no sshd ancestor**. Launched with `setsid nohup`; proven independent by
+  surviving the exit of its launching SSH connection.
+- **Supervisor**: tmux session `joc` (server pid 3323279, **PPID 1**, no sshd ancestor) running
+  `tools/nethermind-study/watch-joc.sh`. Logs progress to `/bench/logs/joc-monitor.log` every
+  5 min and, the moment the suite exits with >100 tests done, runs `buckets.py`, `buckets2.py`
+  and `classify.py` against `/bench/results/nm-state-actor`, writing
+  `/bench/logs/joc-compacted-classification.txt`.
+
+The two layers are independent: killing tmux does not touch the suite, and losing the suite still
+leaves every result on disk. Attach with `ssh ubuntu@157.180.2.180 -t tmux attach -t joc`.
+zellij is not installed on this host; tmux is.
+
+Note the supervisor guards against a false "finished": a dead `benchmarkoor` with <=100 tests
+completed is reported as a startup failure rather than classified.
