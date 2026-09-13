@@ -1205,3 +1205,68 @@ On Besu that claim survives its strongest available test. A different storage en
 different compression algorithm and a 4× larger block reproduce the compression ratio to three
 significant figures and leave a residual of the same sign and order. The headline number moves
 (5.4% vs 9.1%), so the *magnitude* is engine-dependent; the *existence and cause* are not.
+
+---
+
+## Round 21 — divergence from plain jochemnet, bucketed
+
+Reference: **jochemnet as shipped** (untreated). Measured against it: the same database after
+flush+compaction, and the generated companion. Buckets follow the geth article's vocabulary,
+since quoting one median over a bimodal population describes neither half.
+
+| bucket | what it is | tests |
+|---|---|---|
+| `absent` | NON_EXISTING_ACCOUNT — absence lookups | 110 |
+| `leaf-only` | BALANCE, or an EXISTING_EOA target — reads the account leaf, never code | 198 |
+| `code-reading` | EXTCODE*/CALL-family into a contract — additionally reads the code blob | 792 |
+
+**Per-test, |Δ| > 10% from plain jochemnet:**
+
+| bucket | tests | treated | state-actor |
+|---|---|---|---|
+| absent | 110 | **27** | 110 |
+| leaf-only | 198 | 155 | 157 |
+| code-reading | 792 | 400 | 404 |
+| **total** | **1100** | **582** | **671** |
+
+**Per-bucket medians and bytes:**
+
+| bucket | n | treated/joc | sa/joc | **sa/treated** | bytes tr/joc | bytes sa/joc |
+|---|---|---|---|---|---|---|
+| absent | 110 | **1.060** | 0.124 | **0.117** | 0.53 | 26.54 |
+| leaf-only | 198 | 0.190 | 0.182 | **0.952** | 7.08 | 8.55 |
+| code-reading | 792 | 0.702 | 0.692 | **0.958** | 6.95 | 9.18 |
+
+### Three things this makes visible that the single median hid
+
+**1. Treated jochemnet and state-actor are the same database, to within 5%.** `sa/treated` is
+0.952 and 0.958 in the two buckets that actually read state. The plain arm is the outlier, not
+the generated store. Every category in those buckets diverges from plain jochemnet, and almost
+none diverge from *treated* jochemnet.
+
+**2. The artifact's size depends on what the test reads.** Treatment costs `leaf-only`
+**5.3×** (0.190) but `code-reading` only **1.4×** (0.702). A leaf read is one small record that
+the hot set can hold entirely; a code read additionally pulls a code blob that was never hot.
+The artifact accelerates exactly the part of the workload that fits in it.
+
+**3. `absent` is untouched by treatment — 1.060 — and is where the two databases really
+differ** (0.117, and **26.5× the bytes**). A lookup whose cost is insensitive to LSM shape is
+one that never reads a block. Round 20's hypothesis stands: these addresses are absent from the
+mainnet snapshot and evidently *not* absent from a store filled with 430.7 M synthetic accounts.
+Note the treated arm reads **half** the bytes of the plain arm here (0.53) — fewer SSTs after
+compaction means fewer bloom probes.
+
+### Gas dependence — monotonic in every bucket
+
+| bucket | 100 M | 300 M |
+|---|---|---|
+| absent, treated/joc | 1.037 | 1.116 |
+| absent, sa/joc | 0.152 | 0.114 |
+| leaf-only, treated/joc | 0.236 | 0.146 |
+| code-reading, treated/joc | 0.702 | 0.600 |
+
+The gap widens with the gas budget in every bucket. That is the signature of a **fixed-size hot
+working set**: a bigger budget means more lookups per block, so a larger fraction fall outside
+whatever the plain arm was serving from memory. It also explains why only 582 of 1,100 tests
+cross the 10% line while every category median sits near 0.35 — the low-gas end of each sweep
+is much closer to parity.
