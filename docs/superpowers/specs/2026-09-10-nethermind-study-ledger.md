@@ -536,3 +536,96 @@ offline, on the account column of each flat DB:
    physical bytes per lookup.
 
 (4) converts "~20 blocks per lookup" from inference to measurement, and (1)–(3) say why.
+
+---
+
+## Round 10 — the database is exonerated: configs identical, per-lookup cost equal or better
+
+Two questions, answered in order: are the RocksDB configurations the same, and do the two
+stores have the same properties?
+
+### 1. RocksDB configuration — the same
+
+Compared each store's own OPTIONS file, database by database and column family by column
+family. For the `Account` CF, every read-path-critical setting is **identical**:
+
+| | SA | JOC |
+|---|---|---|
+| filter_policy | `ribbonfilter:10:3; bloom_before_level=3` | same |
+| whole_key_filtering | true | same |
+| block_size / metadata_block_size | 4096 | same |
+| index_type / data_block_index_type | kBinarySearch / kDataBlockBinaryAndHash | same |
+| cache_index_and_filter_blocks | false | same |
+| format_version | 5 | same |
+| compression | kNoCompression | same |
+| target_file_size_base | 32 MB (x3/level) | same |
+
+DBOptions likewise: `max_open_files=-1`, no direct I/O, `advise_random_on_open=true`,
+`compaction_readahead_size=2 MB`, `table_cache_numshardbits=6` — all identical.
+
+Only three keys differ, none of which affect per-lookup read cost:
+`level0_file_num_compaction_trigger` (SA `2147483647` — a bulk-load setting),
+`write_buffer_size` (256 MB vs 1–64 MB), `max_bytes_for_level_base` (128 vs 67 MB).
+All three are **write-side**.
+
+**"Missing bloom filters" and "different block size" are dead.**
+
+### 2. LSM shape — different, but in state-actor's favour
+
+`Account`: SA has **92 files, 23.17 GB, all in L3**; JOC has **364 files, 16.25 GB across
+L0–L4**. Fewer levels means fewer probes per point lookup, so if anything this favours SA.
+The `INT_MAX` L0 trigger did **not** leave data piled in L0 — the generator compacts internally.
+
+Byte-per-entry, a useful cross-check: **SA 57.8 B vs JOC 49.2 B**, against the geth study's
+58.3 vs 49.6. Third client, same record-shape result.
+
+### 3. Per-lookup cost — measured, not inferred
+
+`tools/nethermind-study/probe-flat` opens each store's flat DB directly (no Nethermind, no
+benchmarkoor), samples keys by **uniformly random seeks** across the keyspace, drops the page
+cache, and performs cold point lookups in a fresh process, measuring physical bytes via
+`/proc/self/io`.
+
+20,000 lookups, 100% hits, per column family:
+
+| CF | SA blocks/lookup | JOC blocks/lookup | SA us/lookup | JOC us/lookup |
+|---|---|---|---|---|
+| Account | **1.99** | 2.51 | **188.4** | 219.2 |
+| StateNodes | **3.45** | 10.69 | **344.9** | 391.4 |
+| Storage | 2.52 | 2.21 | 200.4 | 197.9 |
+
+**state-actor is as cheap or cheaper in every column family.** ~2 blocks per account lookup is
+textbook for a leveled LSM with whole-key filtering.
+
+(First run of this probe was discarded: `bufio.Read` short-reads desynchronised the key stream,
+producing identical hit/miss counts on two different databases — an impossible result, and the
+tell that the measurement was wrong. Fixed with `io.ReadFull`.)
+
+### Verdict
+
+The 9–15x read amplification seen in the benchmark **cannot come from the store**. Configuration
+is identical, and per-lookup cost is equal or better on state-actor in all three column families
+that matter. My round-8 pre-run-residency story and round-9 account-column story are both
+**withdrawn** as explanations of the read volume.
+
+What remains is arithmetic: the benchmark reads ~78 KB per account access on state-actor while a
+cold Account lookup costs ~8 KB. So the client is performing **~10 lookups per account access**
+on that arm, where jochemnet's ~4.6 KB per access is *below* one cold lookup (i.e. partly
+cache-served).
+
+### The sharp hypothesis, and how to kill it
+
+A trie walk is ~8 nodes; at SA's measured 3.45 blocks/node that is ~113 KB — the right order for
+the observed ~78 KB. The same walk on jochemnet would cost ~350 KB, which it plainly does not
+pay. So: **state-actor's flat account lookups may be missing and falling back to the trie**,
+while jochemnet serves from flat. Both arms log `State backend: flat`, and jochemnet *cannot*
+fall back (its trie is pruned) — which is why only one arm shows it.
+
+If true this is a **state-actor key-encoding defect in the flat Account CF**, not a property of
+generated state, and it would explain the whole pattern: storage tests agree (storage path
+fine), non-existing accounts agree (absence proven without a flat hit), existing-account reads
+diverge.
+
+Decisive test, cheap: take a known-existing address in the generated store (the spec's
+sequential EOAs from `0x...1000`), compute the key exactly as Nethermind does, and check for its
+presence in the flat `Account` CF. Present -> hypothesis dead. Absent -> root cause found.
