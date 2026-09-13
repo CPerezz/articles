@@ -454,3 +454,85 @@ its RocksDBs after the pre-run and before promote (the Nethermind analogue of
 Prediction, recorded before running: jochemnet's 400–530 MGas/s collapses toward state-actor's
 ~18, its read volume becomes gas-proportional instead of flat, and the honest ratio lands near
 1.0–1.2 rather than 0.09.
+
+---
+
+## Round 9 — full classification of all 1,461 tests; the compaction hypothesis is wrong
+
+Challenged that "16x is too much to be a compaction-related thing". Correct — and the full
+classification kills that hypothesis outright.
+
+Earlier passes keyed categories on `(opcode, account_mode, gas)` and **silently dropped every
+test family lacking those tokens** (sload/sstore/storage-pattern, ether transfers). This pass
+matches on the **exact test identity** `file::func[params]`, arm to arm.
+
+`jochemnet usable 1463 | state-actor usable 1461 | exact-id matches 1461 | gas mismatches 0`
+
+### Bucket 1 vs Bucket 2
+
+| bucket | n | share | ratio min / median / max |
+|---|---|---|---|
+| **AGREE** (within ±10%) | **187** | 12.8% | 0.903 / 1.003 / 1.098 |
+| **DIVERGENT** | **1,274** | 87.2% | 0.032 / 0.403 / 1.870 |
+
+Of the divergent: 1,162 state-actor slower, 112 state-actor faster.
+
+### Divergent set, classified — with physical evidence
+
+| category | n | agree | thr sa/joc | **read sa/joc** | cpu sa/joc | jocMB | saMB |
+|---|---|---|---|---|---|---|---|
+| ACCOUNT cold non-existing | 110 | 50 | 1.051 | 2.94 | 1.21 | 77.8 | 218.3 |
+| **STORAGE slot access** | 88 | 57 | **1.006** | **1.04** | 1.13 | 632.9 | 626.0 |
+| ACCOUNT warm query | 77 | 27 | 0.876 | **145.73** | 1.24 | 1.5 | 228.8 |
+| CONTROL overhead_baseline | 440 | 46 | 0.733 | **49.54** | 2.21 | 1.9 | 96.1 |
+| ETHER transfer receivers | 196 | 7 | 0.385 | 1.88 | 1.23 | 4015.1 | 7793.1 |
+| ACCOUNT cold existing contract | 440 | 0 | **0.089** | 8.81 | 2.10 | 231.0 | 4618.7 |
+| ACCOUNT cold existing EOA | 110 | 0 | **0.059** | 14.83 | 3.22 | 231.1 | 3906.5 |
+
+state-actor-faster outliers (>1.10, n=112): CONTROL 42, non-existing 39, storage 21, warm 6,
+ether 4 — i.e. they sit entirely in the categories that already agree.
+
+### What this rules out
+
+**Storage-slot access is identical**: throughput 1.006, **read ratio 1.04**, 632.9 vs 626.0 MB.
+The two stores serve storage reads indistinguishably. Whatever is wrong is *not* a
+whole-database property — not overall size, not LSM shape in general, not compaction state in
+general, and not the storage column.
+
+**Compaction cannot explain it.** A globally uncompacted store would penalise storage lookups
+too. Storage is at parity while account lookups are 8.8–14.8x on bytes. The defect is confined
+to the **account column**.
+
+**Nor is it "generated vs mainnet state"**, the study's nominal question: non-existing account
+lookups are at parity (1.051) and storage is at parity, both against the same generated store.
+
+### The actual signature
+
+The discriminator is **bytes per account point-lookup**, and it is present even where no
+account work is expected:
+
+- CONTROL does no account-state work, yet state-actor reads **96.1 MB vs 1.9 MB** (49.5x).
+- Warm account queries read **228.8 MB vs 1.5 MB** (145.7x) while costing only 12% more time.
+- jochemnet reads a near-constant **~231 MB** across every cold-existing-account category
+  regardless of opcode or account type, i.e. roughly one block per lookup.
+
+Order-of-magnitude: state-actor appears to pay **~20 block reads per account point-lookup**
+where jochemnet pays ~1, consistently across control, warm and cold categories. That is the
+signature of point lookups probing many overlapping SSTs and/or ineffective bloom filtering on
+the account column — a property of how the store was *constructed*, not of what it contains.
+
+CPU ratios corroborate the split: ~1.1–1.3x wherever bytes are at parity, 2.1–3.2x exactly in
+the categories that read 9–15x more bytes.
+
+### Next — isolate, do not re-run
+
+The expensive suites have nothing more to give. The decisive measurements are cheap and
+offline, on the account column of each flat DB:
+
+1. SST count and level distribution (an L0 pile with overlapping ranges forces one probe per file);
+2. bloom-filter presence/config and `whole_key_filtering` on the account column;
+3. block size and index/filter block sizes;
+4. a direct per-lookup counter: N random existing-account reads against each store, measuring
+   physical bytes per lookup.
+
+(4) converts "~20 blocks per lookup" from inference to measurement, and (1)–(3) say why.
