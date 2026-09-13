@@ -38,8 +38,8 @@ public class SstGeom {
     }
 
     final List<ColumnFamilyHandle> handles = new ArrayList<>();
-    System.out.printf("%-8s %14s %12s %14s %10s %10s %8s%n",
-        "cf", "entries", "ssts", "data_bytes", "rec_B", "blk_B", "phys/log");
+    System.out.printf("%-8s %14s %12s %14s %10s %10s %8s %14s  %s%n",
+        "cf", "entries", "ssts", "data_bytes", "rec_B", "blk_B", "phys/log", "filter_B", "policy");
 
     // read-only: never mutate a store we are about to measure
     try (RocksDB db = RocksDB.openReadOnly(dbOptions, path, cfDescs, handles)) {
@@ -48,22 +48,30 @@ public class SstGeom {
         final Map<String, TableProperties> props = db.getPropertiesOfAllTables(handles.get(i));
         if (props.isEmpty()) continue;
 
-        long entries = 0, dataSize = 0, blocks = 0, rawKey = 0, rawValue = 0;
+        long entries = 0, dataSize = 0, blocks = 0, rawKey = 0, rawValue = 0, filter = 0;
+        String policy = "";
         for (TableProperties p : props.values()) {
           entries  += p.getNumEntries();
           dataSize += p.getDataSize();
           blocks   += p.getNumDataBlocks();
           rawKey   += p.getRawKeySize();
           rawValue += p.getRawValueSize();
+          // A negative lookup that cannot consult a bloom filter must read index and data
+          // blocks from every file whose key range covers the probe. If one store has filters
+          // and the other does not, absence costs wildly different amounts on identical data.
+          filter   += p.getFilterSize();
+          if (policy.isEmpty() && p.getFilterPolicyName() != null) policy = p.getFilterPolicyName();
         }
         if (entries == 0 || blocks == 0) continue;
 
         final long logical = rawKey + rawValue;
-        System.out.printf("%-8s %14d %12d %14d %10.1f %10.1f %8.3f%n",
+        System.out.printf("%-8s %14d %12d %14d %10.1f %10.1f %8.3f %14d  %s%n",
             cf, entries, props.size(), dataSize,
-            (double) logical / entries,          // mean raw record bytes
-            (double) dataSize / blocks,          // compressed bytes per data block
-            (double) dataSize / logical);        // physical / logical
+            (double) logical / entries,
+            (double) dataSize / blocks,
+            (double) dataSize / logical,
+            filter,
+            policy.isEmpty() ? "(none)" : policy);
       }
     } finally {
       for (ColumnFamilyHandle h : handles) h.close();

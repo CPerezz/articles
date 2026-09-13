@@ -1399,3 +1399,72 @@ rather than the weaker "same gas".
 129 tests per arm (3 opcodes × 6 account modes × 3 gas points, 21 cells, both read families plus
 the absent class), chosen because the effects under test are 1.4–5.3× and do not need the full
 sweep. Five stages, ~15 h, sequential because the arms cannot be co-resident on 3.5 TB of NVMe.
+
+---
+
+## Round 24 — gap B answered: my hypothesis was wrong, and the real cause is better
+
+Rounds 20 and 21 left the `absent` class (110 tests, ratio 0.117, 26.5× bytes) resting on a
+hypothesis: that the NON_EXISTING probe addresses are occupied in the generated store, so the
+class was not comparing like with like.
+
+**Refuted.** Besu's own counters, same workload on both stores:
+
+| store | NON_EXISTING miss ÷ total reads |
+|---|---|
+| jochemnet treated | 0.955 |
+| state-actor | **0.999** |
+
+The addresses are absent from **both** — the generated store's more cleanly than the snapshot's.
+The hypothesis is dead. Yet state-actor moves **69× more bytes** to establish the same absences.
+
+### The real cause: the generated store has no bloom filters
+
+`SstGeom` extended to report `TableProperties.getFilterSize()` and the filter policy:
+
+| cf | jochemnet | state-actor |
+|---|---|---|
+| 01 BLOCKCHAIN | 557,047,846 B `bloomfilter` | **0** `(none)` |
+| 06 ACCOUNT_INFO_STATE | 460,372,287 B `bloomfilter` | **0** `(none)` |
+| 07 CODE_STORAGE | 2,809,501 B `bloomfilter` | **0** `(none)` |
+| 08 ACCOUNT_STORAGE | 2,344,277,759 B `bloomfilter` | **0** `(none)` |
+| 09 TRIE_BRANCH | 3,945,343,735 B `bloomfilter` | **0** `(none)` |
+
+jochemnet carries **~7.3 GB of bloom filters**. state-actor has **none at all** — the generator
+writes its SSTs without a filter policy.
+
+Without a filter, a lookup that will find nothing cannot be rejected: it must read index and
+data blocks from any file whose key range covers the probe. With one, it is rejected outright.
+
+### Why this splits the study cleanly rather than spoiling it
+
+Bytes read, state-actor ÷ treated jochemnet, by bucket:
+
+| bucket | bytes ratio |
+|---|---|
+| absent | **50.135** |
+| leaf-only | **1.207** |
+| code-reading | **1.320** |
+
+A missing bloom filter costs **50×** on absence proofs and **1.2–1.3×** on reads that find their
+key — because a lookup that succeeds was going to read that block anyway. So:
+
+- **The `absent` anomaly is a generator defect, not a property of generated state.** It is
+  actionable: state-actor should set a filter policy, or every absence-class measurement taken
+  on its output is ~50× pessimistic. This is a tooling bug worth reporting upstream.
+- **The existing-account residual survives untouched.** leaf-only at **1.207×** bytes sits within
+  3% of the **1.171×** predicted from block geometry alone (round 17), which leaves little room
+  for a bloom contribution and is a strong independent confirmation of the compressibility
+  chain. geth's published figure was 1.119× bytes for 9.1% time; Besu's is 1.207× for ~5.4%.
+
+`code-reading` is higher at 1.320×, and cf 07 says why: jochemnet's code records are large and
+compressible (7,227 B, phys/log **0.423**) while state-actor's are small and nearly
+incompressible (398 B, phys/log **0.863**) — unique bytecode per generated contract, exactly the
+mechanism the geth article named.
+
+### Correction to the record
+
+Round 20 wrote "the most likely reading is therefore that these addresses are absent from the
+mainnet snapshot and evidently *not* absent from the generated store." That was wrong, and it
+was labelled a hypothesis precisely so it could be killed. It has been. The replacement is
+better: a measured, one-line configuration defect with a 50× consequence.
