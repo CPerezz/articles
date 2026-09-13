@@ -766,3 +766,23 @@ Unchanged and now causally demonstrated: the generated store is not slow, and th
 benchmark-methodology artefact of comparing a freshly-pre-run, promoted, uncompacted snapshot
 against a generated store. Valid options: give both arms a pre-run, or compact both before
 measuring. Compacting both is the cheaper control and geth's compacted arm shows it lands at ~1.1x.
+
+### Provenance note - the jochemnet store is now compacted (my error, low impact)
+
+I ran `schelk promote` intending to restore the pre-compaction volume. In schelk, `promote` copies
+**scratch -> virgin**, i.e. it promotes the *current* state into the golden image. It did exactly
+that (289,689 blocks, 17.68 GB, 12.07 s), so the jochemnet golden image now holds the **compacted**
+Account CF: `196 files, 12.84 GB, levels map[6:196]`, behaviour 1.76 blk / 361 MB / 50k lookups.
+The `snapshot-24402727.tar.zst` tarball was deleted earlier to reclaim space, so restoring the
+pristine layout means re-downloading ~1.26 TB.
+
+Impact is low, and partly favourable:
+- Both baseline suites (jochemnet 1463/1463, state-actor 1461/1461) were measured **before** this
+  and are committed; no collected result is affected.
+- The store is now in precisely the state the corrected experiment needs: a **compacted** jochemnet,
+  which is the geth study's headline reference arm (`sa/compacted` ~ 1.1x).
+
+**Recommended next run:** re-run the jochemnet suite against the now-compacted store and compare to
+the existing symmetric state-actor results. Predicted from the probe: the 16x gap collapses to
+~1.1-1.2x. That would validate the placement finding end-to-end inside benchmarkoor rather than in
+a probe, and it costs one ~13 h arm since state-actor's side is already done.
