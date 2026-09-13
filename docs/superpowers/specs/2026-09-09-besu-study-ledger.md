@@ -1468,3 +1468,38 @@ Round 20 wrote "the most likely reading is therefore that these addresses are ab
 mainnet snapshot and evidently *not* absent from the generated store." That was wrong, and it
 was labelled a hypothesis precisely so it could be killed. It has been. The replacement is
 better: a measured, one-line configuration defect with a 50× consequence.
+
+---
+
+## Round 25 — a self-inflicted failure worth recording
+
+Stages 3–5 failed on the first attempt. Not a subtle failure, but one that produced *plausible
+looking* runs rather than an obvious error:
+
+```
+ERRO | Instance failed error=creating container: statfs
+      /schelk/snapshots/besu/jochemnet/24402727: no such file or directory
+```
+
+**Cause.** The orchestrator extracted the 1.1 TB snapshot into the mounted **scratch** volume and
+went straight to the suite. But benchmarkoor opens every run with `schelk restore`, which resets
+scratch from **virgin** — and virgin was the empty filesystem `init-new` had created minutes
+earlier. The entire extraction was discarded before the first test ran.
+
+Extraction must be followed by `promote`, so the extracted state *becomes* the baseline. Stage 2
+did promote (after copying the state-actor store) and worked; stage 3 did not and did not.
+
+**Aggravating factor, also mine.** The orchestrator wrote a per-stage marker but never *read*
+one. Stages 4 and 5 ran happily against an empty datadir — `before: sst=0 walB=0`,
+`no rocksdb at ...`, a promote that copied 64 KB in 52 ms — and recorded rc=1 each. Three
+stages of nothing, all reported as completed work.
+
+**Fixed:** `schelk promote` after extraction, and a `gate` function that refuses to start a
+stage unless the previous one recorded `rc=0`.
+
+**Cost:** ~85 minutes of extraction, plus the empty runs. No data lost — stages 1 and 2 were
+already complete and archived, and the tarball is immutable.
+
+**The transferable lesson** is the same one round 17 taught about the WAL, in a different guise:
+in a schelk-backed pipeline, *the scratch volume is not the baseline*. Anything written there is
+provisional until promoted, and every benchmarkoor run begins by discarding it.
