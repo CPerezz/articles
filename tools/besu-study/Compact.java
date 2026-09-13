@@ -16,10 +16,16 @@ import java.util.*;
 public class Compact {
   public static void main(String[] args) throws Exception {
     if (args.length < 1) {
-      System.err.println("usage: Compact <rocksdb-dir>");
+      System.err.println("usage: Compact <rocksdb-dir> [flush-only]");
       System.exit(2);
     }
     final String path = args[0];
+    // flush-only separates the two halves of the treatment. The jochemnet snapshot ships a
+    // ~1.3 GB WAL; opening the store already recovers and flushes it, so this mode produces a
+    // "WAL drained, levels untouched" store. Comparing it against plain and against
+    // flush+compact is what decides whether the artifact is WAL residency or level placement --
+    // the geth study's equivalent decomposition was 380 -> 272 (drain) -> 18.5 (compact).
+    final boolean flushOnly = args.length > 1 && args[1].equals("flush-only");
     RocksDB.loadLibrary();
 
     final DBOptions dbOptions = new DBOptions();
@@ -61,7 +67,7 @@ public class Compact {
         System.out.printf("  flush (all cfs)              %6.1fs%n",
             (System.currentTimeMillis() - tf) / 1000.0);
       }
-      for (int i = 0; i < handles.size(); i++) {
+      for (int i = 0; flushOnly ? false : i < handles.size(); i++) {
         // Besu names its column families with single binary bytes, so render hex.
         final String cf = HexFormat.of().formatHex(cfDescs.get(i).getName());
         final long t0 = System.currentTimeMillis();

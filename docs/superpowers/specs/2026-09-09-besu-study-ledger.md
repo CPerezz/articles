@@ -1330,3 +1330,72 @@ The treated one, on two independent grounds:
   while `sa/plain` is 0.182 and 0.692.
 
 The plain arm's speed is a property of **how the fixture was built**, not of the database.
+
+---
+
+## Round 23 — closing the four gaps: design, registered before results
+
+The study so far cannot support a root-cause section at the geth article's standard. That
+article found a physical object, explained it from source, and **decomposed its fix**:
+380 → 272 (drain) → 18.5 MGas/s (compact). This study's treatment did flush and compaction
+**together**, so drain and placement were never separated.
+
+Four gaps, and the experiments that close them. Registered now so the predictions are on record.
+
+### A — WAL drained, levels untouched
+
+Round 19 established that RocksDB's *open* path recovers and flushes the WAL, so the explicit
+flush returned in 0.0 s. That has a consequence nobody has tested: in the plain arm **every test
+boots Besu fresh**, so the WAL is already drained at the start of every measurement. WAL
+residency as such therefore cannot be the advantage — what it leaves behind can, namely the
+pre-run's writes materialised as young, small, top-of-tree SSTs.
+
+`Compact.java` gains a `flush-only` mode. Stages 3→4→5 share one extraction and differ *only* by
+treatment, giving plain → drained → drained+compacted.
+
+**Prediction: drained ≈ plain, and compaction supplies nearly all of the effect.** If instead
+drained ≈ compacted, the mechanism is memtable residency and round 22's placement account is
+wrong.
+
+### B — the absent class, without deriving a single address
+
+Round 21 left 110 tests (0.117 ratio, 26.5× bytes) resting on a hypothesis: that the
+NON_EXISTING probe addresses exist in the generated store. Deriving CREATE2 probe addresses from
+the fixtures is fiddly and error-prone.
+
+It is also unnecessary. Besu already counts
+`besu_blockchain_get_account_missing_flat_database_total` — flat-DB lookups that found nothing.
+Run the same NON_EXISTING workload on both stores:
+
+- jochemnet `missing ≈ total` and state-actor `missing ≈ 0` ⇒ the addresses **are** occupied in
+  the generated store, and the class is not comparing like with like;
+- both `missing ≈ total` ⇒ the hypothesis is wrong and the 26.5× needs another explanation.
+
+Either way it is an answer, from instrumentation already verified in round 10.
+
+*(The geth article listed this check — "eth_getCode probe over sampled CREATE2 addresses in both
+databases, converts the existence argument from inference to direct evidence" — as a next step
+it never performed.)*
+
+### C — noise floor
+
+One run per arm, no same-database control; geth's was 1.003. Stage 3 replays the pre-runs on a
+fresh extraction and re-runs the plain arm, so comparing it against the original untreated run
+on the shared 129 tests measures **whole-pipeline reproducibility** — extraction, pre-run replay,
+promote and suite — which is a stronger control than a bare repeat.
+
+### D — account reads
+
+P5 rests on gas identity: what was *requested*, not what was *read*. `scrape_besu.py` samples
+each container's counters at 2 s; `container-recreate` gives one container per test and resets
+the counters with it, so each container's final values are that test's totals, and containers
+zip positionally against the suite's execution order.
+
+This is what lets the Besu article state geth's cleanest sentence — "same reads, more bytes" —
+rather than the weaker "same gas".
+
+### Scope
+
+129 tests per arm (3 opcodes × 6 account modes × 3 gas points, 21 cells, both read families plus
+the absent class), chosen because the effects under test are 1.4–5.3× and do not need the full
+sweep. Five stages, ~15 h, sequential because the arms cannot be co-resident on 3.5 TB of NVMe.
