@@ -629,3 +629,64 @@ diverge.
 Decisive test, cheap: take a known-existing address in the generated store (the spec's
 sequential EOAs from `0x...1000`), compute the key exactly as Nethermind does, and check for its
 presence in the flat `Account` CF. Present -> hypothesis dead. Absent -> root cause found.
+
+---
+
+## Round 11 - ROOT CAUSE: working-set saturation, not store quality
+
+The key-encoding hypothesis of round 10 is **dead**: all six spec-guaranteed addresses resolve
+in the state-actor flat `Account` CF (`keccak256(addr)[0:20]`, 20-byte keys, identical key
+histograms in both stores), and they resolve in the jochemnet store too. No fallback to trie.
+
+### What was disproven along the way
+| hypothesis | killed by |
+|---|---|
+| flat key-encoding defect | all fixture addresses FOUND in both stores |
+| client read path amplifies | cold client `eth_getBalance` on SA = 1.99 blk = exactly its raw RocksDB cost |
+| startup I/O dominates | JOC boots **heavier** (6.53 GB) than SA (4.81 GB), yet runs 16x faster |
+| background compaction | writes negligible during runs (W/R = 0.02) |
+| flat `CurrentState` lag forces trie reads | both arms execute ~2 blocks past their own marker - symmetric |
+
+### The measurement that settles it
+Offline RocksDB point lookups on the exact key population the tests touch (the EEST fixtures'
+sequential accounts), cold caches, fresh process per point, 100% hits on both arms:
+
+| N | SA blk/lookup | SA total | JOC blk/lookup | JOC total |
+|---|---|---|---|---|
+| 500 | 2.00 | 4.1 MB | **1.88** | 3.9 MB |
+| 2,000 | 1.99 | 16.3 MB | 1.65 | 13.5 MB |
+| 8,000 | 1.99 | 65.2 MB | 1.06 | 34.8 MB |
+| 20,000 | 1.99 | 162.6 MB | 0.55 | 45.0 MB |
+| 50,000 | 1.97 | 404.4 MB | **0.23** | **47.2 MB** |
+
+state-actor is **flat at ~1.99 blocks/lookup**, volume linear in N. jochemnet's per-lookup cost
+**collapses** while its total read **saturates at ~47 MB**. At N=500 - before any amortisation -
+the arms are at parity: **1.88 vs 1.88 blocks, 164 vs 184 us**.
+
+### Root cause
+The jochemnet arm's fixture accounts are concentrated in a bounded ~47 MB stratum, written and
+promoted by its `pre_runs` + `promote_post_pre_runs: true` (a **jochemnet-only** config, flagged
+as one of the four deliberate differences in round 5). A few thousand lookups make that stratum
+fully resident; every later lookup is free. On the generated store the same accounts are ordinary
+residents of a 24.88 GB fully-compacted L3 (92 files, all at level 3, 430.7 M entries), so there is
+no bounded working set to saturate and the cost stays at two blocks indefinitely. Concentration
+ratio: fixture keys are ~5% of entries in the blocks JOC touches vs ~0.005% on SA - about 1000x.
+
+**The benchmark measures RAM on one arm and disk on the other.** The generated store is not slow:
+its honest cold cost equals jochemnet's honest cold cost.
+
+### Why this reproduces every category
+- `NON_EXISTING_ACCOUNT` agrees (1.051) - misses short-circuit, never touch the stratum.
+- `STORAGE slot access` agrees (1.006) - the storage sweep far exceeds any bounded stratum, so
+  neither arm saturates.
+- Every `EXISTING_*` account category diverges - exactly the ones that hit the stratum.
+- jochemnet's benchmark read volume is flat in gas (227.9 MB @160M, 229.0 MB @300M) = saturated;
+  state-actor scales linearly (3,112 -> 5,775 MB) = never saturates.
+
+### Consequence for the study
+Comparing a pre-run/promoted snapshot against a generated store is **invalid for account-read-heavy
+tests**. Either give both arms a pre-run, or neither. The 674/532/409 GiB state-size progression,
+the EIP-list finding, and the backend-asymmetry finding are unaffected.
+
+Tooling: `tools/nethermind-study/probe-flat-main.go` (modes `probe`/`seq`/`addr`/`keys`/`meta`/`locate`),
+`clientio.sh`, `clientio2.sh`, `pertest.py`, `rw.py`, `attrib.sh`.

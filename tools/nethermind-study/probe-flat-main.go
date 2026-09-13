@@ -18,7 +18,9 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"io"
@@ -29,6 +31,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/linxGnu/grocksdb"
 
 	"github.com/ethereum/state-actor/internal/neth/flat"
@@ -36,6 +39,12 @@ import (
 
 // readBytes reports bytes this process actually pulled from block devices. Unlike rusage or
 // wall time it is immune to page-cache hits, which is the whole point of the measurement.
+type LiveFile struct {
+	level   int
+	size    int64
+	entries uint64
+}
+
 func readBytes() uint64 {
 	b, err := os.ReadFile("/proc/self/io")
 	if err != nil {
@@ -71,6 +80,7 @@ func main() {
 	n := flag.Int("n", 5000, "number of keys")
 	keysFile := flag.String("keys", "/tmp/probe-keys.bin", "key file to write/read")
 	seed := flag.Uint64("seed", 42, "sampling seed")
+	addrs := flag.String("addrs", "", "comma-separated 20-byte hex addresses for -mode addr")
 	flag.Parse()
 	if *dbPath == "" {
 		log.Fatal("-db required")
@@ -181,6 +191,164 @@ func main() {
 		fmt.Printf("  disk read      : %.1f MB\n", float64(got)/1e6)
 		fmt.Printf("  BYTES/LOOKUP   : %.0f\n", float64(got)/float64(len(keys)))
 		fmt.Printf("  BLOCKS/LOOKUP  : %.2f  (4 KiB blocks)\n", float64(got)/float64(len(keys))/4096)
+
+	case "seq":
+		// Probe the exact key population the benchmark touches: the EEST fixtures'
+		// sequential accounts. Random keys measure the store's average; these measure the
+		// stratum the two arms actually read, which is where they can legitimately differ.
+		keys := make([][]byte, 0, *n)
+		for i := 0; i < *n; i++ {
+			addr := make([]byte, 20)
+			binary.BigEndian.PutUint64(addr[12:], uint64(0x1000+i))
+			keys = append(keys, crypto.Keccak256(addr)[:20])
+		}
+
+		before := readBytes()
+		start := time.Now()
+		hits, miss := 0, 0
+		for _, k := range keys {
+			v, err := db.GetCF(ro, cf, k)
+			if err != nil {
+				log.Fatalf("get: %v", err)
+			}
+			if v.Exists() {
+				hits++
+			} else {
+				miss++
+			}
+			v.Free()
+		}
+		el := time.Since(start)
+		got := readBytes() - before
+
+		fmt.Printf("db=%s cf=%s (sequential fixture accounts)\n", *dbPath, *cfName)
+		fmt.Printf("  lookups        : %d (hits %d, miss %d)\n", len(keys), hits, miss)
+		fmt.Printf("  wall           : %.3f s  (%.1f us/lookup)\n", el.Seconds(), float64(el.Microseconds())/float64(len(keys)))
+		fmt.Printf("  disk read      : %.1f MB\n", float64(got)/1e6)
+		fmt.Printf("  BYTES/LOOKUP   : %.0f\n", float64(got)/float64(len(keys)))
+		fmt.Printf("  BLOCKS/LOOKUP  : %.2f (4 KiB blocks)\n", float64(got)/float64(len(keys))/4096)
+
+	case "locate":
+		// Where do the fixture keys physically live? Sub-one-block-per-lookup is only
+		// possible if they share SST blocks, so count the files that actually cover them
+		// and how big those files are. That separates "dense recent stratum" from
+		// "ordinary residents of a fully compacted LSM".
+		keys := make([][]byte, 0, *n)
+		for i := 0; i < *n; i++ {
+			addr := make([]byte, 20)
+			binary.BigEndian.PutUint64(addr[12:], uint64(0x1000+i))
+			keys = append(keys, crypto.Keccak256(addr)[:20])
+		}
+
+		all := db.GetLiveFilesMetaData()
+		files := all[:0:0]
+		for _, f := range all {
+			if f.ColumnFamilyName == *cfName {
+				files = append(files, f)
+			}
+		}
+
+		covering := map[string]LiveFile{}
+		for _, k := range keys {
+			for _, f := range files {
+				if bytes.Compare(k, f.SmallestKey) >= 0 && bytes.Compare(k, f.LargestKey) <= 0 {
+					covering[f.Name] = LiveFile{f.Level, f.Size, f.Entries}
+				}
+			}
+		}
+
+		byLevel := map[int]int{}
+		var coverSize int64
+		var coverEntries uint64
+		for _, f := range covering {
+			byLevel[f.level]++
+			coverSize += f.size
+			coverEntries += f.entries
+		}
+		var totalSize int64
+		totalLevel := map[int]int{}
+		for _, f := range files {
+			totalSize += f.Size
+			totalLevel[f.Level]++
+		}
+
+		fmt.Printf("db=%s cf=%s\n", *dbPath, *cfName)
+		fmt.Printf("  CF total       : %d files, %.2f GB, levels %v\n", len(files), float64(totalSize)/1e9, totalLevel)
+		fmt.Printf("  keys probed    : %d\n", len(keys))
+		fmt.Printf("  covering files : %d  (%.2f GB, %d entries)\n", len(covering), float64(coverSize)/1e9, coverEntries)
+		fmt.Printf("  covering levels: %v\n", byLevel)
+		fmt.Printf("  entries/key in covering files : %.0f\n", float64(coverEntries)/float64(len(keys)))
+
+	case "keys":
+		// Dump raw key shapes so the two stores' encodings can be compared directly.
+		it := db.NewIteratorCF(ro, cf)
+		defer it.Close()
+		it.SeekToFirst()
+		lens := map[int]int{}
+		shown := 0
+		for ; it.Valid() && shown < *n; it.Next() {
+			k := it.Key()
+			b := make([]byte, k.Size())
+			copy(b, k.Data())
+			k.Free()
+			lens[len(b)]++
+			if shown < 5 {
+				fmt.Printf("  key[%d] len=%d %x\n", shown, len(b), b)
+			}
+			shown++
+		}
+		fmt.Printf("cf=%s scanned=%d key-length histogram: %v\n", *cfName, shown, lens)
+
+	case "addr":
+		// The decisive test: does the flat Account CF contain the key Nethermind would compute
+		// for an address known to exist in this store? Key = keccak256(address)[0:20].
+		for _, a := range strings.Split(*addrs, ",") {
+			a = strings.TrimPrefix(strings.TrimSpace(a), "0x")
+			raw, err := hex.DecodeString(a)
+			if err != nil || len(raw) != 20 {
+				log.Fatalf("bad address %q", a)
+			}
+			h := crypto.Keccak256(raw)
+			key := h[:20]
+			v, err := db.GetCF(ro, cf, key)
+			if err != nil {
+				log.Fatalf("get: %v", err)
+			}
+			fmt.Printf("  addr 0x%s  keccak[0:20]=%x  -> %s (value %d bytes)\n",
+				a, key, map[bool]string{true: "FOUND", false: "MISSING"}[v.Exists()], v.Size())
+			v.Free()
+		}
+
+	case "meta":
+		// Dump the Metadata CF: Layout / SlotEncoding / CurrentState markers. CurrentState is
+		// 8-byte block number || 32-byte state root, and tells us which state the flat layout
+		// is authoritative for.
+		it := db.NewIteratorCF(ro, cf)
+		defer it.Close()
+		it.SeekToFirst()
+		for ; it.Valid(); it.Next() {
+			k, v := it.Key(), it.Value()
+			kb := make([]byte, k.Size())
+			copy(kb, k.Data())
+			vb := make([]byte, v.Size())
+			copy(vb, v.Data())
+			k.Free()
+			v.Free()
+			name := "?"
+			switch {
+			case len(kb) == 32 && fmt.Sprintf("%x", kb) == fmt.Sprintf("%x", crypto.Keccak256([]byte("CurrentState"))):
+				name = "CurrentState"
+			case len(kb) == 32 && fmt.Sprintf("%x", kb) == fmt.Sprintf("%x", crypto.Keccak256([]byte("Layout"))):
+				name = "Layout"
+			case len(kb) == 32 && fmt.Sprintf("%x", kb) == fmt.Sprintf("%x", crypto.Keccak256([]byte("SlotEncoding"))):
+				name = "SlotEncoding"
+			}
+			extra := ""
+			if name == "CurrentState" && len(vb) == 40 {
+				extra = fmt.Sprintf("   block=%d root=0x%x", binary.BigEndian.Uint64(vb[:8]), vb[8:])
+			}
+			fmt.Printf("  %-14s key=%x value=%x%s\n", name, kb, vb, extra)
+		}
 
 	default:
 		log.Fatalf("unknown mode %q", *mode)
