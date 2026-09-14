@@ -929,3 +929,60 @@ round-13 arm: results_dir, label, instance id, filter.
 
 CONTROL is the discriminating cell: it does no account-state work, so only the trie-placement
 hypothesis predicts it moving.
+
+---
+
+## Round 15 - Phase 2 attempt 1 was an accidental replication; the schelk promote trap
+
+Phase 2 ran 266/266, 0 failures - and returned numbers essentially identical to round 13:
+
+| category | round 13 | Phase 2 attempt 1 | delta |
+|---|---|---|---|
+| existing EOA | 0.866 | 0.865 | 0.1% |
+| existing contract | 0.858 | 0.853 | 0.6% |
+| NON_EXISTING | 19.319 | 19.175 | 0.7% |
+| CONTROL | 0.701 | 0.709 | 1.1% |
+| STORAGE | 1.026 | 1.047 | 2.0% |
+| warm query | 0.914 | 0.874 | 4.4% |
+| ETHER transfers | 0.747 | 0.735 | 1.6% |
+
+Both pre-registered predictions "failed". They did not: **the intervention was never applied during
+the run.** `rollback_strategy: container-recreate` restores the volume from schelk's **virgin**
+image before every test. The Phase 1 rebuild was written to the mounted **scratch** volume and no
+`schelk promote` followed, so test 1 discarded it. Proof: immediately after the run,
+`flat/StateNodes` was back to `[0:3 3:1 4:4 5:60 6:487]` and `flat/Account` back to `[6:196]` with
+`filter_policy=nullptr` / `kSnappyCompression` - byte-for-byte the round-13 state.
+
+I had already learned `promote` means scratch -> virgin (round 13's provenance note, where it
+overwrote the pristine image) and still failed to apply it as a required step. Recorded as a
+process rule: **any store modification intended to be measured must be followed by
+`schelk promote`, and verified by re-reading the CF shape after the first test completes.**
+
+Silver lining: attempt 1 is a genuine independent replication of round 13 on a different test
+subset. Agreement is 0.1-2% on six of seven categories, so these ratios are stable run-to-run and
+neither the 16x collapse nor the 19x non-existing inversion is noise. Kept as
+`/bench/results/nm-joc-replication`.
+
+### Also corrected: the filter did not explain the non-existing inversion
+The probe on the rebuilt store showed misses costing the same as hits (~1.99 blocks) on **both**
+arms - including state-actor, whose ribbon filter I never touched. Absent-account lookups get no
+filter-rejection benefit in this configuration, so round 13's "filter loss inverted the control"
+claim was wrong. The inversion has to be placement or a structural difference; attempt 2 separates
+them.
+
+### Structural asymmetry now quantified
+| arm | `state/` | `flat/` | `code/` | StateNodes CF | random cold StateNodes lookup |
+|---|---|---|---|---|---|
+| state-actor | **160 KB** | 478 GB | 45 GB | 603 files, 51.17 GB, `[6:603]` | **3.44 blk, 208 us** |
+| jochemnet | **341 GB** | 314 GB | 7.6 GB | 555 files, 39.10 GB | **10.26 blk, 434 us** |
+
+state-actor's trie is relocated into `flat/` (hence `state/` = 160 KB) and its trie-node lookups
+are **3x cheaper** than jochemnet's. That is the candidate explanation for both the 19x
+non-existing result and the CONTROL residual, and it is a property of the store, not an artifact.
+
+### Phase 2 attempt 2 launched 2026-09-14 08:46
+Rebuild re-applied **and promoted**; verified live after 2 completed tests: Account `[6:37]`
+17.38 GB, StateNodes `[6:158]` 38.98 GB, `filter_policy={id=ribbonfilter:10:3;bloom_before_level=3;}`,
+`kNoCompression` - now byte-identical to state-actor's settings. Same 266-test subset, same
+predictions as round 14: CONTROL is the discriminating cell (only the trie-placement hypothesis
+predicts it moving off ~0.70).
