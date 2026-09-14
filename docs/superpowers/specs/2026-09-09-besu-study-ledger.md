@@ -1503,3 +1503,57 @@ already complete and archived, and the tarball is immutable.
 **The transferable lesson** is the same one round 17 taught about the WAL, in a different guise:
 in a schelk-backed pipeline, *the scratch volume is not the baseline*. Anything written there is
 provisional until promoted, and every benchmarkoor run begins by discarding it.
+
+---
+
+## Round 26 — a second silent failure, and an accidental control
+
+Stage 4 was supposed to be the WAL-drained, levels-untouched arm. Its own census says otherwise:
+
+```
+before  sst=6699 sstB=382741424540 walB=1224815535
+after   sst=5454 sstB=360320142993 walB=23        <- a full compaction
+total 5426.3s                                      <- 90 minutes of it
+```
+
+**Cause.** `rockscompact` hardcoded its java arguments:
+
+```bash
+java -cp .:rocksdbjni-10.6.2.jar Compact /db/database    # $2 silently discarded
+```
+
+`Compact.java` had gained a `flush-only` mode in round 23, but the wrapper never forwarded it.
+Stage 4 therefore ran the full treatment, and stage 5 — operating on an already-compacted
+store — finished its compaction in **0.4 s** and promoted 3.69 MB.
+
+So gap A is still open, for the third time. The failures share a shape worth naming: **each one
+produced a run that looked successful.** Round 25's empty datadir, this round's wrong treatment.
+Neither raised an error; both had to be caught by reading the numbers.
+
+**Fixed:** the wrapper now `shift`s and forwards `"$@"`. And stage 6 asserts its own
+precondition rather than trusting it — flush-only must drain the WAL *and* leave the SST count
+within 200 of where it started, or the stage refuses to run the suite at all. A full compaction
+moves it by ~1,245, so the guard cannot miss a repeat of this bug.
+
+### The accident is useful
+
+Stages 4 and 5 are now two independent 129-test runs of the **same compacted state**, on the
+same lineage, same device, same flags. That is a direct repeat — a better noise floor than the
+cross-lineage control planned for gap C, because nothing differs between them at all.
+
+### What stands
+
+| arm | state | status |
+|---|---|---|
+| s1-treated | compacted (original lineage) | valid |
+| s2-sa | state-actor | valid |
+| s3-plain | plain, post-pre-run | valid |
+| s4 "drained" | **compacted** (mislabelled) | valid as a compacted arm |
+| s5-compacted | compacted, repeat of s4 | noise floor |
+| s6-drained | flush-only — pending | gap A |
+
+Also recorded: stage 3's post-pre-run census printed `sst=0` because `schelk promote` unmounts —
+the round-17 trap again, cosmetic here. The real post-pre-run figures are stage 4's "before"
+line, and the WAL came in at **1,224,815,535 B** against the first lineage's 1,329,617,075 B.
+That ~8% spread across two independent pre-run replays is itself a datum: the shipped-WAL size
+is not a constant.

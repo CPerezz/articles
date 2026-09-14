@@ -1,11 +1,16 @@
 #!/usr/bin/env bash
 # Full offline compaction of a Besu RocksDB store — the `geth db compact` analogue.
-# Usage: rockscompact <datadir>            (the /database subdir is appended)
+# Usage: rockscompact <datadir> [flush-only]
 #
 # Precondition: Besu must have opened the store at least once, so that OPTIONS is written by
 # Besu's rocksdb (10.6.2) rather than state-actor's (10.10). See round 1 of the ledger.
+#
+# The mode argument is forwarded verbatim. An earlier version hardcoded the java arguments and
+# silently dropped it, which turned the flush-only stage into a 90-minute full compaction and
+# cost a whole experiment arm (round 26).
 set -euo pipefail
-DATADIR="${1:?usage: rockscompact <datadir>}"
+DATADIR="${1:?usage: rockscompact <datadir> [flush-only]}"
+shift
 DB="$DATADIR/database"
 [ -d "$DB" ] || { echo "no rocksdb at $DB" >&2; exit 2; }
 
@@ -14,4 +19,4 @@ exec docker run --rm \
   -v "$DATADIR":/db \
   -w /w \
   eclipse-temurin:21-jdk \
-  java -cp .:rocksdbjni-10.6.2.jar Compact /db/database
+  java -cp .:rocksdbjni-10.6.2.jar Compact /db/database "$@"
