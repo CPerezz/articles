@@ -1104,3 +1104,40 @@ arm was compared against the **test** step on the other (`steps` = `['setup','te
 regex of `[A-Za-z0-9.]+` truncating `EXISTING_CONTRACT_MINIMAL` to `EXISTING` and mis-reading
 `overhead_baseline`. Fixed version reproduces `buckets.py` exactly (124/266). Recorded because the
 wrong numbers were superficially plausible and pointed at the opposite conclusion.
+
+---
+
+## Round 18 - what benchmarking remains
+
+### Running: full corrected arm (launched 2026-09-14 14:10)
+1463 tests, no filter, `pre_run_steps=0`. Store preconditions verified before launch and rollback
+preservation verified after two completed tests: `flat/Account` `[6:37]` 17.38 GB with
+`ribbonfilter` + `kNoCompression`, `flat/StateNodes` `[6:158]` 38.98 GB.
+
+Why this run is worth 13 h when the 266-test subset already showed parity:
+- The confounded baseline is **1461 tests at 11 gas points**; the corrected result so far is
+  **266 tests at 2**. "Parity on a subset" is the one legitimate attack on the central claim.
+- 11 gas points give a **gas slope** (ms per 1M gas), which is the geth study's primary metric, so
+  the two studies become directly comparable instead of merely consistent.
+- Supervisor `watch-run.sh joc-full 1463` auto-runs `buckets`, `buckets2`, `outliers` and
+  `additive` on completion.
+
+### Deferred to after the run (offline, no suite, ~30 min) - deliberately NOT run concurrently
+Cross-arm I/O pollution already invalidated two earlier rounds, so no probing while a suite runs.
+1. **Identify the fixed ~150 MB per-test excess.** Boot each arm, issue one minimal payload, diff
+   `/proc/<pid>/io`. Leading candidate: per-container index/filter loading over state-actor's larger
+   `flat/` (478 GB vs 314 GB). Bounded and irrelevant to real state work, but it is the last
+   unexplained term.
+2. **Characterise `EXISTING_CONTRACT_DIFF_MAX`** (16/16 tests at 0.615-0.725, reading ~1.55x more).
+   Answerable from existing per-test data plus the fixtures - what that account_mode actually
+   touches. The geth study flagged the same cell, so it is a fixture-shape property, not a store
+   defect.
+
+### Explicitly NOT worth running
+- **A besu third arm.** Configs exist (`tools/besu-study/`), but the mechanism is LSM-generic and
+  already demonstrated twice: geth's own compacted-vs-uncompacted arms and this study's
+  intervention. A third client would add cost, not confidence.
+- **state-actor WITH a pre-run** (the matched-methodology direction, and the more realistic one).
+  **Blocked**: the state-actor fixtures release ships no `pre-runs/` bundle - only `eest-payloads`
+  and `state-actor` - so it would require an EEST fill against the state-actor genesis. Recorded as
+  the recommended ecosystem follow-up rather than something runnable here.
