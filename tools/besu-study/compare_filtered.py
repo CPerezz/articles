@@ -20,6 +20,10 @@ FIELDS = re.compile(
     r"opcode_(?P<opcode>[A-Z0-9]+)"
     r"|value_sent_(?P<value_sent>\d+)"
     r"|account_mode_AccountMode\.(?P<mode>[A-Z_]+)"
+    # overhead_baseline MUST be in the key: every workload exists twice, and the True variant is
+    # the control that does no account-state work. Omitting it collapses each control/measurement
+    # pair to whichever was inserted last and drags every ratio toward 1.0 (round 27).
+    r"|overhead_baseline_(?P<baseline>True|False)"
     r"|gas-value_(?P<gas>\d+)M"
 )
 
@@ -54,7 +58,7 @@ def load(results_dir):
                     f[k] = v
         if not all(k in f for k in ("opcode", "mode", "gas")):
             continue
-        key = (f["opcode"], f["mode"], f["gas"], f.get("value_sent"))
+        key = (f["opcode"], f["mode"], f["gas"], f.get("value_sent"), f.get("baseline"))
         out[key] = dict(
             mgas_s=gas / (ns / 1e9) / 1e6,
             gas=gas,

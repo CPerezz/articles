@@ -1614,3 +1614,37 @@ control was a same-database 1.003. So the **5.4% residual is comfortably above n
 
 Corroborating: the extraction itself is deterministic — round 25's re-extract reproduced
 `sst=6695 sstB=382863226174 walB=1258464804 blob=26018`, byte-identical to round 13.
+
+---
+
+## Round 28 — the purest noise floor: same state, two runs
+
+Round 26's wrapper bug left stages 4 and 5 measuring the **identical compacted state** — same
+lineage, same virgin, same device, same flags, 129 tests each, nothing differing. That accident
+is the cleanest control the study has.
+
+| bucket | n | throughput run2 ÷ run1 | bytes run2 ÷ run1 |
+|---|---|---|---|
+| absent | 12 | 0.991 | 1.000 |
+| leaf-only | 36 | **1.002** | 0.992 |
+| code-reading | 72 | **0.996** | 1.000 |
+
+Gas identical across both (`4.96337e+09`).
+
+**Run-to-run noise is 0.4–0.9% on throughput and ≤0.8% on bytes.** geth's comparable
+same-database control was 1.003; this matches it.
+
+Two consequences for how the results may be stated:
+
+- The **5.4% residual** (state-actor vs treated jochemnet, 40/40 categories) is roughly 6–13×
+  the noise floor. It is a measurement, not a wobble.
+- The **1.4–5.3× treatment effects** are three orders of magnitude above it.
+
+Combined with round 27's cross-pipeline agreement (0.4% leaf-only, 1.3% code-reading, across two
+separate 1.1 TB extractions and pre-run replays), the study now has two independent noise
+estimates at different scopes — run-level and pipeline-level — and they agree that anything
+above ~1.5% is real.
+
+`compare_filtered.py` was patched for the `overhead_baseline` key defect found in round 27
+before these numbers were taken; the workload counts (36 and 72 rather than 24 and 36) confirm
+the fix is active.
