@@ -1212,7 +1212,9 @@ def main():
       '<link href="https://fonts.googleapis.com/css2?family=VT323&'
       'family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" '
       'rel="stylesheet">')
-    w("<title>How can two databases holding the same state differ 7\u00d7 in "
+    # Title is a series template: every client's article carries the same sentence and varies
+    # only in the client name and the factor. Keep both strings in lockstep.
+    w("<title>How can two Geth databases holding the same state differ 7\u00d7 in "
       "performance? — state-actor vs a mainnet snapshot</title>")
     w(f"<style>{CSS}</style></head><body>")
 
@@ -1220,7 +1222,7 @@ def main():
     w('<div class=topbar><a href="../">&larr; all articles</a>'
       '<span>EXECUTION · STATE DB</span></div>')
     w('<div class=eyebrow>// REPORT</div>')
-    w("<h1>How can two databases holding the same state differ 7&times; in "
+    w("<h1>How can two Geth databases holding the same state differ 7&times; in "
       "performance?</h1>")
     w("<p class=deck>A case study on state-actor versus a mainnet-snapshot "
       "database &mdash; and on how a benchmark can measure its own setup.</p>")

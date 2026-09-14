@@ -41,7 +41,7 @@ ARTICLES = [
         "prebuilt": True,
         "href": "state-db-perf-divergence/state-db-perf-report.html",
         "eyebrow": "EXECUTION · STATE DB",
-        "card_title": "Why two identical benchmarks disagree by 7×",
+        "card_title": "Why two identical Geth benchmarks disagree by 7×",
         "date": "2026",
         "tags": "Ethereum · geth · pathdb · benchmarking",
         "blurb": "Identical EEST bloatnet runs report wildly different MGas/s on three geth "

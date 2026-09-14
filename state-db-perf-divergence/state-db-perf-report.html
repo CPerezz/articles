@@ -2,7 +2,7 @@
 <meta name=viewport content="width=device-width,initial-scale=1">
 <meta name="description" content="Identical EEST bloatnet runs report wildly different MGas/s on three geth databases. Root cause: the benchmark's own pre-run leaves its last 4,248 blocks of state in geth's pathdb journal, so the accounts deployed last are served from RAM in every test. Draining and compacting the baseline removes the divergence entirely.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
-<title>How can two databases holding the same state differ 7× in performance? — state-actor vs a mainnet snapshot</title>
+<title>How can two Geth databases holding the same state differ 7× in performance? — state-actor vs a mainnet snapshot</title>
 <style>
 /* Site theme — mirrors build_site.py CRT_VARS and the ARTICLE stylesheet so the
    report reads as one of the site's pages. Dark-only, like the site. */
@@ -125,7 +125,7 @@ nav.toc a:hover { text-decoration:underline; }
 </style></head><body>
 <div class=topbar><a href="../">&larr; all articles</a><span>EXECUTION · STATE DB</span></div>
 <div class=eyebrow>// REPORT</div>
-<h1>How can two databases holding the same state differ 7&times; in performance?</h1>
+<h1>How can two Geth databases holding the same state differ 7&times; in performance?</h1>
 <p class=deck>A case study on state-actor versus a mainnet-snapshot database &mdash; and on how a benchmark can measure its own setup.</p>
 <div class=meta><span class=tag>Ethereum · geth · pathdb · benchmarking</span> · 2026 · <a href="https://github.com/CPerezz/articles/tree/main/state-db-perf-divergence">reproducible pipeline &amp; data &rarr;</a></div>
 <nav class=toc><div class=toch>Contents</div><ul><li><a href="#the-behaviour">The behaviour</a></li><li class=sub><a href="#outside-diff-max-the-two-databases-agree-to-within-12">Outside DIFF_MAX, the two databases agree to within 12%</a></li><li><a href="#what-geth-s-own-logs-say">What geth's own logs say</a></li><li><a href="#what-we-ruled-out-first">What we ruled out first</a></li><li class=sub><a href="#the-databases-themselves">The databases themselves</a></li><li class=sub><a href="#trie-shape">Trie shape</a></li><li class=sub><a href="#what-the-fixtures-actually-touch">What the fixtures actually touch</a></li><li class=sub><a href="#the-380-mib-file-inside-the-snapshot">The 380 MiB file inside the snapshot</a></li><li class=sub><a href="#where-the-data-sits-in-the-lsm-tree">Where the data sits in the LSM tree</a></li><li><a href="#the-root-cause-the-pathdb-journal">The root cause: the pathdb journal</a></li><li><a href="#the-fix-and-the-proof">The fix, and the proof</a></li><li><a href="#where-the-last-10-comes-from">Where the last 10% comes from</a></li><li><a href="#benchmark-worst-cases-on-generated-state">Benchmark worst cases on generated state</a></li></ul></nav>
