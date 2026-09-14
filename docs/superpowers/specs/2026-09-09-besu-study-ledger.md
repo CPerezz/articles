@@ -1740,3 +1740,103 @@ and served from RAM," and called it "the structural analogue of the geth root ca
 larger." **The size was right and the interpretation was wrong.** It is inert. The correction
 matters for the article: the striking 1.24 GiB number is not the cause of anything, and saying
 so would have been the study's most quotable error.
+
+---
+
+## Round 30 — final re-evaluation of every pre-registered claim
+
+### Evidence inventory
+
+| | |
+|---|---|
+| full suites | 3 arms × ~1,462 tests, 0 failures, **1,100** common workloads |
+| filtered suites | 6 arms × 129 tests, 0 failures, **120** common workloads |
+| gas identity | exact to 6 s.f. in every comparison (`1.30409e+11`, `1.41525e+10`) |
+| noise floor, same state | **0.4–0.9%** throughput, ≤0.8% bytes (s4 vs s5) |
+| noise floor, whole pipeline | **0.4%** leaf-only, **1.3%** code-reading (full vs filtered, separate extractions) |
+| store censuses | 3 pristine (byte-identical), 2 post-pre-run, drained, compacted |
+| SST geometry | all three stores, including filter size and policy |
+| read counters | per-test, two arms |
+
+### Verdicts
+
+**P1 — compaction spread smaller on Besu than geth. REFUTED, decisively.**
+Predicted smaller than geth's 1.031–1.117 (median 1.091). Measured, against the compacted
+baseline: plain is **4.386×** faster on leaf-only and **1.742×** on code-reading. Treatment state
+matters roughly 40× more on Besu than on geth, not less. The reasoning behind the prediction —
+"RocksDB auto-compacts aggressively" — was simply wrong for a store that arrives pre-built.
+
+**P2 — a recency artifact exists in the promoted image. CONFIRMED; my named mechanism REFUTED.**
+The artifact is real and large: plain runs 1.74–4.39× faster while moving 5.3–6.7× fewer bytes,
+and it vanishes on treatment. But rounds 13 and 17 ranked "RocksDB WAL/memtable at shutdown" as
+the leading candidate and called the 1.24 GiB WAL "the structural analogue of the geth root
+cause." Round 29 killed that: draining the WAL yields **0.996 / 0.990**, inside the noise floor.
+The WAL is obsolete, not unflushed. The mechanism is **LSM level placement** — the pre-run adds
+four SSTs (6,695 → 6,699) and the benchmark's whole working set lives in them.
+
+**P3 — the residual reproduces on a different engine. CONFIRMED.**
+40 of 40 full-suite EXISTING categories favour the snapshot; median **5.4%** (range 2.1–11.0%).
+Filtered subset: 4.9% leaf-only, 3.0% code-reading. Against a 0.4–0.9% noise floor, i.e. 5–12×.
+geth published 9.1%. Same sign, same order, different engine, different compression algorithm,
+8× different block size.
+
+**P4 — bytes-per-read in 1.10–1.15. MISSED on magnitude; mechanism CONFIRMED to three digits.**
+Measured sa ÷ treated: leaf-only **1.207** (full) / **1.242** (filtered), code-reading **1.320** /
+**1.288**. The prediction was low. What did land is the geometry chain:
+
+| | geth | besu |
+|---|---|---|
+| compression ratio, snapshot → generated | 0.849 → 0.991 = **1.167** | 0.438 → 0.513 = **1.171** |
+| block size ratio | 3,467 → 4,043 B = **1.166** | 14,256 → 16,697 B = **1.171** |
+
+and the measured leaf-only byte ratio (1.207–1.242) brackets that 1.171 within 3–6%. So the
+*mechanism* transfers precisely; my arithmetic from geometry to observed bytes did not, and the
+prediction was stated on the latter.
+
+**P5 — identical reads across arms. HALF CONFIRMED.**
+Gas is identical to six significant figures on all 1,100 and all 120 workloads, so the arms were
+asked for identical work — certain. Read *counts* were collected this round but the absolute
+values are unreliable: the scraper samples at 2 s and short tests are truncated, producing
+implausible figures (64 reads against 3.4 GB). The *ratio* `missing ÷ total` is sound, being
+taken within one sample, and it is what answered gap B. "Same reads, more bytes" remains
+unproven; "same requested work, more bytes" is established.
+
+### Transfer of the geth article's three findings
+
+| | transfers? |
+|---|---|
+| **F1** journal residency as root cause | **Mechanism does not.** Besu's analogous file is inert. The *class* does: a promoted snapshot freezes the producing pipeline's LSM shape |
+| **F2** drain + compact as the fix | **Half.** Compaction is the whole effect; the drain is a measured no-op |
+| **F3** incompressible records → more bytes → more time | **Yes**, geometry to three significant figures, magnitude 5.4% vs 9.1% |
+
+### Findings that were not pre-registered
+
+1. **state-actor writes its SSTs with no bloom filter** — `filter_B = 0`, `policy = (none)` on
+   every column family, against jochemnet's **7.3 GB** of filters. Costs **50×** bytes on
+   absence proofs and 1.2–1.3× on lookups that find their key. A one-line configuration defect
+   with a 50× consequence; worth reporting upstream.
+2. The absent-class hypothesis (probe addresses occupied in the generated store) is **refuted**:
+   `missing ÷ total` is 0.999 on state-actor against 0.955 on jochemnet.
+3. The shipped 1.24 GiB WAL is **obsolete**, not unflushed.
+4. Extraction is **deterministic** — three independent extractions produced byte-identical
+   censuses (`sst=6695 sstB=382863226174 walB=1258464804 blob=26018`).
+5. The post-pre-run WAL size is **not** constant: 1.225 GB vs 1.330 GB across two replays.
+6. Code records differ in kind: jochemnet 7,227 B at phys/log **0.423**; state-actor 398 B at
+   **0.863** — unique bytecode per generated contract.
+7. state-actor is **deterministic across clients**: same state root as the geth store, item
+   counts 6,404,913,395 vs 6,404,913,405.
+
+### Still open, and to be stated as such
+
+- Why the residual is 5.4% on Besu against 9.1% on geth.
+- P4's magnitude gap: 1.21–1.32 measured against 1.171 geometric and 1.10–1.15 predicted.
+- How much of the 1.2–1.3× byte ratio on found keys is bloom-filter absence rather than
+  compressibility. Not separated.
+- Absolute account-read counts (scraper truncation).
+- The 5.9 GB `caches/` directory, never examined.
+
+### Article readiness
+
+All four gaps are closed. The root-cause section now has an isolated mechanism, a falsification
+that landed (the drain does nothing), a three-point decomposition, two independent noise floors,
+and a headline correction. The remaining work is writing, not measuring.
