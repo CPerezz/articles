@@ -1048,3 +1048,59 @@ not affect the conclusion above - it is a floor present in every arm and categor
    an OPTIONS diff. Nethermind's per-CF settings differ substantially (4-16 KB blocks, restart 4-16,
    none/LZ4/Snappy).
 3. Prefer the end-to-end benchmark over micro-probes when they disagree.
+
+---
+
+## Round 17 - what still diverges, and why it is one overhead rather than many failures
+
+124 of 266 tests remain outside +/-10%. Decomposed: **73 are `overhead_baseline=True`** (the known
+control cell) and **51 actually read state**. Of those 51:
+
+| cluster | n | ratio | jocMB | saMB | note |
+|---|---|---|---|---|---|
+| `EXISTING_CONTRACT_DIFF_MAX` | 16 (all of them) | 0.615-0.725 | 3.4-5.1 GB | 5.3-8.1 GB | reads ~1.55x more - the only genuine state-read residual |
+| `NON_EXISTING_ACCOUNT` tail | 9 of 20 | 0.587-0.771 | 11-48 MB | 100-316 MB | category median is 0.939: the cell is bimodal |
+| `test_ext_account_query_warm` | 8 of 14 | 0.612-0.785 | ~1 MB | 229-370 MB | 200x+ more bytes yet only 1.3-1.6x slower |
+| `test_ether_transfers_onchain_receivers` | 7 of 36 | 0.676-1.238 | 5.4-8.7 GB | 7.2-10.9 GB | scatter about parity |
+| sload/sstore_bloated | 7 | **1.6-1.76 (state-actor FASTER)** | - | - | reverse-sign outliers |
+
+### The unifying measurement: the excess is ADDITIVE, not multiplicative
+
+| jochemnet read volume | n | med jocMB | med saMB | **med excess** | saMB/jocMB | thr sa/joc |
+|---|---|---|---|---|---|---|
+| 0-10 MB | 98 | 1.8 | 109.5 | **107.1** | 58.6 | **0.734** |
+| 10-100 MB | 18 | 33.6 | 218.3 | **176.8** | 6.2 | 0.931 |
+| 100-1000 MB | 10 | 481.2 | 703.0 | **78.6** | 1.1 | 1.125 |
+| 1000-4000 MB | 44 | 2921.7 | 3105.1 | **189.7** | 1.1 | 0.978 |
+| 4000+ MB | 96 | 5315.4 | 6588.7 | 901.4 | 1.1 | 0.972 |
+
+Across a **1600x range** of test size the absolute excess stays at ~80-190 MB (median over all 266:
+190 MB, p10 39, p90 1174). So the model is
+
+**saMB ~= 1.1 x jocMB + ~150 MB**
+
+and the throughput ratio follows mechanically: a test that would read 1.8 MB is swamped by the
+fixed term (0.734), a test reading 34 MB partly absorbs it (0.931), and anything reading >=100 MB
+is at parity (0.97-1.13). **The remaining "big diffs" are not a set of broken categories - they are
+one fixed per-test read overhead surfacing wherever the test itself reads almost nothing.**
+
+This retires the CONTROL puzzle as a special case: `overhead_baseline` tests read 1.8 MB, so they
+are simply the extreme of the same additive term. It also explains why compacting `StateNodes`
+moved nothing - the term is not placement.
+
+### What is genuinely attributable to the generated store
+- **~10% more bytes per unit of real work** (the 1.1x multiplicative component, matching the
+  per-category read ratios of 1.05-1.16) -> throughput 0.966-1.015. Negligible.
+- **`EXISTING_CONTRACT_DIFF_MAX`: ~1.55x more bytes**, the one real cell-specific difference, and
+  the same cell the geth study flagged as its outlier (sa/compacted 7.71).
+- A **fixed ~150 MB per-test read** whose origin is still unidentified. Candidates: per-container
+  index/filter loading over state-actor's larger `flat/` (478 GB vs 314 GB), or the relocated trie
+  root path. Bounded, additive, and irrelevant to any test doing real state work.
+
+### Two script bugs caught by cross-checking against `buckets.py`
+First pass reported 237/266 divergent with a median "real" ratio of 5.458 - impossible against
+category medians of ~0.97. Causes: (1) selecting the step by dict order, so a **setup** step on one
+arm was compared against the **test** step on the other (`steps` = `['setup','test']`); (2) a param
+regex of `[A-Za-z0-9.]+` truncating `EXISTING_CONTRACT_MINIMAL` to `EXISTING` and mis-reading
+`overhead_baseline`. Fixed version reproduces `buckets.py` exactly (124/266). Recorded because the
+wrong numbers were superficially plausible and pointed at the opposite conclusion.
