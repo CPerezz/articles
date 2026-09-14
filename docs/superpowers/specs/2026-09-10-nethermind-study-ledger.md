@@ -986,3 +986,65 @@ Rebuild re-applied **and promoted**; verified live after 2 completed tests: Acco
 `kNoCompression` - now byte-identical to state-actor's settings. Same 266-test subset, same
 predictions as round 14: CONTROL is the discriminating cell (only the trie-placement hypothesis
 predicts it moving off ~0.70).
+
+---
+
+## Round 16 - Phase 2 corrected: the stores are at parity once placement is equalised
+
+266/266, 0 failures, `rc=0`, finished 2026-09-14 11:04. Intervention verified **live** after two
+completed tests (Account `[6:37]`, StateNodes `[6:158]`,
+`filter_policy={id=ribbonfilter:10:3;bloom_before_level=3;}`, `kNoCompression`).
+
+### The whole study in one table (throughput ratio state-actor / jochemnet; 1.00 = parity)
+
+| category | original (confounded) | Account-only, wrong options | **corrected** | read sa/joc | jocMB | saMB |
+|---|---|---|---|---|---|---|
+| ACCOUNT cold existing EOA | **0.059** | 0.865 | **0.983** | 1.06 | 3587 | 3771 |
+| ACCOUNT cold existing contract | **0.089** | 0.853 | **0.966** | 1.09 | 4366 | 4629 |
+| ACCOUNT cold non-existing | 1.059 | 19.175 | **0.939** | 5.68 | 39 | 220 |
+| STORAGE slot access | 1.006 | 1.047 | **1.013** | 1.05 | 763 | 842 |
+| ETHER transfer receivers | **0.385** | 0.735 | **1.015** | 1.16 | 6471 | 7711 |
+| ACCOUNT warm query | 0.876 | 0.874 | **0.867** | 176.2 | 1.4 | 242 |
+| CONTROL overhead_baseline | 0.733 | 0.709 | **0.717** | 48.2 | 1.8 | 96 |
+
+Tests agreeing within +/-10% rose from **12.6% -> 53.4%**. `EXISTING_EOA` agrees on **20/20**.
+By account_mode: EOA 0.983, MINIMAL 0.969, SAME_MAX 0.966, NON_EXISTING 0.939, JUMPDEST 0.881,
+DIFF_MAX 0.667 (DIFF_MAX was the outlier in the geth study too, at sa/compacted 7.71).
+
+### Prediction scorecard (registered in round 14, before any of these numbers existed)
+| prediction | outcome |
+|---|---|
+| existing EOA/contract 0.88-1.00 | **correct** - 0.983 / 0.966 |
+| NON_EXISTING 0.9-1.1 | **correct** - 0.939 |
+| STORAGE ~1.0 unchanged (negative control) | **correct** - 1.013 |
+| CONTROL -> ~1.0 if trie placement is the cause | **FALSIFIED** - 0.717, unmoved (1.8 vs 2.0 MB) |
+
+The non-existing inversion **was** the missing ribbon filter after all: restoring it returned the
+category to parity. Round 15's probe reading ("misses cost the same as hits on both arms") was
+misleading - most likely because `fill_cache=false` plus a synthetic address range defeats the
+filter path the client actually exercises. Corrected again; the end-to-end measurement wins over
+the micro-probe.
+
+### Conclusion
+**The original 11-16x gap is entirely a data-placement artifact.** With placement equalised and
+every read-path option verified byte-identical, synthetically generated state and mainnet-derived
+state are within **1.7-3.4%** on existing-account reads, **1.3%** on storage, **1.5%** on ether
+transfers, and **6%** on absent accounts. Generated state is a valid substitute for state-DB
+benchmarking **provided both arms get the same placement treatment**.
+
+### What remains unexplained (one cell, and it is not placement)
+`CONTROL overhead_baseline` - tests doing **no account-state work** - is stuck at 0.717 across all
+three runs (0.733 / 0.709 / 0.717). state-actor reads **48x more bytes** (96 MB vs 1.8 MB) and burns
+**2.2x the CPU**. Compacting `flat/StateNodes` moved it by 1%, so the trie-placement hypothesis is
+dead. Candidates not yet tested: the `flat/StorageNodes` CF (195 GB, cannot be compacted in 112 GB
+free), the 430.7M vs 354M account count, or per-block work proportional to generated storage size.
+This is a **separate finding about baseline block execution**, not about state-DB reads, and it does
+not affect the conclusion above - it is a floor present in every arm and category.
+
+### Process rules earned
+1. Any store modification intended to be measured MUST be followed by `schelk promote`, and
+   verified by re-reading the CF shape **after the first test completes**.
+2. Compact/rewrite with the store's **per-CF** options, never `NewDefaultOptions()`, and verify with
+   an OPTIONS diff. Nethermind's per-CF settings differ substantially (4-16 KB blocks, restart 4-16,
+   none/LZ4/Snappy).
+3. Prefer the end-to-end benchmark over micro-probes when they disagree.
