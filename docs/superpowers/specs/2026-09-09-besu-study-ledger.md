@@ -1648,3 +1648,95 @@ above ~1.5% is real.
 `compare_filtered.py` was patched for the `overhead_baseline` key defect found in round 27
 before these numbers were taken; the workload counts (36 and 72 rather than 24 and 36) confirm
 the fix is active.
+
+---
+
+## Round 29 — gap A answered: the WAL is irrelevant, placement is everything
+
+All six stages complete, 129 tests each, zero failures. 120 workloads common to all arms, gas
+identical across every arm to six significant figures (`1.41525e+10`).
+
+### The precondition, which is already half the answer
+
+```
+before  sst=6699 walB=1224816684
+flush (all cfs)  0.0s
+after   sst=6699 walB=23
+PRECONDITION OK: WAL drained, SST count moved by 0
+```
+
+**1.22 GB of WAL became 23 bytes in three seconds and added no SSTs.** Had it held unflushed
+state, RocksDB's recovery would have flushed it into new L0 files. The subsequent `promote`
+copied 69 MB in 171 ms — physically a near-no-op.
+
+So the shipped WAL is **obsolete**, not unflushed: its contents were already in SSTs, and
+RocksDB simply had not garbage-collected the log.
+
+### The three-point decomposition
+
+Reference = plain, same lineage, same device, same flags:
+
+| bucket | n | **drained** | **compacted** | state-actor |
+|---|---|---|---|---|
+| absent | 12 | 0.992 | 1.025 | 0.128 |
+| leaf-only | 36 | **0.996** | **0.228** | 0.223 |
+| code-reading | 72 | **0.990** | **0.679** | 0.675 |
+
+bytes read:
+
+| bucket | drained | compacted | state-actor |
+|---|---|---|---|
+| absent | 1.026 | 0.654 | 16.943 |
+| leaf-only | 1.020 | 6.700 | 8.324 |
+| code-reading | 1.017 | 5.259 | 6.772 |
+
+**Draining the WAL does nothing.** 0.996 and 0.990 on throughput, 1.020 and 1.017 on bytes —
+all inside the 0.4–0.9% noise floor of round 28. **Compaction supplies the entire effect.**
+
+Prediction from round 23, registered before the measurement: *"drained ≈ plain, and compaction
+supplies nearly all of the effect."* Confirmed, with the drained arm indistinguishable from
+plain rather than merely close.
+
+### Where this differs from geth, and why that is interesting
+
+geth's decomposition was **380 → 272 (drain) → 18.5 (compact)**: the journal drain accounted for
+a real, if minority, share. Besu's is **0% drain, 100% compaction** — because the two artifacts
+are not the same thing:
+
+- geth's 380.15 MiB pathdb journal genuinely held **unflushed diff layers**, reloaded into memory
+  on every boot. Draining it moved data that was otherwise served from RAM.
+- Besu's 1.22 GB WAL holds **nothing that is not already on disk**. It is a log awaiting
+  collection. Draining it frees a file and changes no read path.
+
+Both snapshots ship a large recency artifact in the same structural position, and in Besu's case
+the file is a red herring. The actual mechanism is that the pre-run's writes land in a handful
+of young SSTs — the extraction has 6,695 and the post-pre-run store 6,699, so **the benchmark's
+entire working set lives in about four files out of six thousand** — which a lookup reaches
+before descending. Compaction merges those four into the 5,454-file bottom level and the
+advantage disappears.
+
+That is round 22's placement account, now isolated rather than inferred.
+
+### Against the honest baseline
+
+Reference = compacted:
+
+| bucket | n | state-actor | plain | drained |
+|---|---|---|---|---|
+| absent | 12 | 0.122 | 0.975 | 0.957 |
+| leaf-only | 36 | **0.951** | 4.386 | 4.308 |
+| code-reading | 72 | **0.970** | 1.742 | 1.670 |
+| *bytes* leaf-only | | 1.242 | 0.149 | 0.152 |
+| *bytes* code-reading | | 1.288 | 0.190 | 0.193 |
+
+The residual on this 120-workload subset is **4.9%** (leaf-only) and **3.0%** (code-reading),
+against the full 1,100-workload suite's 5.4% — consistent, and 5–12× the noise floor. Bytes
+1.242 and 1.288 bracket the 1.171 predicted from block geometry.
+
+### Corrections this forces
+
+Rounds 13 and 17 described the WAL as "state that never reached an SST, replayed into memtables
+and served from RAM," and called it "the structural analogue of the geth root cause, 3.3×
+larger." **The size was right and the interpretation was wrong.** It is inert. The correction
+matters for the article: the striking 1.24 GiB number is not the cause of anything, and saying
+so would have been the study's most quotable error.
