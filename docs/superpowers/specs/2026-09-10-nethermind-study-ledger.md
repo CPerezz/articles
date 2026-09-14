@@ -858,3 +858,74 @@ zellij is not installed on this host; tmux is.
 
 Note the supervisor guards against a false "finished": a dead `benchmarkoor` with <=100 tests
 completed is reported as a startup failure rather than classified.
+
+---
+
+## Round 14 - Phase 1: repair the contamination, extend the intervention to the trie
+
+### Damage assessment: narrower than feared
+`code/`'s **real** Nethermind options are `filter_policy=nullptr`, `kSnappyCompression`,
+`block_size=4096`, `block_restart_interval=16` - i.e. essentially RocksDB defaults. So the round-13
+`compactdb` of `code/` was **not** contaminated. Only `flat/Account` was.
+
+Options are **per-CF, not uniform** - transcribing one set would have re-contaminated the others:
+
+| CF | block_size | restart | compression | target/mult | mbflb | dynamic | filter |
+|---|---|---|---|---|---|---|---|
+| Account | 4096 | 4 | kNoCompression | 32M/3 | 128M | false | ribbon 10:3 |
+| Storage | 8000 | 4 | kLZ4 | 64M/2 | 256M | false | ribbon 10:3 |
+| StateNodes | 16000 | 8 | kLZ4 | 64M/2 | 256M | true | ribbon 10:3 |
+| StateTopNodes | 16000 | 8 | kLZ4 | 64M/2 | 256M | true | ribbon 10:3 |
+| StorageNodes | 16000 | 8 | kLZ4 | 64M/2 | 350M | true | ribbon 10:3 |
+| FallbackNodes | 16000 | 8 | kLZ4 | 64M/2 | 4M | true | ribbon 10:3 |
+| Metadata | 16000 | 4 | kLZ4 | 64M/2 | 1M | false | ribbon 10:3 |
+| default | 4096 | 16 | kSnappy | 67M/1 | 268M | true | none |
+
+`LatestOptions` has no exported accessors in grocksdb 1.10.8, so load-from-template was impossible;
+the specs are transcribed into `flatSpecs` and **verified afterwards by an OPTIONS diff** - the
+check that would have caught the original error. `SetDisableAutoCompactions(true)` on open, so only
+the explicit `CompactRangeCFOpt(..., kForce)` writes files; kForce is required because a CF already
+wholly in its bottom level is a no-op for a plain CompactRange.
+
+### Result
+| CF | before | after | time |
+|---|---|---|---|
+| `flat/Account` | `[6:196]` 12.84 GB (wrong options) | `[6:37]` **17.38 GB** | 185 s |
+| `flat/StateNodes` | `[0:3 3:1 4:4 5:60 6:487]` 39.10 GB | `[6:158]` 38.98 GB | 708 s |
+
+Account grew because compression went Snappy -> none (correct). **StateNodes had 3 files at L0** -
+the pre-run's fresh trie writes, the same signature `code/` showed - now merged. OPTIONS parity
+verified on every read-path knob for both CFs. Free space 117 -> 112 GB.
+`flat/Storage` (88.92 GB, 2 files at L0) left untouched **on purpose**: it is the negative control.
+`flat/StorageNodes` (195.21 GB) cannot fit in the free space.
+
+### Probe: an honest correction to round 13's explanation
+20,000 cold lookups, fresh process, `fill_cache=false`, Account CF:
+
+| arm | hits | misses |
+|---|---|---|
+| jochemnet | 1.98 blk, 181 us | 1.99 blk, 198 us |
+| state-actor | 1.99 blk, 210 us | 1.99 blk, 222 us |
+
+Both arms now identical in block count, and jochemnet is marginally *cheaper* in time.
+
+**But misses cost the same as hits (~2 blocks) on state-actor too - whose ribbon filter I never
+touched.** So absent-account lookups get no filter-rejection benefit in this configuration on
+either arm, and my round-13 claim that filter loss explains the NON_EXISTING inversion is
+**incomplete**: placement was doing more of that work than I credited. Recorded rather than
+quietly dropped; Phase 2 settles it.
+
+### Phase 2 launched 2026-09-14 06:07 - predictions recorded before results exist
+266 tests (`filter: regex:(160M|240M)`), covering all six families and every opcode x account_mode
+cell at two gas points, so both the ratio and its gas-slope are checkable. Config diff vs the
+round-13 arm: results_dir, label, instance id, filter.
+
+| category | round 13 (contaminated) | predicted now | basis |
+|---|---|---|---|
+| existing EOA / contract | 0.866 / 0.858 | **0.88-1.00** | probe parity 1.98 vs 1.99 blk; jochemnet now uncompressed so reads slightly more |
+| NON_EXISTING | 19.319 | **0.9-1.1** | probe miss parity 1.99 vs 1.99 blk |
+| CONTROL overhead_baseline | 0.701 | **-> ~1.0 if trie placement is the cause; stays ~0.70 if not** | StateNodes now single-level |
+| STORAGE slot | 1.026 | **~1.0 unchanged** | Storage CF deliberately untouched - negative control |
+
+CONTROL is the discriminating cell: it does no account-state work, so only the trie-placement
+hypothesis predicts it moving.

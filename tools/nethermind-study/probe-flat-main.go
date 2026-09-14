@@ -124,6 +124,125 @@ func compactWholeDB(path string) {
 	fmt.Printf("  levels after  : %v\n", shape())
 }
 
+
+// Per-CF table options transcribed from state-actor's OPTIONS, which is the faithful template:
+// round 10 established the two stores matched on every read-path knob before any of my edits.
+// Writing jochemnet's files with these makes both arms option-identical, so a residual
+// difference is placement or content rather than table configuration. An earlier compaction of
+// mine used grocksdb defaults and silently dropped the ribbon filter, which inverted the
+// non-existing-account control - hence the verify step that diffs OPTIONS afterwards.
+type cfSpec struct {
+	blockSize   int
+	restart     int
+	compress    grocksdb.CompressionType
+	fileBase    uint64
+	fileMult    int
+	levelBase   uint64
+	dynamic     bool
+	ribbon      bool
+	dataIdxHash bool
+	formatVer   int
+	pinL0       bool
+}
+
+var flatSpecs = map[string]cfSpec{
+	"Account":       {4096, 4, grocksdb.NoCompression, 32000000, 3, 128000000, false, true, true, 5, true},
+	"Storage":       {8000, 4, grocksdb.LZ4Compression, 64000000, 2, 256000000, false, true, true, 5, true},
+	"StateNodes":    {16000, 8, grocksdb.LZ4Compression, 64000000, 2, 256000000, true, true, true, 5, true},
+	"StateTopNodes": {16000, 8, grocksdb.LZ4Compression, 64000000, 2, 256000000, true, true, true, 5, true},
+	"StorageNodes":  {16000, 8, grocksdb.LZ4Compression, 64000000, 2, 350000000, true, true, true, 5, true},
+	"FallbackNodes": {16000, 8, grocksdb.LZ4Compression, 64000000, 2, 4000000, true, true, true, 5, true},
+	"Metadata":      {16000, 4, grocksdb.LZ4Compression, 64000000, 2, 1000000, false, true, true, 5, true},
+	"default":       {4096, 16, grocksdb.SnappyCompression, 67108864, 1, 268435456, true, false, false, 6, false},
+}
+
+func specOptions(s cfSpec) *grocksdb.Options {
+	o := grocksdb.NewDefaultOptions()
+	o.SetCreateIfMissing(false)
+	// Only the explicit CompactRange may write files. A background compaction would rewrite an
+	// untouched CF and change its layout behind our backs, which is the whole failure mode here.
+	o.SetDisableAutoCompactions(true)
+	o.SetCompression(s.compress)
+	o.SetTargetFileSizeBase(s.fileBase)
+	o.SetTargetFileSizeMultiplier(s.fileMult)
+	o.SetMaxBytesForLevelBase(s.levelBase)
+	o.SetLevelCompactionDynamicLevelBytes(s.dynamic)
+
+	b := grocksdb.NewDefaultBlockBasedTableOptions()
+	b.SetBlockSize(s.blockSize)
+	b.SetBlockRestartInterval(s.restart)
+	b.SetWholeKeyFiltering(true)
+	b.SetFormatVersion(s.formatVer)
+	b.SetIndexType(grocksdb.KBinarySearchIndexType)
+	b.SetCacheIndexAndFilterBlocks(false)
+	b.SetPinL0FilterAndIndexBlocksInCache(s.pinL0)
+	if s.ribbon {
+		b.SetFilterPolicy(grocksdb.NewRibbonHybridFilterPolicy(10, 3))
+	}
+	if s.dataIdxHash {
+		b.SetDataBlockIndexType(grocksdb.KDataBlockIndexTypeBinarySearchAndHash)
+	}
+	o.SetBlockBasedTableFactory(b)
+	return o
+}
+
+// rebuildCFs force-rewrites the named column families with correct options. kForce is required:
+// a CF already sitting entirely in its bottom level is a no-op for a plain CompactRange, so the
+// wrong-option files would survive untouched.
+func rebuildCFs(path string, want []string) {
+	cfOpts := make([]*grocksdb.Options, len(flat.ColumnNames))
+	for i, nm := range flat.ColumnNames {
+		spec, ok := flatSpecs[nm]
+		if !ok {
+			log.Fatalf("no option spec for cf %q", nm)
+		}
+		cfOpts[i] = specOptions(spec)
+	}
+	dbOpts := grocksdb.NewDefaultOptions()
+	dbOpts.SetCreateIfMissing(false)
+	dbOpts.SetDisableAutoCompactions(true)
+
+	db, handles, err := grocksdb.OpenDbColumnFamilies(dbOpts, path, flat.ColumnNames, cfOpts)
+	if err != nil {
+		log.Fatalf("open rw %s: %v", path, err)
+	}
+	defer db.Close()
+
+	shape := func(cf string) (map[int]int, float64) {
+		m := map[int]int{}
+		var sz int64
+		for _, f := range db.GetLiveFilesMetaData() {
+			if f.ColumnFamilyName == cf {
+				m[f.Level]++
+				sz += f.Size
+			}
+		}
+		return m, float64(sz) / 1e9
+	}
+
+	cro := grocksdb.NewCompactRangeOptions()
+	cro.SetBottommostLevelCompaction(grocksdb.KForce)
+
+	for _, cf := range want {
+		cf = strings.TrimSpace(cf)
+		idx := -1
+		for i, nm := range flat.ColumnNames {
+			if nm == cf {
+				idx = i
+			}
+		}
+		if idx < 0 {
+			log.Fatalf("unknown cf %q", cf)
+		}
+		lv, gb := shape(cf)
+		fmt.Printf("  %-14s before: %v  %.2f GB\n", cf, lv, gb)
+		start := time.Now()
+		db.CompactRangeCFOpt(handles[idx], grocksdb.Range{Start: nil, Limit: nil}, cro)
+		lv, gb = shape(cf)
+		fmt.Printf("  %-14s after : %v  %.2f GB  (%.1f s)\n", cf, lv, gb, time.Since(start).Seconds())
+	}
+}
+
 func main() {
 	dbPath := flag.String("db", "", "path to the flat/ RocksDB directory")
 	mode := flag.String("mode", "sample", "sample | probe")
@@ -132,9 +251,17 @@ func main() {
 	keysFile := flag.String("keys", "/tmp/probe-keys.bin", "key file to write/read")
 	seed := flag.Uint64("seed", 42, "sampling seed")
 	addrs := flag.String("addrs", "", "comma-separated 20-byte hex addresses for -mode addr")
+	// Shifting the address base turns the same probe into a pure-miss workload, which is how
+	// filter loss shows up: a filter only ever saves work on keys that are absent.
+	abase := flag.Uint64("abase", 0x1000, "first synthetic account address for -mode seq")
 	flag.Parse()
 	if *dbPath == "" {
 		log.Fatal("-db required")
+	}
+
+	if *mode == "rebuild" {
+		rebuildCFs(*dbPath, strings.Split(*cfName, ","))
+		return
 	}
 
 	if *mode == "compactdb" {
@@ -261,7 +388,7 @@ func main() {
 		keys := make([][]byte, 0, *n)
 		for i := 0; i < *n; i++ {
 			addr := make([]byte, 20)
-			binary.BigEndian.PutUint64(addr[12:], uint64(0x1000+i))
+			binary.BigEndian.PutUint64(addr[12:], *abase+uint64(i))
 			keys = append(keys, crypto.Keccak256(addr)[:20])
 		}
 
@@ -298,7 +425,7 @@ func main() {
 		keys := make([][]byte, 0, *n)
 		for i := 0; i < *n; i++ {
 			addr := make([]byte, 20)
-			binary.BigEndian.PutUint64(addr[12:], uint64(0x1000+i))
+			binary.BigEndian.PutUint64(addr[12:], *abase+uint64(i))
 			keys = append(keys, crypto.Keccak256(addr)[:20])
 		}
 
