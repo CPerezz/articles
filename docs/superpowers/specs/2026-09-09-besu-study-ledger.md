@@ -1557,3 +1557,60 @@ the round-17 trap again, cosmetic here. The real post-pre-run figures are stage 
 line, and the WAL came in at **1,224,815,535 B** against the first lineage's 1,329,617,075 B.
 That ~8% spread across two independent pre-run replays is itself a datum: the shipped-WAL size
 is not a constant.
+
+---
+
+## Round 27 — gap C answered, and a key bug caught by disagreement
+
+The filtered arms first appeared to contradict the full suites: code-reading `compacted/plain`
+came out at **1.009** where the 1,463-test suites gave **0.702**. Two candidate explanations —
+the filtered method is invalid, or the comparison is wrong. Cross-checking identical test ids
+settled it:
+
+```
+full MGas/s   filt MGas/s        test
+      42.95         48.57        BALANCE / EXISTING_CONTRACT_...
+     107.13        119.13
+      18.02         18.03
+gas: full=1.59525e+10 filtered=1.59525e+10  ratio=1.000000
+```
+
+Same tests, same gas exactly, throughput within 11–13%. So the runs were fine and the
+comparison was wrong.
+
+**The bug: my key omitted `overhead_baseline`.** Every workload exists twice —
+`overhead_baseline_True` is the *control*, which performs no account-state work (the geth study
+measured its controls at 33.06/33.80/32.94 ms, 2.6% spread). Keying on
+(opcode, mode, gas, value_sent) silently collapsed each control/measurement pair to whichever
+was inserted last, so half the comparisons were controls, which naturally sit at ~1.0.
+
+With `baseline` in the key the count goes 72 → **120** and the disagreement vanishes:
+
+| bucket | n | full | filtered |
+|---|---|---|---|
+| absent | 12 | 1.088 | 1.025 |
+| leaf-only | 36 | **0.229** | **0.228** |
+| code-reading | 72 | **0.670** | **0.679** |
+
+The main analysis was never affected — `extract_arms.py` and `compare_arms.py` have always
+carried `baseline` in the key, so rounds 18, 20 and 21 stand. Only the new filtered scripts had
+the defect.
+
+### Gap C — the noise floor, and it is very good
+
+The two sides of that table are not a repeat. They are **two independent pipelines**: a
+1,463-test suite on the first lineage, and a 129-test suite on a second lineage built from a
+fresh 1.1 TB extraction and an independent pre-run replay, hours apart.
+
+| bucket | agreement |
+|---|---|
+| leaf-only | **0.4%** |
+| code-reading | **1.3%** |
+| absent | 6% |
+
+Whole-pipeline reproducibility of ~1% on the state-reading buckets. The geth study's comparable
+control was a same-database 1.003. So the **5.4% residual is comfortably above noise**, and the
+1.4–5.3× treatment effects are not remotely in question.
+
+Corroborating: the extraction itself is deterministic — round 25's re-extract reproduced
+`sst=6695 sstB=382863226174 walB=1258464804 blob=26018`, byte-identical to round 13.
