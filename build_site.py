@@ -49,6 +49,21 @@ ARTICLES = [
                  "one snapshot — a provenance artifact, not a property of either database.",
         "repo": "state-db-perf-divergence/",
     },
+    {
+        # Same series as the entry above, same shape: prebuilt by
+        # besu-state-db-divergence/gen_besu_state_db_report.py.
+        "folder": "besu-state-db-divergence",
+        "prebuilt": True,
+        "href": "besu-state-db-divergence/besu-state-db-report.html",
+        "eyebrow": "EXECUTION · STATE DB",
+        "card_title": "Why two identical Besu benchmarks disagree by 8×",
+        "date": "2026",
+        "tags": "Ethereum · Besu · Bonsai · RocksDB · benchmarking",
+        "blurb": "The same experiment on Besu. Two of the three causes are artifacts of how "
+                 "the store was built — where the pre-run's rows land in the LSM tree, and a "
+                 "generated store written with no bloom filters at all.",
+        "repo": "besu-state-db-divergence/",
+    },
 ]
 
 SITE_TITLE = "Articles"
@@ -313,8 +328,16 @@ def _fill(tmpl, mapping):
 
 def build_article(a):
     # Prebuilt entries ship their own generated HTML; there is no markdown to
-    # convert and nothing to write.
+    # convert and nothing to write. The one thing worth checking is that the card
+    # still quotes the same factor as the report it links at — the report's number
+    # is derived from data and moves, the card's is typed here.
     if a.get("prebuilt"):
+        page = open(os.path.join(HERE, a["href"]), encoding="utf-8").read()
+        card = re.search(r"(\d+)×", a["card_title"])
+        h1 = re.search(r"<h1>.*?(\d+)&times;.*?</h1>", page, re.S)
+        if card and h1:
+            assert card.group(1) == h1.group(1), (
+                f"{a['folder']}: card says {card.group(1)}×, report says {h1.group(1)}×")
         print(f"  skipped {a['folder']}   (prebuilt: {a['href']})")
         return
     src = os.path.join(HERE, a["folder"], a["source"])

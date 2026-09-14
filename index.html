@@ -66,6 +66,11 @@
       <div class="deck-meta"><span class="tag">Ethereum · geth · pathdb · benchmarking</span> · 2026</div>
       <div class="deck-desc">Identical EEST bloatnet runs report wildly different MGas/s on three geth databases. The cause turned out to be a 380 MiB pathdb journal shipped inside one snapshot — a provenance artifact, not a property of either database.</div>
     </a>
+    <a href="besu-state-db-divergence/besu-state-db-report.html" class="deck-link">
+      <div class="deck-title"><span class="prompt">&gt; </span>Why two identical Besu benchmarks disagree by 8×</div>
+      <div class="deck-meta"><span class="tag">Ethereum · Besu · Bonsai · RocksDB · benchmarking</span> · 2026</div>
+      <div class="deck-desc">The same experiment on Besu. Two of the three causes are artifacts of how the store was built — where the pre-run&#x27;s rows land in the LSM tree, and a generated store written with no bloom filters at all.</div>
+    </a>
   </div>
   <div class="footer">$ <a href="https://github.com/CPerezz/articles">github.com/CPerezz/articles</a></div>
 </div></body></html>
