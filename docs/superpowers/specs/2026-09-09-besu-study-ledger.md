@@ -1840,3 +1840,61 @@ unproven; "same requested work, more bytes" is established.
 All four gaps are closed. The root-cause section now has an isolated mechanism, a falsification
 that landed (the drain does nothing), a three-point decomposition, two independent noise floors,
 and a headline correction. The remaining work is writing, not measuring.
+
+---
+
+## Round 31 - the article is written and live
+
+`besu-state-db-divergence/besu-state-db-report.html`, live at
+<https://cperezz.github.io/articles/besu-state-db-divergence/besu-state-db-report.html>,
+shipped on `main` at `eb3d2b2`. The Geth article gained the client name in its title
+(`8d6e6b8`) so the two read as a series; that diff is the two title lines and the landing card.
+
+**Headline: 8x.** `state_actor / plain` on the absent class, 0.124 -> 8.09x, floored to 8 as
+Geth's 7.71 was floored to 7.
+
+**The structure the article ended up with.** The decomposition is cleaner than the one I went
+in with, because the two artifacts land on *different classes of read*:
+
+| class | plain / compacted | state-actor / compacted | artifact |
+|---|---|---|---|
+| absent | 0.94x - no advantage | 8.5x | the generated store has no bloom filters |
+| leaf-only | 5.26x faster as shipped | 0.952 | LSM placement of the pre-run's writes |
+| code-reading | 1.54x faster as shipped | 0.958 | same |
+
+So the 8x in the title is almost entirely the *bloom* defect, and the placement artifact - the
+one that parallels Geth's journal - shows up on the classes that find their key. Writing it
+forced that separation; the ledger had the numbers but had not stated it.
+
+**Two claims I had to weaken or fix while writing.**
+
+1. "The pre-run's rows sit in L0" was not measured - the shipped snapshot already had 22 L0
+   files, so the four new ones cannot be identified by level alone. The article leads with what
+   *is* measured: the compaction removed 10,833,266 cf06 entries, and a merge can only drop an
+   entry that was an obsolete older version of a key. That proves the pre-run wrote newer
+   versions above older ones. Level placement is then the mechanism, stated as such.
+2. "The generated store reports `trieLog count: 0`" was never a Besu subcommand output - those
+   failed in round 22. Replaced with the measurement: cf0a holds no files at all in the
+   generated store, 2.8 MB in the snapshot.
+
+**One derivation was wrong in my own tooling.** Summing `reads_missing / reads` across tests
+gave a miss ratio of **1.003** - impossible. The counters are per-container samples, so the
+sound aggregate is the ratio of per-test medians, which reproduces round 24's 0.955 / 0.999
+exactly. `readmetrics.py` had it right; my first pass at the article did not.
+
+**Geometry, re-measured on the compacted store** (`SstGeom`, cf06): `phys/log` 0.434 -> 0.513 =
+**1.182x**, compressed bytes/block 14,147 -> 16,697 = **1.180x**. Geth published 1.167 / 1.166.
+Within 1.3% on a different engine, different compression algorithm, 8x the block size.
+
+**Provenance.** Every number in the prose is derived from `data/report_data.json` by
+`gen_besu_state_db_report.py`; nothing is typed into the text. Fourteen oracles fail the build
+if the data stops supporting a sentence - gas identity per arm, the drain being inert, the
+same-state repeat being a noise floor, L0 empty after compaction, every cf losing entries,
+filters present on the snapshot and absent on the generated store, and the direction of each
+leg of the geometry chain. Raw evidence ships alongside: `levels.log`, `geom_jochemnet.txt`,
+`geom_state_actor.txt`.
+
+**Still open, and stated in the article as such:** why the residual is 5.1% on Besu and 9.1% on
+Geth; how much of the 1.2-1.3x byte penalty on found keys is filter absence rather than record
+geometry; the unexamined 5.9 GB of `caches/`; and whether the placement advantage is purely
+level position or partly block-cache residency.
