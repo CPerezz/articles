@@ -635,7 +635,6 @@ def main():
     comp_b = bucket_bytes(FT["plain"], FT["compacted"], commonf)
 
     noise_t = bucket_median(FT["compacted"], FT["compacted_rep"], commonf)
-    noise_b = bucket_bytes(FT["compacted"], FT["compacted_rep"], commonf)
     noise = max(abs(v - 1) for v in noise_t.values())
 
     # pipeline-level agreement: the same workloads measured by the 1,462-test suites and by the
@@ -868,24 +867,6 @@ def main():
       f"databases, and it is the subject of the last section. Everything larger than it is a "
       f"property of how one of the stores was built.</p>")
 
-    w('<h3>The noise floor</h3>')
-    w(f"<p>Two things bound the noise. The same compacted store, measured twice by two "
-      f"independent runs, reproduces to "
-      + ", ".join(f"{pc(noise_t[b])} on {b}" for b in BUCKETS) +
-      f" for throughput and "
-      + ", ".join(f"{pc(noise_b[b])}" for b in BUCKETS) +
-      f" for bytes read. And the whole pipeline &mdash; a second {thousands(C['shipped']['ssts'])}-file "
-      f"extraction, its own pre-run replay, its own compaction, measured by a different suite "
-      f"&mdash; reproduces the compaction effect to "
-      + ", ".join(f"{pipe[b][2]*100:.1f}% on {b}" for b in BUCKETS if b in pipe) +
-      f".</p>")
-    w(f"<p>The two classes that carry the residual argument reproduce to "
-      + " and ".join(f"{pipe[b][2]*100:.1f}%" for b in ("leaf-only", "code-reading")
-                     if b in pipe) +
-      f", so nothing below about 1.5% is claimed of them. The absent class is the loose one at "
-      f"{pipe['absent'][2]*100:.1f}%, which is immaterial where the effect being measured is "
-      f"{headline:.1f}&times;.</p>")
-
     # ===================================================================== 2
     w('<h2>What Besu\'s own logs and counters say</h2>')
     w(f"<p>Besu states its own configuration at startup, and two of those lines matter. "
@@ -1087,8 +1068,15 @@ def main():
     w('<h2>The residual</h2>')
     w(f"<p>What is left after both artifacts is small and consistent: against the compacted "
       f"snapshot, every one of the {len(ex_cat)} categories that reads an existing account "
-      f"favours the snapshot, median {pc(ex_med)}, range {pc(ex_hi)} to {pc(ex_lo)}. Against a "
-      f"{noise*100:.1f}% noise floor that is a measurement, not a wobble.</p>")
+      f"favours the snapshot, median {pc(ex_med)}, range {pc(ex_hi)} to {pc(ex_lo)}.</p>")
+    w(f"<p>Small enough to ask whether it is real. It is. Measuring the same compacted store "
+      f"twice reproduces these classes to {pc(noise_t['leaf-only'])} and "
+      f"{pc(noise_t['code-reading'])}, and rebuilding the whole pipeline from a second "
+      f"extraction &mdash; its own pre-run replay, its own compaction, a different suite "
+      f"&mdash; reproduces them to "
+      + " and ".join(f"{pipe[b][2]*100:.1f}%" for b in ("leaf-only", "code-reading")) +
+      f". A {pc(ex_med)} median sits several times above that, so it is a measurement rather "
+      f"than run-to-run wobble.</p>")
     w("<table><tr><th>cf06 ACCOUNT_INFO_STATE</th><th class=n>compacted snapshot</th>"
       "<th class=n>state-actor</th><th class=n>ratio</th></tr>")
     for lbl, fld, nd, unit in (("entries", "entries", 0, ""),
