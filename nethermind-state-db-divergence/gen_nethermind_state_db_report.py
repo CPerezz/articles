@@ -282,6 +282,10 @@ def main():
     mid = [b["excess"] for b in add["buckets"] if b["lo"] in (100, 1000)]
     assert all(0.3 * small <= e <= 3 * small for e in mid), \
         f"excess is no longer flat in test size: {small} vs {mid}"
+    # the cross-client claim: every client's generated arm is near parity once treated, and
+    # meaningfully slower before. If a sibling study is re-cut, this fails rather than misquotes.
+    assert tc["besu_sa_over_plain"] < 0.6 < tc["besu_sa_over_compacted"] < 1.1, \
+        f"besu reference no longer shows untreated gap -> treated parity: {tc}"
     # the proportional term must be real, and must only matter for the largest tests
     big = add["buckets"][-1]
     assert big["excess"] > 2 * small, "proportional term vanished; §residual claims two terms"
@@ -562,16 +566,24 @@ def main():
       f"<td>{tc['geth_sa_over_compacted']['lo']:.3f}&ndash;"
       f"{tc['geth_sa_over_compacted']['hi']:.3f}&times;</td></tr>")
     w(f"<tr><td>Besu</td><td class=n>{tc['state_gib']['besu']} GiB</td>"
-      f"<td>same mechanism, its own pre-run rows newest</td><td>parity</td></tr>")
+      f"<td>{1/tc['besu_sa_over_plain']:.1f}&times; on account reads "
+      f"({tc['besu_bytes_plain']:.2f}&times; the bytes)</td>"
+      f"<td>{tc['besu_sa_over_compacted']:.3f}&times; "
+      f"({tc['besu_bytes_compacted']:.2f}&times; the bytes)</td></tr>")
     w(f"<tr><td>Nethermind</td><td class=n>{tc['state_gib']['nethermind']} GiB</td>"
-      f"<td>{factor:.0f}&times; on account reads, "
-      f"{f(bc['ACCOUNT cold non-existing']['thr'], 2)} on absent</td>"
-      f"<td>{f(ac['ACCOUNT cold existing EOA']['thr'], 3)}&ndash;"
-      f"{f(ac['ETHER transfer receivers']['thr'], 3)}&times;</td></tr>")
-    w("<caption>Three engines, three storage designs, three state sizes for the same logical "
-      "state &mdash; and the same artifact, with the same signature: account reads diverge, "
-      "absent-account reads do not. That is what a methodology artifact looks like, as opposed "
-      "to a property of any one database.</caption></table>")
+      f"<td>{factor:.0f}&times; on account reads "
+      f"({bc['ACCOUNT cold existing contract']['read']:.2f}&times; the bytes)</td>"
+      f"<td>{f(ac['ACCOUNT cold existing contract']['thr'], 3)}&ndash;"
+      f"{f(ac['ACCOUNT cold existing EOA']['thr'], 3)}&times; "
+      f"({ac['ACCOUNT cold existing contract']['read']:.2f}&times; the bytes)</td></tr>")
+    w(f"<caption>Three engines, three storage designs, three state sizes for the same logical "
+      f"state &mdash; and the same artifact. The Besu and Nethermind columns are computed the "
+      f"same way from each study's own data ({tc['besu_cells']} and "
+      f"{ac['ACCOUNT cold existing contract']['n']} account cells respectively, gas matched "
+      f"exactly); treat the geth spread as its published range. Untreated, the generated store "
+      f"looks between {1/tc['besu_sa_over_plain']:.0f}&times; and {factor:.0f}&times; slower. "
+      f"Treated, all three land within a few percent of parity. That is what a methodology "
+      f"artifact looks like, as opposed to a property of any one database.</caption></table>")
 
     # ---------------------------------------------------------------- takeaway
     w("<h2>What to do about it</h2>")

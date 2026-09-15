@@ -281,6 +281,12 @@ MEASURED = {
         "geth_sa_over_uncompacted": {"EOA": 2.01, "MINIMAL": 4.80, "SAME_MAX": 5.81,
                                      "JUMPDEST": 4.94, "NON_EXISTING": 0.91},
         "geth_diffmax_sa_over_compacted": 7.71,
+        "besu_sa_over_plain": 0.288,
+        "besu_sa_over_compacted": 0.962,
+        "besu_bytes_plain": 2.916,
+        "besu_bytes_compacted": 1.124,
+        "besu_cells": 108,
+        "besu_src": "computed from besu-state-db-divergence/data/report_data.json on main, the same way as this study's own ratios: median of per-cell mgas_s ratios over the account-reading cells, with gas matched exactly",
     },
 }
 

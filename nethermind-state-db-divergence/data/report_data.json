@@ -587,6 +587,12 @@
    "src": "probe-flat -mode sample/probe: keys sampled from the CF itself, so both arms are measured on their own contents rather than on a shared synthetic range"
   },
   "three_client": {
+   "besu_bytes_compacted": 1.124,
+   "besu_bytes_plain": 2.916,
+   "besu_cells": 108,
+   "besu_sa_over_compacted": 0.962,
+   "besu_sa_over_plain": 0.288,
+   "besu_src": "computed from besu-state-db-divergence/data/report_data.json on main, the same way as this study's own ratios: median of per-cell mgas_s ratios over the account-reading cells, with gas matched exactly",
    "geth_diffmax_sa_over_compacted": 7.71,
    "geth_sa_over_compacted": {
     "hi": 1.117,
