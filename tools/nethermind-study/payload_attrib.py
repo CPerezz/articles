@@ -19,7 +19,7 @@ from statistics import median
 def run_dir(root):
     best, bn = None, -1
     for d in glob.glob(os.path.join(root, "runs", "*")):
-        n = len(glob.glob(os.path.join(d, "*", "test.result-details.json")))
+        n = len(glob.glob(os.path.join(d, "**", "test.result-details.json"), recursive=True))
         if n > bn:
             best, bn = d, n
     return best
@@ -28,9 +28,9 @@ def run_dir(root):
 def collect(root, want_control):
     d = run_dir(root)
     rows = []
-    for f in glob.glob(os.path.join(d, "*", "test.result-details.json")):
+    for f in glob.glob(os.path.join(d, "**", "test.result-details.json"), recursive=True):
         name = os.path.basename(os.path.dirname(f))
-        is_ctrl = "overhead_baseline_True" in name or "overhead-baseline-True" in name
+        is_ctrl = "overhead_baseline_True" in name
         if is_ctrl != want_control:
             continue
         try:

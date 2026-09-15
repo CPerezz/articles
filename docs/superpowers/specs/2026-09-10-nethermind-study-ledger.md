@@ -1141,3 +1141,62 @@ Cross-arm I/O pollution already invalidated two earlier rounds, so no probing wh
   **Blocked**: the state-actor fixtures release ships no `pre-runs/` bundle - only `eest-payloads`
   and `state-actor` - so it would require an EEST fill against the state-actor genesis. Recorded as
   the recommended ecosystem follow-up rather than something runnable here.
+
+---
+
+## Round 19 - full corrected arm lands; both deferred questions answered
+
+### Full run: 1463/1463, 0 failures, `rc=0`, 12.7 h (finished 2026-09-15 02:49)
+1461 comparable, 0 gas mismatches. The 266-test subset is vindicated - every category within
+0.02-0.04 of it:
+
+| category | n | thr sa/joc (full) | (266 subset) | read sa/joc | jocMB | saMB |
+|---|---|---|---|---|---|---|
+| STORAGE slot access | 88 | **1.034** | 1.013 | 1.08 | 578 | 626 |
+| ETHER transfer receivers | 196 | **1.013** | 1.015 | 1.17 | 6668 | 7793 |
+| ACCOUNT cold existing EOA | 110 | **0.979** | 0.983 | 1.06 | 3704 | 3907 |
+| ACCOUNT cold existing contract | 440 | **0.968** | 0.966 | 1.08 | 4010 | 4619 |
+| ACCOUNT cold non-existing | 110 | **0.904** | 0.939 | 5.65 | 40.5 | 218 |
+| ACCOUNT warm query | 77 | **0.896** | 0.867 | 143.6 | 1.5 | 229 |
+| CONTROL overhead_baseline | 440 | **0.708** | 0.717 | 52.4 | 1.8 | 96 |
+
+Agreement within +/-10%: **53.0%** (subset: 53.4%). `EXISTING_EOA` agrees on **108/110 (98%)**.
+
+### Deferred Q1 answered: DIFF_MAX is a code-DB size effect
+Per account_mode, measured (non-control) tests only:
+
+| account_mode | jocMB | saMB | **readX** | thrX | code involvement |
+|---|---|---|---|---|---|
+| EXISTING_CONTRACT_DIFF_MAX | 4030 | 5639 | **1.40** | **0.655** | a *different* max-size contract per access |
+| EXISTING_CONTRACT_JUMPDEST | 4827 | 5598 | **1.16** | 0.931 | code scanned for jump destinations |
+| EXISTING_CONTRACT_SAME_MAX | 3647 | 3863 | 1.06 | 0.980 | same contract reused -> code cached |
+| EXISTING_CONTRACT_MINIMAL | 3647 | 3873 | 1.06 | 0.980 | minimal code |
+| EXISTING_EOA | 3704 | 3907 | 1.05 | 0.979 | **no code at all** |
+
+The ordering is **monotonic in code diversity**, and the cause is on disk:
+**`code/` is 45 GB on state-actor vs 7.6 GB on jochemnet (5.9x)**. Reading a different max-size
+contract per access costs 1.40x more bytes on the larger code DB; reuse the same contract, or touch
+no code, and the arms are at parity. This is a property of how the generator sizes contract code,
+not a state-DB defect - and it is why the geth study flagged the same cell.
+
+### Deferred Q2 answered in part: the additive term is mode-independent and not a warmup artifact
+Per-payload split (`resources` is a dict keyed by payload index, not a list - the earlier attempt
+silently found nothing):
+
+| total bucket | jochemnet n | state-actor n |
+|---|---|---|
+| 0-10 MB | **543** | **44** |
+| 10-100 MB | 95 | 201 |
+| 100-1000 MB | 68 | **447** |
+| 1000+ MB | 757 | 769 |
+
+Every test has 2 payloads and payload 0 carries 86-100% of the bytes on **both** arms, so the
+measurement window is not swallowing warmup asymmetrically. The additive term instead shows as a
+**population shift**: ~500 tests that read ~1.8 MB on jochemnet read ~170 MB on state-actor.
+
+All four control variants read 89-104 MB on state-actor against 1.7-1.8 MB on jochemnet
+**regardless of their nominal account_mode**, so the term is ~95 MB, fixed and mode-independent.
+Not yet attributed to a column family. Ruled out: client boot I/O (jochemnet's is *larger*,
+6.53 vs 4.81 GB) and trie placement (compacting `StateNodes` moved it 1%). Remaining candidate is
+per-CF attribution from RocksDB LOG statistics during a single controlled test - optional, since
+the term is bounded and invisible to any test doing real state work.
