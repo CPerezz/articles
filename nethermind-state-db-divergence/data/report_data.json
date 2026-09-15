@@ -557,6 +557,12 @@
    ],
    "src": "OPTIONS files of both stores, compared knob by knob"
   },
+  "preconditions": {
+   "backend_both": "flat (existing flat DB detected)",
+   "joc_run": "1789101020_23e0ca97_nm-jochemnet",
+   "sa_run_flat_backed": "1789207753_887c4915_nm-sa",
+   "src": "both arms' Nethermind startup lines; the generated store was rebuilt from a state-actor revision that writes the flat layout before any run quoted here"
+  },
   "prerun": {
    "blocks": 7736,
    "bytes": 10062313486,

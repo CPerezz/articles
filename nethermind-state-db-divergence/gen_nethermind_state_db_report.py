@@ -282,6 +282,14 @@ def main():
     mid = [b["excess"] for b in add["buckets"] if b["lo"] in (100, 1000)]
     assert all(0.3 * small <= e <= 3 * small for e in mid), \
         f"excess is no longer flat in test size: {small} vs {mid}"
+    # The article's scope starts at the flat-backed pair. If the collector is ever re-pointed at
+    # a run from before the generated store was rebuilt with the flat layout, fail loudly rather
+    # than publish a number from a pair that never shared a read path.
+    assert P["arms"]["sa"]["run"] == M["preconditions"]["sa_run_flat_backed"], (
+        f"state-actor arm is {P['arms']['sa']['run']}, expected the flat-backed run "
+        f"{M['preconditions']['sa_run_flat_backed']}")
+    assert P["arms"]["joc"]["run"] == M["preconditions"]["joc_run"], \
+        f"jochemnet arm is not the recorded run: {P['arms']['joc']['run']}"
     # the cross-client claim: every client's generated arm is near parity once treated, and
     # meaningfully slower before. If a sibling study is re-cut, this fails rather than misquotes.
     assert tc["besu_sa_over_plain"] < 0.6 < tc["besu_sa_over_compacted"] < 1.1, \
@@ -363,10 +371,24 @@ def main():
              f"of blocks; rising means every access goes somewhere new."))
 
     # ---------------------------------------------------------------- traps
-    w("<h2>Two traps before the measurement was even valid</h2>")
+    w("<h2>What has to be true before any of this is a comparison</h2>")
+    pre = M["preconditions"]
+    w(f"<p><b>Both arms have to read through the same backend.</b> Nethermind decides at "
+      f"startup whether state comes from the Patricia trie or from a flat database, by looking "
+      f"for one. A generated store written without the flat layout gets served as "
+      f"<code>patricia (flat DB disabled)</code> while the snapshot is served as "
+      f"<code>{esc(pre['backend_both'])}</code> &mdash; two different read paths, so nothing "
+      f"measured across such a pair is a comparison of databases at all. Every number below "
+      f"comes from a pair where <em>both</em> arms log "
+      f"<code>{esc(pre['backend_both'])}</code>: the generated store was rebuilt from a "
+      f"<code>state-actor</code> revision that writes the flat layout, which relocates the trie "
+      f"into <code>flat/</code> and leaves <code>state/</code> at "
+      f"{esc(fp['sa']['state'])} against the snapshot's {esc(fp['joc']['state'])}. The "
+      f"investigation starts there, and nothing measured before it is quoted here.</p>")
     nine, fourteen = M["eip_trap"]["nine"], M["eip_trap"]["fourteen"]
     extra = [e for e in fourteen if e not in nine]
-    w(f"<p><b>The EIP list.</b> geth and Besu are told to activate Amsterdam by name and take "
+    w(f"<p><b>And the EIP list has to match.</b> geth and Besu are told to activate Amsterdam "
+      f"by name and take "
       f"whatever their build considers Amsterdam to be. Nethermind is told nothing of the kind: "
       f"it activates exactly the EIPs you enumerate. benchmarkoor ships two Amsterdam sets, and "
       f"the shorter one &mdash; {len(nine)} EIPs &mdash; makes Nethermind compute a different "
@@ -376,20 +398,10 @@ def main():
       f"<code>existing-snapshot</code> family's {len(fourteen)}-EIP set, which adds "
       f"{esc(', '.join(str(e) for e in extra))}, is the one that reproduces what the other two "
       f"clients get for free.</p>")
-    w(f"<p><b>The backend.</b> Nethermind can serve state either from the Patricia trie or from "
-      f"a flat database, and it decides at startup by looking for one. The generated store had "
-      f"been built by a <code>state-actor</code> revision predating its flat-state writer, so "
-      f"Nethermind logged <code>patricia (flat DB disabled)</code> on one arm and "
-      f"<code>flat (existing flat DB detected)</code> on the other. The arms were not slow and "
-      f"fast; they were structurally unable to share a read path. We published a "
-      f"15&times;-wall figure from that pair and then retracted it, rebuilt the store from a "
-      f"revision that writes the flat layout, and only then had something worth comparing. The "
-      f"rebuild moved the trie rather than removing it: <code>state/</code> went from "
-      f"{esc(fp['joc']['state'])}-scale down to {esc(fp['sa']['state'])} as the nodes relocated "
-      f"into <code>flat/</code>.</p>")
-    w("<p class=note>Both traps share a shape worth naming: a benchmark can be perfectly "
-      "reproducible and still be comparing two different things. Neither showed up as an error "
-      "&mdash; one showed up as every block being invalid, the other as a number.</p>")
+    w("<p class=note>Both are the same shape of problem: a benchmark can be perfectly "
+      "reproducible and still be comparing two different things. One of them announces itself "
+      "&mdash; every block comes back invalid &mdash; and the other does not. It just produces "
+      "a number.</p>")
 
     # ---------------------------------------------------------------- eliminations
     w("<h2>What we ruled out</h2>")
@@ -619,8 +631,6 @@ def main():
       "restored the untreated image before the first test and a 2.2-hour run measured nothing "
       "new. It became an accidental replication, which is the only reason we can quote a "
       "run-to-run noise figure.</li>")
-    w("<li>A 15&times; result was published from the Patricia-versus-flat pair and retracted. "
-      "Every number here comes from the rebuilt, symmetric pair.</li>")
     w("</ul>")
     w("<p class=note>The numbers in this page are computed from the collected run data at build "
       "time; the generator refuses to emit the page if the data stops supporting the sentences "

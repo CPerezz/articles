@@ -9,6 +9,13 @@ returns to parity.
 This is the third client in the series, after the geth and Besu studies in sibling folders.
 Everything needed to reproduce or re-cut the analysis lives here.
 
+**Scope.** Nethermind picks its state backend at startup by looking for a flat database, so a
+generated store written without the flat layout is served through the Patricia trie while the
+snapshot is served flat — two different read paths, and therefore not a comparison. The study
+begins once the generated store has been rebuilt with the flat layout and both arms log
+`flat (existing flat DB detected)`. Nothing measured before that point is quoted, and the
+generator asserts the arm run ids so it cannot be built from a pre-rebuild run.
+
 ## Layout
 
 | Path | What |
@@ -38,10 +45,11 @@ Expected stdout, all asserted: `headline factor: 17.1x`, `agreement: 12.8% -> 53
 five categories at parity after treatment, and a monotonic `code ladder`.
 
 **The generator refuses to emit the page if the data stops supporting the prose.** The oracles in
-`main()` cover the headline factor, per-category parity after treatment, the two pre-existing
-parity controls, the random-key inversion the argument depends on, the amortisation shape
-(parity at low N, saturation at high N), the monotonicity of the code ladder, and the two-term
-residual model. Mutating any of those inputs makes generation fail rather than quietly print a
+`main()` cover the scope precondition (both arms on the flat backend, by run id), the headline
+factor, per-category parity after treatment, the two pre-existing parity controls, the
+random-key inversion the argument depends on, the amortisation shape (parity at low N,
+saturation at high N), the monotonicity of the code ladder, the two-term residual model, and the
+Besu reference figures quoted in the cross-client table. Mutating any of those inputs makes generation fail rather than quietly print a
 sentence the data no longer supports.
 
 ## Findings
