@@ -208,6 +208,14 @@ def additive(pairs):
 # Probe-derived measurements: taken against the raw stores, not recoverable from result.json.
 # --------------------------------------------------------------------------- #
 MEASURED = {
+    # The comparison only exists once both arms read through the flat backend. Recorded so the
+    # generator can refuse to build from a run predating the flat-state rebuild.
+    "preconditions": {
+        "src": "both arms' Nethermind startup lines; the generated store was rebuilt from a state-actor revision that writes the flat layout before any run quoted here",
+        "backend_both": "flat (existing flat DB detected)",
+        "sa_run_flat_backed": "1789207753_887c4915_nm-sa",
+        "joc_run": "1789101020_23e0ca97_nm-jochemnet"
+    },
     "amortisation": {
         "src": "probe-flat -mode seq, Account CF, cold caches + fresh process per point, "
                "fill_cache=false, 100% hits, the EEST fixtures' own key population",
