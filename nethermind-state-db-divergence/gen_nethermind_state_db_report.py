@@ -9,6 +9,7 @@ Usage: python3 gen_nethermind_state_db_report.py
 """
 import html
 import json
+import math
 import os
 import re
 
@@ -56,6 +57,14 @@ def esc(s):
 
 def f(v, nd=2):
     return "&mdash;" if v is None else f"{v:.{nd}f}"
+
+
+def median(xs):
+    srt = sorted(xs)
+    n = len(srt)
+    if not n:
+        return None
+    return srt[n // 2] if n % 2 else (srt[n // 2 - 1] + srt[n // 2]) / 2.0
 
 
 def thousands(n):
@@ -242,6 +251,105 @@ def chart_additive(buckets):
     return S.svg(W, H, "".join(o))
 
 
+
+GRID_MODES = ["EXISTING_EOA", "EXISTING_CONTRACT_MINIMAL", "EXISTING_CONTRACT_SAME_MAX",
+              "EXISTING_CONTRACT_JUMPDEST", "EXISTING_CONTRACT_DIFF_MAX",
+              "NON_EXISTING_ACCOUNT"]
+MODE_SHORT = {"EXISTING_EOA": "EOA", "EXISTING_CONTRACT_MINIMAL": "MINIMAL",
+              "EXISTING_CONTRACT_SAME_MAX": "SAME_MAX",
+              "EXISTING_CONTRACT_JUMPDEST": "JUMPDEST",
+              "EXISTING_CONTRACT_DIFF_MAX": "DIFF_MAX",
+              "NON_EXISTING_ACCOUNT": "absent"}
+
+
+def _strip(ratios, spread_row, sx, y, var, bins=64):
+    """One category's whole distribution: binned dots sized by count, with the interquartile
+    range and median drawn over them. A median on its own cannot show whether a category is
+    tight around parity or straddling it."""
+    o = []
+    lo, hi = sx.lo, sx.hi
+    counts = {}
+    for r in ratios:
+        r = min(max(r, lo), hi)
+        k = int((math.log10(r) - math.log10(lo)) / (math.log10(hi) - math.log10(lo)) * (bins - 1))
+        counts[k] = counts.get(k, 0) + 1
+    for k, n in sorted(counts.items()):
+        x = sx.px_lo + (k / (bins - 1)) * (sx.px_hi - sx.px_lo)
+        o.append(S.dot(x, y, min(5.0, 1.3 + 0.75 * (n ** 0.5)), var,
+                       f"{n} test{'s' if n > 1 else ''}"))
+    if spread_row:
+        o.append(S.line(sx.to(spread_row["p25"]), y, sx.to(spread_row["p75"]), y,
+                        "--green-muted", 1.5))
+        o.append(S.line(sx.to(spread_row["median"]), y - 7, sx.to(spread_row["median"]), y + 7,
+                        var, 2))
+    return "".join(o)
+
+
+def chart_ratio_dots(rat_b, rat_a, spr_b, spr_a):
+    """Every test's ratio, by category, before and after the treatment.
+
+    The dumbbell shows that the medians moved; this shows the distributions moving, which is the
+    claim that actually matters - a category whose median lands on parity while its tests stay
+    scattered has not converged.
+    """
+    W, L, R = 760, 178, 80
+    rows = [c for c in CATS if c in rat_a]
+    rh, gap = 27, 52
+    t1 = 34
+    t2 = t1 + rh * len(rows) + gap
+    H = t2 + rh * len(rows) + 30
+    sx = S.LogScale(0.03, 2.3, L, W - R)
+
+    o = []
+    for top, rat, spr, var, title in ((t1, rat_b, spr_b, "--db-u", "with the pre-run confound"),
+                                      (t2, rat_a, spr_a, "--accent", "placement equalised")):
+        bot = top + rh * len(rows) - 12
+        o.append(S.band(sx.to(0.9), sx.to(1.1), top - 12, bot + 6, "--accent", 0.10))
+        o.append(S.line(sx.to(1.0), top - 12, sx.to(1.0), bot + 6, "--green-muted", 1))
+        o.append(S.label(L, top - 18, title, "start", "big"))
+        for i, cat in enumerate(rows):
+            y = top + rh * i
+            o.append(S.label(L - 8, y + 4, SHORT[cat], "end"))
+            o.append(_strip(rat[cat], spr.get(cat), sx, y, var))
+            w10 = spr[cat]["within10"]
+            o.append(S.label(W - R + 10, y + 4, f"{w10}/{spr[cat]['n']}", "start", "tick"))
+        for v in (0.03, 0.1, 0.3, 1.0, 2.0):
+            o.append(S.label(sx.to(v), bot + 22, f"{v:g}", "middle", "tick"))
+    o.append(S.label((L + W - R) / 2, H - 4,
+                     "throughput, state-actor / jochemnet  (1.0 = parity)", "middle", "ax"))
+    return S.svg(W, H, "".join(o))
+
+
+def chart_grid(grid):
+    """opcode x account_mode after treatment. Ink is distance from parity, so the one column
+    that stays dark is the argument for the section that follows."""
+    ops = sorted(grid)
+    W, L, T, R = 760, 122, 44, 14
+    cw = (W - L - R) / len(GRID_MODES)
+    ch = 30
+    H = T + ch * len(ops) + 34
+    o = []
+    for j, m in enumerate(GRID_MODES):
+        o.append(S.label(L + cw * (j + 0.5), T - 12, MODE_SHORT[m], "middle", "tick"))
+    worst_dev = max((abs(1 - c["thr"]) for row in grid.values() for c in row.values()), default=1)
+    for i, op in enumerate(ops):
+        y = T + ch * i
+        o.append(S.label(L - 8, y + ch / 2 + 4, op, "end"))
+        for j, m in enumerate(GRID_MODES):
+            cell = grid[op].get(m)
+            x = L + cw * j
+            if not cell:
+                o.append(S.label(x + cw / 2, y + ch / 2 + 4, "&mdash;", "middle", "tick"))
+                continue
+            dev = abs(1 - cell["thr"]) / worst_dev
+            o.append(S.band(x + 1, x + cw - 1, y + 2, y + ch - 2, "--accent",
+                            round(0.06 + 0.72 * dev, 3)))
+            o.append(S.label(x + cw / 2, y + ch / 2 + 4, f"{cell['thr']:.2f}", "middle"))
+    o.append(S.label((L + W - R) / 2, H - 6,
+                     "throughput ratio per cell; brighter = further from parity", "middle", "ax"))
+    return S.svg(W, H, "".join(o))
+
+
 # --------------------------------------------------------------------------- page
 def main():
     D = json.load(open(os.path.join(HERE, "data", "report_data.json")))
@@ -250,6 +358,8 @@ def main():
     bc, ac = BEF["categories"], AFT["categories"]
     modes, modes_ctrl = AFT["by_mode"], AFT["by_mode_control"]
     add = AFT["additive"]
+    spr_b, spr_a = BEF["spread"], AFT["spread"]
+    rat_b, rat_a = BEF["ratios"], AFT["ratios"]
     amort = M["amortisation"]["points"]
     iv, fp, tc = M["intervention"], M["footprint"], M["three_client"]
 
@@ -290,6 +400,27 @@ def main():
         f"{M['preconditions']['sa_run_flat_backed']}")
     assert P["arms"]["joc"]["run"] == M["preconditions"]["joc_run"], \
         f"jochemnet arm is not the recorded run: {P['arms']['joc']['run']}"
+    # Dispersion claims. A median landing on parity is not convergence if the tests stay
+    # scattered, so the page states both and both have to hold.
+    eo, st = AFT["spread"]["ACCOUNT cold existing EOA"], AFT["spread"]["STORAGE slot access"]
+    assert eo["within10"] / eo["n"] > 0.9, f"existing-EOA no longer tight: {eo}"
+    assert eo["p75"] - eo["p25"] < 0.1, f"existing-EOA middle half widened: {eo}"
+    assert st["max"] - st["min"] > 0.5, \
+        f"storage-slot spread claim no longer holds: {st}"
+    # The worst tests in the suite are supposed to be the ones doing no account work. If that
+    # stops being true the residual section's whole argument changes.
+    wr_ = AFT["worst"]
+    assert sum(1 for r in wr_ if r["control"]) > len(wr_) / 2, \
+        "the worst tests are no longer dominated by controls; rewrite the residual section"
+    # The grid has to stay a column, not a scatter, or the code argument is not an argument.
+    g_ = AFT["grid"]
+    assert len(g_) >= 6, f"opcode grid lost opcodes: {sorted(g_)}"
+    dm = median([c["thr"] for row in g_.values()
+                 for m, c in row.items() if m == "EXISTING_CONTRACT_DIFF_MAX"])
+    others = median([c["thr"] for row in g_.values() for m, c in row.items()
+                     if m in ("EXISTING_EOA", "EXISTING_CONTRACT_MINIMAL",
+                              "EXISTING_CONTRACT_SAME_MAX")])
+    assert dm < others - 0.15, f"DIFF_MAX is no longer the outlying column: {dm} vs {others}"
     # the cross-client claim: every client's generated arm is near parity once treated, and
     # meaningfully slower before. If a sibling study is re-cut, this fails rather than misquotes.
     assert tc["besu_sa_over_plain"] < 0.6 < tc["besu_sa_over_compacted"] < 1.1, \
@@ -453,21 +584,29 @@ def main():
 
     w(f"<p>Then the full suite again, all {thousands(AFT['agreement']['n'])} matched tests:</p>")
     w("<table><tr><th>what the test does</th><th class=n>n</th><th class=n>with confound</th>"
-      "<th class=n>equalised</th><th class=n>bytes sa/joc</th><th class=n>within &plusmn;10%</th>"
-      "</tr>")
+      "<th class=n>equalised</th><th class=n>middle half, equalised</th>"
+      "<th class=n>full range</th><th class=n>within &plusmn;10%</th></tr>")
     for cat in CATS:
         if cat not in ac:
             continue
-        r, rb = ac[cat], bc[cat]
+        r, rb, sp = ac[cat], bc[cat], spr_a[cat]
         good = " good" if 0.9 <= r["thr"] <= 1.1 else ""
         w(f"<tr><td>{esc(SHORT[cat])}</td><td class=n>{r['n']}</td>"
           f"<td class=n>{f(rb['thr'], 3)}</td>"
-          f"<td class=\"n{good}\">{f(r['thr'], 3)}</td><td class=n>{f(r['read'])}</td>"
+          f"<td class=\"n{good}\">{f(r['thr'], 3)}</td>"
+          f"<td class=n>{sp['p25']:.3f}&ndash;{sp['p75']:.3f}</td>"
+          f"<td class=n>{sp['min']:.3f}&ndash;{sp['max']:.3f}</td>"
           f"<td class=n>{r['agree']}/{r['n']}</td></tr>")
+    st = spr_a["STORAGE slot access"]
+    eo = spr_a["ACCOUNT cold existing EOA"]
     w(f"<caption>Tests agreeing within &plusmn;10% go from "
-      f"{BEF['agreement']['agree_pct']:.1f}% to {AFT['agreement']['agree_pct']:.1f}%. "
-      f"Every category that reads state lands on parity; the control, which reads almost "
-      f"nothing, does not move. Independently reproduced on a "
+      f"{BEF['agreement']['agree_pct']:.1f}% to {AFT['agreement']['agree_pct']:.1f}%. The two "
+      f"spread columns are there because a median can flatter a category: "
+      f"<em>{esc(SHORT['ACCOUNT cold existing EOA'])}</em> really is tight &mdash; middle half "
+      f"{eo['p25']:.3f}&ndash;{eo['p75']:.3f}, {eo['within10']}/{eo['n']} inside the band "
+      f"&mdash; whereas <em>{esc(SHORT['STORAGE slot access'])}</em> sits on parity at "
+      f"{st['median']:.3f} while ranging {st['min']:.3f}&ndash;{st['max']:.3f} with only "
+      f"{st['within10']}/{st['n']} inside it. Independently reproduced on a "
       f"{thousands(D['replication']['agreement']['n'])}-test subset that agreed with the "
       f"uncorrected arm to within a couple of percent, so these ratios are not run-to-run "
       f"noise.</caption></table>")
@@ -478,12 +617,35 @@ def main():
              "were already inside the band stay inside it &mdash; the control that makes "
              "the rest credible."))
 
+    w(figure(chart_ratio_dots(rat_b, rat_a, spr_b, spr_a),
+             f"The same {thousands(AFT['agreement']['n'])} tests as individual results rather "
+             f"than medians: one dot per cluster of tests at that ratio, sized by how many, with "
+             f"the middle half drawn as a bar and the median as a tick. The count on the right is "
+             f"how many of that category's tests land inside &plusmn;10% of parity. Reading the "
+             f"two panels together is the point &mdash; the account clouds do not merely shift, "
+             f"they collapse from a smear across the left of the axis onto the parity band."))
+
     # ---------------------------------------------------------------- code
     dm = modes["EXISTING_CONTRACT_DIFF_MAX"]
     w(f"<h2>Why a different contract per access still costs {dm['readX']:.2f}&times;</h2>")
     w("<p>One cell does not come back to parity, and it is the same cell the geth study flagged "
-      "and left unexplained. Sorting the access modes by how much contract code they touch "
-      "explains it in one pass:</p>")
+      "and left unexplained. Laying every opcode against every access mode shows it is a column, "
+      "not a scatter &mdash; whatever is left does not care which opcode reads the account:</p>")
+    gcol = {m: median([row[m]["thr"] for row in AFT["grid"].values() if m in row])
+            for m in GRID_MODES}
+    w(figure(chart_grid(AFT["grid"]),
+             f"Throughput ratio for each of the {len(AFT['grid'])} opcodes against each access "
+             f"mode, after treatment. Read it by column, not by row: DIFF_MAX sits at "
+             f"{gcol['EXISTING_CONTRACT_DIFF_MAX']:.2f} and JUMPDEST at "
+             f"{gcol['EXISTING_CONTRACT_JUMPDEST']:.2f}, while EOA, MINIMAL and SAME_MAX are all "
+             f"{min(gcol[m] for m in ('EXISTING_EOA','EXISTING_CONTRACT_MINIMAL','EXISTING_CONTRACT_SAME_MAX')):.2f}"
+             f"&ndash;"
+             f"{max(gcol[m] for m in ('EXISTING_EOA','EXISTING_CONTRACT_MINIMAL','EXISTING_CONTRACT_SAME_MAX')):.2f}. "
+             f"The absent column is the uneven one at {gcol['NON_EXISTING_ACCOUNT']:.2f}, which "
+             f"is the same dispersion its category showed above. Every row behaves the same, so "
+             f"this is not an opcode effect &mdash; it is something the two dark modes share."))
+    w("<p>Sorting the access modes by how much contract code they touch explains it in one "
+      "pass:</p>")
     w("<table><tr><th>access mode</th><th>what it touches</th><th class=n>jochemnet MB</th>"
       "<th class=n>state-actor MB</th><th class=n>bytes sa/joc</th>"
       "<th class=n>throughput sa/joc</th></tr>")
@@ -516,6 +678,26 @@ def main():
       f"penalty per unit of work. On top of it runs a ~10% proportional component, which only "
       f"becomes visible in the largest bucket, where 10% of "
       f"{big_b['jocMB']:.0f} MB is most of the {big_b['excess']:.0f} MB measured:</p>")
+    wr = AFT["worst"]
+    n_ctrl = sum(1 for r in wr if r["control"])
+    w(f"<p>It is worth naming the individual tests that are still furthest from parity, because "
+      f"{n_ctrl} of these {len(wr)} are control tests &mdash; tests that deliberately do no "
+      f"account-state work at all:</p>")
+    w("<table><tr><th class=n>ratio</th><th>opcode</th><th>access mode</th><th class=n>gas</th>"
+      "<th>control?</th><th class=n>jochemnet MB</th><th class=n>state-actor MB</th></tr>")
+    for r in wr:
+        w(f"<tr><td class=\"n bad\">{r['thr']:.3f}</td><td>{esc(r['opcode'] or '&mdash;')}</td>"
+          f"<td><code>{esc(r['mode'] or r['family'])}</code></td>"
+          f"<td class=n>{r['gas']}M</td>"
+          f"<td>{'yes' if r['control'] else 'no'}</td>"
+          f"<td class=n>{r['jocMB']:.0f}</td><td class=n>{r['saMB']:.0f}</td></tr>")
+    w(f"<caption>The worst {len(wr)} tests in the whole suite, and {n_ctrl} of them do no "
+      f"account work. They read {min(r['jocMB'] for r in wr):.0f}&ndash;"
+      f"{max(r['jocMB'] for r in wr):.0f} MB on jochemnet against "
+      f"{min(r['saMB'] for r in wr):.0f}&ndash;{max(r['saMB'] for r in wr):.0f} MB on "
+      f"state-actor. Nothing about account access explains them, which is the clue the next "
+      f"chart follows.</caption></table>")
+
     w(figure(chart_additive(add["buckets"]),
              f"Median excess per test, by how much work the test does. Four buckets spanning a "
              f"1600&times; range of test size sit on the same dashed line, which is the fixed "
@@ -618,6 +800,8 @@ def main():
         "fig_cost_curves": chart_cost_curves(cc),
         "fig_amortisation": chart_amortisation(amort),
         "fig_treatment_dumbbell": chart_treatment_dumbbell(bc, ac),
+        "fig_ratio_dots": chart_ratio_dots(rat_b, rat_a, spr_b, spr_a),
+        "fig_grid": chart_grid(AFT["grid"]),
         "fig_code_ladder": chart_code_ladder(modes, {"sa": fp["sa"]["code"],
                                                      "joc": fp["joc"]["code"]}),
         "fig_additive": chart_additive(add["buckets"]),

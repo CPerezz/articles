@@ -41,7 +41,7 @@ hash mismatch. Use the `existing-snapshot` family's 14-EIP set, which adds
 | `report_svg.py` | Inline-SVG primitives (scales, axes, dots, lines, bands). Has its own self-check. |
 | `crt_theme.py` | The site stylesheet, byte-identical to the sibling reports, kept in one place so the three cannot drift apart. |
 | `data/report_data.json` | Every value the report renders. The only input to the generator. |
-| `figures/fig_*.svg` | The five charts as standalone files, site palette derived from `crt_theme.CSS` so a figure cannot disagree with how it renders in the page. |
+| `figures/fig_*.svg` | The seven charts as standalone files, site palette derived from `crt_theme.CSS` so a figure cannot disagree with how it renders in the page. |
 
 ## Regenerate
 
@@ -63,8 +63,11 @@ five categories at parity after treatment, and a monotonic `code ladder`.
 `main()` cover the scope precondition (both arms on the flat backend, by run id), the headline
 factor, per-category parity after treatment, the two pre-existing parity controls, the
 random-key inversion the argument depends on, the amortisation shape (parity at low N,
-saturation at high N), the monotonicity of the code ladder, the two-term residual model, and the
-Besu reference figures quoted in the cross-client table. Mutating any of those inputs makes generation fail rather than quietly print a
+saturation at high N), per-category dispersion (that `EXISTING_EOA` stays tight and that the
+storage category stays wide), that the worst individual tests are still dominated by controls,
+that DIFF_MAX remains the outlying column of the opcode grid, the monotonicity of the code
+ladder, the two-term residual model, and the Besu reference figures quoted in the cross-client
+table. Mutating any of those inputs makes generation fail rather than quietly print a
 sentence the data no longer supports.
 
 ## Findings
@@ -89,5 +92,15 @@ sentence the data no longer supports.
   term, which is why tests that do no account work sit at 0.71 while tests reading gigabytes sit
   at parity. Client startup, trie placement and measurement-window asymmetry are all ruled out;
   the origin is not yet pinned to a column family.
+- Category medians are not the whole story, so the page carries dispersion as well: the
+  `EXISTING_EOA` middle half is 0.970–0.991 with 108/110 tests inside ±10% of parity, whereas
+  the storage category sits on parity at 1.034 while ranging 0.549–2.094 with only 47/88 inside
+  it. `fig_ratio_dots` plots every one of the 1,461 tests, before and after.
+- The 12 individual tests furthest from parity are 11 controls plus one absent-account test —
+  they read 1–8 MB on the snapshot against 68–174 MB on the generated store, which is the
+  additive term rather than anything about account access.
+- `fig_grid` reads by column, not by row: every opcode behaves the same, and only the DIFF_MAX
+  and JUMPDEST modes stay off parity, which is what makes the effect attributable to code
+  rather than to any opcode.
 - Consequence, and the same one the sibling studies reach: comparing a promoted-after-pre-run
   snapshot against a store that never got one measures preparation, not access cost.

@@ -165,6 +165,90 @@ def agreement(pairs):
     }
 
 
+
+def pct(xs, q):
+    srt = sorted(xs)
+    if not srt:
+        return None
+    return srt[min(len(srt) - 1, max(0, int(round(q * (len(srt) - 1)))))]
+
+
+def spread(pairs):
+    """Per-category dispersion, not just the median.
+
+    A median alone hides whether a category is tight around parity or straddling it, which is
+    exactly what a reader needs to judge how much any one cell moved.
+    """
+    b = {}
+    for tid, j, s in pairs:
+        b.setdefault(category_of(tid), []).append(s["mgas_s"] / j["mgas_s"])
+    return {
+        c: {"n": len(v), "min": min(v), "p25": pct(v, 0.25), "median": median(v),
+            "p75": pct(v, 0.75), "max": max(v),
+            "within10": sum(1 for r in v if 0.9 <= r <= 1.1)}
+        for c, v in b.items()
+    }
+
+
+def ratios_by_category(pairs):
+    """Every test's ratio, grouped by category, so the page can plot the whole distribution
+    rather than a summary statistic. Rounded to keep the data file small."""
+    b = {}
+    for tid, j, s in pairs:
+        b.setdefault(category_of(tid), []).append(round(s["mgas_s"] / j["mgas_s"], 4))
+    return {c: sorted(v) for c, v in b.items()}
+
+
+def opcode_grid(pairs):
+    """opcode x account_mode for the measured account-access tests: which cells diverge."""
+    g = {}
+    for tid, j, s in pairs:
+        if family_of(tid) != "test_account_access" or re.search(r"overhead_baseline_True", tid):
+            continue
+        op, mode = re.search(r"opcode_([A-Z]+)", tid), mode_of(tid)
+        if not op or not mode:
+            continue
+        g.setdefault(op.group(1), {}).setdefault(mode, []).append(s["mgas_s"] / j["mgas_s"])
+    return {
+        op: {m: {"n": len(v), "thr": median(v), "min": min(v), "max": max(v)}
+             for m, v in modes.items()}
+        for op, modes in g.items()
+    }
+
+
+def worst(pairs, k=12):
+    """The individual tests furthest from parity, named. A category median cannot tell you
+    whether one cell is 2x off or forty tests are each slightly off."""
+    rows = []
+    for tid, j, s in pairs:
+        op = re.search(r"opcode_([A-Z]+)", tid)
+        rows.append({
+            "opcode": op.group(1) if op else None,
+            "mode": mode_of(tid),
+            "gas": gas_of(tid),
+            "family": family_of(tid),
+            "control": bool(re.search(r"overhead_baseline_True", tid)),
+            "category": category_of(tid),
+            "thr": s["mgas_s"] / j["mgas_s"],
+            "jocMB": j["mb"], "saMB": s["mb"],
+            "cpuX": (s["cpu"] / j["cpu"]) if j["cpu"] else None,
+        })
+    rows.sort(key=lambda r: r["thr"])
+    return rows[:k]
+
+
+def per_gas(pairs):
+    """Ratio against gas, with the spread, so a flat median cannot hide a widening range."""
+    g = {}
+    for tid, j, s in pairs:
+        gg = gas_of(tid)
+        if gg is None:
+            continue
+        g.setdefault(gg, []).append(s["mgas_s"] / j["mgas_s"])
+    return [{"gas": k, "n": len(v), "median": median(v), "min": min(v), "max": max(v)}
+            for k, v in sorted(g.items())]
+
+
 def cost_curve(pairs):
     """Read volume against gas, per arm. A store with a bounded working set is flat in gas."""
     g = {}
@@ -321,11 +405,15 @@ def main():
             "host": "48 cores, 125 GB RAM, 7 TB NVMe RAID",
         },
         "before": {"categories": by_category(before), "agreement": agreement(before),
-                   "cost_curve": cost_curve(before)},
+                   "cost_curve": cost_curve(before), "spread": spread(before),
+                   "ratios": ratios_by_category(before), "grid": opcode_grid(before),
+                   "worst": worst(before), "per_gas": per_gas(before)},
         "after": {"categories": by_category(after), "agreement": agreement(after),
                   "by_mode": by_mode(after, control=False),
                   "by_mode_control": by_mode(after, control=True),
-                  "additive": additive(after)},
+                  "additive": additive(after), "spread": spread(after),
+                  "ratios": ratios_by_category(after), "grid": opcode_grid(after),
+                  "worst": worst(after), "per_gas": per_gas(after)},
         "replication": {"agreement": agreement(repl),
                         "categories": by_category(repl)} if repl else None,
         "measured": MEASURED,
