@@ -66,6 +66,11 @@
       <div class="deck-meta"><span class="tag">Ethereum · geth · pathdb · benchmarking</span> · 2026</div>
       <div class="deck-desc">Identical EEST bloatnet runs report wildly different MGas/s on three geth databases. The cause turned out to be a 380 MiB pathdb journal shipped inside one snapshot — a provenance artifact, not a property of either database.</div>
     </a>
+    <a href="nethermind-state-db-divergence/nethermind-state-db-report.html" class="deck-link">
+      <div class="deck-title"><span class="prompt">&gt; </span>The 17× that wasn't there</div>
+      <div class="deck-meta"><span class="tag">Ethereum · nethermind · flat DB · benchmarking</span> · 2026</div>
+      <div class="deck-desc">Two Nethermind state databases holding the same state, benchmarked identically, reported a 17× gap on account reads. The cause was where the rows sat, not what they contained — equalise it and every category that reads state returns to parity.</div>
+    </a>
   </div>
   <div class="footer">$ <a href="https://github.com/CPerezz/articles">github.com/CPerezz/articles</a></div>
 </div></body></html>

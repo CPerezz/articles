@@ -1,0 +1,722 @@
+{
+ "after": {
+  "additive": {
+   "buckets": [
+    {
+     "excess": 107.626496,
+     "hi": 10,
+     "jocMB": 1.744896,
+     "lo": 0,
+     "n": 543,
+     "saMB": 109.469696,
+     "thr": 0.7341515439918942
+    },
+    {
+     "excess": 179.37203200000002,
+     "hi": 100,
+     "jocMB": 38.2976,
+     "lo": 10,
+     "n": 95,
+     "saMB": 217.088,
+     "thr": 0.8675321248381366
+    },
+    {
+     "excess": 84.979712,
+     "hi": 1000,
+     "jocMB": 518.422528,
+     "lo": 100,
+     "n": 68,
+     "saMB": 702.631936,
+     "thr": 1.0739636351112858
+    },
+    {
+     "excess": 198.9017600000002,
+     "hi": 4000,
+     "jocMB": 2820.251648,
+     "lo": 1000,
+     "n": 280,
+     "saMB": 3109.543936,
+     "thr": 0.979185388407936
+    },
+    {
+     "excess": 936.6650879999997,
+     "hi": null,
+     "jocMB": 5612.806144,
+     "lo": 4000,
+     "n": 475,
+     "saMB": 6845.775872,
+     "thr": 0.9740443150048032
+    }
+   ],
+   "median_excess": 188.12928,
+   "p10": 34.340863999999996,
+   "p90": 1251.344383999999
+  },
+  "agreement": {
+   "agree": 774,
+   "agree_pct": 52.977412731006154,
+   "max": 2.093512043414952,
+   "median": 0.9592158832572929,
+   "min": 0.32130414880405334,
+   "n": 1461
+  },
+  "by_mode": {
+   "EXISTING_CONTRACT_DIFF_MAX": {
+    "jocMB": 4030.1690879999996,
+    "n": 110,
+    "readX": 1.54634723332351,
+    "saMB": 5638.8608,
+    "thrX": 0.6553529505488633
+   },
+   "EXISTING_CONTRACT_JUMPDEST": {
+    "jocMB": 4827.21792,
+    "n": 110,
+    "readX": 1.1770770884551809,
+    "saMB": 5598.355455999999,
+    "thrX": 0.930883676588706
+   },
+   "EXISTING_CONTRACT_MINIMAL": {
+    "jocMB": 3646.615552,
+    "n": 110,
+    "readX": 1.0636305586789507,
+    "saMB": 3872.751616,
+    "thrX": 0.9797544222748643
+   },
+   "EXISTING_CONTRACT_SAME_MAX": {
+    "jocMB": 3646.959616,
+    "n": 110,
+    "readX": 1.063645028064744,
+    "saMB": 3863.420928,
+    "thrX": 0.9795174363264179
+   },
+   "EXISTING_EOA": {
+    "jocMB": 3703.7056,
+    "n": 110,
+    "readX": 1.0568546664009286,
+    "saMB": 3906.51904,
+    "thrX": 0.9792700118223331
+   },
+   "NON_EXISTING_ACCOUNT": {
+    "jocMB": 40.484864,
+    "n": 110,
+    "readX": 5.646096880348669,
+    "saMB": 218.33318400000002,
+    "thrX": 0.9036576439247631
+   }
+  },
+  "by_mode_control": {
+   "EXISTING_CONTRACT_DIFF_MAX": {
+    "jocMB": 1.773568,
+    "n": 110,
+    "readX": 52.95645933014354,
+    "saMB": 100.49536,
+    "thrX": 0.7291552963537415
+   },
+   "EXISTING_CONTRACT_JUMPDEST": {
+    "jocMB": 1.7653759999999998,
+    "n": 110,
+    "readX": 52.467962962962964,
+    "saMB": 92.823552,
+    "thrX": 0.7139598412609002
+   },
+   "EXISTING_CONTRACT_MINIMAL": {
+    "jocMB": 1.744896,
+    "n": 110,
+    "readX": 49.677778472699984,
+    "saMB": 89.15968000000001,
+    "thrX": 0.7075290140702312
+   },
+   "EXISTING_CONTRACT_SAME_MAX": {
+    "jocMB": 1.753088,
+    "n": 110,
+    "readX": 59.1275111252384,
+    "saMB": 103.776256,
+    "thrX": 0.6827274058154928
+   }
+  },
+  "categories": {
+   "ACCOUNT cold existing EOA": {
+    "agree": 108,
+    "cpu": 1.0653096382445346,
+    "jocMB": 3703.7056,
+    "n": 110,
+    "read": 1.0568546664009286,
+    "saMB": 3906.51904,
+    "thr": 0.9792700118223331
+   },
+   "ACCOUNT cold existing contract": {
+    "agree": 343,
+    "cpu": 1.0701200280635281,
+    "jocMB": 4009.590784,
+    "n": 440,
+    "read": 1.0843139197608123,
+    "saMB": 4618.727424000001,
+    "thr": 0.9682020606186386
+   },
+   "ACCOUNT cold non-existing": {
+    "agree": 34,
+    "cpu": 1.2610492613024111,
+    "jocMB": 40.484864,
+    "n": 110,
+    "read": 5.646096880348669,
+    "saMB": 218.33318400000002,
+    "thr": 0.9036576439247631
+   },
+   "ACCOUNT warm query": {
+    "agree": 33,
+    "cpu": 1.1885795117316793,
+    "jocMB": 1.458176,
+    "n": 77,
+    "read": 143.60493827160496,
+    "saMB": 228.777984,
+    "thr": 0.8957271761526968
+   },
+   "CONTROL overhead_baseline": {
+    "agree": 49,
+    "cpu": 2.2482977010720333,
+    "jocMB": 1.753088,
+    "n": 440,
+    "read": 52.414156959784336,
+    "saMB": 96.13311999999999,
+    "thr": 0.7079016290708996
+   },
+   "ETHER transfer receivers": {
+    "agree": 160,
+    "cpu": 1.0917013933416797,
+    "jocMB": 6668.222464,
+    "n": 196,
+    "read": 1.1699039762904657,
+    "saMB": 7793.065984000001,
+    "thr": 1.0132657042138935
+   },
+   "STORAGE slot access": {
+    "agree": 47,
+    "cpu": 1.1780915850221514,
+    "jocMB": 578.0930559999999,
+    "n": 88,
+    "read": 1.0756521611704506,
+    "saMB": 625.9712,
+    "thr": 1.0338837979711255
+   }
+  }
+ },
+ "before": {
+  "agreement": {
+   "agree": 187,
+   "agree_pct": 12.799452429842573,
+   "max": 1.8704550146344872,
+   "median": 0.4974133554280794,
+   "min": 0.03176515610920169,
+   "n": 1461
+  },
+  "categories": {
+   "ACCOUNT cold existing EOA": {
+    "agree": 0,
+    "cpu": 3.2248203041329564,
+    "jocMB": 231.108608,
+    "n": 110,
+    "read": 14.830569203131537,
+    "saMB": 3906.51904,
+    "thr": 0.0585028052533485
+   },
+   "ACCOUNT cold existing contract": {
+    "agree": 0,
+    "cpu": 2.1033601578689103,
+    "jocMB": 230.961152,
+    "n": 440,
+    "read": 8.8084720708509,
+    "saMB": 4618.727424000001,
+    "thr": 0.08894205710730385
+   },
+   "ACCOUNT cold non-existing": {
+    "agree": 50,
+    "cpu": 1.2083320811101368,
+    "jocMB": 77.840384,
+    "n": 110,
+    "read": 2.935962522954889,
+    "saMB": 218.33318400000002,
+    "thr": 1.051175315262475
+   },
+   "ACCOUNT warm query": {
+    "agree": 27,
+    "cpu": 1.2437394749291337,
+    "jocMB": 1.47456,
+    "n": 77,
+    "read": 145.73224043715848,
+    "saMB": 228.777984,
+    "thr": 0.875996002640054
+   },
+   "CONTROL overhead_baseline": {
+    "agree": 46,
+    "cpu": 2.212169213374089,
+    "jocMB": 1.908736,
+    "n": 440,
+    "read": 49.54229507253051,
+    "saMB": 96.13311999999999,
+    "thr": 0.7325312784212745
+   },
+   "ETHER transfer receivers": {
+    "agree": 7,
+    "cpu": 1.2313817555996647,
+    "jocMB": 4015.0589440000003,
+    "n": 196,
+    "read": 1.8807906180784462,
+    "saMB": 7793.065984000001,
+    "thr": 0.3848318524234549
+   },
+   "STORAGE slot access": {
+    "agree": 57,
+    "cpu": 1.1302401257749315,
+    "jocMB": 632.85248,
+    "n": 88,
+    "read": 1.035881637793106,
+    "saMB": 625.9712,
+    "thr": 1.006433157444648
+   }
+  },
+  "cost_curve": [
+   {
+    "gas": 100,
+    "jocMB": 226.557952,
+    "n": 40,
+    "saMB": 1985.8227200000001
+   },
+   {
+    "gas": 120,
+    "jocMB": 227.774464,
+    "n": 40,
+    "saMB": 2364.1825280000003
+   },
+   {
+    "gas": 140,
+    "jocMB": 228.0448,
+    "n": 40,
+    "saMB": 2744.0701440000003
+   },
+   {
+    "gas": 160,
+    "jocMB": 228.67968000000002,
+    "n": 40,
+    "saMB": 3133.8291200000003
+   },
+   {
+    "gas": 180,
+    "jocMB": 228.58956799999999,
+    "n": 40,
+    "saMB": 3510.767616
+   },
+   {
+    "gas": 200,
+    "jocMB": 229.347328,
+    "n": 40,
+    "saMB": 3888.812032
+   },
+   {
+    "gas": 220,
+    "jocMB": 230.13376,
+    "n": 40,
+    "saMB": 4270.534656
+   },
+   {
+    "gas": 240,
+    "jocMB": 230.1952,
+    "n": 40,
+    "saMB": 4650.51648
+   },
+   {
+    "gas": 260,
+    "jocMB": 231.99744,
+    "n": 40,
+    "saMB": 5044.146176
+   },
+   {
+    "gas": 280,
+    "jocMB": 231.34208,
+    "n": 40,
+    "saMB": 5404.184576
+   },
+   {
+    "gas": 300,
+    "jocMB": 231.903232,
+    "n": 40,
+    "saMB": 5772.30848
+   }
+  ]
+ },
+ "measured": {
+  "amortisation": {
+   "points": [
+    {
+     "joc_blk": 1.88,
+     "joc_mb": 3.9,
+     "joc_us": 164.0,
+     "n": 500,
+     "sa_blk": 2.0,
+     "sa_mb": 4.1,
+     "sa_us": 183.6
+    },
+    {
+     "joc_blk": 1.65,
+     "joc_mb": 13.5,
+     "joc_us": 107.7,
+     "n": 2000,
+     "sa_blk": 1.99,
+     "sa_mb": 16.3,
+     "sa_us": 184.9
+    },
+    {
+     "joc_blk": 1.06,
+     "joc_mb": 34.8,
+     "joc_us": 39.2,
+     "n": 8000,
+     "sa_blk": 1.99,
+     "sa_mb": 65.2,
+     "sa_us": 183.0
+    },
+    {
+     "joc_blk": 0.55,
+     "joc_mb": 45.0,
+     "joc_us": 31.4,
+     "n": 20000,
+     "sa_blk": 1.99,
+     "sa_mb": 162.6,
+     "sa_us": 183.9
+    },
+    {
+     "joc_blk": 0.23,
+     "joc_mb": 47.2,
+     "joc_us": 10.6,
+     "n": 50000,
+     "sa_blk": 1.97,
+     "sa_mb": 404.4,
+     "sa_us": 179.1
+    }
+   ],
+   "src": "probe-flat -mode seq, Account CF, cold caches + fresh process per point, fill_cache=false, 100% hits, the EEST fixtures' own key population"
+  },
+  "eip_trap": {
+   "fourteen": [
+    2780,
+    7708,
+    7778,
+    7843,
+    7928,
+    7954,
+    7976,
+    7981,
+    7997,
+    8024,
+    8037,
+    8038,
+    8246,
+    8282
+   ],
+   "nine": [
+    2780,
+    7708,
+    7778,
+    7843,
+    7928,
+    7954,
+    7976,
+    7981,
+    8024
+   ],
+   "src": "benchmarkoor ships two Amsterdam EIP sets; only the existing-snapshot family's list reproduces what geth and Besu get by activating Amsterdam by name"
+  },
+  "footprint": {
+   "boot_read_gb": {
+    "joc": 6.53,
+    "sa": 4.81
+   },
+   "joc": {
+    "code": "7.6 GB",
+    "flat": "314 GB",
+    "state": "341 GB"
+   },
+   "sa": {
+    "code": "45 GB",
+    "flat": "478 GB",
+    "state": "160 KB",
+    "total_gib": 409
+   },
+   "src": "du -sh on each promoted volume"
+  },
+  "intervention": {
+   "account_after": {
+    "gb": 17.38,
+    "levels": {
+     "6": 37
+    },
+    "seconds": 185.1
+   },
+   "account_before": {
+    "gb": 16.25,
+    "levels": {
+     "3": 4,
+     "4": 36,
+     "5": 304,
+     "6": 20
+    }
+   },
+   "code_after": {
+    "levels": {
+     "6": 115
+    },
+    "seconds": 61.6
+   },
+   "code_before": {
+    "gb": 7.6,
+    "levels": {
+     "0": 3,
+     "5": 6,
+     "6": 117
+    }
+   },
+   "compacted_blk": 1.76,
+   "compacted_mb_20k": 146.1,
+   "compacted_mb_50k": 361.4,
+   "compacted_us": 186.0,
+   "src": "probe-flat -mode rebuild: CompactRangeCFOpt with bottommost=kForce, per-CF options transcribed from state-actor's OPTIONS and verified by an OPTIONS diff",
+   "statenodes_after": {
+    "gb": 38.98,
+    "levels": {
+     "6": 158
+    },
+    "seconds": 708.2
+   },
+   "statenodes_before": {
+    "gb": 39.1,
+    "levels": {
+     "0": 3,
+     "3": 1,
+     "4": 4,
+     "5": 60,
+     "6": 487
+    }
+   }
+  },
+  "options_per_cf": {
+   "rows": [
+    [
+     "Account",
+     4096,
+     4,
+     "kNoCompression",
+     "ribbon 10:3"
+    ],
+    [
+     "Storage",
+     8000,
+     4,
+     "kLZ4Compression",
+     "ribbon 10:3"
+    ],
+    [
+     "StateNodes",
+     16000,
+     8,
+     "kLZ4Compression",
+     "ribbon 10:3"
+    ],
+    [
+     "StateTopNodes",
+     16000,
+     8,
+     "kLZ4Compression",
+     "ribbon 10:3"
+    ],
+    [
+     "StorageNodes",
+     16000,
+     8,
+     "kLZ4Compression",
+     "ribbon 10:3"
+    ],
+    [
+     "FallbackNodes",
+     16000,
+     8,
+     "kLZ4Compression",
+     "ribbon 10:3"
+    ],
+    [
+     "Metadata",
+     16000,
+     4,
+     "kLZ4Compression",
+     "ribbon 10:3"
+    ],
+    [
+     "default",
+     4096,
+     16,
+     "kSnappyCompression",
+     "none"
+    ]
+   ],
+   "src": "OPTIONS files of both stores, compared knob by knob"
+  },
+  "prerun": {
+   "blocks": 7736,
+   "bytes": 10062313486,
+   "first_block": 24402728,
+   "last_block": 24410463,
+   "src": "the pre-run bundle shipped with the jochemnet fixtures release",
+   "txs_per_block": 64
+  },
+  "random_keys": {
+   "Account": {
+    "joc_blk": 2.51,
+    "joc_us": 219,
+    "sa_blk": 1.99,
+    "sa_us": 188
+   },
+   "StateNodes": {
+    "joc_blk": 10.26,
+    "joc_us": 434,
+    "sa_blk": 3.44,
+    "sa_us": 208
+   },
+   "Storage": {
+    "joc_blk": 2.21,
+    "joc_us": 198,
+    "sa_blk": 2.52,
+    "sa_us": 200
+   },
+   "src": "probe-flat -mode sample/probe: keys sampled from the CF itself, so both arms are measured on their own contents rather than on a shared synthetic range"
+  },
+  "three_client": {
+   "geth_diffmax_sa_over_compacted": 7.71,
+   "geth_sa_over_compacted": {
+    "hi": 1.117,
+    "lo": 1.031,
+    "median": 1.091
+   },
+   "geth_sa_over_uncompacted": {
+    "EOA": 2.01,
+    "JUMPDEST": 4.94,
+    "MINIMAL": 4.8,
+    "NON_EXISTING": 0.91,
+    "SAME_MAX": 5.81
+   },
+   "src": "geth and Besu figures from the two sibling reports in this repo",
+   "state_gib": {
+    "besu": 532,
+    "geth": 674,
+    "nethermind": 409
+   }
+  }
+ },
+ "provenance": {
+  "arms": {
+   "fix": {
+    "results": "nm-joc-full",
+    "run": "1789395065_5742fc8e_nm-joc-full",
+    "tests": 1463
+   },
+   "joc": {
+    "results": "nm-jochemnet",
+    "run": "1789101020_23e0ca97_nm-jochemnet",
+    "tests": 1463
+   },
+   "rep": {
+    "results": "nm-joc-replication",
+    "run": "1789366052_c5134616_nm-joc-clean",
+    "tests": 266
+   },
+   "sa": {
+    "results": "nm-state-actor",
+    "run": "1789207753_887c4915_nm-sa",
+    "tests": 1461
+   }
+  },
+  "flags": [
+   "--FlatDb.Enabled=true",
+   "--Blocks.ParallelExecution=true",
+   "--Blocks.ParallelExecutionBatchRead=true"
+  ],
+  "harness": {
+   "drop_memory_caches": "steps",
+   "rollback_strategy": "container-recreate"
+  },
+  "host": "48 cores, 125 GB RAM, 7 TB NVMe RAID",
+  "image": "docker.io/ethpandaops/nethermind:glamsterdam-devnet-7",
+  "snapshot_block": 24402727
+ },
+ "replication": {
+  "agreement": {
+   "agree": 32,
+   "agree_pct": 12.030075187969924,
+   "max": 27.95318951075837,
+   "median": 0.8448305650257111,
+   "min": 0.3671545738024985,
+   "n": 266
+  },
+  "categories": {
+   "ACCOUNT cold existing EOA": {
+    "agree": 1,
+    "cpu": 0.8903903614904267,
+    "jocMB": 2980.769792,
+    "n": 20,
+    "read": 1.2339827260346605,
+    "saMB": 3770.6301439999997,
+    "thr": 0.864718225764149
+   },
+   "ACCOUNT cold existing contract": {
+    "agree": 5,
+    "cpu": 1.0252337666267868,
+    "jocMB": 3590.545408,
+    "n": 80,
+    "read": 1.2699268562947847,
+    "saMB": 4628.70528,
+    "thr": 0.8533487739161528
+   },
+   "ACCOUNT cold non-existing": {
+    "agree": 0,
+    "cpu": 0.35065289096979213,
+    "jocMB": 2550.2351360000002,
+    "n": 20,
+    "read": 0.08287496632784039,
+    "saMB": 219.705344,
+    "thr": 19.174996642519538
+   },
+   "ACCOUNT warm query": {
+    "agree": 5,
+    "cpu": 1.2324104761912236,
+    "jocMB": 1.449984,
+    "n": 14,
+    "read": 161.9122132463363,
+    "saMB": 242.290688,
+    "thr": 0.8744227271381679
+   },
+   "CONTROL overhead_baseline": {
+    "agree": 9,
+    "cpu": 2.293657600928066,
+    "jocMB": 1.9865599999999999,
+    "n": 80,
+    "read": 47.32400753204574,
+    "saMB": 96.40755200000001,
+    "thr": 0.709016460626771
+   },
+   "ETHER transfer receivers": {
+    "agree": 2,
+    "cpu": 1.203165291957962,
+    "jocMB": 4316.995584,
+    "n": 36,
+    "read": 1.7737992174033197,
+    "saMB": 7711.076352,
+    "thr": 0.7354824154836275
+   },
+   "STORAGE slot access": {
+    "agree": 10,
+    "cpu": 1.0463700154231326,
+    "jocMB": 763.875328,
+    "n": 16,
+    "read": 1.0503285262197963,
+    "saMB": 842.133504,
+    "thr": 1.0465299342785925
+   }
+  }
+ }
+}
