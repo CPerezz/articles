@@ -637,17 +637,6 @@ def main():
     noise_t = bucket_median(FT["compacted"], FT["compacted_rep"], commonf)
     noise = max(abs(v - 1) for v in noise_t.values())
 
-    # pipeline-level agreement: the same workloads measured by the 1,462-test suites and by the
-    # 129-test suites, built from two separate extractions and pre-run replays
-    xs = shared(F["plain"], F["compacted"], FT["plain"], FT["compacted"])
-    pipe = {}
-    for b in BUCKETS:
-        sub = [c for c in xs if F["plain"][c]["bucket"] == b]
-        if sub:
-            a = median([F["compacted"][c]["mgas_s"] / F["plain"][c]["mgas_s"] for c in sub])
-            z = median([FT["compacted"][c]["mgas_s"] / FT["plain"][c]["mgas_s"] for c in sub])
-            pipe[b] = (a, z, abs(z - a) / a)
-
     # the EXISTING population, which is where the residual lives
     ex = [c for c in common if c[1] != "NON_EXISTING_ACCOUNT"]
     cats = collections.defaultdict(list)
@@ -724,7 +713,7 @@ def main():
     assert g06s["mean_record"] > g06j["mean_record"] and comp_ratio > 1 and blk_ratio > 1, \
         "cf06 geometry chain no longer runs in the direction the prose states"
 
-    print(f"common: full {len(common)} filtered {len(commonf)} cross {len(xs)}")
+    print(f"common: full {len(common)} filtered {len(commonf)}")
     print(f"headline: {headline:.2f}x -> {factor}x")
     print(f"sa/compacted: " + " ".join(f"{k} {v:.3f}" for k, v in sorted(sa_vs_comp.items())))
     print(f"sa/plain:     " + " ".join(f"{k} {v:.3f}" for k, v in sorted(sa_vs_plain.items())))
@@ -1069,14 +1058,6 @@ def main():
     w(f"<p>What is left after both artifacts is small and consistent: against the compacted "
       f"snapshot, every one of the {len(ex_cat)} categories that reads an existing account "
       f"favours the snapshot, median {pc(ex_med)}, range {pc(ex_hi)} to {pc(ex_lo)}.</p>")
-    w(f"<p>Small enough to ask whether it is real. It is. Measuring the same compacted store "
-      f"twice reproduces these classes to {pc(noise_t['leaf-only'])} and "
-      f"{pc(noise_t['code-reading'])}, and rebuilding the whole pipeline from a second "
-      f"extraction &mdash; its own pre-run replay, its own compaction, a different suite "
-      f"&mdash; reproduces them to "
-      + " and ".join(f"{pipe[b][2]*100:.1f}%" for b in ("leaf-only", "code-reading")) +
-      f". A {pc(ex_med)} median sits several times above that, so it is a measurement rather "
-      f"than run-to-run wobble.</p>")
     w("<table><tr><th>cf06 ACCOUNT_INFO_STATE</th><th class=n>compacted snapshot</th>"
       "<th class=n>state-actor</th><th class=n>ratio</th></tr>")
     for lbl, fld, nd, unit in (("entries", "entries", 0, ""),
