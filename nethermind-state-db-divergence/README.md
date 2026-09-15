@@ -9,12 +9,27 @@ returns to parity.
 This is the third client in the series, after the geth and Besu studies in sibling folders.
 Everything needed to reproduce or re-cut the analysis lives here.
 
-**Scope.** Nethermind picks its state backend at startup by looking for a flat database, so a
-generated store written without the flat layout is served through the Patricia trie while the
-snapshot is served flat — two different read paths, and therefore not a comparison. The study
-begins once the generated store has been rebuilt with the flat layout and both arms log
-`flat (existing flat DB detected)`. Nothing measured before that point is quoted, and the
-generator asserts the arm run ids so it cannot be built from a pre-rebuild run.
+## Preconditions
+
+Neither of these is discussed in the article — it starts from a pair where both already hold —
+but both have to be true before a run means anything, so they are recorded here for anyone
+reproducing it.
+
+**Both arms must read through the flat backend.** Nethermind picks its state backend at startup
+by looking for a flat database. A generated store written without the flat layout is served as
+`patricia (flat DB disabled)` while the snapshot is served as `flat (existing flat DB detected)`
+— two different read paths, so nothing measured across such a pair compares the databases. The
+study begins once the generated store has been rebuilt from a `state-actor` revision that writes
+the flat layout, which relocates the trie into `flat/` and leaves `state/` at 160 KB. Nothing
+measured before that point is quoted, and `gen_nethermind_state_db_report.py` asserts both arm
+run ids so the page cannot be built from a pre-rebuild run.
+
+**The Amsterdam EIP list must match the other clients.** geth and Besu activate Amsterdam by
+name and take whatever their build considers Amsterdam to be; Nethermind activates exactly the
+EIPs you enumerate. benchmarkoor ships two sets, and the shorter 9-EIP one makes
+Nethermind compute a different block access list — every payload comes back `INVALID` with a BAL
+hash mismatch. Use the `existing-snapshot` family's 14-EIP set, which adds
+7997, 8037, 8038, 8246, 8282; that reproduces what the other two clients get for free.
 
 ## Layout
 
