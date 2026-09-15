@@ -683,6 +683,7 @@ def main():
     l0_06 = levels["before"]["06"]["0"]["files"]
     l6_06 = levels["before"]["06"]["6"]["files"]
     e06 = D["entries_by_cf"]["06"]
+    n_absent = len({(c[0], c[1]) for c in common if c[1] == "NON_EXISTING_ACCOUNT"})
     l0_06_after = levels["after"]["06"].get("0", {}).get("files", 0)
 
     # cf0a is TRIE_LOG_STORAGE. The snapshot carries a little; the generated store carries no
@@ -738,12 +739,9 @@ def main():
     # ---- figures ----------------------------------------------------------
     figs = {
         "ratio_dots": (chart_ratio_dots(F, common),
-                       f"Every one of the {len(ex_cat)} account-reading categories, plus the "
-                       f"{len({(c[0], c[1]) for c in common if c[1] == 'NON_EXISTING_ACCOUNT'})} "
-                       "absence categories, as a throughput ratio against the compacted "
-                       "snapshot. Two clusters, an order of magnitude apart: reads that find a "
-                       "key land within a few percent of unity, reads that must prove absence "
-                       "land near 0.1×."),
+                       f"Throughput of the generated store divided by the compacted "
+                       f"snapshot's, one dot per opcode and account mode, log scale. "
+                       f"1× would mean the two databases cost the same."),
         "treatment_dumbbell": (chart_treatment_dumbbell(FT, commonf),
                                "What each half of the treatment does. Draining the "
                                "write-ahead log leaves the store where it started; compaction "
@@ -833,23 +831,22 @@ def main():
 
     # ===================================================================== 1
     w('<h2>The behaviour</h2>')
-    w(f"<p>Three databases, the same {thousands(len(common))} EEST workloads, the same host and "
-      f"the same NVMe device. Gas is identical across all three arms to six significant "
-      f"figures, so they were asked for the same work down to the unit. Throughput is not: on "
-      f"the categories that probe an absent account, the generated store runs "
-      f"<b>{headline:.1f}&times;</b> slower than the published snapshot.</p>")
-    w(f"<p>That is the number in the title, and it is the one a benchmark would report if it "
-      f"took the snapshot as published and compared it against generated state. It is almost "
-      f"entirely an artifact of how the two stores were built, not of how Besu reads them.</p>")
-    w(f"<p>Two artifacts, and they land on different classes of read. Compare the published "
-      f"snapshot against the same snapshot compacted and the reads that find their key are "
-      f"{plain_vs_comp['leaf-only']:.2f}&times; and {plain_vs_comp['code-reading']:.2f}&times; "
-      f"faster as published &mdash; an advantage the generated store never had, and the "
-      f"snapshot loses the moment it is compacted. On reads that must prove absence the same "
-      f"comparison gives {plain_vs_comp['absent']:.2f}&times;: no advantage at all. There the "
-      f"gap is the generated store's own, and it survives compaction at "
-      f"{1/sa_vs_comp['absent']:.1f}&times;. One artifact per class, with different causes, "
-      f"which is why the two are separated throughout.</p>")
+    w(f"<p>Three databases hold the same state. The same {thousands(len(common))} EEST tests "
+      f"run against each of them, on the same host and the same NVMe drive. Gas matches across "
+      f"all three to six significant figures, so each one was asked to do the same work. "
+      f"Throughput does not match. On the tests that look up an account which is not there, "
+      f"the generated store is <b>{headline:.1f}&times; slower</b> than the published "
+      f"snapshot.</p>")
+    w(f"<p>That is the number in the title. It is also mostly an accident of how the two "
+      f"stores were built, rather than anything about how Besu reads them. There are two "
+      f"separate accidents, and each one shows up on a different kind of read.</p>")
+    w(f"<p>The chart below is the shape of the problem. Every dot is one test category, "
+      f"measured against the snapshot after compaction. They fall into two groups about ten "
+      f"times apart. The {n_absent} dots on the left are the categories that have to prove an "
+      f"account is absent; the generated store is {1/sa_vs_comp['absent']:.1f}&times; "
+      f"slower on all of them, and compacting the snapshot does not close the gap. The "
+      f"{len(ex_cat)} dots on the right read an account that exists, and they sit within "
+      f"{pc(ex_lo)} of the snapshot. Two groups, two causes.</p>")
     w(fig("ratio_dots"))
     w("<table><tr><th>bucket</th><th>tests</th>"
       "<th class=n>state-actor ÷ plain</th><th class=n>state-actor ÷ compacted</th>"
