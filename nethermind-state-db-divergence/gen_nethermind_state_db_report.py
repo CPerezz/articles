@@ -370,39 +370,6 @@ def main():
              f"{cc[-1]['saMB']:.0f} MB. Flat in gas means the arm is re-reading one bounded set "
              f"of blocks; rising means every access goes somewhere new."))
 
-    # ---------------------------------------------------------------- traps
-    w("<h2>What has to be true before any of this is a comparison</h2>")
-    pre = M["preconditions"]
-    w(f"<p><b>Both arms have to read through the same backend.</b> Nethermind decides at "
-      f"startup whether state comes from the Patricia trie or from a flat database, by looking "
-      f"for one. A generated store written without the flat layout gets served as "
-      f"<code>patricia (flat DB disabled)</code> while the snapshot is served as "
-      f"<code>{esc(pre['backend_both'])}</code> &mdash; two different read paths, so nothing "
-      f"measured across such a pair is a comparison of databases at all. Every number below "
-      f"comes from a pair where <em>both</em> arms log "
-      f"<code>{esc(pre['backend_both'])}</code>: the generated store was rebuilt from a "
-      f"<code>state-actor</code> revision that writes the flat layout, which relocates the trie "
-      f"into <code>flat/</code> and leaves <code>state/</code> at "
-      f"{esc(fp['sa']['state'])} against the snapshot's {esc(fp['joc']['state'])}. The "
-      f"investigation starts there, and nothing measured before it is quoted here.</p>")
-    nine, fourteen = M["eip_trap"]["nine"], M["eip_trap"]["fourteen"]
-    extra = [e for e in fourteen if e not in nine]
-    w(f"<p><b>And the EIP list has to match.</b> geth and Besu are told to activate Amsterdam "
-      f"by name and take "
-      f"whatever their build considers Amsterdam to be. Nethermind is told nothing of the kind: "
-      f"it activates exactly the EIPs you enumerate. benchmarkoor ships two Amsterdam sets, and "
-      f"the shorter one &mdash; {len(nine)} EIPs &mdash; makes Nethermind compute a different "
-      f"block access list, so every payload came back <code>INVALID</code> with a BAL hash "
-      f"mismatch. The mismatch was byte-identical to one Besu had produced earlier, which sent "
-      f"us after client builds for two rounds. The cause was the config: the "
-      f"<code>existing-snapshot</code> family's {len(fourteen)}-EIP set, which adds "
-      f"{esc(', '.join(str(e) for e in extra))}, is the one that reproduces what the other two "
-      f"clients get for free.</p>")
-    w("<p class=note>Both are the same shape of problem: a benchmark can be perfectly "
-      "reproducible and still be comparing two different things. One of them announces itself "
-      "&mdash; every block comes back invalid &mdash; and the other does not. It just produces "
-      "a number.</p>")
-
     # ---------------------------------------------------------------- eliminations
     w("<h2>What we ruled out</h2>")
     rk_rows = M["random_keys"]
