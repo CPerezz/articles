@@ -434,7 +434,7 @@ def main():
     o = []
     w = o.append
     title = (f"How can two Nethermind databases holding the same state differ "
-             f"{factor:.0f}&times; &mdash; and then agree?")
+             f"{factor:.0f}&times;, and then agree?")
 
     w("<!doctype html><html lang=en><head><meta charset=utf-8>")
     w('<meta name=viewport content="width=device-width,initial-scale=1">')
@@ -447,7 +447,7 @@ def main():
       '<link href="https://fonts.googleapis.com/css2?family=VT323&'
       'family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" '
       'rel="stylesheet">')
-    w("<title>Nethermind state-DB divergence &mdash; benchmarkoor bloatnet runs</title>")
+    w("<title>Nethermind state-DB divergence, benchmarkoor bloatnet runs</title>")
     w(f"<style>{CSS}</style></head><body>")
 
     w('<div class=topbar><a href="../">&larr; all articles</a>'
@@ -494,10 +494,10 @@ def main():
 
     cc = BEF["cost_curve"]
     w(figure(chart_cost_curves(cc),
-             f"Read volume against gas for the contract-reading tests. jochemnet stays flat "
-             f"&mdash; {cc[0]['jocMB']:.0f} MB at {cc[0]['gas']}M gas and "
-             f"{cc[-1]['jocMB']:.0f} MB at {cc[-1]['gas']}M, triple the work for the same bytes "
-             f"&mdash; while state-actor climbs from {cc[0]['saMB']:.0f} MB to "
+             f"Read volume against gas for the contract-reading tests. jochemnet stays flat, "
+             f"{cc[0]['jocMB']:.0f} MB at {cc[0]['gas']}M gas and "
+             f"{cc[-1]['jocMB']:.0f} MB at {cc[-1]['gas']}M, triple the work for the same "
+             f"bytes. state-actor climbs from {cc[0]['saMB']:.0f} MB to "
              f"{cc[-1]['saMB']:.0f} MB. Flat in gas means the arm is re-reading one bounded set "
              f"of blocks; rising means every access goes somewhere new."))
 
@@ -506,13 +506,13 @@ def main():
     rk_rows = M["random_keys"]
     w("<table><tr><th>hypothesis</th><th>what killed it</th></tr>")
     w("<tr><td>different RocksDB configuration</td><td>every read-path knob identical, "
-      f"column family by column family &mdash; {len(M['options_per_cf']['rows'])} families, "
+      f"column family by column family, across {len(M['options_per_cf']['rows'])} families, "
       "same ribbon filter, same block sizes, same compression, no direct I/O</td></tr>")
     w("<tr><td>different key encoding</td><td>identical <code>keccak256(addr)[0:20]</code>, "
       "identical key-length histograms, and every spec-guaranteed fixture address resolves in "
       "both stores</td></tr>")
     w("<tr><td>the client's read path amplifies</td><td>a cold <code>eth_getBalance</code> on "
-      f"the generated store costs {rk_rows['Account']['sa_blk']:.2f} blocks &mdash; exactly its "
+      f"the generated store costs {rk_rows['Account']['sa_blk']:.2f} blocks, exactly its "
       "raw RocksDB cost, so the client adds nothing</td></tr>")
     w(f"<tr><td>startup I/O dominates the window</td><td>jochemnet's boot reads <em>more</em> "
       f"({fp['boot_read_gb']['joc']:.2f} GB vs {fp['boot_read_gb']['sa']:.2f} GB) yet it runs "
@@ -525,22 +525,22 @@ def main():
       "lookup</td></tr>")
     w("<caption>The last row is the one that reframes the problem. If the generated store were "
       "intrinsically slow, it would be slow on its own keys too. It is faster on them. So the "
-      "gap cannot be a property of the store in general &mdash; only of the particular keys the "
+      "gap cannot be a property of the store in general, only of the particular keys the "
       "benchmark reads.</caption></table>")
 
     # ---------------------------------------------------------------- root cause
     w("<h2>The root cause: the benchmark's keys live in a corner of one store</h2>")
     pr = M["prerun"]
     w(f"<p>Only one arm runs a pre-run. Before measuring, the jochemnet arm replays "
-      f"{pr['bytes']/1e9:.2f} GB of blocks &mdash; {thousands(pr['blocks'])} of them, "
+      f"{pr['bytes']/1e9:.2f} GB of blocks, {thousands(pr['blocks'])} of them at "
       f"{pr['txs_per_block']} transactions each, taking the chain from "
-      f"{thousands(pr['first_block'])} to {thousands(pr['last_block'])} &mdash; which create "
+      f"{thousands(pr['first_block'])} to {thousands(pr['last_block'])}. Those blocks create "
       f"the accounts the benchmark then reads. The harness is then told "
       f"<code>promote_post_pre_runs: true</code>, which freezes that post-pre-run layout into "
       f"the golden image every test is restored from.</p>")
     w("<p>This is not a caching story. The harness drops the page cache between every test and "
       "between setup and measurement, and the pre-run happens once, before the loop. What "
-      "survives the cache drop is not warm memory &mdash; it is <em>where the bytes sit</em>. "
+      "survives the cache drop is not warm memory. It is <em>where the bytes sit</em>. "
       "The pre-run's writes are the newest versions of exactly those keys, so they occupy a "
       "small, young, physically contiguous corner of the tree, and a levelled store answers a "
       "lookup from the first place it finds a version.</p>")
@@ -548,14 +548,14 @@ def main():
     w(figure(chart_amortisation(amort),
              f"Cold lookups against each store's own copy of the fixtures' accounts, fresh "
              f"process per point, page cache dropped, 100% hits. At {thousands(a0['n'])} lookups "
-             f"the two stores are indistinguishable &mdash; {a0['joc_blk']:.2f} against "
+             f"the two stores are indistinguishable, {a0['joc_blk']:.2f} against "
              f"{a0['sa_blk']:.2f} blocks. By {thousands(a9['n'])} jochemnet is at "
              f"{a9['joc_blk']:.2f} because its volume has <b>stopped growing</b>: "
              f"{amort[-2]['joc_mb']:.0f} MB at {thousands(amort[-2]['n'])} lookups and "
              f"{a9['joc_mb']:.0f} MB at {thousands(a9['n'])}. state-actor never saturates, "
              f"climbing to {a9['sa_mb']:.0f} MB, because there is no corner to exhaust."))
 
-    w("<p class=note>The per-lookup cost is not what differs &mdash; the number of distinct "
+    w("<p class=note>The per-lookup cost is not what differs. The number of distinct "
       "physical blocks is. Both stores pay about two blocks for a lookup they have not made "
       "before. One of them runs out of new blocks to read.</p>")
 
@@ -564,9 +564,9 @@ def main():
     ab, aa = iv["account_before"], iv["account_after"]
     sb, sa_ = iv["statenodes_before"], iv["statenodes_after"]
     w(f"<p>If the corner is the cause, flattening it must erase the advantage. We merged the "
-      f"account and state-node families into their bottom level &mdash; rewriting them with the "
+      f"account and state-node families into their bottom level, rewriting them with the "
       f"other store's exact per-family options, verified knob by knob, so nothing but placement "
-      f"changed &mdash; and stripped the pre-run from the config, because replaying it would "
+      f"changed. We also stripped the pre-run from the config, because replaying it would "
       f"simply rebuild the corner.</p>")
     w("<table><tr><th>column family</th><th>levels before</th><th>levels after</th>"
       "<th class=n>GB</th><th class=n>rewrite</th></tr>")
@@ -602,9 +602,9 @@ def main():
     w(f"<caption>Tests agreeing within &plusmn;10% go from "
       f"{BEF['agreement']['agree_pct']:.1f}% to {AFT['agreement']['agree_pct']:.1f}%. The two "
       f"spread columns are there because a median can flatter a category: "
-      f"<em>{esc(SHORT['ACCOUNT cold existing EOA'])}</em> really is tight &mdash; middle half "
-      f"{eo['p25']:.3f}&ndash;{eo['p75']:.3f}, {eo['within10']}/{eo['n']} inside the band "
-      f"&mdash; whereas <em>{esc(SHORT['STORAGE slot access'])}</em> sits on parity at "
+      f"<em>{esc(SHORT['ACCOUNT cold existing EOA'])}</em> really is tight, middle half "
+      f"{eo['p25']:.3f}&ndash;{eo['p75']:.3f} with {eo['within10']}/{eo['n']} inside the band, "
+      f"whereas <em>{esc(SHORT['STORAGE slot access'])}</em> sits on parity at "
       f"{st['median']:.3f} while ranging {st['min']:.3f}&ndash;{st['max']:.3f} with only "
       f"{st['within10']}/{st['n']} inside it. Independently reproduced on a "
       f"{thousands(D['replication']['agreement']['n'])}-test subset that agreed with the "
@@ -614,7 +614,7 @@ def main():
     w(figure(chart_treatment_dumbbell(bc, ac),
              "Each row is one kind of test: amber is the confounded measurement, green the "
              "equalised one, and the band is &plusmn;10% around parity. The two rows that "
-             "were already inside the band stay inside it &mdash; the control that makes "
+             "were already inside the band stay inside it, the control that makes "
              "the rest credible."))
 
     w(figure(chart_ratio_dots(rat_b, rat_a, spr_b, spr_a),
@@ -622,7 +622,7 @@ def main():
              f"than medians: one dot per cluster of tests at that ratio, sized by how many, with "
              f"the middle half drawn as a bar and the median as a tick. The count on the right is "
              f"how many of that category's tests land inside &plusmn;10% of parity. Reading the "
-             f"two panels together is the point &mdash; the account clouds do not merely shift, "
+             f"two panels together is the point. The account clouds do not merely shift, "
              f"they collapse from a smear across the left of the axis onto the parity band."))
 
     # ---------------------------------------------------------------- code
@@ -630,7 +630,7 @@ def main():
     w(f"<h2>Why a different contract per access still costs {dm['readX']:.2f}&times;</h2>")
     w("<p>One cell does not come back to parity, and it is the same cell the geth study flagged "
       "and left unexplained. Laying every opcode against every access mode shows it is a column, "
-      "not a scatter &mdash; whatever is left does not care which opcode reads the account:</p>")
+      "not a scatter. Whatever is left does not care which opcode reads the account:</p>")
     gcol = {m: median([row[m]["thr"] for row in AFT["grid"].values() if m in row])
             for m in GRID_MODES}
     w(figure(chart_grid(AFT["grid"]),
@@ -643,7 +643,7 @@ def main():
              f"{max(gcol[m] for m in ('EXISTING_EOA','EXISTING_CONTRACT_MINIMAL','EXISTING_CONTRACT_SAME_MAX')):.2f}. "
              f"The absent column is the uneven one at {gcol['NON_EXISTING_ACCOUNT']:.2f}, which "
              f"is the same dispersion its category showed above. Every row behaves the same, so "
-             f"this is not an opcode effect &mdash; it is something the two dark modes share."))
+             f"this is not an opcode effect. It is something the two dark modes share."))
     w("<p>Sorting the access modes by how much contract code they touch explains it in one "
       "pass:</p>")
     w("<table><tr><th>access mode</th><th>what it touches</th><th class=n>jochemnet MB</th>"
@@ -674,14 +674,14 @@ def main():
     big_b = add["buckets"][-1]
     w(f"<p>What is left has two terms, and only one of them is interesting. Sorting every test "
       f"by how much it reads on jochemnet, the extra volume state-actor pulls sits near "
-      f"{fixed_mb:.0f} MB for everything up to a few gigabytes &mdash; a fixed cost, not a "
+      f"{fixed_mb:.0f} MB for everything up to a few gigabytes, a fixed cost rather than a "
       f"penalty per unit of work. On top of it runs a ~10% proportional component, which only "
       f"becomes visible in the largest bucket, where 10% of "
       f"{big_b['jocMB']:.0f} MB is most of the {big_b['excess']:.0f} MB measured:</p>")
     wr = AFT["worst"]
     n_ctrl = sum(1 for r in wr if r["control"])
     w(f"<p>It is worth naming the individual tests that are still furthest from parity, because "
-      f"{n_ctrl} of these {len(wr)} are control tests &mdash; tests that deliberately do no "
+      f"{n_ctrl} of these {len(wr)} are control tests, which deliberately do no "
       f"account-state work at all:</p>")
     w("<table><tr><th class=n>ratio</th><th>opcode</th><th>access mode</th><th class=n>gas</th>"
       "<th>control?</th><th class=n>jochemnet MB</th><th class=n>state-actor MB</th></tr>")
@@ -709,10 +709,10 @@ def main():
       f"{fixed_mb:.0f} MB</code>, and the control row retires as a special case "
       f"rather than a mystery: those tests do no account work, read "
       f"{ac['CONTROL overhead_baseline']['jocMB']:.1f} MB on jochemnet, and are therefore "
-      f"entirely overhead. Three explanations are already dead. It is not client startup "
-      f"&mdash; jochemnet's boot reads more. It is not trie placement &mdash; merging the "
-      f"state-node family moved the control by a percent. And it is not the measurement window "
-      f"&mdash; the first payload carries almost all of each test's bytes on both arms. Its "
+      f"entirely overhead. Three explanations are already dead. It is not client startup, "
+      f"because jochemnet's boot reads more. It is not trie placement, because merging the "
+      f"state-node family moved the control by a percent. And it is not the measurement "
+      f"window, because the first payload carries almost all of each test's bytes on both arms. Its "
       f"origin is not yet pinned to a column family, which we would rather say than round off; "
       f"it is bounded, and invisible to any test that does real work.</p>")
 
@@ -738,7 +738,7 @@ def main():
       f"{f(ac['ACCOUNT cold existing EOA']['thr'], 3)}&times; "
       f"({ac['ACCOUNT cold existing contract']['read']:.2f}&times; the bytes)</td></tr>")
     w(f"<caption>Three engines, three storage designs, three state sizes for the same logical "
-      f"state &mdash; and the same artifact. The Besu and Nethermind columns are computed the "
+      f"state, and the same artifact. The Besu and Nethermind columns are computed the "
       f"same way from each study's own data ({tc['besu_cells']} and "
       f"{ac['ACCOUNT cold existing contract']['n']} account cells respectively, gas matched "
       f"exactly); treat the geth spread as its published range. Untreated, the generated store "
@@ -751,11 +751,11 @@ def main():
     w("<ol>")
     w("<li><b>Never compare a promoted-after-pre-run snapshot against a store that did not get "
       "one.</b> It is worth an order of magnitude and it does not announce itself.</li>")
-    w("<li><b>Give both arms the same placement treatment</b> &mdash; a pre-run each, or a "
+    w("<li><b>Give both arms the same placement treatment.</b> A pre-run each, or a "
       "compaction each. The generated store's fixtures release currently ships no pre-run "
       "bundle, so compacting both is the cheaper control today.</li>")
     w("<li><b>Make the harness print a locality diagnostic:</b> read bytes per unit of gas, per "
-      f"arm. Flat in gas means a bounded working set and therefore an artifact &mdash; "
+      f"arm. Flat in gas means a bounded working set and therefore an artifact, as "
       f"jochemnet read {cc[0]['jocMB']:.0f} MB at {cc[0]['gas']}M and "
       f"{cc[-1]['jocMB']:.0f} MB at {cc[-1]['gas']}M. That check is a few lines, and it would "
       f"have caught this on the first run instead of the thirtieth.</li>")

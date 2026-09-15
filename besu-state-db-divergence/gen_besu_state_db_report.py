@@ -48,7 +48,7 @@ def thousands(n):
 # collect_verdict.py; the bands below fail loudly if that file is ever
 # regenerated wrong.
 CSS = """
-/* Site theme — mirrors build_site.py CRT_VARS and the ARTICLE stylesheet so the
+/* Site theme, mirroring build_site.py CRT_VARS and the ARTICLE stylesheet so the
    report reads as one of the site's pages. Dark-only, like the site. */
 :root {
   --bg:#000000; --fg:#e2e6e2; --muted:#aab0aa; --dim:#5c645c; --line:#182818;
@@ -147,9 +147,10 @@ svg.chart text.big { font-size:12px; font-weight:600; }
 figure { margin:16px 0 8px; border:1px solid var(--line); background:#050805; padding:10px 12px; }
 figure:hover { border-color:var(--green-muted); box-shadow:0 0 22px rgba(51,255,51,.06); }
 figcaption { color:var(--muted); font-size:12.5px; margin-top:6px; line-height:1.55; }
-pre.idpre { background:#050805; border:1px solid var(--line); border-radius:3px;
-  padding:8px 10px; overflow-x:auto; font-size:11.5px; line-height:1.5;
-  white-space:pre-wrap; word-break:break-all; }
+/* Quoted client log lines, shown as the client prints them. */
+pre.log { background:#050805; border:1px solid var(--line); border-radius:3px;
+  padding:9px 11px; margin:12px 0; overflow-x:auto; font-size:12px; line-height:1.55;
+  color:#bfeecf; white-space:pre-wrap; overflow-wrap:anywhere; }
 .endbar { margin-top:48px; padding-top:1.2rem; border-top:1px solid var(--line);
   font-family:var(--crt); font-size:1rem; color:var(--green-muted);
   display:flex; justify-content:space-between; flex-wrap:wrap; gap:.6rem; }
@@ -251,12 +252,12 @@ OUT = os.path.join(HERE, "besu-state-db-report.html")
 
 BUCKETS = ["absent", "leaf-only", "code-reading"]
 BUCKET_DOC = {
-    "absent": "NON_EXISTING_ACCOUNT targets — the lookup must prove the account is not there",
-    "leaf-only": "BALANCE, or an EXISTING_EOA target — reads the account record and never the code",
-    "code-reading": "EXTCODE* and the CALL family into a contract — also reads the code blob",
+    "absent": "NON_EXISTING_ACCOUNT targets, where the lookup must prove the account is\n               not there",
+    "leaf-only": "BALANCE, or an EXISTING_EOA target, which reads the account record and\n                  never the code",
+    "code-reading": "EXTCODE* and the CALL family into a contract, which also reads the\n                     code blob",
 }
 ARM_DOC = {
-    "plain": "the published snapshot, pre-runs replayed, promoted — as a benchmark uses it",
+    "plain": "the published snapshot, pre-runs replayed, promoted, exactly as a benchmark\n              uses it",
     "drained": "the same store with its write-ahead log flushed away, levels untouched",
     "compacted": "the same store, flushed and then fully compacted",
     "state_actor": "the synthetically generated companion store",
@@ -362,7 +363,7 @@ def chart_ratio_dots(F, common):
         body.append(S.label(LEFT - 10, y + 3, f"{op} {SHORT_MODE.get(m, m)}", anchor="end",
                             cls="tick"))
         body.append(S.dot(sc.to(r), y, 3.4, var, title=f"{op} {m}: {r:.3f}×"))
-    body.append(S.label(LEFT, H - 10, "state-actor ÷ compacted snapshot — throughput", cls="ax"))
+    body.append(S.label(LEFT, H - 10, "state-actor ÷ compacted snapshot, throughput", cls="ax"))
     return S.svg(W, H, "".join(body))
 
 
@@ -550,7 +551,7 @@ def chart_cost_curves(F, common):
     for y, name in sorted(ends):
         y = prev = max(y, prev + 13)
         body.append(S.label(W - RIGHT + 10, y + 3, name, cls="tick"))
-    body.append(S.label(LEFT, H - 8, "gas budget (M) — BALANCE/EXISTING_EOA, MGas/s", cls="ax"))
+    body.append(S.label(LEFT, H - 8, "MGas/s against gas budget (M), BALANCE/EXISTING_EOA", cls="ax"))
     return S.svg(W, H, "".join(body))
 
 
@@ -601,7 +602,7 @@ def chart_convergence(FT, common):
             body.append(S.dot(bsc.to(br), y, 3.8, var, title=f"{a} {b}: {br:.3f}× bytes"))
     body.append(legend(LEFT, H - 14, [("state-actor", "--db-sa"), ("plain", "--db-c"),
                                       ("WAL drained", "--db-u")],
-                       trailer="— unity means it agrees with the compacted snapshot"))
+                       trailer="(unity means it agrees with the compacted snapshot)"))
     return S.svg(W, H, "".join(body))
 
 
@@ -733,7 +734,7 @@ def main():
         "treatment_dumbbell": (chart_treatment_dumbbell(FT, commonf),
                                "What each half of the treatment does. Draining the "
                                "write-ahead log leaves the store where it started; compaction "
-                               "moves it. Reference is the plain snapshot — the only figure "
+                               "moves it. Reference is the plain snapshot, the only figure "
                                "here that uses it."),
         "lsm_levels": (chart_lsm_levels(levels),
                        f"Where the pre-run's rows sit. After the pre-run, cf06 holds "
@@ -743,7 +744,7 @@ def main():
         "bloom": (chart_bloom(props, sa_bytes),
                   "The snapshot carries a bloom filter on every state column family. The "
                   "generated store carries none, so a lookup that will find nothing cannot be "
-                  "rejected — it has to read index and data blocks instead."),
+                  "rejected, so it has to read index and data blocks instead."),
         "geometry": (chart_geometry(props, GREF),
                      "The residual, as store geometry. Generated records are larger and "
                      "compress worse, so a data block holds fewer of them and a read moves "
@@ -788,7 +789,7 @@ def main():
     # Title is a series template: same sentence for every client, varying only in the client
     # name and the factor. Keep both strings in lockstep with the Geth article.
     w(f"<title>How can two Besu databases holding the same state differ {factor}\u00d7 in "
-      "performance? — state-actor vs a mainnet snapshot</title>")
+      "performance? State-actor vs a mainnet snapshot</title>")
     w(f"<style>{CSS}</style></head><body>")
 
     w('<div class=topbar><a href="../">&larr; all articles</a>'
@@ -796,8 +797,8 @@ def main():
     w('<div class=eyebrow>// REPORT</div>')
     w(f"<h1>How can two Besu databases holding the same state differ {factor}&times; in "
       "performance?</h1>")
-    w("<p class=deck>A case study on state-actor versus a Bonsai mainnet-snapshot database "
-      "&mdash; and on why a published snapshot has to be compacted before it can be measured "
+    w("<p class=deck>A case study on state-actor versus a Bonsai mainnet-snapshot database, "
+      "and on why a published snapshot has to be compacted before it can be measured "
       "at all.</p>")
     w('<div class=meta><span class=tag>Ethereum · Besu · Bonsai · RocksDB · benchmarking</span>'
       ' · 2026 · <a href="https://github.com/CPerezz/articles/tree/main/'
@@ -858,18 +859,20 @@ def main():
 
     # ===================================================================== 2
     w('<h2>What Besu\'s own logs and counters say</h2>')
-    w(f"<p>Besu states its own configuration at startup, and two of those lines matter. "
-      f"<code>Existing database at /data. Metadata "
-      f"versionedStorageFormat=BaseVersionedStorageFormat{{format=BONSAI, version=3}}. "
-      f"Processing WAL...</code> appears on every boot of every arm, including the arm whose "
-      f"write-ahead log is {C['after_flush']['wal_bytes']} bytes long, so the line is "
-      f"boot-time boilerplate rather than evidence of work. <code>Flat db mode found FULL</code> "
-      f"is the one that shapes the rest: account reads go to Bonsai's flat keyspace, not down "
-      f"the trie. The metrics agree &mdash; "
-      f"{P['flat_read_share']*100:.2f}% of account lookups are served from the flat database.</p>")
+    w("<p>Besu states its own configuration at startup, and two of those lines matter.</p>")
+    w("<pre class=log>Existing database at /data. Metadata "
+      "versionedStorageFormat=BaseVersionedStorageFormat{format=BONSAI, version=3}. "
+      "Processing WAL...</pre>")
+    w(f"<p>That one appears on every boot of every arm, including the arm whose write-ahead "
+      f"log is {C['after_flush']['wal_bytes']} bytes long, so it is boot-time boilerplate "
+      f"rather than evidence of work. The second is the one that shapes the rest:</p>")
+    w("<pre class=log>Flat db mode found FULL</pre>")
+    w(f"<p>Account reads go to Bonsai's flat keyspace, not down the trie. The metrics agree "
+      f"{P['flat_read_share']*100:.2f}% of account lookups are served from the flat "
+      f"database.</p>")
     w("<p>That matters because it fixes what a read costs. An account lookup is one key in one "
-      "column family, so the cost is the cost of locating that key &mdash; how many files have "
-      "to be consulted and how many bytes each consultation moves. It is not a tree walk whose "
+      "column family, so the cost is the cost of locating that key: how many files have to "
+      "be consulted, and how many bytes each consultation moves. It is not a tree walk whose "
       "depth grows with the state, which is the shape most people expect.</p>")
     w("<table><tr><th>account_mode</th>"
       "<th class=n>lookups that found nothing ÷ total, compacted snapshot</th>"
@@ -879,7 +882,7 @@ def main():
           f"<td class=n>{miss['compacted'][m]:.3f}</td>"
           f"<td class=n>{miss['state_actor'][m]:.3f}</td></tr>")
     w("<caption>Besu counts flat-database lookups that find no key. The absence categories "
-      "probe addresses that are genuinely absent from both stores &mdash; so the difference in "
+      "probe addresses that are genuinely absent from both stores, so the difference in "
       "what they cost is not a difference in what they find.</caption></table>")
 
     # ===================================================================== 3
@@ -900,11 +903,12 @@ def main():
       f"per column family.</p>")
     w(f"<p>The extraction is deterministic: three independent unpacks of the published tarball "
       f"produced the same {thousands(C['shipped']['ssts'])} SST files and the same "
-      f"{thousands(C['shipped']['sst_bytes'])} bytes. Trie logs are not a factor either "
-      f"&mdash; Besu prints <code>Forcing --bonsai-limit-trie-logs-enabled=false, since it "
-      f"cannot be enabled with --sync-mode=FULL and --data-storage-format=BONSAI.</code> on "
-      f"every boot, the snapshot's trie-log column family holds "
-      f"{trielog_bytes/1e6:.1f} MB, and the generated store's holds no files at all.</p>")
+      f"{thousands(C['shipped']['sst_bytes'])} bytes. Trie logs are not a factor either. Besu "
+      f"prints this on every boot:</p>")
+    w("<pre class=log>Forcing --bonsai-limit-trie-logs-enabled=false, since it cannot be "
+      "enabled with --sync-mode=FULL and --data-storage-format=BONSAI.</pre>")
+    w(f"<p>The snapshot's trie-log column family holds {trielog_bytes/1e6:.1f} MB, and the "
+      f"generated store's holds no files at all.</p>")
     w('<h3>What the fixtures actually touch</h3>')
     w(f"<p>The suite is {len(set((c[0], c[1]) for c in common))} opcode/account-mode categories "
       f"across {len(sorted({c[2] for c in common}))} gas budgets from "
@@ -914,7 +918,7 @@ def main():
     w("<ul class=tight>")
     for b in BUCKETS:
         n = sum(1 for c in common if F["plain"][c]["bucket"] == b)
-        w(f"<li><b>{b}</b> ({n} tests) &mdash; {esc(BUCKET_DOC[b])}.</li>")
+        w(f"<li><b>{b}</b> ({n} tests): {esc(BUCKET_DOC[b])}.</li>")
     w("</ul>")
 
     # ===================================================================== 4
@@ -935,7 +939,7 @@ def main():
       f"between runs is a poor explanation for an effect that reproduces.</p>")
     w(f"<p>The second is what happens when you drain it. The whole step takes "
       f"{C['after_flush']['step_seconds']} seconds, leaves "
-      f"{C['after_flush']['wal_bytes']} bytes, and <b>adds no SST file</b> &mdash; the count "
+      f"{C['after_flush']['wal_bytes']} bytes, and <b>adds no SST file</b>. The count "
       f"stays at {thousands(C['after_flush']['ssts'])}. Had the log held writes that were not "
       f"yet on disk, recovery would have written them out as new files. Promoting the result "
       f"copies {C['after_flush']['promote_bytes']/1e6:.0f} MB in "
@@ -944,8 +948,8 @@ def main():
     w(f"<p>And the explicit flush inside that step reported "
       f"{C['after_flush']['flush_seconds']:.1f} s, because by the time it ran there was nothing "
       f"in memory to write: RocksDB's <em>open</em> path recovers the log and flushes it "
-      f"itself. On Besu, opening the store is the drain &mdash; which means every arm of every "
-      f"suite had already done it, before a single test ran.</p>")
+      f"itself. On Besu, opening the store is the drain, which means every arm of every "
+      f"suite had already done it before a single test ran.</p>")
     w(f"<p>Measured end to end, draining it changes nothing: "
       + ", ".join(f"{drain_t[b]:.3f}&times; on {b}" for b in BUCKETS) +
       f" for throughput and "
@@ -959,7 +963,7 @@ def main():
 
     # ===================================================================== 5
     w('<h2>The root cause: the pre-run\'s rows are the newest versions of their keys</h2>')
-    w(f"<p>Before each test the harness replays a pre-run bundle &mdash; "
+    w(f"<p>Before each test the harness replays a pre-run bundle: "
       f"{D['prerun_bundle_bytes']/1e9:.2f} GB of blocks that create the accounts the benchmark "
       f"then reads. It takes the store from {thousands(C['shipped']['ssts'])} SST files to "
       f"{thousands(C['after_prerun']['ssts'])}. Four files is not much of a change; what "
@@ -984,8 +988,8 @@ def main():
       "same keys.</caption></table>")
     w(f"<p>A point lookup in a levelled store checks the youngest files first and stops at the "
       f"first version it finds. After the pre-run the account column family holds {l0_06} "
-      f"files at the top of the tree &mdash; "
-      f"{levels['before']['06']['0']['bytes']/1e6:.0f} MB of it &mdash; above {l6_06} files "
+      f"files at the top of the tree, "
+      f"{levels['before']['06']['0']['bytes']/1e6:.0f} MB of it, above {l6_06} files "
       f"holding {levels['before']['06']['6']['bytes']/1e9:.1f} GB at the bottom. The reads the "
       f"benchmark performs are satisfied in the small, young part of the tree.</p>")
     w(fig("lsm_levels"))
@@ -1023,7 +1027,7 @@ def main():
     # ===================================================================== 7
     w(f'<h2>Why absence proofs cost {sa_bytes["absent"]:.0f}&times; the '
       f'bytes: the generated store has no bloom filters</h2>')
-    w(f"<p>The absence categories probe addresses that are missing from both stores &mdash; the "
+    w(f"<p>The absence categories probe addresses that are missing from both stores. The "
       f"counters in the second section put the miss rate at "
       f"{miss['compacted']['NON_EXISTING_ACCOUNT']:.3f} and "
       f"{miss['state_actor']['NON_EXISTING_ACCOUNT']:.3f}. Identical question, identical answer, "
@@ -1043,9 +1047,9 @@ def main():
       "conclusion.</caption></table>")
     w(fig("bloom"))
     w(f"<p>The cost lands almost entirely on absence. A lookup that finds its key was going to "
-      f"read that block anyway, so the filters buy little there &mdash; "
+      f"read that block anyway, so the filters buy little there, "
       + " and ".join(f"{sa_bytes[b]:.2f}&times; on {b}" for b in BUCKETS if b != "absent") +
-      f" &mdash; against {sa_bytes['absent']:.1f}&times; when there is nothing to find. This is "
+      f", against {sa_bytes['absent']:.1f}&times; when there is nothing to find. This is "
       f"a property of how the generated store was written, not of what it contains.</p>")
     w('<h3>What this does not separate</h3>')
     w(f"<p>Some part of the "
@@ -1073,7 +1077,7 @@ def main():
     w(f"<p>Two ratios carry the argument: compression {comp_ratio:.3f}&times; and block size "
       f"{blk_ratio:.3f}&times;. The same two ratios measured on geth were "
       f"{GREF['compression_ratio']:.3f}&times; and {GREF['block_size_ratio']:.3f}&times; "
-      f"&mdash; within {abs(comp_ratio/GREF['compression_ratio']-1)*100:.1f}%, on a different "
+      f"{abs(comp_ratio/GREF['compression_ratio']-1)*100:.1f}% away, on a different "
       f"storage engine, with a different compression algorithm and an eight times larger "
       f"block. Whatever this is, it is not an artifact of one engine.</p>")
     w(f"<p>The code column family carries the compressibility half of that argument on its own, "
@@ -1082,15 +1086,15 @@ def main():
       f"{props['jochemnet']['07']['phys_over_logical']:.3f} of their size; the generated "
       f"store's are far smaller at {props['state_actor']['07']['mean_record']:,.0f} bytes and "
       f"compress to only {props['state_actor']['07']['phys_over_logical']:.3f}. Mainnet "
-      f"bytecode repeats &mdash; proxies, tokens and factory output share long stretches "
-      f"&mdash; while every generated contract gets its own. Smaller records that will not "
+      f"bytecode repeats: proxies, tokens and factory output share long stretches. Every "
+      f"generated contract gets its own. Smaller records that will not "
       f"compress is what a database of unique bytecode looks like.</p>")
     w('<h3>The same experiment on two clients</h3>')
     w(f"<p>The generator is deterministic across clients: the same seed and spec produced "
       f"{thousands(P['state_actor_items'])} items here against "
-      f"{thousands(GREF['state_actor_items'])} on geth &mdash; "
-      f"{abs(P['state_actor_items'] - GREF['state_actor_items'])} apart in six billion "
-      f"&mdash; and the same state root, "
+      f"{thousands(GREF['state_actor_items'])} on geth, "
+      f"{abs(P['state_actor_items'] - GREF['state_actor_items'])} apart in six billion, "
+      f"and the same state root "
       f"<code>{P['state_actor_state_root'][:18]}&hellip;</code>. The stores they produced are "
       f"not the same size: {P['state_actor_gib']} GiB on Besu against "
       f"{GREF['state_actor_gib']} GiB on geth, for identical logical state. So the two studies "
