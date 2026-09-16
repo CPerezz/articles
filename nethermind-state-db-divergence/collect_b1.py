@@ -37,10 +37,13 @@ def load(root):
     return json.load(open(best))["tests"] if best else {}
 
 
-def step_mb(entry, step):
+def step_io(entry, step):
+    """(read MB, write MB) for a step. Writes matter: anything setup wrote would sit in the
+    client's memtables, a carry-over channel that sync + drop_caches cannot clear."""
     s = (entry.get("steps") or {}).get(step)
     r = ((s or {}).get("aggregated") or {}).get("resource_totals") or {}
-    return r.get("disk_read_bytes", 0) / 1e6 if s else None
+    return ((r.get("disk_read_bytes", 0) / 1e6, r.get("disk_write_bytes", 0) / 1e6)
+            if s else (None, None))
 
 
 def mgas(entry):
@@ -74,10 +77,13 @@ def pair(joc_root, sa_root, only=None):
             c = category(tid)
             if c:
                 grp["control" if c == "CONTROL" else "measured"].append(e)
-        steps[label] = {k: {"n": len(v),
-                            "setup_mb": round(median([step_mb(e, "setup") for e in v]), 1),
-                            "test_mb": round(median([step_mb(e, "test") for e in v]), 1)}
-                        for k, v in grp.items()}
+        steps[label] = {
+            k: {"n": len(v),
+                "setup_mb": round(median([step_io(e, "setup")[0] for e in v]), 1),
+                "setup_write_mb": round(median([step_io(e, "setup")[1] for e in v]), 1),
+                "test_mb": round(median([step_io(e, "test")[0] for e in v]), 1),
+                "test_write_mb": round(median([step_io(e, "test")[1] for e in v]), 1)}
+            for k, v in grp.items()}
     return {"n": len(set(joc) & set(sa)),
             "thr": {k: round(median(v), 4) for k, v in sorted(thr.items())},
             "steps": steps}

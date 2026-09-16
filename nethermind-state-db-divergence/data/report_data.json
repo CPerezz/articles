@@ -4497,24 +4497,32 @@
      "control": {
       "n": 80,
       "setup_mb": 31.5,
-      "test_mb": 1.8
+      "setup_write_mb": 0.0,
+      "test_mb": 1.8,
+      "test_write_mb": 0.0
      },
      "measured": {
       "n": 120,
       "setup_mb": 31.5,
-      "test_mb": 3545.2
+      "setup_write_mb": 0.0,
+      "test_mb": 3545.2,
+      "test_write_mb": 1.1
      }
     },
     "sa": {
      "control": {
       "n": 80,
       "setup_mb": 9.5,
-      "test_mb": 96.4
+      "setup_write_mb": 0.0,
+      "test_mb": 96.4,
+      "test_write_mb": 0.0
      },
      "measured": {
       "n": 120,
       "setup_mb": 9.4,
-      "test_mb": 4385.2
+      "setup_write_mb": 0.0,
+      "test_mb": 4385.2,
+      "test_write_mb": 76.5
      }
     }
    },
@@ -4536,24 +4544,32 @@
      "control": {
       "n": 80,
       "setup_mb": 31.5,
-      "test_mb": 1.8
+      "setup_write_mb": 0.0,
+      "test_mb": 1.8,
+      "test_write_mb": 0.0
      },
      "measured": {
       "n": 120,
       "setup_mb": 31.5,
-      "test_mb": 3545.2
+      "setup_write_mb": 0.0,
+      "test_mb": 3545.2,
+      "test_write_mb": 1.1
      }
     },
     "sa": {
      "control": {
       "n": 80,
       "setup_mb": 9.4,
-      "test_mb": 106.3
+      "setup_write_mb": 0.0,
+      "test_mb": 106.3,
+      "test_write_mb": 0.0
      },
      "measured": {
       "n": 120,
       "setup_mb": 9.5,
-      "test_mb": 4392.0
+      "setup_write_mb": 0.0,
+      "test_mb": 4392.0,
+      "test_write_mb": 70.7
      }
     }
    },
