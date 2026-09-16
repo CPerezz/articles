@@ -898,26 +898,46 @@ def main():
 
     # ---------------------------------------------------------------- takeaway
     w("<h2>What to do about it</h2>")
+    hw, fl = M["harness"], M["filters"]
+    days = hw["compaction_seconds_account"] * hw["tests"] / 86400
     w("<ol>")
     w("<li><b>Never compare a promoted-after-pre-run snapshot against a store that did not get "
       "one.</b> It is worth an order of magnitude and it does not announce itself.</li>")
-    w("<li><b>Give both arms the same placement treatment</b> &mdash; a pre-run each, or a "
-      "compaction each. The generated store's fixtures release currently ships no pre-run "
-      "bundle, so compacting both is the cheaper control today.</li>")
-    w("<li><b>Make the harness print a locality diagnostic:</b> read bytes per unit of gas, per "
-      f"arm. Flat in gas means a bounded working set and therefore an artifact &mdash; "
-      f"jochemnet read {cc[0]['jocMB']:.0f} MB at {cc[0]['gas']}M and "
-      f"{cc[-1]['jocMB']:.0f} MB at {cc[-1]['gas']}M. That check is a few lines, and it would "
-      f"have caught this on the first run instead of the thirtieth.</li>")
+    w(f"<li><b>Neutralise the pre-run's placement effect on the arm that has one</b> &mdash; "
+      f"compact after the pre-run, before the snapshot is promoted. That is a single compaction "
+      f"per baseline, and the harness already has the right hook for it "
+      f"(<code>{esc(hw['post_prerun_hook'])}</code>), though it is "
+      f"{esc(hw['hook_status'])}. Note what <em>not</em> to do: compacting between every test's "
+      f"steps, the lever geth could reach over RPC, costs "
+      f"{hw['compaction_seconds_account']:.0f} s per column family here &mdash; about "
+      f"{days:.1f} days across {thousands(hw['tests'])} tests, six times the runtime of the "
+      f"suite it would be preparing.</li>")
+    w("<li><b>Give the harness control of the client's cache, not just the page cache.</b> "
+      "Dropping <code>/proc/sys/vm/drop_caches</code> between steps leaves the client's own "
+      "RocksDB block cache warm, so a measured step partly reflects what its own setup payload "
+      "happened to load. Restarting the client between steps is affordable; the harness already "
+      "recreates a container per test in seconds.</li>")
+    w("<li><b>Print a locality diagnostic:</b> read bytes per unit of gas, per arm. Flat in gas "
+      f"means a bounded working set and therefore an artifact &mdash; jochemnet read "
+      f"{cc[0]['jocMB']:.0f} MB at {cc[0]['gas']}M and {cc[-1]['jocMB']:.0f} MB at "
+      f"{cc[-1]['gas']}M while state-actor climbed from {cc[0]['saMB']:.0f} to "
+      f"{cc[-1]['saMB']:.0f} MB. That check is a few lines, and it would have caught this on the "
+      f"first run rather than the thirtieth.</li>")
     w("</ol>")
     w(f"<p>And the answer to the question in the title: the generated state was never "
-      f"{factor:.0f}&times; slower. On account reads the two stores are within "
-      f"{(1 - ac['ACCOUNT cold existing contract']['thr'])*100:.0f}&ndash;"
-      f"{(1 - ac['ACCOUNT cold existing EOA']['thr'])*100:.0f}%, on storage within "
-      f"{(ac['STORAGE slot access']['thr'] - 1)*100:.0f}%, and on ether transfers within "
-      f"{(ac['ETHER transfer receivers']['thr'] - 1)*100:.0f}%. Synthetic state is a sound "
-      f"substitute for benchmarking state access. It just has to be measured against a store "
-      f"that was prepared the same way.</p>")
+      f"{factor:.0f}&times; slower. With placement equalised, account reads agree within "
+      f"{min((1 - ac['ACCOUNT cold existing contract']['thr'])*100, (1 - ac['ACCOUNT cold existing EOA']['thr'])*100):.0f}&ndash;"
+      f"{max((1 - ac['ACCOUNT cold existing contract']['thr'])*100, (1 - ac['ACCOUNT cold existing EOA']['thr'])*100):.0f}%, storage within "
+      f"{(ac['STORAGE slot access']['thr'] - 1)*100:.0f}%, ether transfers within "
+      f"{(ac['ETHER transfer receivers']['thr'] - 1)*100:.0f}%, and absent-account lookups "
+      f"resolve from a filter in {fl['sa']['absent_us']:.1f} against "
+      f"{fl['joc']['absent_us']:.1f} microseconds. Synthetic state is a sound substitute for "
+      f"benchmarking <em>state access</em>.</p>")
+    w(f"<p>Two caveats stop that being a blanket endorsement. Executing a <em>distinct</em> "
+      f"contract still costs the generated store {1/dm_code[0]:.2f}&times; what it costs the "
+      f"snapshot and we cannot say why, so anything code-execution heavy is not yet covered. And "
+      f"Defect 2 is diagnosed but unfixed, so the numbers here still contain an unknown amount "
+      f"of cross-step cache help.</p>")
 
     # ---------------------------------------------------------------- errata
     w("<h2>What we got wrong on the way</h2>")
@@ -930,6 +950,19 @@ def main():
       "restored the untreated image before the first test and a 2.2-hour run measured nothing "
       "new. It became an accidental replication, which is the only reason we can quote a "
       "run-to-run noise figure.</li>")
+    w(f"<li><b>The probe measured both stores as if they had no filters.</b> It opened every "
+      f"column family with RocksDB's default options, and a reader with no "
+      f"<code>filter_policy</code> configured never consults the filters that are in the files. "
+      f"Absent and present lookups therefore cost the same, which made us retract a correct "
+      f"explanation. Opened properly, the filters work on both arms &mdash; "
+      f"{thousands(fl['sa']['useful'])} and {thousands(fl['joc']['useful'])} of "
+      f"{thousands(fl['n'])} negatives rejected &mdash; and an absent lookup costs "
+      f"{fl['sa']['absent_bytes']} against {fl['sa']['present_bytes']:,} bytes.</li>")
+    w("<li><b>We published a mechanism for the last cell and it was wrong.</b> The residual was "
+      "attributed to the generated store's larger code database. Three direct measurements say "
+      "the opposite: reading code is cheaper on that store per lookup, cheaper on a sweep of "
+      "distinct maximum-size contracts, and the two stores hold the same number of them. The "
+      "section above now reports the cell as open.</li>")
     w("</ul>")
     w("<p class=note>The numbers in this page are computed from the collected run data at build "
       "time; the generator refuses to emit the page if the data stops supporting the sentences "
