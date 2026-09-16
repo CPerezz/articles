@@ -43,6 +43,12 @@ hash mismatch. Use the `existing-snapshot` family's 14-EIP set, which adds
 | `data/report_data.json` | Every value the report renders. The only input to the generator. |
 | `figures/fig_*.svg` | The seven charts as standalone files, site palette derived from `crt_theme.CSS` so a figure cannot disagree with how it renders in the page. |
 
+- The carry-over ceiling: `container-recreate` restarts the client per test, so setup starts
+  fully cold and anything the measured step gets free must have been put in the client's memory
+  by setup - bounded by setup's reads (31.5 MB) plus its writes (0.0 MB, the control payload
+  changes no state). Against a 104.5 MB gap that caps cache carry-over at 30%, independent of
+  which cache holds the bytes. The harness flush itself is correct: `executor.go` drops between
+  setup and test with a `sync` first, so the page cache is genuinely cold.
 - Experiment B1 re-ran the 266-test subset on both arms with the flat DB block cache cut
   1 GiB -> 8 MiB (`collect_b1.py` folds the result into `data/report_data.json` under
   `cache_experiment`). The pre-registered prediction - control moving to 0.85-0.95 - was

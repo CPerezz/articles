@@ -465,6 +465,15 @@ def main():
     assert max(abs(ce_["small"]["thr"][c] / ce_["big"]["thr"][c] - 1)
                for c in ("existing EOA", "existing contract", "absent account")) < 0.05, \
         "account categories moved under cache starvation; parity may be cache-driven after all"
+    # The budget argument. It only works if setup writes nothing (no memtable channel) and if
+    # setup's read volume really is small next to the gap.
+    cs_ = ce_["small"]["steps"]
+    assert cs_["joc"]["control"]["setup_write_mb"] == 0 and \
+        cs_["sa"]["control"]["setup_write_mb"] == 0, \
+        "setup now writes; the memtable carry-over channel is open and the budget bound is void"
+    gap_ = cs_["sa"]["control"]["test_mb"] - cs_["joc"]["control"]["test_mb"]
+    assert cs_["joc"]["control"]["setup_mb"] / gap_ < 0.5, \
+        "setup's read volume is no longer small against the gap; the ceiling claim is out"
     assert (ce_["small"]["steps"]["joc"]["control"]["test_mb"]
             == ce_["big"]["steps"]["joc"]["control"]["test_mb"]), \
         "jochemnet's control reads moved with the cache; the 'it reads what it needs' line is out"
@@ -751,6 +760,27 @@ def main():
              "jochemnet does its reading during setup, state-actor during the measurement. The "
              "obvious reading is that one arm enters the measurement warm and the other does "
              "not, which is what the next experiment tests."))
+    # Before testing any individual cache, bound what carry-over could possibly be worth. The
+    # client restarts per test, so setup starts cold; anything the measured step gets free had to
+    # be put in the client's memory by setup. That is a budget, and it is measurable.
+    cs = D["cache_experiment"]["small"]["steps"]
+    gap_mb = cs["sa"]["control"]["test_mb"] - cs["joc"]["control"]["test_mb"]
+    budget_mb = cs["joc"]["control"]["setup_mb"] + cs["joc"]["control"]["setup_write_mb"]
+    w(f"<p>Before testing which cache, it is worth asking how much any cache could be worth. "
+      f"<code>container-recreate</code> restarts the client for every test, so the setup step "
+      f"starts with nothing warm at all &mdash; cold page cache and a client that booted "
+      f"seconds ago. Whatever the measured step then gets for free must have been put into the "
+      f"client's memory by setup, and there are only two ways in: bytes setup read, or bytes "
+      f"setup wrote. Both are recorded. Setup reads "
+      f"{cs['joc']['control']['setup_mb']:.1f} MB on jochemnet and writes "
+      f"{cs['joc']['control']['setup_write_mb']:.1f} MB &mdash; the control payload changes no "
+      f"state, so there is no write channel and nothing sitting in a memtable.</p>")
+    w(f"<p><b>That caps the explanation at {100*budget_mb/gap_mb:.0f}%.</b> The gap to account "
+      f"for is {gap_mb:.1f} MB, and jochemnet's entire carry-over budget is "
+      f"{budget_mb:.1f} MB. Even if every byte setup pulled off disk were retained and served "
+      f"the measurement for free, two thirds of the difference would remain. The bound does not "
+      f"depend on which cache holds the bytes, so it covers the caches we did not test as well "
+      f"as the one we did.</p>")
     # The obvious reading of the table above is that the control gap is carry-over. It is the
     # kind of explanation that is satisfying enough to publish without testing, so we tested it.
     ce = D["cache_experiment"]
