@@ -555,6 +555,35 @@ def chart_cost_curves(F, common):
     return S.svg(W, H, "".join(body))
 
 
+def chart_verdict(rows, band):
+    """Each category before and after the snapshot is treated, against the parity band.
+
+    The mirror image of the first figure. There the question was how far apart the two stores
+    look; here it is how much of that distance was the snapshot's placement artifact.
+    """
+    LEFT, RIGHT, TOP, ROW = 250, 40, 22, 13
+    H = TOP + ROW * len(rows) + 58
+    lo = min(min(r[3], r[4]) for r in rows) / 1.25
+    hi = max(max(r[3], r[4]) for r in rows) * 1.25
+    sc = S.LogScale(lo, hi, LEFT, W - RIGHT)
+    y1 = TOP + ROW * len(rows) + 2
+    body = [S.band(sc.to(1 - band), sc.to(1 + band), TOP - 6, y1, "--accent", 0.10),
+            S.hgrid(sc, thin(sc, [t for t in (0.1, 0.2, 0.5, 1.0, 2.0) if lo <= t <= hi]),
+                    TOP - 6, y1, fmt=lambda v: f"{v:g}×"),
+            S.line(sc.to(1.0), TOP - 6, sc.to(1.0), y1, "--muted", width=1, dash="3 3")]
+    for i, (_, op, m, before, after) in enumerate(rows):
+        y = TOP + ROW * i + 7
+        body.append(S.label(LEFT - 10, y + 3, f"{op} {SHORT_MODE.get(m, m)}", anchor="end",
+                            cls="tick"))
+        body.append(S.line(sc.to(before), y, sc.to(after), y, "--dim", width=1.5))
+        body.append(S.dot(sc.to(before), y, 3.2, "--db-u", title=f"{op} {m} before {before:.3f}×"))
+        body.append(S.dot(sc.to(after), y, 3.6, "--accent", title=f"{op} {m} after {after:.3f}×"))
+    body.append(S.label(LEFT, H - 28, "state-actor ÷ snapshot, throughput", cls="ax"))
+    body.append(legend(LEFT, H - 10, [("as published", "--db-u"), ("compacted", "--accent")],
+                       trailer=f"shaded band = ±{band*100:.0f}% of parity"))
+    return S.svg(W, H, "".join(body))
+
+
 def chart_convergence(FT, common):
     """Every arm against the compacted snapshot, throughput and bytes side by side.
 
@@ -679,6 +708,25 @@ def main():
     # files there at all, which is why a Besu trie-log subcommand has nothing to report on it.
     trielog_bytes = sum(v["bytes"] for v in levels["before"].get("0a", {}).values())
 
+    # Before and after the snapshot is treated, per category and per workload. "Before" is the
+    # snapshot as published, "after" is the same snapshot compacted; the generated store is
+    # untouched in both, so the whole movement belongs to the treatment.
+    BAND = 0.10
+    vcats = collections.defaultdict(lambda: ([], []))
+    for c in common:
+        vcats[(c[0], c[1])][0].append(F["state_actor"][c]["mgas_s"] / F["plain"][c]["mgas_s"])
+        vcats[(c[0], c[1])][1].append(F["state_actor"][c]["mgas_s"] / F["compacted"][c]["mgas_s"])
+    verdict = sorted(((F["plain"][next(c for c in common if (c[0], c[1]) == k)]["bucket"],
+                       k[0], k[1], median(b), median(a)) for k, (b, a) in vcats.items()),
+                     key=lambda r: r[4])
+    inband = lambda v: abs(v - 1) <= BAND
+    cat_before = sum(1 for r in verdict if inband(r[3]))
+    cat_after = sum(1 for r in verdict if inband(r[4]))
+    wl_before = sum(1 for c in common
+                    if inband(F["state_actor"][c]["mgas_s"] / F["plain"][c]["mgas_s"]))
+    wl_after = sum(1 for c in common
+                   if inband(F["state_actor"][c]["mgas_s"] / F["compacted"][c]["mgas_s"]))
+
     # ---- oracles ----------------------------------------------------------
     # These guard derivations, not conclusions: they fail generation if the inputs stop
     # supporting a sentence the prose states as fact.
@@ -705,6 +753,12 @@ def main():
     assert "0a" not in props["state_actor"], "state-actor now has trie-log files"
     assert trielog_bytes > 0, "snapshot trie-log column family is empty"
     assert ex_below == len(ex_cat), "not every EXISTING category favours the snapshot"
+    assert cat_before == 0, f"{cat_before} categories were already inside the band"
+    assert cat_after == len(ex_cat), \
+        f"{cat_after} categories inside the band after treatment, expected {len(ex_cat)}"
+    for b, op, m, before, after in verdict:
+        assert (after > before) == (b != "absent") or abs(after - before) < 0.05, \
+            f"{op}/{m}: treatment moved the wrong way ({before:.3f} -> {after:.3f})"
     # the code-cf paragraph states a direction for each of these; fail if the data flips
     assert props["state_actor"]["07"]["mean_record"] < props["jochemnet"]["07"]["mean_record"], \
         "generated code records are no longer the smaller ones"
@@ -758,6 +812,13 @@ def main():
                         "Every arm against the compacted snapshot. Once the snapshot is "
                         "compacted the generated store is within a few percent on reads that "
                         "find their key, and an order of magnitude away on reads that do not."),
+        "verdict": (chart_verdict(verdict, BAND),
+                    f"The same {len(verdict)} categories as the first figure, each one measured "
+                    f"against the snapshot as published and then against the same snapshot "
+                    f"compacted. Nothing about the generated store changed between the two "
+                    f"dots. {cat_after} of {len(verdict)} categories end inside "
+                    f"±{BAND*100:.0f}% of parity; the {n_absent} that do not are the absence "
+                    f"categories, which is the next section."),
     }
     for name, (s, _) in figs.items():
         assert "NaN" not in s and "inf" not in s, f"{name}: non-finite geometry"
@@ -1018,9 +1079,21 @@ def main():
           f"<td class=n>{drain_b[b]:.3f}</td><td class=n>{comp_b[b]:.3f}</td></tr>")
     w("<caption>Throughput and bytes read, each against the plain snapshot. The drain "
       "contributes nothing; the compaction contributes everything.</caption></table>")
-    w(f"<p>After it, the generated store and the snapshot agree on reads that find their key: "
-      + ", ".join(f"{sa_vs_comp[b]:.3f}&times; on {b}" for b in BUCKETS if b != "absent") +
-      ". The absence categories do not converge, and that has a separate cause.</p>")
+    w(f"<p>Now measure the generated store against the treated snapshot instead of the "
+      f"published one. Nothing about the generated store changed, so whatever moves is the "
+      f"artifact leaving. Take agreement to within ±{BAND*100:.0f}% of parity as the bar: "
+      f"<b>{cat_before} of {len(verdict)}</b> categories cleared it against the snapshot as "
+      f"published, and <b>{cat_after} of {len(verdict)}</b> clear it against the compacted "
+      f"one. Per workload rather than per category, {100*wl_before/len(common):.0f}% becomes "
+      f"{100*wl_after/len(common):.0f}%.</p>")
+    w(fig("verdict"))
+    w(f"<p>The {cat_after} that converge are every category that reads an account which "
+      f"exists: median {pc(ex_med)} off parity, worst {pc(ex_lo)}, down from a median of "
+      + f"{pc(median([r[3] for r in verdict if r[0] != 'absent']))} " +
+      f"and a worst case of "
+      + f"{pc(min(r[3] for r in verdict if r[0] != 'absent'))} " +
+      f"before. The {n_absent} that stay put are the absence categories, and they have a "
+      f"separate cause.</p>")
     w(fig("convergence"))
     w(fig("cost_curves"))
 

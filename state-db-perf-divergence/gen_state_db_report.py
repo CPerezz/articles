@@ -145,7 +145,7 @@ PROVENANCE = (
 # measurements, and the report parses only the latter. Source: investigation-log.md §6.
 LOGMINE = [
     ("container lifecycles", "914", "974", "999"),
-    ("journal at startup", "loaded", "loaded", 'FAILED — err="journal not found", 999/999'),
+    ("journal at startup", "loaded", "loaded", 'FAILED, err="journal not found", 999/999'),
     ("journal at shutdown", "380.15 MiB, layers=4248", "380.15 MiB, layers=4248",
      "39.80 MiB, layers=3"),
     ("triecache / statecache / buffer", "1023.00 MiB / 0.00 B / 256.00 MiB",
@@ -163,7 +163,7 @@ LOGMINE = [
 # report reads as elimination before explanation.
 DISCARDED = [
     ("Larger or unique code takes a different read path", "dead",
-     "Under BALANCE geth reads one fixed-shape leaf — nonce, balance, storage root, code "
+     "Under BALANCE geth reads one fixed-shape leaf: nonce, balance, storage root, code "
      "hash. Code lives in a separate table and is never touched. Corroborated: the measured "
      "CODE delta is ≈7 ms/Mgas for JUMPDEST and DIFF_MAX in <em>all three</em> databases."),
     ("state-actor is missing the target accounts", "dead",
@@ -178,18 +178,18 @@ DISCARDED = [
      "compacted ÷ uncompacted tracks the account class measured (0.24–1.22×), not run "
      "position."),
     ("The generator dropped the large classes on a size cap", "dead",
-     "<code>specbuild/build.go:243</code> — the 2 GiB limit is a warning by design, the cap "
+     "<code>specbuild/build.go:243</code>: the 2 GiB limit is a warning by design, the cap "
      "is 64 GiB, and the YAML creates every class at 150,000."),
     ("Different derived addresses between the two fixture bundles", "dead",
-     "Addresses derive from fixed constants — the Bittrex CREATE-preimage chain, sequential "
-     "EOAs from <code>0x1000</code>, <code>keccak256(\"random\")</code> — not from the "
+     "Addresses derive from fixed constants: the Bittrex CREATE-preimage chain, sequential "
+     "EOAs from <code>0x1000</code>, <code>keccak256(\"random\")</code>, not from the "
      "bundle hash."),
     ("Snapshot / flat-state availability differs", "dead",
      "Zero matches for <code>snapshot</code>, <code>generat</code>, <code>Rebuilding</code> "
      "or <code>flat</code> in any of the three container logs, across windows spanning every "
      "file. All three run <code>scheme=path</code>; no snapshot layer is involved."),
     ("Trie cache sizing differs between the containers", "dead",
-     "Every tunable is byte-identical across the three runs — see the table above. No second "
+     "Every tunable is byte-identical across the three runs. See the table above. No second "
      "variant of either allocation line appears anywhere in 291,000 lines of log."),
     ("Unclean-shutdown recovery repopulates memory", "dead",
      "The counts are ten <em>static</em> 2025 timestamps replayed once per lifecycle "
@@ -223,13 +223,13 @@ GAS_PER_ACCESS = 2600
 US_PER_MS_MGAS = GAS_PER_ACCESS / 1000.0  # ms/Mgas -> us/lookup == * 2.6
 
 CITE = {
-    "new": "EEST <code>tests/benchmark/stateful/bloatnet/test_account_query.py:215-219</code> — "
+    "new": "EEST <code>tests/benchmark/stateful/bloatnet/test_account_query.py:215-219</code>: "
            "<code>account_new</code> gas is budgeted only when <code>opcode == Op.CALL and "
            "value_sent &gt; 0 and account_mode == AccountMode.NON_EXISTING_ACCOUNT</code>.",
-    "pattern": "state-actor <code>internal/templates/code_pattern.go:28-39</code> — max_same is one "
+    "pattern": "state-actor <code>internal/templates/code_pattern.go:28-39</code>: max_same is one "
                "shared codeHash; max_diff is byte-unique 24,576 B per account.",
-    "cap": "state-actor <code>internal/templates/code_pattern.go:80</code> — hard cap is 64 GiB.",
-    "warncap": "state-actor <code>internal/specbuild/build.go:243</code> — the 2 GiB limit is a "
+    "cap": "state-actor <code>internal/templates/code_pattern.go:80</code>: hard cap is 64 GiB.",
+    "warncap": "state-actor <code>internal/specbuild/build.go:243</code>: the 2 GiB limit is a "
                "warning by design, not a rejection.",
 }
 
@@ -237,7 +237,7 @@ MODE_DOC = {
     "NON_EXISTING_ACCOUNT":
         "<b>NON_EXISTING_ACCOUNT</b>“Empty account”. Targets are derived from "
         "<code>keccak256(\"random\")</code>, an address range that is never funded, so the "
-        "account is absent from all three databases — nothing to read, nothing to lay out."
+        "account is absent from all three databases, so there is nothing to read and nothing\n         to lay out."
         "<span class=src>EEST <code>helper/account_creator.py:36,58</code> · no state-actor "
         "YAML entity, by design</span>",
     "EXISTING_EOA":
@@ -256,14 +256,14 @@ MODE_DOC = {
         "<b>EXISTING_CONTRACT_SAME_MAX</b>“Max-size contract: byte-identical across copies.” "
         "24,576 B of runtime (EIP-170 limit): <code>STOP</code> at byte 0 then 24,575 "
         "<code>JUMPDEST</code>. Because no address is embedded, every copy hashes to the "
-        "<em>same</em> code hash — one shared code blob for 150,000 accounts."
+        "<em>same</em> code hash, one shared code blob for 150,000 accounts."
         "<span class=src>EEST <code>helper/account_creator.py:46</code> · state-actor "
         "<code>code_pattern.go:30-34</code></span>",
     "EXISTING_CONTRACT_DIFF_MAX":
         "<b>EXISTING_CONTRACT_DIFF_MAX</b>“Max-size contract: ADDRESS-embedded, each copy "
         "unique.” 24,576 B of runtime with the contract's own 20-byte address written at "
         "<code>0x0C..0x20</code>, so every account is byte-unique and gets its <em>own</em> "
-        "code hash — 150,000 distinct 24 KB blobs."
+        "code hash, 150,000 distinct 24 KB blobs."
         "<span class=src>EEST <code>helper/account_creator.py:49</code> · state-actor "
         "<code>code_pattern.go:36-39</code></span>",
     "EXISTING_CONTRACT_JUMPDEST":
@@ -285,7 +285,7 @@ METRIC_DOC = {
     "slope": "Ordinary-least-squares slope of <code>timing.total_ms</code> against the gas "
              "target in millions, fitted over the category's 11 gas levels (100M…300M). The "
              "slope drops the fixed per-block intercept, so it is the marginal cost of state "
-             "work only — which is why slopes, not per-test ratios, are the sound comparison.",
+             "work only, which is why slopes, not per-test ratios, are the sound comparison.",
 }
 
 # ------------------------------------------------------------------- oracles
@@ -497,7 +497,7 @@ def db_headers(after="", numeric=True):
 
 
 CSS = """
-/* Site theme — mirrors build_site.py CRT_VARS and the ARTICLE stylesheet so the
+/* Site theme, mirroring build_site.py CRT_VARS and the ARTICLE stylesheet so the
    report reads as one of the site's pages. Dark-only, like the site. */
 :root {
   --bg:#000000; --fg:#e2e6e2; --muted:#aab0aa; --dim:#5c645c; --line:#182818;
@@ -696,7 +696,7 @@ def chart_journal_window():
     y0, y1 = TOP - 12, TOP + ROW * len(DEPLOYS) - 2
     body = [S.band(sc.to(cut), sc.to(head), y0, y1, "--db-u", 0.13)]
     body.append(S.label((sc.to(cut) + sc.to(head)) / 2, y0 - 8,
-                        f'journal — {PRERUN["journal_mib"]:.0f} MiB held in RAM',
+                        f'journal, {PRERUN["journal_mib"]:.0f} MiB held in RAM',
                         "middle", "tick"))
     body.append(S.line(sc.to(cut), y0, sc.to(cut), y1 + 10, "--muted", 1, "3 3"))
     for i, (name, lo, hi) in enumerate(DEPLOYS):
@@ -729,8 +729,8 @@ def chart_journal_window():
             f'on every boot. MINIMAL is deployed and gone in '
             f'{DEPLOYS[0][2] - DEPLOYS[0][1]} blocks; SAME_MAX leaves only its tail '
             f'inside the window, and the benchmark reads salts from well below it. '
-            f'DIFF_MAX &mdash; deployed last, because it is the most expensive class '
-            f'to build &mdash; lands wholly inside. That is the whole anomaly: same '
+            f'DIFF_MAX, deployed last because it is the most expensive class '
+            f'to build, lands wholly inside. That is the whole anomaly: same '
             f'trie, same depth, same fixtures, different birthday.')
 
 
@@ -898,7 +898,7 @@ def chart_slope_lines(meas, P, clean, mode="EXISTING_CONTRACT_DIFF_MAX", opcode=
     return (S.svg(W, H, "".join(body)),
             f'{opcode}, {SHORT[mode]}, value_sent=0: measured block wall time '
             f'against gas target, all {len(sel)} levels. Both jochemnet databases stay nearly flat '
-            f'while state-actor rises linearly — the divergence is a slope, not an '
+            f'while state-actor rises linearly. The divergence is a slope, not an '
             f'offset.')
 
 
@@ -1215,7 +1215,7 @@ def main():
     # Title is a series template: every client's article carries the same sentence and varies
     # only in the client name and the factor. Keep both strings in lockstep.
     w("<title>How can two Geth databases holding the same state differ 7\u00d7 in "
-      "performance? — state-actor vs a mainnet snapshot</title>")
+      "performance? State-actor vs a mainnet snapshot</title>")
     w(f"<style>{CSS}</style></head><body>")
 
     # 1. header
@@ -1225,7 +1225,7 @@ def main():
     w("<h1>How can two Geth databases holding the same state differ 7&times; in "
       "performance?</h1>")
     w("<p class=deck>A case study on state-actor versus a mainnet-snapshot "
-      "database &mdash; and on how a benchmark can measure its own setup.</p>")
+      "database, and on how a benchmark can measure its own setup.</p>")
     w('<div class=meta><span class=tag>Ethereum · geth · pathdb · benchmarking</span> · 2026 · '
       '<a href="https://github.com/CPerezz/articles/tree/main/state-db-perf-divergence">'
       'reproducible pipeline &amp; data &rarr;</a></div>')
@@ -1261,7 +1261,7 @@ def main():
 
     # 5. headline table
     w("<h2>The behaviour</h2>")
-    w("<p>Three runs of the same EEST suite, on the same host, against three\n      geth state databases. Two of them are the same snapshot &mdash; one\n      compacted, one not; the third was generated from scratch by\n      state-actor. If the databases were equivalent, every category below\n      would sit near 1.0&times;. One family of categories does not, and the\n      rest of this report is the hunt for why.</p>".replace("\n     ", " "))
+    w("<p>Three runs of the same EEST suite, on the same host, against three\n      geth state databases. Two of them are the same snapshot, one\n      compacted and one not; the third was generated from scratch by\n      state-actor. If the databases were equivalent, every category below\n      would sit near 1.0&times;. One family of categories does not, and the\n      rest of this report is the hunt for why.</p>".replace("\n     ", " "))
     w(f"<p class=note>{tip('µs per account lookup', METRIC_DOC['us'])}</p>")
     w("<table><tr><th>account_mode</th>"
       + db_headers(after="<th></th>")
@@ -1280,7 +1280,7 @@ def main():
 
     # 6. all 16 categories
     ncat = sum(1 for op in OPCODES for m in MODES if by_op[op][m]["n"])
-    w(f"<details><summary>All {ncat} categories (ms per 1M gas) — state-actor "
+    w(f"<details><summary>All {ncat} categories (ms per 1M gas): state-actor "
       f"{sa_slope_lo:.2f}\u2013{sa_slope_hi:.2f}; jochemnet {cu_slope_lo:.2f}"
       f"\u2013{cu_slope_hi:.2f}</summary>")
     w("<table><tr><th>opcode</th><th>account_mode</th>"
@@ -1299,7 +1299,7 @@ def main():
     w("<caption>Categories absent from the common set render “—”. NON_EXISTING and EOA under "
       "CALLCODE fall outside the common set.</caption></table>")
 
-    w("<h3>CODE delta — CALL slope minus BALANCE slope</h3>")
+    w("<h3>CODE delta, CALL slope minus BALANCE slope</h3>")
     w(f"<p class=note>Unit: {tip('ms per 1M gas', METRIC_DOC['slope'])}</p>")
     w("<table><tr><th>account_mode</th>" + db_headers() + "</tr>")
     for m in MODES:
@@ -1311,7 +1311,7 @@ def main():
 
     w("<p>Plotted, the shape of the problem is immediate. Every category is\n      one row: how much slower state-actor is than compacted jochemnet on\n      the same work.</p>".replace("\n     ", " "))
     w(figure(*figs["ratio-dots"]))
-    w("<p>The next two ask what compaction did. Manual compaction rewrites\n      every SSTable on disk, so any fast path it destroys was on disk &mdash;\n      and any fast path that survives it was not.</p>".replace("\n     ", " "))
+    w("<p>The next two ask what compaction did. Manual compaction rewrites\n      every SSTable on disk, so any fast path it destroys was on disk,\n      and any fast path that survives it was not.</p>".replace("\n     ", " "))
     w(figure(*figs["compaction-dumbbell"]))
     w(figure(*figs["cost-curves"]))
 
@@ -1320,7 +1320,7 @@ def main():
       f"{(agree_hi - 1) * 100:.0f}%</h3>")
     w(f"<p>Of the {len(agree) + len(exceptions)} slope categories in the common set, "
       f"<b>{len(agree)}</b> put state-actor between {agree_lo:.2f}x and {agree_hi:.2f}x of "
-      f"compacted (median {agree_med:.2f}x) — a flat run-level offset, not a state-layout "
+      f"compacted (median {agree_med:.2f}x), a flat run-level offset, not a state-layout "
       f"effect. Only <b>{len(exceptions)}</b> categories fall outside, and all three are "
       f"DIFF_MAX:</p>")
     w("<table><tr><th>opcode</th><th>account_mode</th>"
@@ -1337,12 +1337,12 @@ def main():
       f"at the largest, heading for the {agree_med:.2f}x the slopes give. The drift is "
       f"easy to explain. Every test pays a fixed cost per block on top of the state "
       f"work, and the bigger the budget, the less that fixed cost matters. Fitting a "
-      f"slope strips it out &mdash; which is why we compare slopes.</p>")
+      f"slope strips it out, which is why we compare slopes.</p>")
     w(f"<p>DIFF_MAX drifts too, for the same reason: {dm_gas_rows[0][1]:.1f}x at "
       f"{dm_gas_rows[0][0]}M, {dm_gas_rows[-1][1]:.1f}x at {dm_gas_rows[-1][0]}M. What "
       f"it never does is join the others. At every budget it sits about half again "
       f"above them, and with the fixed cost stripped out it is the only family left "
-      f"outside the band at all &mdash; up to {exc_hi:.2f}x on {esc(exc_op)}. So the gap "
+      f"outside the band at all, up to {exc_hi:.2f}x on {esc(exc_op)}. So the gap "
       f"does not care how much gas we spend. That rules out gas accounting, and points "
       f"at something about the accounts themselves.</p>")
     w(figure(*figs["convergence"]))
@@ -1360,7 +1360,7 @@ def main():
       + " both did.</caption></table></details>")
 
     # 10. worst 15
-    w(f"<details><summary>Worst 15 divergent tests (state-actor ÷ compacted throughput) — "
+    w(f"<details><summary>Worst 15 divergent tests (state-actor ÷ compacted throughput): "
       f"the top {worst_lead} rows are DIFF_MAX + BALANCE</summary>")
     w("<table><tr><th>account_mode</th><th>opcode</th><th class=n>gas</th>"
       + "".join(f'<th class="n db" style="color:var({var});border-color:var({var})">'
@@ -1378,7 +1378,7 @@ def main():
       f"{len(clean)} value_sent=0 non-baseline common tests.</caption></table></details>")
 
     # test-id mapping
-    w(f"<details><summary>Test-id mapping — which EEST tests back each ACCOUNT_MODE "
+    w(f"<details><summary>Test-id mapping: which EEST tests back each ACCOUNT_MODE "
       f"({len(common)} common tests, {len(census)} parameter categories)</summary>")
     w("<p class=note>Every measured test is "
       "<code>benchmark/stateful/bloatnet/test_account_query.py::test_account_access</code>. "
@@ -1401,7 +1401,7 @@ def main():
       f"{' or '.join(cc_absent)} in the common set.</caption></table>")
     for m in MODES:
         ids = sorted(t for t in common if P[t]["mode"] == m)
-        w(f"<details><summary>{esc(SHORT[m])} — {len(ids)} test ids</summary>"
+        w(f"<details><summary>{esc(SHORT[m])}, {len(ids)} test ids</summary>"
           f"<pre class=idpre>")
         for t in ids:
             w(esc(t[len(prefix):]))
@@ -1416,19 +1416,19 @@ def main():
       f"{fnum(max(us[m]['sa'] for m in MODES),1)}&nbsp;µs on every class including the "
       "address range that exists in no database. jochemnet is the run with a handful of "
       "suspiciously <em>fast</em> classes. So the question was never why state-actor is "
-      "slow. It is why jochemnet is fast &mdash; and why compaction took away some of "
+      "slow. It is why jochemnet is fast, and why compaction took away some of "
       "that speed but not all of it.</p>")
     w("<p>Before measuring anything, one deduction clears most of the field. Under "
-      "BALANCE geth reads a single account leaf — nonce, balance, storage root, code "
-      "hash — and that leaf has the same shape whether the account's code is one byte, "
+      "BALANCE geth reads a single account leaf: nonce, balance, storage root, code "
+      "hash. That leaf has the same shape whether the account's code is one byte, "
       "a 24 KB blob shared by 150,000 accounts, or a byte-unique 24 KB blob. Code lives "
       "in a different table, one BALANCE never opens. <b>Identical leaves cannot differ "
-      "7× because of what they point at</b> — so whatever is going on, it is about "
+      "7× because of what they point at</b>, so whatever is going on, it is about "
       "<i>which storage tier answers the read</i>. That is the thread we pulled.</p>")
     w("<table><tr><th>observation</th>" + db_headers(numeric=False) + "</tr>")
     for row in LOGMINE:
         w("<tr>" + "".join(f"<td>{esc(c)}</td>" for c in row) + "</tr>")
-    w("<caption>Mined from the three <code>container_*.log</code> files — geth's own "
+    w("<caption>Mined from the three <code>container_*.log</code> files, geth's own "
       "stdout across 914 / 974 / 999 container lifecycles. Every tunable matches. In the "
       "whole corpus there is exactly one configuration-level difference between the runs: "
       "whether a journal is found at startup.</caption></table>")
@@ -1436,7 +1436,7 @@ def main():
     w("<p>Before the journal there were plainer suspects, and each one had to die "
       "on its own evidence. What follows is one subsection per suspect: why it "
       "looked plausible, what we measured, and what the measurement said. None of "
-      "them survived — but each one narrowed where the answer could be hiding.</p>")
+      "them survived, but each one narrowed where the answer could be hiding.</p>")
 
     w("<h3>The databases themselves</h3>")
     w("<p>The dullest explanation is that the two stores simply hold different "
@@ -1468,14 +1468,14 @@ def main():
     w(f"<caption>Raw output committed as <code>data/db_inspect_*.txt</code>; "
       f"{shown} categories shown, all-zero rows omitted. jochemnet&rsquo;s Total "
       f"includes its 700&nbsp;GiB frozen chain; state-actor&rsquo;s ancient store "
-      f"is 36&nbsp;KB, because a generator writes state, not history &mdash; all "
+      f"is 36&nbsp;KB, because a generator writes state, not history, so all "
       f"of its data is in the key-value store. The jochemnet store was inspected "
       f"after the fix described below, so ~380&nbsp;MiB of trie state now sits in "
       f"the key-value store rather than in the journal file."
       f"</caption></table></details>")
     w("<p>Both stores hold billions of trie nodes and hundreds of gigabytes of "
       "state, with the same table shapes and totals of the same order. There are "
-      "real differences &mdash; different generators make different tries &mdash; "
+      "real differences, because different generators make different tries, "
       "but nothing here is the kind of difference that makes <i>one account class</i> "
       "twenty times faster while its five siblings stay flat. Bulk composition was "
       "not the answer.</p>")
@@ -1496,11 +1496,11 @@ def main():
       "bundle. They use the same factory contract, the same CREATE2 salt walk over "
       "the same range, and the same 64-byte calldata; the only thing that differs "
       "is the code each receiver is given, which is the entire point of the "
-      "parameter. And the accounts really are what their names claim &mdash; the "
+      "parameter. And the accounts really are what their names claim: the "
       "value_sent=1 pricing below separates existing from non-existing accounts "
       "inside each database on its own:</p>")
     # 9. existence proof
-    w("<details><summary>Existence proof — value_sent=1 pricing separates existing from "
+    w("<details><summary>Existence proof: value_sent=1 pricing separates existing from "
       "non-existing accounts inside every database</summary>")
     w("<table><tr><th>account_mode</th>"
       + db_headers()
@@ -1512,7 +1512,7 @@ def main():
           f"<td class=n>{fnum(vs1_ratio['sa'][m],2)}</td></tr>")
     w(f"<caption>CALL slopes, value_sent=1, ms per 1M gas. A value-bearing CALL to a "
       "<em>non-existent</em> account additionally pays account-creation gas, so its loop "
-      "iterates far fewer times per 1M gas — the low NON_EXISTING slope is the signature of a "
+      "iterates far fewer times per 1M gas, so the low NON_EXISTING slope is the signature of a "
       f"genuinely absent account, and every other class differs from it by {sep_lo:.1f}–"
       f"{sep_hi:.1f}&times; on "
       "state-actor.</caption></table>")
@@ -1524,27 +1524,27 @@ def main():
     w("<h3>The 380 MiB file inside the snapshot</h3>")
     w("<p>By now the logs had pointed at the journal, and the jochemnet snapshot "
       "ships one: <code>triedb/merkle.journal</code>, 380.15&nbsp;MiB, right there "
-      "in the tarball. The obvious story wrote itself &mdash; the image was "
+      "in the tarball. The obvious story wrote itself: the image was "
       "captured from a node that still held unflushed state, and the benchmark had "
       "been re-warming that captured memory ever since. It is a good story. It is "
       "also wrong, and proving it wrong is what actually cracked the case.</p>")
     w("<p>We measured the journal at the promoted head, after the pre-run: "
-      "<b>380.15&nbsp;MiB across 4,248 layers</b> &mdash; the published pair, to "
+      "<b>380.15&nbsp;MiB across 4,248 layers</b>, the published pair, to "
       "the digit, on a file the pre-run had just rewritten from scratch. The "
       "shipped artifact is not the cause: it is a coincidence of size, reproduced "
       "deterministically by the pipeline itself. Which meant the culprit was not "
       "something baked into a tarball months ago, but something the benchmark does "
-      "to itself on every run &mdash; and that is a much better kind of bug, "
+      "to itself on every run, and that is a much better kind of bug, "
       "because it is one we can go and reproduce.</p>")
 
     w("<h3>Where the data sits in the LSM tree</h3>")
     w("<p>The last plain suspect was on-disk layout. Compaction alone moves these "
-      "numbers by 3&times; &mdash; that is the whole compacted-versus-uncompacted "
-      "spread above &mdash; so perhaps DIFF_MAX simply occupied a lucky corner of "
+      "numbers by 3&times;, which is the whole compacted-versus-uncompacted "
+      "spread above, so perhaps DIFF_MAX simply occupied a lucky corner of "
       "the LSM tree. We patched the harness to run a full pebble compaction "
       "<i>between every test's setup and its measurement</i>, which flattens exactly "
       "that kind of advantage, and re-ran. The anomaly stood. Layout turned out to "
-      "matter, but as an accomplice rather than the principal &mdash; it comes back "
+      "matter, but as an accomplice rather than the principal. It comes back "
       "in the fix, and we did not see why until we knew what the journal was "
       "doing.</p>")
 
@@ -1559,7 +1559,7 @@ def main():
       f"buffer therefore ends with the trie writes of its last <b>4,248 blocks</b> living "
       f"in exactly one place: the journal file.</p>")
     w(f"<p>That matters because of the order the read path tries tiers. "
-      f"<a href='{G}/triedb/pathdb/journal.go'>journal.go</a> forks on one condition &mdash; "
+      f"<a href='{G}/triedb/pathdb/journal.go'>journal.go</a> forks on one condition: "
       f"journal loads, you get the reconstructed layer stack; journal fails, you get "
       f"<code>Failed to load journal, discard it</code> and a single disk layer with an "
       f"empty buffer. <code>disklayer.go</code> then reads buffer, then clean state cache, "
@@ -1568,8 +1568,8 @@ def main():
       f"With a journal, some reads never reach the disk. Without one, all of them do.</p>")
     dm_lo, dm_hi = DEPLOYS[-1][1], DEPLOYS[-1][2]
     w(f"<p>Now the part that makes it a per-class effect: <b>deploy order</b>. The EEST "
-      f"setup deploys receiver contracts class by class, and DIFF_MAX &mdash; the most "
-      f"expensive class to construct &mdash; goes <b>last</b>, in blocks "
+      f"setup deploys receiver contracts class by class, and DIFF_MAX, the most "
+      f"expensive class to construct, goes <b>last</b>, in blocks "
       f"{thousands(dm_lo)}&ndash;{thousands(dm_hi)} of a chain ending at "
       f"{thousands(PRERUN['head'])}. The persisted disk layer stops at "
       f"{thousands(PRERUN['disk_layer'])}. Every DIFF_MAX account the benchmark reads "
@@ -1580,7 +1580,7 @@ def main():
       "bakes it into the golden baseline, and each per-test <code>restore</code> serves it "
       "back, so geth reloads it into memory 1,463 times. To check this rather than assume "
       "it, we ran 150 cold <code>eth_getBalance</code> calls per class with the OS page "
-      "cache dropped, reading geth's own I/O accounting from <code>/proc</code> &mdash; "
+      "cache dropped, reading geth's own I/O accounting from <code>/proc</code>, "
       "first with the journal in place, then with the file deleted:</p>")
     w("<table><tr><th>account class</th><th class=n>disk read, journal present</th>"
       "<th class=n>disk read, journal deleted</th>"
@@ -1589,7 +1589,7 @@ def main():
                          ("SAME_MAX", "2.9 MB", "6.5 MB", "24,576 B"),
                          ("JUMPDEST", "2.8 MB", "6.8 MB", "24,576 B"),
                          ("<b>DIFF_MAX</b>", "<b>0.0 MB</b>", "5.2 MB",
-                          "<b>0 B &mdash; the accounts are gone</b>"),
+                          "<b>0 B, the accounts are gone</b>"),
                          ("EOA", "2.6 MB", "7.4 MB", "0 B (balance &gt; 0)"),
                          ("NON_EXISTING", "2.5 MB", "9.7 MB", "0 B")):
         w(f"<tr><td>{cls}</td><td class=n>{a}</td><td class=n>{b}</td>"
@@ -1597,20 +1597,20 @@ def main():
     w(f"<caption>Probes A and B from the <a href='{LEDGER}'>investigation ledger</a>. "
       f"With the journal, DIFF_MAX reads <b>zero bytes</b> from disk while its siblings "
       f"each pull megabytes. Delete the journal and geth rewinds to block 24,406,217 "
-      f"&mdash; the disk layer, exactly where the window arithmetic says it should &mdash; "
+      f"to the disk layer, exactly where the window arithmetic says it should, "
       f"and the DIFF_MAX accounts <i>stop existing</i>. Their whole lives were "
       f"journal-resident.</caption></table>")
     w("<p><b>So why only these accounts, and not all of them?</b> Because journal "
       "residency is recency, and recency here is deploy order. Only state written in the "
       "pre-run's final 4,248 blocks is still in memory at shutdown, and that is precisely "
-      "the DIFF_MAX receivers &mdash; plus the tail of the SAME_MAX salt range, whose "
+      "the DIFF_MAX receivers, plus the tail of the SAME_MAX salt range, whose "
       "addresses this benchmark never reads: the salts it does read were deployed "
       "thousands of blocks below the window. Same trie, same depth, same fixtures, same "
       "client. Different birthday.</p>")
     w("<h2>The fix, and the proof</h2>")
     w(f"<p>If journal residency is the cause, the fix writes itself: after the "
       f"pre-run and before the baseline is promoted, <b>drain the journal into the "
-      f"disk layer</b> &mdash; flatten every diff layer and push the write buffer "
+      f"disk layer</b>: flatten every diff layer and push the write buffer "
       f"into the key-value store. Geth already has the code path "
       f"(<code>tree.cap(root,&nbsp;0)</code>); we packaged it as a small tool, "
       f"<a href='{TOOL}'>drainjournal</a>, built against the exact client commit "
@@ -1622,13 +1622,13 @@ def main():
                 and c["gas"] == "160M" and c["mode"].endswith("DIFF_MAX"))
     w(f"<p>Draining alone was not enough, and the way it failed is instructive. "
       f"BALANCE/DIFF_MAX at 160M gas fell from {b160['orig']:.0f} to "
-      f"{sm:.0f}&nbsp;MGas/s &mdash; better, nowhere near fixed. The drain had "
+      f"{sm:.0f}&nbsp;MGas/s, better but nowhere near fixed. The drain had "
       f"written all that state into about a hundred fresh, densely packed SSTables, "
       f"and in an LSM tree recency <i>is</i> physical locality: the class had simply "
       f"traded a memory advantage for an on-disk one. One "
       f"<code>geth db compact</code> later, those leaves were merged into the same "
       f"cold strata as everybody else's, and the number landed at "
-      f"{b160['drained']:.1f} &mdash; against state-actor's {b160['sa']:.1f}. Both "
+      f"{b160['drained']:.1f}, against state-actor's {b160['sa']:.1f}. Both "
       f"legs are needed: {b160['orig']:.0f} &rarr; {sm:.0f} (drain) &rarr; "
       f"{b160['drained']:.1f} (compact).</p>")
     w(figure(*figs["verdict"]))
@@ -1640,7 +1640,7 @@ def main():
     rr = lambda rows, f: (min(f(c) for c in rows), max(f(c) for c in rows))
     b4 = lambda c: c["orig"] / c["sa"]
     af = lambda c: c["drained"] / c["sa"]
-    w(f"<p>Across all {len(VERDICT['cells'])} cells of the verdict run &mdash; every "
+    w(f"<p>Across all {len(VERDICT['cells'])} cells of the verdict run, covering every "
       f"opcode, two gas budgets, the anomalous class and a control class that was "
       f"never journal-resident:</p>")
     w("<table><tr><th>group</th><th class=n>cells</th><th class=n>before (orig \u00f7 SA)</th>"
@@ -1682,11 +1682,11 @@ def main():
     jfd = resid_mean("jochemnet", "accounts_from_disk")
     sfd = resid_mean("state-actor", "accounts_from_disk")
     w(f"<p>Look again at the verdict table. After the fix everything lands near "
-      f"<b>1.1&times;</b>, not 1.0&times; &mdash; the control included. That residual "
+      f"<b>1.1&times;</b>, not 1.0&times;, the control included. That residual "
       f"is small, but it is not noise: it is the same on every opcode and every "
       f"account mode, it was there before the journal was ever drained, and it is "
       f"the flat run-level offset the whole report started with. So what is it?</p>")
-    w("<p>The tempting answer &mdash; state-actor simply holds more state &mdash; "
+    w("<p>The tempting answer, that state-actor simply holds more state, "
       "does not survive arithmetic. Its state is about 21% larger, and a trie is "
       "logarithmic: 21% more accounts is <i>0.07 of one level</i>, worth around a "
       "percent. Nor is it any of the other usual suspects. Both stores are fully "
@@ -1711,15 +1711,15 @@ def main():
     w(f"<caption>Means of three runs; run-to-run spread is negligible (bytes per "
       f"account varied by 4&nbsp;B across all six runs). Source: "
       f"<code>data/residual_offset.json</code>.</caption></table>")
-    w(f"<p>The two arms do <b>the same work</b> &mdash; the same ~{jfd:,.0f} account "
-      f"reads, the same number reaching disk, to three significant figures &mdash; "
-      f"yet state-actor moves <b>{sd / jd - 1:.1%} more bytes</b> and takes "
+    w(f"<p>The two arms do <b>the same work</b>: the same ~{jfd:,.0f} account "
+      f"reads, the same number reaching disk, to three significant figures. "
+      f"Yet state-actor moves <b>{sd / jd - 1:.1%} more bytes</b> and takes "
       f"<b>{sw / jw - 1:.1%} longer</b>. Time tracks bytes. And that ~{sw / jw - 1:.0%} "
       f"is the whole residual: it reproduces the full 1,463-test run's throughput "
       f"deficit in a ten-second experiment.</p>")
     g = RESID["sst_geometry"]
     w("<p>Which raises the obvious objection. A point lookup does not read a "
-      "record, it reads a whole <i>block</i> &mdash; pebble fetches roughly 4 KiB "
+      "record, it reads a whole <i>block</i>: pebble fetches roughly 4 KiB "
       "and picks the value out of it. Reading a 25-byte account instead of a "
       "17-byte one should be free. And it is. The block count is identical. What "
       "differs is the block:</p>")
@@ -1740,8 +1740,8 @@ def main():
     jp = pages_for(g["jochemnet"]["compressed_bytes_per_block"])
     sp = pages_for(g["state-actor"]["compressed_bytes_per_block"])
     w(f"<p>state-actor's account records are close to <b>incompressible</b>. A "
-      f"third of them carry a 32-byte code hash &mdash; random bytes, nothing for "
-      f"Snappy to find &mdash; where a mainnet snapshot is mostly near-empty EOAs "
+      f"third of them carry a 32-byte code hash, random bytes with nothing for "
+      f"Snappy to find, where a mainnet snapshot is mostly near-empty EOAs "
       f"of small integers and zero padding. Same compressor, same settings, and "
       f"yet one side recovers {1 - g['jochemnet']['physical_over_logical']:.0%} "
       f"and the other {1 - g['state-actor']['physical_over_logical']:.0%}. The same "
@@ -1753,15 +1753,15 @@ def main():
       f"1&nbsp;+&nbsp;(<i>S</i>&minus;1)/4096 pages: <b>{jp:.2f}</b> against "
       f"<b>{sp:.2f}</b>, or {sp / jp - 1:.1%}. Measured end to end the gap is "
       f"{sd / jd - 1:.1%}, so page quantisation accounts for most of it and index "
-      f"and metadata traffic &mdash; where state-actor also carries 33% more "
-      f"SSTables &mdash; plausibly covers the rest. We have not measured that split "
+      f"and metadata traffic, where state-actor also carries 33% more "
+      f"SSTables, plausibly covers the rest. We have not measured that split "
       f"separately, which is why this section is headed as a hypothesis rather "
       f"than a finding.</p>")
     w(f"<p>If it holds, the consequence is worth stating plainly: <b>a generated "
       f"state is incompressible by construction</b>. Give every contract its own "
       f"bytecode and every account a real balance and you have built a database of "
       f"high-entropy records, which costs more per read than a mainnet snapshot "
-      f"full of empty accounts &mdash; permanently, and independently of how the "
+      f"full of empty accounts, permanently, and independently of how the "
       f"data is laid out. A ~10% floor between these two arms is not a defect in "
       f"either one. It is what the two datasets are. The full elimination trail, "
       f"including several hypotheses that died and two that had to be retracted, "
@@ -1772,14 +1772,14 @@ def main():
     w("<p>The lesson generalises well beyond one account class. A worst-case "
       "benchmark is a claim about <i>cold</i> performance, and a baseline built by "
       "replaying blocks cannot help carrying its own history with it: whatever was "
-      "written last is still warm &mdash; in the journal, in the write buffer, in "
+      "written last is still warm: in the journal, in the write buffer, in "
       "the youngest levels of the LSM tree. None of that appears in a config file. "
       "Here it was worth 23&times; on exactly the workload the suite was built to "
       "stress, and it took three rounds of measurement to find.</p>")
     w("<p>state-actor avoids the entire class of problem by construction. It "
       "generates the whole state up front, before any benchmark runs, so no account "
       "is more recent than any other: nothing is journal-resident, nothing sits in a "
-      "privileged stratum, and a cold read costs what a cold read costs &mdash; the "
+      "privileged stratum, and a cold read costs what a cold read costs, the "
       "same for every class. That uniformity is exactly what the numbers above show "
       "the replayed snapshot lacked, and it is why generated state is the right way "
       "to benchmark a client's worst case. The one caveat is the mirror image of the "
