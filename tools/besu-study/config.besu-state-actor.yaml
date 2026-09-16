@@ -56,7 +56,7 @@ runner:
   instances:
     - id: besu-sa
       client: besu
-      image: docker.io/ethpandaops/besu:bal-devnet-7
+      image: docker.io/ethpandaops/besu:glamsterdam-devnet-7  # was bal-devnet-7; swapped in round 1
       genesis: ${STATE_ACTOR_DIR}/besu-chainspec.json
       genesis_fork_override: { amsterdam: 1 }
       environment:
