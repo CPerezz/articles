@@ -4540,6 +4540,21 @@
    ],
    "src": "probe-flat -mode seq, Account CF, cold caches + fresh process per point, fill_cache=false, 100% hits, the EEST fixtures' own key population"
   },
+  "code_probe": {
+   "joc": {
+    "bytes": 14208,
+    "size": "7.6 GB",
+    "ssts": 126,
+    "us": 345.5
+   },
+   "sa": {
+    "bytes": 10513,
+    "size": "45 GB",
+    "ssts": 734,
+    "us": 196.3
+   },
+   "src": "probe-flat -mode sample/probe against code/, cold caches, fresh process, 100% hits, reader opened with the store's real per-CF options"
+  },
   "eip_trap": {
    "fourteen": [
     2780,
@@ -4570,6 +4585,26 @@
    ],
    "src": "benchmarkoor ships two Amsterdam EIP sets; only the existing-snapshot family's list reproduces what geth and Besu get by activating Amsterdam by name"
   },
+  "filters": {
+   "joc": {
+    "absent_bytes": 87,
+    "absent_us": 2.8,
+    "false_positive": 214,
+    "present_bytes": 7305,
+    "present_us": 204.0,
+    "useful": 19786
+   },
+   "n": 20000,
+   "sa": {
+    "absent_bytes": 73,
+    "absent_us": 2.5,
+    "false_positive": 179,
+    "present_bytes": 7314,
+    "present_us": 165.3,
+    "useful": 19821
+   },
+   "src": "probe-flat -mode filters: RocksDB bloom tickers, reader opened with the real filter policy. A reader without a filter_policy will not consult filters that are present."
+  },
   "footprint": {
    "boot_read_gb": {
     "joc": 6.53,
@@ -4587,6 +4622,14 @@
     "total_gib": 409
    },
    "src": "du -sh on each promoted volume"
+  },
+  "harness": {
+   "compact_between_steps": "BENCHMARKOOR_COMPACT_BETWEEN_STEPS",
+   "compact_status": "named in a source comment, never implemented",
+   "compaction_seconds_account": 185.1,
+   "hook_status": "implemented on branch state-db-journal-drain only; absent from the binary these runs used",
+   "post_prerun_hook": "BENCHMARKOOR_POST_PRERUN_CMD",
+   "tests": 1463
   },
   "intervention": {
    "account_after": {
@@ -4874,6 +4917,30 @@
     "read": 1.0503285262197963,
     "saMB": 842.133504,
     "thr": 1.0465299342785925
+   }
+  }
+ },
+ "steps": {
+  "control": {
+   "joc": {
+    "setup": 31.473664,
+    "test": 1.753088
+   },
+   "n": 440,
+   "sa": {
+    "setup": 9.416704,
+    "test": 96.13311999999999
+   }
+  },
+  "measured": {
+   "joc": {
+    "setup": 31.465472,
+    "test": 3662.954496
+   },
+   "n": 1021,
+   "sa": {
+    "setup": 9.37984,
+    "test": 4234.0352
    }
   }
  }

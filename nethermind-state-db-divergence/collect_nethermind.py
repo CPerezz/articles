@@ -249,6 +249,38 @@ def per_gas(pairs):
             for k, v in sorted(g.items())]
 
 
+
+def by_step(a_tests, b_tests):
+    """Read volume of the setup step and the measured step, per arm.
+
+    The harness drops the OS page cache between steps but cannot touch the client's own RocksDB
+    block cache, because the client is not restarted inside a test. So the measured step starts
+    with whatever its own setup pulled in, and the two stores are warmed by different amounts.
+    """
+    def step_mb(entry, step):
+        st = (entry.get("steps") or {}).get(step)
+        if not st:
+            return None
+        r = (st.get("aggregated") or {}).get("resource_totals") or {}
+        return r.get("disk_read_bytes", 0) / 1e6
+
+    out = {}
+    common = set(a_tests) & set(b_tests)
+    for grp, pred in (("control", lambda t: bool(re.search(r"overhead_baseline_True", t))),
+                      ("measured", lambda t: not re.search(r"overhead_baseline_True", t))):
+        sel = [t for t in common if pred(t)]
+        row = {"n": len(sel)}
+        for label, tests in (("joc", a_tests), ("sa", b_tests)):
+            su = [step_mb(tests[t], "setup") for t in sel]
+            te = [step_mb(tests[t], "test") for t in sel]
+            su = [x for x in su if x is not None]
+            te = [x for x in te if x is not None]
+            row[label] = {"setup": median(su) if su else 0.0,
+                          "test": median(te) if te else 0.0}
+        out[grp] = row
+    return out
+
+
 def cost_curve(pairs):
     """Read volume against gas, per arm. A store with a bounded working set is flat in gas."""
     g = {}
@@ -366,6 +398,49 @@ MEASURED = {
             ["default",       4096,  16, "kSnappyCompression", "none"],
         ],
     },
+    "code_probe": {
+        "src": "probe-flat -mode sample/probe against code/, cold caches, fresh process, 100% hits, reader opened with the store's real per-CF options",
+        "sa": {
+                "ssts": 734,
+                "bytes": 10513,
+                "us": 196.3,
+                "size": "45 GB"
+        },
+        "joc": {
+                "ssts": 126,
+                "bytes": 14208,
+                "us": 345.5,
+                "size": "7.6 GB"
+        }
+    },
+    "filters": {
+        "src": "probe-flat -mode filters: RocksDB bloom tickers, reader opened with the real filter policy. A reader without a filter_policy will not consult filters that are present.",
+        "sa": {
+                "absent_us": 2.5,
+                "absent_bytes": 73,
+                "present_us": 165.3,
+                "present_bytes": 7314,
+                "useful": 19821,
+                "false_positive": 179
+        },
+        "joc": {
+                "absent_us": 2.8,
+                "absent_bytes": 87,
+                "present_us": 204.0,
+                "present_bytes": 7305,
+                "useful": 19786,
+                "false_positive": 214
+        },
+        "n": 20000
+    },
+    "harness": {
+        "post_prerun_hook": "BENCHMARKOOR_POST_PRERUN_CMD",
+        "hook_status": "implemented on branch state-db-journal-drain only; absent from the binary these runs used",
+        "compact_between_steps": "BENCHMARKOOR_COMPACT_BETWEEN_STEPS",
+        "compact_status": "named in a source comment, never implemented",
+        "compaction_seconds_account": 185.1,
+        "tests": 1463
+    },
     "three_client": {
         "src": "geth and Besu figures from the two sibling reports in this repo",
         "state_gib": {"geth": 674, "besu": 532, "nethermind": 409},
@@ -416,6 +491,7 @@ def main():
                   "worst": worst(after), "per_gas": per_gas(after)},
         "replication": {"agreement": agreement(repl),
                         "categories": by_category(repl)} if repl else None,
+        "steps": by_step(tests["fix"], tests["sa"]),
         "measured": MEASURED,
     }
     json.dump(data, sys.stdout, indent=1, sort_keys=True)

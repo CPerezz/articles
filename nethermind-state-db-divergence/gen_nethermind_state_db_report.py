@@ -169,7 +169,7 @@ def chart_treatment_dumbbell(before, after):
     Everything that reads state lands on the parity line."""
     W, L, R, T = 760, 172, 112, 16
     rows = [c for c in CATS if c in before and c in after]
-    H = T + 26 * len(rows) + 40
+    H = T + 26 * len(rows) + 58
     sx = S.LogScale(0.045, 2.2, L, W - R)
     body_bot = T + 26 * len(rows) - 8
     o = [S.band(sx.to(0.9), sx.to(1.1), T - 6, body_bot, "--accent", 0.10)]
@@ -186,6 +186,11 @@ def chart_treatment_dumbbell(before, after):
         o.append(S.label(W - R + 10, y + 4, f"{b:.3f} \u2192 {a:.3f}", "start", "tick"))
     for v in (0.05, 0.1, 0.25, 0.5, 1.0, 2.0):
         o.append(S.label(sx.to(v), body_bot + 22, f"{v:g}", "middle", "tick"))
+    # Legend in the figure, not only in the caption: a standalone .svg has no caption.
+    o.append(S.dot(L + 6, body_bot + 38, 4, "--db-u"))
+    o.append(S.label(L + 16, body_bot + 42, "with the pre-run confound", "start", "tick"))
+    o.append(S.dot(L + 214, body_bot + 38, 4.5, "--accent"))
+    o.append(S.label(L + 224, body_bot + 42, "after compaction", "start", "tick"))
     o.append(S.label((L + W - R) / 2, H - 5,
                      "throughput, state-actor / jochemnet  (1.0 = parity)", "middle", "ax"))
     return S.svg(W, H, "".join(o))
@@ -350,6 +355,41 @@ def chart_grid(grid):
     return S.svg(W, H, "".join(o))
 
 
+
+def chart_steps(st):
+    """Setup step against measured step, per arm.
+
+    The harness drops the OS page cache between the two, but the client is not restarted inside a
+    test, so its own RocksDB block cache carries whatever setup pulled in straight into the
+    measurement. The inversion between the two panels is that carry-over.
+    """
+    W, H, L, R, T, B = 760, 208, 150, 24, 40, 40
+    groups = [("control", "control: no account work"), ("measured", "tests that read accounts")]
+    hi = max(st[g][a][k] for g, _ in groups for a in ("joc", "sa") for k in ("setup", "test"))
+    hi = max(hi, 1)
+    gw = (W - L - R) / len(groups)
+    o = []
+    for gi, (key, title) in enumerate(groups):
+        x0 = L + gw * gi
+        o.append(S.label(x0 + gw / 2, T - 16, title, "middle", "big"))
+        rows = [("jochemnet setup", st[key]["joc"]["setup"], "--accent"),
+                ("jochemnet measured", st[key]["joc"]["test"], "--accent"),
+                ("state-actor setup", st[key]["sa"]["setup"], "--db-sa"),
+                ("state-actor measured", st[key]["sa"]["test"], "--db-sa")]
+        for ri, (lbl, v, var) in enumerate(rows):
+            y = T + 14 + ri * 26
+            sx = S.LogScale(0.5, hi * 1.2, x0 + 4, x0 + gw - 40)
+            o.append(S.band(sx.to(0.5), sx.to(max(v, 0.6)), y - 8, y + 8, var, 0.5))
+            o.append(S.label(sx.to(max(v, 0.6)) + 6, y + 4, f"{v:,.0f}", "start", "tick"))
+            if gi == 0:
+                o.append(S.label(L - 8, y + 4, lbl, "end"))
+    o.append(S.label((L + W - R) / 2, H - 30,
+                     "megabytes read (log scale)", "middle", "ax"))
+    o.append(S.label((L + W - R) / 2, H - 10,
+                     "green = jochemnet    blue = state-actor", "middle", "ax"))
+    return S.svg(W, H, "".join(o))
+
+
 # --------------------------------------------------------------------------- page
 def main():
     D = json.load(open(os.path.join(HERE, "data", "report_data.json")))
@@ -501,32 +541,25 @@ def main():
              f"{cc[-1]['saMB']:.0f} MB. Flat in gas means the arm is re-reading one bounded set "
              f"of blocks; rising means every access goes somewhere new."))
 
-    # ---------------------------------------------------------------- eliminations
-    w("<h2>What we ruled out</h2>")
-    rk_rows = M["random_keys"]
-    w("<table><tr><th>hypothesis</th><th>what killed it</th></tr>")
-    w("<tr><td>different RocksDB configuration</td><td>every read-path knob identical, "
-      f"column family by column family &mdash; {len(M['options_per_cf']['rows'])} families, "
-      "same ribbon filter, same block sizes, same compression, no direct I/O</td></tr>")
-    w("<tr><td>different key encoding</td><td>identical <code>keccak256(addr)[0:20]</code>, "
-      "identical key-length histograms, and every spec-guaranteed fixture address resolves in "
-      "both stores</td></tr>")
-    w("<tr><td>the client's read path amplifies</td><td>a cold <code>eth_getBalance</code> on "
-      f"the generated store costs {rk_rows['Account']['sa_blk']:.2f} blocks &mdash; exactly its "
-      "raw RocksDB cost, so the client adds nothing</td></tr>")
-    w(f"<tr><td>startup I/O dominates the window</td><td>jochemnet's boot reads <em>more</em> "
-      f"({fp['boot_read_gb']['joc']:.2f} GB vs {fp['boot_read_gb']['sa']:.2f} GB) yet it runs "
-      f"{factor:.0f}&times; faster</td></tr>")
-    w("<tr><td>background compaction during the run</td><td>writes are negligible against "
-      "reads, a ratio of 0.02</td></tr>")
-    w("<tr><td>the generated store is simply worse</td><td>on keys sampled from each store's own "
-      f"account family, jochemnet is the <em>more</em> expensive one: "
-      f"{rk_rows['Account']['joc_blk']:.2f} vs {rk_rows['Account']['sa_blk']:.2f} blocks per "
-      "lookup</td></tr>")
-    w("<caption>The last row is the one that reframes the problem. If the generated store were "
-      "intrinsically slow, it would be slow on its own keys too. It is faster on them. So the "
-      "gap cannot be a property of the store in general &mdash; only of the particular keys the "
-      "benchmark reads.</caption></table>")
+    # ---------------------------------------------------------------- defects found
+    w("<h2>What we found wrong with the measurement</h2>")
+    hw = M["harness"]
+    w("<p>Three things, in the order they matter. Two are properties of how the baseline was "
+      "prepared; the third is the harness not having the controls this kind of study needs.</p>")
+    w("<ol>")
+    w("<li><b>The pre-run is promoted into the baseline.</b> Only one arm replays a pre-run "
+      "before measuring, and the harness is told to promote the result into the image every test "
+      "restores from. That leaves the benchmark's own accounts as the newest versions in the "
+      "youngest files of the LSM tree. Diagnosed below, <b>fixed</b>, and the fix accounts for "
+      "almost all of the gap.</li>")
+    w("<li><b>The measured step inherits its own setup step's cache.</b> The page cache is "
+      "dropped between the two, but the client is not restarted, so its RocksDB block cache is "
+      "not. Diagnosed below, <b>not fixed</b> &mdash; every number here still carries it.</li>")
+    w(f"<li><b>The harness has no compaction control.</b> "
+      f"<code>{esc(hw['compact_between_steps'])}</code> is {esc(hw['compact_status'])}, and "
+      f"<code>{esc(hw['post_prerun_hook'])}</code> is {esc(hw['hook_status'])}. The treatment "
+      f"below had to be applied by hand.</li>")
+    w("</ol>")
 
     # ---------------------------------------------------------------- root cause
     w("<h2>The root cause: the benchmark's keys live in a corner of one store</h2>")
@@ -538,12 +571,22 @@ def main():
       f"the accounts the benchmark then reads. The harness is then told "
       f"<code>promote_post_pre_runs: true</code>, which freezes that post-pre-run layout into "
       f"the golden image every test is restored from.</p>")
-    w("<p>This is not a caching story. The harness drops the page cache between every test and "
-      "between setup and measurement, and the pre-run happens once, before the loop. What "
-      "survives the cache drop is not warm memory &mdash; it is <em>where the bytes sit</em>. "
-      "The pre-run's writes are the newest versions of exactly those keys, so they occupy a "
-      "small, young, physically contiguous corner of the tree, and a levelled store answers a "
-      "lookup from the first place it finds a version.</p>")
+    w("<p>This is not a caching story. The harness drops the page cache between every test, and "
+      "the pre-run happens once, before the loop. What survives the drop is not warm memory "
+      "&mdash; it is <em>which files hold the current copy of each key</em>.</p>")
+    w("<p>The structure that matters here is not the Merkle trie but the <b>LSM tree underneath "
+      "it</b>: Nethermind keeps the flat state in RocksDB, whose account column family is keyed "
+      "by <code>keccak256(address)[0:20]</code>. Those keys are hashes, so they are scattered "
+      "uniformly &mdash; nothing about the benchmark's accounts is adjacent in key order. What "
+      "<em>is</em> concentrated is the set of files holding their newest versions. The pre-run "
+      "rewrote every one of those accounts, so their current copies landed together in a handful "
+      "of recently flushed SSTs near the top of the tree, and a levelled store answers a point "
+      "lookup from the newest level that has the key and stops. The working set is therefore "
+      "bounded by the size of those few files, not by the number of keys.</p>")
+    w("<p class=note>Stated that way the mechanism makes a prediction: merging those files down "
+      "into the bottom level should destroy the advantage entirely, because afterwards no level "
+      "holds a privileged copy. That is a compaction, it is testable, and the rest of this page "
+      "is the test.</p>")
 
     w(figure(chart_amortisation(amort),
              f"Cold lookups against each store's own copy of the fixtures' accounts, fresh "
@@ -560,14 +603,27 @@ def main():
       "before. One of them runs out of new blocks to read.</p>")
 
     # ---------------------------------------------------------------- the fix
-    w("<h2>Removing the confound instead of explaining it</h2>")
+    w("<h2>Defect 1: the pre-run is promoted into the baseline &mdash; and what compacting it does</h2>")
     ab, aa = iv["account_before"], iv["account_after"]
     sb, sa_ = iv["statenodes_before"], iv["statenodes_after"]
-    w(f"<p>If the corner is the cause, flattening it must erase the advantage. We merged the "
-      f"account and state-node families into their bottom level &mdash; rewriting them with the "
-      f"other store's exact per-family options, verified knob by knob, so nothing but placement "
-      f"changed &mdash; and stripped the pre-run from the config, because replaying it would "
-      f"simply rebuild the corner.</p>")
+    w("<p><b>The change, concretely.</b> The treatment is a <b>full RocksDB compaction</b> of the "
+      "affected column families: <code>CompactRange</code> over the whole key range with "
+      "<code>bottommost_level_compaction=kForce</code>, which is required because a family that "
+      "already sits entirely in its bottom level is a no-op for an ordinary compaction. The "
+      "rewrite uses the <em>other</em> store's exact per-family options &mdash; filter policy, "
+      "block size, restart interval, compression &mdash; verified knob by knob afterwards, so "
+      "the only thing that changes is which file holds each key's newest copy. No value is "
+      "touched and the state root is unchanged.</p>")
+    w("<p>The pre-run is then removed from the arm's config. That is not a reduction of the "
+      "workload: its writes are already in the promoted image, so the arm still starts from "
+      "exactly the state the pre-run produced. Replaying it would simply write those accounts "
+      "again and rebuild the very thing we just flattened.</p>")
+    w("<p class=note>The reproducible way to do this is the harness's post-pre-run hook "
+      "(<code>BENCHMARKOOR_POST_PRERUN_CMD</code>), which runs an operator command after the "
+      "pre-run and before the snapshot is promoted, aborting the promote if it fails. That hook "
+      "lives on a branch and is <em>not</em> in the binary these runs used, so the compaction "
+      "here was applied to the promoted image by hand. Same end state; the hook is the path "
+      "anyone reproducing this should take.</p>")
     w("<table><tr><th>column family</th><th>levels before</th><th>levels after</th>"
       "<th class=n>GB</th><th class=n>rewrite</th></tr>")
     for name, b, a in (("flat/Account", ab, aa), ("flat/StateNodes", sb, sa_),
@@ -625,9 +681,51 @@ def main():
              f"two panels together is the point &mdash; the account clouds do not merely shift, "
              f"they collapse from a smear across the left of the axis onto the parity band."))
 
-    # ---------------------------------------------------------------- code
+    # ---------------------------------------------------------------- residual
+    w("<h2>Defect 2: the measured step inherits its own setup step's cache</h2>")
+    st = D["steps"]
+    w("<p>The harness drops the OS page cache between the setup payload and the measured one. It "
+      "cannot drop the client's <em>own</em> cache: Nethermind is not restarted inside a test "
+      "&mdash; <code>container-recreate</code> rolls back per test, not per step &mdash; so the "
+      "RocksDB block cache carries whatever setup pulled in straight into the measurement. The "
+      "two arms are warmed by very different amounts:</p>")
+    w("<table><tr><th>tests</th><th>arm</th><th class=n>setup reads</th>"
+      "<th class=n>measured reads</th><th class=n>total</th></tr>")
+    for key, lbl in (("control", "control (no account work)"), ("measured", "reads accounts")):
+        for arm, nm in (("joc", "jochemnet"), ("sa", "state-actor")):
+            r = st[key][arm]
+            w(f"<tr><td>{esc(lbl)}</td><td>{nm}</td>"
+              f"<td class=n>{r['setup']:,.1f} MB</td><td class=n>{r['test']:,.1f} MB</td>"
+              f"<td class=n>{r['setup']+r['test']:,.1f} MB</td></tr>")
+    w(f"<caption>Read the control rows across the two steps: jochemnet pays "
+      f"{st['control']['joc']['setup']:.1f} MB in setup and "
+      f"{st['control']['joc']['test']:.1f} MB when measured, state-actor "
+      f"{st['control']['sa']['setup']:.1f} MB then "
+      f"{st['control']['sa']['test']:.1f} MB. The arms are inverted between the steps, and the "
+      f"setup figure is identical across categories on each arm, so it is a fixed payload whose "
+      f"only variable effect is how much of each store it happens to leave cached.</caption>"
+      f"</table>")
+    w(figure(chart_steps(st),
+             "The same numbers on a log axis. A measurement that begins with a warm client cache "
+             "is measuring the setup payload as much as the test, and the harness has no control "
+             "over that cache today."))
+    w(f"<p><b>What would fix it:</b> restart the client, or flush its block cache, between the "
+      f"setup and the measured step. That is affordable &mdash; the harness already recreates a "
+      f"container per test in seconds. Per-step <em>compaction</em>, the other obvious lever and "
+      f"the one geth used, is not affordable here: Nethermind exposes no compaction RPC, and "
+      f"doing it offline costs {M['harness']['compaction_seconds_account']:.0f} s for the "
+      f"account family alone &mdash; about {M['harness']['compaction_seconds_account']*M['harness']['tests']/86400:.0f} "
+      f"days across {thousands(M['harness']['tests'])} tests &mdash; about "
+      f"{M['harness']['compaction_seconds_account']*M['harness']['tests']/3600/12.7:.0f}&times; "
+      f"the runtime of the suite it is supposed to be preparing.</p>")
+    w("<p class=note>This defect is diagnosed but <b>not fixed</b> in the numbers on this page. "
+      "Everything below still carries it.</p>")
+
+    w("<h2>What is left, and how much of it we can account for</h2>")
+    # ------------------------------------------------- open item: DIFF_MAX
     dm = modes["EXISTING_CONTRACT_DIFF_MAX"]
-    w(f"<h2>Why a different contract per access still costs {dm['readX']:.2f}&times;</h2>")
+    w(f"<h3>Open: a different contract per access still costs {dm['readX']:.2f}&times;</h3>")
+    w("<h3>What we know</h3>")
     w("<p>One cell does not come back to parity, and it is the same cell the geth study flagged "
       "and left unexplained. Laying every opcode against every access mode shows it is a column, "
       "not a scatter &mdash; whatever is left does not care which opcode reads the account:</p>")
@@ -644,8 +742,7 @@ def main():
              f"The absent column is the uneven one at {gcol['NON_EXISTING_ACCOUNT']:.2f}, which "
              f"is the same dispersion its category showed above. Every row behaves the same, so "
              f"this is not an opcode effect &mdash; it is something the two dark modes share."))
-    w("<p>Sorting the access modes by how much contract code they touch explains it in one "
-      "pass:</p>")
+    w("<p>Sorting the access modes by how much contract code they touch orders it cleanly:</p>")
     w("<table><tr><th>access mode</th><th>what it touches</th><th class=n>jochemnet MB</th>"
       "<th class=n>state-actor MB</th><th class=n>bytes sa/joc</th>"
       "<th class=n>throughput sa/joc</th></tr>")
@@ -662,12 +759,33 @@ def main():
       f"database; reuse one contract, or touch no code at all, and the two stores are within "
       f"{(max(modes[m]['readX'] for m in ('EXISTING_EOA','EXISTING_CONTRACT_SAME_MAX')) - 1)*100:.0f}%."
       f"</caption></table>")
+    sm, dm_m = modes["EXISTING_CONTRACT_SAME_MAX"], modes["EXISTING_CONTRACT_DIFF_MAX"]
     w(figure(chart_code_ladder(modes, {"sa": fp["sa"]["code"], "joc": fp["joc"]["code"]}),
-             "The residual is a property of how the generator sizes contract code, not of how "
-             "either store reads accounts."))
+             f"The ordering is monotonic in how much distinct contract code the mode touches, "
+             f"and it is the incremental step that is lopsided: going from one reused contract to "
+             f"a different one per access costs state-actor "
+             f"{sm['saMB']:.0f}&rarr;{dm_m['saMB']:.0f} MB (+{dm_m['saMB']-sm['saMB']:.0f}) "
+             f"against jochemnet's {sm['jocMB']:.0f}&rarr;{dm_m['jocMB']:.0f} MB "
+             f"(+{dm_m['jocMB']-sm['jocMB']:.0f}) &mdash; roughly "
+             f"{(dm_m['saMB']-sm['saMB'])/max(dm_m['jocMB']-sm['jocMB'],1):.1f}&times; the "
+             f"marginal cost per additional distinct contract."))
 
-    # ---------------------------------------------------------------- residual
-    w("<h2>The residual is one fixed overhead, not a set of slow categories</h2>")
+    cdb = M.get("code_probe")
+    w("<h3>What we do not know</h3>")
+    if cdb:
+        w(f"<p>The obvious explanation is that the generated store's code database is larger "
+          f"&mdash; {esc(fp['sa']['code'])} against {esc(fp['joc']['code'])}, in "
+          f"{thousands(cdb['sa']['ssts'])} SST files against {thousands(cdb['joc']['ssts'])}. "
+          f"<b>Measured directly, that explanation fails.</b> A cold random code lookup costs "
+          f"{cdb['sa']['bytes']:,} bytes and {cdb['sa']['us']:.0f} us on state-actor against "
+          f"{cdb['joc']['bytes']:,} bytes and {cdb['joc']['us']:.0f} us on jochemnet &mdash; the "
+          f"bigger database is the <em>cheaper</em> one per lookup. Whatever makes an additional "
+          f"distinct contract expensive on the generated store, it is not the size of the code "
+          f"database on its own.</p>")
+    w("<p>So this cell stays on the open list. The ordering is solid and reproduced on two "
+      "clients; the mechanism is not established, and we would rather say so than publish the "
+      "first plausible story that fits.</p>")
+
     b0 = add["buckets"][0]
     small_b = [b for b in add["buckets"] if b["jocMB"] < 4000]
     fixed_mb = sorted(b["excess"] for b in small_b)[len(small_b) // 2]
@@ -802,6 +920,7 @@ def main():
         "fig_treatment_dumbbell": chart_treatment_dumbbell(bc, ac),
         "fig_ratio_dots": chart_ratio_dots(rat_b, rat_a, spr_b, spr_a),
         "fig_grid": chart_grid(AFT["grid"]),
+        "fig_steps": chart_steps(D["steps"]),
         "fig_code_ladder": chart_code_ladder(modes, {"sa": fp["sa"]["code"],
                                                      "joc": fp["joc"]["code"]}),
         "fig_additive": chart_additive(add["buckets"]),

@@ -1293,3 +1293,35 @@ client, or flush the block cache, between steps), not a store change.
 
 It does not explain the whole control gap - totals are still 33.2 vs 105.5 MB - so the remainder
 stays on the open list rather than being declared solved.
+
+### Round 20c - article restructured to the geth shape
+
+Harness binary on the host (built Sep 7) contains **neither** switch: 0 occurrences of
+`BENCHMARKOOR_POST_PRERUN_CMD` and 0 of `BENCHMARKOOR_COMPACT_BETWEEN_STEPS`. Every Nethermind run
+used a benchmarkoor without the geth-era methodology controls.
+
+Per-step compaction is not affordable for Nethermind: no compaction RPC exists, and offline
+compaction costs 185.1 s for the account family alone - 3.1 days across 1,463 tests, about 6x the
+runtime of the suite it would be preparing. The defect we actually found has a cheaper fix
+(restart the client between steps), which is what the article now recommends.
+
+New structure, following geth's:
+1. The behaviour - how many tests and categories are off, by how much, with the read-volume tell.
+2. **What we found wrong with the measurement** - the three defects enumerated, each labelled
+   fixed or not fixed.
+3. The root cause, restated correctly: the **LSM tree**, not the Merkle trie. Keys are
+   `keccak256(address)[0:20]` and therefore scattered; what is concentrated is the set of files
+   holding their newest versions. The section now ends on the prediction that compaction must
+   destroy the advantage, which is what the next section tests.
+4. **Defect 1** - names the treatment explicitly: `CompactRange` with
+   `bottommost_level_compaction=kForce`, the store's own per-family options, state root unchanged;
+   and states that the reproducible path is the post-pre-run hook, which was absent from the
+   binary used.
+5. **Defect 2** - the cross-step block-cache carry-over, with the setup/measured table and figure,
+   the affordable fix, and an explicit note that it is **diagnosed but not fixed** in these numbers.
+6. **What is left** - DIFF_MAX demoted to an open item with "what we know" / "what we do not know",
+   including the direct measurement that refutes the code-database-size explanation.
+7. Three clients, recommendations, errata.
+
+"What we ruled out" deleted. Dumbbell gained an in-figure legend (a standalone SVG has no caption).
+Eight figures, seven tables.
