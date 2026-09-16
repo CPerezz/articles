@@ -1262,3 +1262,34 @@ established. DIFF_MAX returns to the open list.
 
 Probe now opens any Nethermind database (`ListColumnFamilies`, CF resolved after the open) so
 `code/`, `state/` and `blocks/` can be measured the same way as `flat/`.
+
+### Round 20b - the fixed overhead localises to a cross-step cache carry-over
+
+Nethermind exposes no RocksDB statistics switch (515 help lines, no `--Db.*`, nothing
+metrics-related), so per-column-family attribution through the client is not available. The
+per-step resource totals were never examined, and they localise the effect:
+
+| group | arm | setup MB | measured MB | total |
+|---|---|---|---|---|
+| CONTROL (no account work) | jochemnet (treated) | **31.5** | **1.8** | 33.2 |
+| CONTROL | state-actor | **9.4** | **96.1** | 105.5 |
+| MEASURED | jochemnet (treated) | 31.5 | 3663.0 | 3694.4 |
+| MEASURED | state-actor | 9.4 | 4234.0 | 4243.4 |
+
+The arms are **inverted across the two steps**: jochemnet reads 3.3x more during setup and far
+less during the measured step. Setup volume is identical across categories on each arm (31.5 and
+9.4), so it is a fixed per-test payload.
+
+Mechanism: `drop_memory_caches: "steps"` drops the **OS page cache** between setup and the
+measured step, but the client is not restarted inside a test - `container-recreate` rolls back
+per test, not per step - so **Nethermind's own RocksDB block cache survives from setup into the
+measurement**. Whatever the setup payload pulled in is already resident when the timer starts, and
+it warms the two stores by different amounts.
+
+This is a benchmark defect of the same class as the unimplemented `COMPACT_BETWEEN_STEPS`: the
+harness controls the page cache but not the client's internal cache, so a measured step's cost
+partly reflects what its own setup happened to load. Fixing it needs a harness change (restart the
+client, or flush the block cache, between steps), not a store change.
+
+It does not explain the whole control gap - totals are still 33.2 vs 105.5 MB - so the remainder
+stays on the open list rather than being declared solved.
