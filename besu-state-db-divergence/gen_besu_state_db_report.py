@@ -252,12 +252,12 @@ OUT = os.path.join(HERE, "besu-state-db-report.html")
 
 BUCKETS = ["absent", "leaf-only", "code-reading"]
 BUCKET_DOC = {
-    "absent": "NON_EXISTING_ACCOUNT targets, where the lookup must prove the account is\n               not there",
-    "leaf-only": "BALANCE, or an EXISTING_EOA target, which reads the account record and\n                  never the code",
-    "code-reading": "EXTCODE* and the CALL family into a contract, which also reads the\n                     code blob",
+    "absent": "NON_EXISTING_ACCOUNT targets, where the lookup must prove the account is not there",
+    "leaf-only": "BALANCE, or an EXISTING_EOA target, which reads the account record and never the code",
+    "code-reading": "EXTCODE* and the CALL family into a contract, which also reads the code blob",
 }
 ARM_DOC = {
-    "plain": "the published snapshot, pre-runs replayed, promoted, exactly as a benchmark\n              uses it",
+    "plain": "the published snapshot, pre-runs replayed, promoted, exactly as a benchmark uses it",
     "drained": "the same store with its write-ahead log flushed away, levels untouched",
     "compacted": "the same store, flushed and then fully compacted",
     "state_actor": "the synthetically generated companion store",
@@ -651,24 +651,43 @@ def main():
     commonf = shared(FT["plain"], FT["drained"], FT["compacted"],
                      FT["compacted_rep"], FT["state_actor"])
 
+    # Every workload exists twice: once doing the account-state work, and once as an
+    # overhead_baseline control that runs the same loop and deliberately touches no state.
+    # The controls read a median 1.9 MB against the measurement rows' 8.6 GB, so pooling the
+    # two halves into one median drags every category towards parity and understates the
+    # effect. Comparisons below use the measurement half; the controls are reported once, as
+    # the control they are.
+    meas = [c for c in common if not c[4]]
+    ctrls = [c for c in common if c[4]]
+    measf = [c for c in commonf if not c[4]]
+    ctrlsf = [c for c in commonf if c[4]]
+    assert meas and ctrls and measf and ctrlsf, "measurement/control split came out empty"
+
     # ---- derivations ------------------------------------------------------
     # Reference is the compacted snapshot everywhere except the treatment figure, because the
     # plain store is the one carrying the artifact this article is about.
-    sa_vs_comp = bucket_median(F["compacted"], F["state_actor"], common)
-    sa_vs_plain = bucket_median(F["plain"], F["state_actor"], common)
-    plain_vs_comp = bucket_median(F["compacted"], F["plain"], common)
-    sa_bytes = bucket_bytes(F["compacted"], F["state_actor"], common)
+    sa_vs_comp = bucket_median(F["compacted"], F["state_actor"], meas)
+    sa_vs_plain = bucket_median(F["plain"], F["state_actor"], meas)
+    plain_vs_comp = bucket_median(F["compacted"], F["plain"], meas)
+    sa_bytes = bucket_bytes(F["compacted"], F["state_actor"], meas)
+    # the control, on the same pair of arms
+    ctrl_vs_comp = median([F["state_actor"][c]["mgas_s"] / F["compacted"][c]["mgas_s"]
+                           for c in ctrls])
+    ctrl_cats = {k: median(v) for k, v in
+                 ratios(F["compacted"], F["state_actor"], ctrls).items()}
 
-    drain_t = bucket_median(FT["plain"], FT["drained"], commonf)
-    drain_b = bucket_bytes(FT["plain"], FT["drained"], commonf)
-    comp_t = bucket_median(FT["plain"], FT["compacted"], commonf)
-    comp_b = bucket_bytes(FT["plain"], FT["compacted"], commonf)
+    drain_t = bucket_median(FT["plain"], FT["drained"], measf)
+    drain_b = bucket_bytes(FT["plain"], FT["drained"], measf)
+    comp_t = bucket_median(FT["plain"], FT["compacted"], measf)
+    comp_b = bucket_bytes(FT["plain"], FT["compacted"], measf)
+    drain_ctrl = median([FT["drained"][c]["mgas_s"] / FT["plain"][c]["mgas_s"] for c in ctrlsf])
+    comp_ctrl = median([FT["compacted"][c]["mgas_s"] / FT["plain"][c]["mgas_s"] for c in ctrlsf])
 
-    noise_t = bucket_median(FT["compacted"], FT["compacted_rep"], commonf)
+    noise_t = bucket_median(FT["compacted"], FT["compacted_rep"], measf)
     noise = max(abs(v - 1) for v in noise_t.values())
 
     # the EXISTING population, which is where the residual lives
-    ex = [c for c in common if c[1] != "NON_EXISTING_ACCOUNT"]
+    ex = [c for c in meas if c[1] != "NON_EXISTING_ACCOUNT"]
     cats = collections.defaultdict(list)
     for c in ex:
         cats[(c[0], c[1])].append(F["state_actor"][c]["mgas_s"] / F["compacted"][c]["mgas_s"])
@@ -713,19 +732,24 @@ def main():
     # untouched in both, so the whole movement belongs to the treatment.
     BAND = 0.10
     vcats = collections.defaultdict(lambda: ([], []))
-    for c in common:
+    for c in meas:
         vcats[(c[0], c[1])][0].append(F["state_actor"][c]["mgas_s"] / F["plain"][c]["mgas_s"])
         vcats[(c[0], c[1])][1].append(F["state_actor"][c]["mgas_s"] / F["compacted"][c]["mgas_s"])
-    verdict = sorted(((F["plain"][next(c for c in common if (c[0], c[1]) == k)]["bucket"],
+    verdict = sorted(((F["plain"][next(c for c in meas if (c[0], c[1]) == k)]["bucket"],
                        k[0], k[1], median(b), median(a)) for k, (b, a) in vcats.items()),
                      key=lambda r: r[4])
     inband = lambda v: abs(v - 1) <= BAND
     cat_before = sum(1 for r in verdict if inband(r[3]))
     cat_after = sum(1 for r in verdict if inband(r[4]))
-    wl_before = sum(1 for c in common
+    wl_before = sum(1 for c in meas
                     if inband(F["state_actor"][c]["mgas_s"] / F["plain"][c]["mgas_s"]))
-    wl_after = sum(1 for c in common
+    wl_after = sum(1 for c in meas
                    if inband(F["state_actor"][c]["mgas_s"] / F["compacted"][c]["mgas_s"]))
+    # The two groups the survivors split into: modes that read a distinct contract per access,
+    # and everything else. This is the same pair the geth and Nethermind studies isolate.
+    DARK = ("EXISTING_CONTRACT_DIFF_MAX", "EXISTING_CONTRACT_JUMPDEST")
+    dark = [r for r in verdict if r[2] in DARK]
+    light = [r for r in verdict if r[0] != "absent" and r[2] not in DARK]
 
     # ---- oracles ----------------------------------------------------------
     # These guard derivations, not conclusions: they fail generation if the inputs stop
@@ -754,11 +778,21 @@ def main():
     assert trielog_bytes > 0, "snapshot trie-log column family is empty"
     assert ex_below == len(ex_cat), "not every EXISTING category favours the snapshot"
     assert cat_before == 0, f"{cat_before} categories were already inside the band"
-    assert cat_after == len(ex_cat), \
-        f"{cat_after} categories inside the band after treatment, expected {len(ex_cat)}"
+    assert cat_after == len(light), \
+        f"{cat_after} categories inside the band after treatment, expected {len(light)}"
+    # The three groups the article claims, each one asserted rather than described.
+    assert all(inband(r[4]) for r in light), "a code-reusing category missed the band"
+    assert not any(inband(r[4]) for r in dark), "a distinct-code category reached the band"
+    assert not any(inband(r[4]) for r in verdict if r[0] == "absent"), \
+        "an absence category reached the band"
     for b, op, m, before, after in verdict:
         assert (after > before) == (b != "absent") or abs(after - before) < 0.05, \
             f"{op}/{m}: treatment moved the wrong way ({before:.3f} -> {after:.3f})"
+    # The controls do no account-state work, so they are the thing that must NOT move.
+    assert all(abs(v - 1) <= 0.05 for v in ctrl_cats.values()), \
+        f"control categories are not at parity: {min(ctrl_cats.values()):.3f}-{max(ctrl_cats.values()):.3f}"
+    assert abs(drain_ctrl - 1) <= 0.05 and abs(comp_ctrl - 1) <= 0.05, \
+        f"the treatment moved the control: drain {drain_ctrl:.3f}, compact {comp_ctrl:.3f}"
     # the code-cf paragraph states a direction for each of these; fail if the data flips
     assert props["state_actor"]["07"]["mean_record"] < props["jochemnet"]["07"]["mean_record"], \
         "generated code records are no longer the smaller ones"
@@ -768,7 +802,13 @@ def main():
     assert g06s["mean_record"] > g06j["mean_record"] and comp_ratio > 1 and blk_ratio > 1, \
         "cf06 geometry chain no longer runs in the direction the prose states"
 
-    print(f"common: full {len(common)} filtered {len(commonf)}")
+    print(f"common: full {len(common)} ({len(meas)} measured + {len(ctrls)} control) "
+          f"filtered {len(commonf)} ({len(measf)} + {len(ctrlsf)})")
+    print(f"control: sa/compacted {ctrl_vs_comp:.3f} per-category "
+          f"{min(ctrl_cats.values()):.3f}-{max(ctrl_cats.values()):.3f}; "
+          f"treatment moves it drain {drain_ctrl:.3f} compact {comp_ctrl:.3f}")
+    print(f"survivors: dark {len(dark)} median {median([r[4] for r in dark]):.3f}; "
+          f"light {len(light)} median {median([r[4] for r in light]):.3f}")
     print(f"headline: {headline:.2f}x -> {factor}x")
     print(f"sa/compacted: " + " ".join(f"{k} {v:.3f}" for k, v in sorted(sa_vs_comp.items())))
     print(f"sa/plain:     " + " ".join(f"{k} {v:.3f}" for k, v in sorted(sa_vs_plain.items())))
@@ -781,11 +821,11 @@ def main():
 
     # ---- figures ----------------------------------------------------------
     figs = {
-        "ratio_dots": (chart_ratio_dots(F, common),
+        "ratio_dots": (chart_ratio_dots(F, meas),
                        f"Throughput of the generated store divided by the compacted "
                        f"snapshot's, one dot per opcode and account mode, log scale. "
                        f"1× would mean the two databases cost the same."),
-        "treatment_dumbbell": (chart_treatment_dumbbell(FT, commonf),
+        "treatment_dumbbell": (chart_treatment_dumbbell(FT, measf),
                                "What each half of the treatment does. Draining the "
                                "write-ahead log leaves the store where it started; compaction "
                                "moves it. Reference is the plain snapshot, the only figure "
@@ -804,11 +844,11 @@ def main():
                      "compress worse, so a data block holds fewer of them and a read moves "
                      "more bytes. Geth's two ratios, measured on a different engine with a "
                      "different compression algorithm, are printed for comparison."),
-        "cost_curves": (chart_cost_curves(F, common),
+        "cost_curves": (chart_cost_curves(F, meas),
                         "Throughput against the gas budget. The lines stay separated rather "
                         "than converging, so the gap is a per-read cost and not a fixed "
                         "per-block overhead being amortised."),
-        "convergence": (chart_convergence(FT, commonf),
+        "convergence": (chart_convergence(FT, measf),
                         "Every arm against the compacted snapshot. Once the snapshot is "
                         "compacted the generated store is within a few percent on reads that "
                         "find their key, and an order of magnitude away on reads that do not."),
@@ -816,9 +856,11 @@ def main():
                     f"The same {len(verdict)} categories as the first figure, each one measured "
                     f"against the snapshot as published and then against the same snapshot "
                     f"compacted. Nothing about the generated store changed between the two "
-                    f"dots. {cat_after} of {len(verdict)} categories end inside "
-                    f"±{BAND*100:.0f}% of parity; the {n_absent} that do not are the absence "
-                    f"categories, which is the next section."),
+                    f"dots. {cat_after} of {len(verdict)} land inside ±{BAND*100:.0f}% of "
+                    f"parity. Of the {len(verdict) - cat_after} that do not, {n_absent} are the "
+                    f"absence categories, which barely move at all, and {len(dark)} are the "
+                    f"categories that read a distinct contract on every access, which move most "
+                    f"of the way and stop short."),
     }
     for name, (s, _) in figs.items():
         assert "NaN" not in s and "inf" not in s, f"{name}: non-finite geometry"
@@ -882,7 +924,10 @@ def main():
     # ===================================================================== 1
     w('<h2>The behaviour</h2>')
     w(f"<p>Three databases hold the same state. The same {thousands(len(common))} EEST tests "
-      f"run against each of them, on the same host and the same NVMe drive. Gas matches across "
+      f"run against each of them, on the same host and the same NVMe drive. "
+      f"{thousands(len(meas))} of those tests do account-state work; the other "
+      f"{thousands(len(ctrls))} are controls that run the same loop and deliberately touch no "
+      f"state, and they are kept out of every comparison below and reported on their own. Gas matches across "
       f"all three to six significant figures, so each one was asked to do the same work. "
       f"Throughput does not match. On the tests that look up an account which is not there, "
       f"the generated store is <b>{headline:.1f}&times; slower</b> than the published "
@@ -895,28 +940,40 @@ def main():
       f"times apart. The {n_absent} dots on the left are the categories that have to prove an "
       f"account is absent; the generated store is {1/sa_vs_comp['absent']:.1f}&times; "
       f"slower on all of them, and compacting the snapshot does not close the gap. The "
-      f"{len(ex_cat)} dots on the right read an account that exists, and they sit within "
-      f"{pc(ex_lo)} of the snapshot. Two groups, two causes.</p>")
+      f"{len(ex_cat)} dots on the right read an account that exists, and they land between "
+      f"{pc(max(r[4] for r in verdict if r[0] != 'absent'))} and "
+      f"{pc(min(r[4] for r in verdict if r[0] != 'absent'))} of the snapshot. Two groups, two "
+      f"causes.</p>")
     w(fig("ratio_dots"))
     w("<table><tr><th>bucket</th><th>tests</th>"
       "<th class=n>state-actor ÷ plain</th><th class=n>state-actor ÷ compacted</th>"
       "<th class=n>plain ÷ compacted</th></tr>")
     for b in BUCKETS:
-        n = sum(1 for c in common if F["plain"][c]["bucket"] == b)
+        n = sum(1 for c in meas if F["plain"][c]["bucket"] == b)
         w(f"<tr><td>{b}</td><td class=n>{n}</td>"
           f"<td class=n>{sa_vs_plain[b]:.3f}</td>"
           f"<td class=n>{sa_vs_comp[b]:.3f}</td>"
           f"<td class=n>{plain_vs_comp[b]:.3f}</td></tr>")
+    w(f"<tr><td><b>control</b></td><td class=n>{len(ctrls)}</td>"
+      f"<td class=n>{median([F['state_actor'][c]['mgas_s'] / F['plain'][c]['mgas_s'] for c in ctrls]):.3f}</td>"
+      f"<td class=n>{ctrl_vs_comp:.3f}</td>"
+      f"<td class=n>{median([F['plain'][c]['mgas_s'] / F['compacted'][c]['mgas_s'] for c in ctrls]):.3f}</td>"
+      f"</tr>")
     w(f"<caption>Median of the per-workload ratio. {esc(BUCKET_DOC['absent'])}; "
-      f"{esc(BUCKET_DOC['leaf-only'])}; {esc(BUCKET_DOC['code-reading'])}.</caption></table>")
+      f"{esc(BUCKET_DOC['leaf-only'])}; {esc(BUCKET_DOC['code-reading'])}. The control row is "
+      f"the same tests with the account access removed: it sits at parity in every column, "
+      f"which is what says the columns above it are measuring state and not "
+      f"harness.</caption></table>")
 
-    w('<h3>Outside the absent class, the two databases agree to '
-      f'within {pc(ex_lo)}</h3>')
+    w('<h3>Outside the absent class, the residual comes in two tiers</h3>')
     w(f"<p>Against the compacted snapshot, every one of the {len(ex_cat)} categories that "
-      f"read an account which exists favours the snapshot, by a median of {pc(ex_med)} and "
-      f"never by more than {pc(ex_lo)}. That is the honest difference between the two "
-      f"databases, and it is the subject of the last section. Everything larger than it is a "
-      f"property of how one of the stores was built.</p>")
+      f"read an account which exists favours the snapshot, by a median of {pc(ex_med)}. They "
+      f"do not all favour it equally, and the split is not noise: the "
+      f"{len(light)} categories whose contract code is shared or absent sit at "
+      f"{pc(median([r[4] for r in light]))}, while the {len(dark)} that read a distinct "
+      f"contract on every access sit at {pc(median([r[4] for r in dark]))}. That gap is the "
+      f"subject of the last section. Everything larger than it is a property of how one of the "
+      f"stores was built.</p>")
 
     # ===================================================================== 2
     w('<h2>What Besu\'s own logs and counters say</h2>')
@@ -1077,8 +1134,11 @@ def main():
     for b in BUCKETS:
         w(f"<tr><td>{b}</td><td class=n>{drain_t[b]:.3f}</td><td class=n>{comp_t[b]:.3f}</td>"
           f"<td class=n>{drain_b[b]:.3f}</td><td class=n>{comp_b[b]:.3f}</td></tr>")
+    w(f"<tr><td><b>control</b></td><td class=n>{drain_ctrl:.3f}</td>"
+      f"<td class=n>{comp_ctrl:.3f}</td><td class=n colspan=2>&nbsp;</td></tr>")
     w("<caption>Throughput and bytes read, each against the plain snapshot. The drain "
-      "contributes nothing; the compaction contributes everything.</caption></table>")
+      "contributes nothing; the compaction contributes everything. Neither moves the control, "
+      "so neither is doing something to the harness rather than to the store.</caption></table>")
     w(f"<p>Now measure the generated store against the treated snapshot instead of the "
       f"published one. Nothing about the generated store changed, so whatever moves is the "
       f"artifact leaving. Take agreement to within ±{BAND*100:.0f}% of parity as the bar: "
@@ -1087,13 +1147,15 @@ def main():
       f"one. Per workload rather than per category, {100*wl_before/len(common):.0f}% becomes "
       f"{100*wl_after/len(common):.0f}%.</p>")
     w(fig("verdict"))
-    w(f"<p>The {cat_after} that converge are every category that reads an account which "
-      f"exists: median {pc(ex_med)} off parity, worst {pc(ex_lo)}, down from a median of "
-      + f"{pc(median([r[3] for r in verdict if r[0] != 'absent']))} " +
-      f"and a worst case of "
-      + f"{pc(min(r[3] for r in verdict if r[0] != 'absent'))} " +
-      f"before. The {n_absent} that stay put are the absence categories, and they have a "
-      f"separate cause.</p>")
+    w(f"<p>The {cat_after} that converge are the categories whose contract code is shared "
+      f"or absent, and they land at a median of {pc(median([r[4] for r in light]))} off "
+      f"parity, down from "
+      f"{pc(median([r[3] for r in light]))}. Two groups stay outside, with two different "
+      f"causes already named: the {n_absent} absence categories, still "
+      f"{1/median([r[4] for r in verdict if r[0] == 'absent']):.1f}&times; apart, and the "
+      f"{len(dark)} that read a distinct contract on every access, which close to "
+      f"{pc(median([r[4] for r in dark]))} and no further. The first is the next section; the "
+      f"second is the last one.</p>")
     w(fig("convergence"))
     w(fig("cost_curves"))
 
@@ -1132,9 +1194,13 @@ def main():
 
     # ===================================================================== 8
     w('<h2>The residual</h2>')
-    w(f"<p>What is left after both artifacts is small and consistent: against the compacted "
-      f"snapshot, every one of the {len(ex_cat)} categories that reads an existing account "
-      f"favours the snapshot, median {pc(ex_med)}, range {pc(ex_hi)} to {pc(ex_lo)}.</p>")
+    w(f"<p>What is left after both artifacts is small, consistent, and in two tiers. Against "
+      f"the compacted snapshot every one of the {len(ex_cat)} categories that reads an "
+      f"existing account favours the snapshot, but the {len(light)} whose code is shared or "
+      f"absent sit at {pc(median([r[4] for r in light]))} while the {len(dark)} that read a "
+      f"distinct contract per access sit at {pc(median([r[4] for r in dark]))}. Order the "
+      f"classes by how much unique contract code they touch and you have ordered the "
+      f"residual, which is the whole of this section.</p>")
     w("<table><tr><th>cf06 ACCOUNT_INFO_STATE</th><th class=n>compacted snapshot</th>"
       "<th class=n>state-actor</th><th class=n>ratio</th></tr>")
     for lbl, fld, nd, unit in (("entries", "entries", 0, ""),
@@ -1149,8 +1215,8 @@ def main():
     w(fig("geometry"))
     w(f"<p>Two ratios carry the argument: compression {comp_ratio:.3f}&times; and block size "
       f"{blk_ratio:.3f}&times;. The same two ratios measured on geth were "
-      f"{GREF['compression_ratio']:.3f}&times; and {GREF['block_size_ratio']:.3f}&times; "
-      f"{abs(comp_ratio/GREF['compression_ratio']-1)*100:.1f}% away, on a different "
+      f"{GREF['compression_ratio']:.3f}&times; and {GREF['block_size_ratio']:.3f}&times;, "
+      f"within {abs(comp_ratio/GREF['compression_ratio']-1)*100:.1f}% of these, on a different "
       f"storage engine, with a different compression algorithm and an eight times larger "
       f"block. Whatever this is, it is not an artifact of one engine.</p>")
     w(f"<p>The code column family carries the compressibility half of that argument on its own, "
@@ -1172,13 +1238,17 @@ def main():
       f"not the same size: {P['state_actor_gib']} GiB on Besu against "
       f"{GREF['state_actor_gib']} GiB on geth, for identical logical state. So the two studies "
       f"measure the same state through two different engines, and the residual survives the "
-      f"change of engine. Its magnitude does not: {pc(ex_med)} here against "
-      f"{GREF['residual_median_pct']:.1f}% there.</p>")
+      f"change of engine. Its magnitude does not, and the two are not quite the same "
+      f"measurement: geth published {GREF['residual_median_pct']:.1f}% across 13 categories "
+      f"with its control sitting inside that figure, where Besu's control is at "
+      f"{pc(ctrl_vs_comp)} and the classes split "
+      f"{pc(median([r[4] for r in light]))} and {pc(median([r[4] for r in dark]))}.</p>")
 
     w("<details><summary>What this article does not settle</summary>")
     w("<ul class=tight>")
-    w(f"<li>Why the residual is {pc(ex_med)} on Besu and "
-      f"{GREF['residual_median_pct']:.1f}% on geth.</li>")
+    w(f"<li>Why the code-reusing classes settle at {pc(median([r[4] for r in light]))} "
+      f"while the distinct-code classes stop at {pc(median([r[4] for r in dark]))}. The "
+      f"geometry below orders them correctly but does not predict either number.</li>")
     w("<li>How much of the byte penalty on reads that find their key is filter absence rather "
       "than record geometry.</li>")
     w(f"<li>The snapshot ships {C['shipped']['caches_files']} cache files totalling "
