@@ -657,6 +657,7 @@ def main():
     # two halves into one median drags every category towards parity and understates the
     # effect. Comparisons below use the measurement half; the controls are reported once, as
     # the control they are.
+    DARK = ("EXISTING_CONTRACT_DIFF_MAX", "EXISTING_CONTRACT_JUMPDEST")
     meas = [c for c in common if not c[4]]
     ctrls = [c for c in common if c[4]]
     measf = [c for c in commonf if not c[4]]
@@ -712,6 +713,21 @@ def main():
     for arm, v in miss.items():
         assert all(0 <= r <= 1.001 for r in v.values()), f"{arm}: miss ratio out of range {v}"
 
+    # What the code read itself costs, isolated by subtracting the classes that read only the
+    # account record. The dark classes read one distinct contract per access on top of that.
+    def bpg(mode, arm):
+        sel = [c for c in meas if c[1] == mode]
+        return (sum(F[arm][c]["disk_read_bytes"] for c in sel)
+                / sum(F[arm][c]["gas_used"] for c in sel))
+
+    LIGHT_MODES = ("EXISTING_EOA", "EXISTING_CONTRACT_MINIMAL", "EXISTING_CONTRACT_SAME_MAX")
+    code_bpg = {}
+    for arm in ("compacted", "state_actor"):
+        floor = median([bpg(m, arm) for m in LIGHT_MODES])
+        code_bpg[arm] = median([bpg(m, arm) for m in DARK]) - floor
+    code_bpg["ratio"] = code_bpg["state_actor"] / code_bpg["compacted"]
+    CB = D["code_block_sim"]
+
     # geometry chain
     g06j, g06s = props["jochemnet"]["06"], props["state_actor"]["06"]
     comp_ratio = g06s["phys_over_logical"] / g06j["phys_over_logical"]
@@ -747,7 +763,6 @@ def main():
                    if inband(F["state_actor"][c]["mgas_s"] / F["compacted"][c]["mgas_s"]))
     # The two groups the survivors split into: modes that read a distinct contract per access,
     # and everything else. This is the same pair the geth and Nethermind studies isolate.
-    DARK = ("EXISTING_CONTRACT_DIFF_MAX", "EXISTING_CONTRACT_JUMPDEST")
     dark = [r for r in verdict if r[2] in DARK]
     light = [r for r in verdict if r[0] != "absent" and r[2] not in DARK]
 
@@ -791,6 +806,14 @@ def main():
     # The controls do no account-state work, so they are the thing that must NOT move.
     assert all(abs(v - 1) <= 0.05 for v in ctrl_cats.values()), \
         f"control categories are not at parity: {min(ctrl_cats.values()):.3f}-{max(ctrl_cats.values()):.3f}"
+    # The code-block argument: the contract itself is near-free on both stores, the block is
+    # not, and shrinking the block removes the co-tenants entirely.
+    assert CB["jochemnet"]["fixture_deflate"] < 0.05 and CB["state_actor"]["fixture_deflate"] < 0.05, \
+        "the fixture contracts are no longer near-free to store"
+    assert CB["small_block"]["tenants"] == 0, "the smaller block still admits co-tenants"
+    assert 1.4 < CB["state_actor"]["block_comp"] / CB["jochemnet"]["block_comp"] < 2.6, \
+        "the modelled block no longer brackets the measured code-read ratio"
+    assert 1.4 < code_bpg["ratio"] < 2.6, f"code-read ratio moved: {code_bpg['ratio']:.2f}"
     assert abs(drain_ctrl - 1) <= 0.05 and abs(comp_ctrl - 1) <= 0.05, \
         f"the treatment moved the control: drain {drain_ctrl:.3f}, compact {comp_ctrl:.3f}"
     # the code-cf paragraph states a direction for each of these; fail if the data flips
@@ -809,6 +832,11 @@ def main():
           f"treatment moves it drain {drain_ctrl:.3f} compact {comp_ctrl:.3f}")
     print(f"survivors: dark {len(dark)} median {median([r[4] for r in dark]):.3f}; "
           f"light {len(light)} median {median([r[4] for r in light]):.3f}")
+    print(f"code read: {code_bpg['compacted']:.1f} vs {code_bpg['state_actor']:.1f} B/gas "
+          f"= {code_bpg['ratio']:.2f}x; modelled block "
+          f"{CB['state_actor']['block_comp']/CB['jochemnet']['block_comp']:.2f}x; "
+          f"at {CB['small_block']['block_size']//1024} KiB "
+          f"{CB['small_block']['jochemnet_comp']} vs {CB['small_block']['state_actor_comp']} B")
     print(f"headline: {headline:.2f}x -> {factor}x")
     print(f"sa/compacted: " + " ".join(f"{k} {v:.3f}" for k, v in sorted(sa_vs_comp.items())))
     print(f"sa/plain:     " + " ".join(f"{k} {v:.3f}" for k, v in sorted(sa_vs_plain.items())))
@@ -1219,15 +1247,60 @@ def main():
       f"within {abs(comp_ratio/GREF['compression_ratio']-1)*100:.1f}% of these, on a different "
       f"storage engine, with a different compression algorithm and an eight times larger "
       f"block. Whatever this is, it is not an artifact of one engine.</p>")
-    w(f"<p>The code column family carries the compressibility half of that argument on its own, "
-      f"and inverts the size half. The snapshot's code records average "
-      f"{props['jochemnet']['07']['mean_record']:,.0f} bytes and compress to "
-      f"{props['jochemnet']['07']['phys_over_logical']:.3f} of their size; the generated "
-      f"store's are far smaller at {props['state_actor']['07']['mean_record']:,.0f} bytes and "
-      f"compress to only {props['state_actor']['07']['phys_over_logical']:.3f}. Mainnet "
-      f"bytecode repeats: proxies, tokens and factory output share long stretches. Every "
-      f"generated contract gets its own. Smaller records that will not "
-      f"compress is what a database of unique bytecode looks like.</p>")
+    w('<h3>The code half is not the code being read</h3>')
+    w(f"<p>The same chain does not explain the {len(dark)} distinct-code categories, and it is "
+      f"worth saying why rather than stretching it. Isolate what the code read itself costs by "
+      f"subtracting the account-only classes: a distinct-contract access moves "
+      f"{code_bpg['compacted']:.1f} extra bytes per gas on the snapshot against "
+      f"{code_bpg['state_actor']:.1f} on the generated store, a factor of "
+      f"<b>{code_bpg['ratio']:.2f}</b>. The obvious reading is that the generated store's "
+      f"contract code is less compressible. It is not. Sampling the "
+      f"{thousands(CB['fixture_bytes'])}-byte fixture contracts out of each store's code "
+      f"column family, both compress to about one percent of their size: "
+      f"{CB['jochemnet']['fixture_deflate']:.4f} on the snapshot, "
+      f"{CB['state_actor']['fixture_deflate']:.4f} on the generated store. The contract being "
+      f"read is nearly free to store in both.</p>")
+    w(f"<p>What a lookup pays for is the block the record sits in. RocksDB closes a data block "
+      f"once it passes {thousands(CB['block_size'])} bytes, so a "
+      f"{thousands(CB['fixture_bytes'])}-byte contract leaves room for whatever comes next in "
+      f"code-hash order, and that is a sample of each store's contract population. The two "
+      f"populations are nothing alike.</p>")
+    w("<table><tr><th>per data block holding one fixture contract</th>"
+      "<th class=n>snapshot</th><th class=n>state-actor</th></tr>")
+    for lbl, k, fmt in (("the contract itself, compressed", "fixture_deflate", "{:.4f} of raw"),
+                        ("co-tenant records", "tenants", "{:.1f}"),
+                        ("mean co-tenant size", "tenant_bytes", "{:,.0f} B"),
+                        ("block, uncompressed", "block_raw", "{:,.0f} B"),
+                        ("block, compressed", "block_comp", "{:,.0f} B")):
+        w(f"<tr><td>{lbl}</td><td class=n>{fmt.format(CB['jochemnet'][k])}</td>"
+          f"<td class=n>{fmt.format(CB['state_actor'][k])}</td></tr>")
+    w(f"<caption>Modelled from each store's own code column family by packing records the way "
+      f"RocksDB does. The snapshot's co-tenants are a couple of mainnet contracts that "
+      f"compress; the generated store's are {CB['state_actor']['tenants']:.0f} small ones that "
+      f"do not. That is "
+      f"{CB['state_actor']['block_comp']/CB['jochemnet']['block_comp']:.2f}&times; on the "
+      f"block against {code_bpg['ratio']:.2f}&times; measured on the read.</caption></table>")
+    w(f"<p>So the generated store's code reads are dearer because of the company its contracts "
+      f"keep. It holds {thousands(props['state_actor']['07']['entries'])} contracts averaging "
+      f"{props['state_actor']['07']['mean_record']:,.0f} bytes against the snapshot's "
+      f"{thousands(props['jochemnet']['07']['entries'])} averaging "
+      f"{props['jochemnet']['07']['mean_record']:,.0f}, so "
+      f"{props['state_actor']['07']['entries']/props['jochemnet']['07']['entries']:.0f}&times; "
+      f"as many contracts each a fraction of the size, and "
+      f"{100*CB['code_population']['state_actor']['records_23b']/CB['code_population']['state_actor']['scanned']:.0f}% "
+      f"of the sampled records are 23 bytes long. The generator reached its size target by "
+      f"contract count rather than by matching mainnet's code-size distribution, and a code "
+      f"read pays for that as block padding.</p>")
+    w(f"<p>Which means it is fixable, in two independent places. Drop the code column family's "
+      f"block size to {thousands(CB['small_block']['block_size'])} bytes and a "
+      f"{thousands(CB['fixture_bytes'])}-byte contract no longer fits alongside anything: "
+      f"co-tenants go to {CB['small_block']['tenants']}, the block costs "
+      f"{CB['small_block']['jochemnet_comp']} bytes on the snapshot against "
+      f"{CB['small_block']['state_actor_comp']} on the generated store, and the penalty "
+      f"inverts. Or give the generator a contract population shaped like mainnet's, including "
+      f"its duplication, since mainnet is full of repeated proxy and token bytecode. Neither is "
+      f"a change to Besu. It is also why the geth study never met this: pebble defaults to "
+      f"4 KiB blocks, a quarter of what both of these stores use.</p>")
     w('<h3>The same experiment on two clients</h3>')
     w(f"<p>The generator is deterministic across clients: the same seed and spec produced "
       f"{thousands(P['state_actor_items'])} items here against "
@@ -1246,9 +1319,15 @@ def main():
 
     w("<details><summary>What this article does not settle</summary>")
     w("<ul class=tight>")
-    w(f"<li>Why the code-reusing classes settle at {pc(median([r[4] for r in light]))} "
-      f"while the distinct-code classes stop at {pc(median([r[4] for r in dark]))}. The "
-      f"geometry below orders them correctly but does not predict either number.</li>")
+    w(f"<li>Why the code-reusing classes settle at {pc(median([r[4] for r in light]))} rather "
+      f"than at parity. The cf06 block geometry predicts "
+      f"{g06s['block_bytes']/g06j['block_bytes']:.2f}&times; the bytes and "
+      f"{sa_bytes['leaf-only']:.2f}&times; is measured, so the chain is the right shape, but it "
+      f"is not a derivation.</li>")
+    w(f"<li>Whether dropping the code column family's block size really recovers the "
+      f"{pc(median([r[4] for r in dark]))} on the distinct-code classes. The block arithmetic "
+      f"says it should and the modelled blocks say it should; nobody has re-run the suite with "
+      f"it.</li>")
     w("<li>How much of the byte penalty on reads that find their key is filter absence rather "
       "than record geometry.</li>")
     w(f"<li>The snapshot ships {C['shipped']['caches_files']} cache files totalling "

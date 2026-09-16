@@ -160,6 +160,30 @@ data["entries_by_cf"] = {
            "ssts_plain": 4301, "ssts_compacted": 3351},
 }
 data["prerun_bundle_bytes"] = 10062313486
+
+# Data-block cost of a fixture code read, modelled from each store's own cf07 by packing records
+# the way RocksDB does. The fixture blobs compress to ~1% on BOTH stores, so a code read is not
+# paying for the contract it reads -- it pays for whatever shares its 32 KiB block. Deflate
+# stands in for LZ4 here: comparative, not RocksDB's own figure. Probe: BlockSim.java.
+data["code_block_sim"] = {
+    "note": "Data-block cost of a fixture code read, modelled from each store's own cf07 by "
+            "packing records the way RocksDB does (flush once uncompressed size passes "
+            "block_size). Deflate stands in for LZ4: comparative, not RocksDB's own figure.",
+    "probe": "BlockSim.java, read-only open, 200 blocks sampled per store",
+    "fixture_bytes": 24576,
+    "block_size": 32768,
+    "jochemnet": {"fixture_deflate": 0.0109, "tenants": 2.4, "tenant_bytes": 7298,
+                  "block_raw": 41726, "block_comp": 5912},
+    "state_actor": {"fixture_deflate": 0.0070, "tenants": 32.5, "tenant_bytes": 352,
+                    "block_raw": 36024, "block_comp": 10718},
+    "small_block": {"block_size": 16384, "tenants": 0,
+                    "jochemnet_comp": 267, "state_actor_comp": 173},
+    "code_population": {
+        "jochemnet": {"scanned": 3544, "fixture": 300, "other_ge_1kib_deflate": 0.449},
+        "state_actor": {"scanned": 139034, "fixture": 300, "records_23b": 131138,
+                        "other_ge_1kib_deflate": 1.002},
+    },
+}
 data["treatment_seconds_by_cf"] = {"01": 414.4, "06": 313.6, "07": 90.4,
                                    "08": 1477.3, "09": 3103.8, "0a": 34.7}
 
