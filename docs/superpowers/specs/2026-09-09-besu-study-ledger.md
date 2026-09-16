@@ -1898,3 +1898,60 @@ leg of the geometry chain. Raw evidence ships alongside: `levels.log`, `geom_joc
 Geth; how much of the 1.2-1.3x byte penalty on found keys is filter absence rather than record
 geometry; the unexamined 5.9 GB of `caches/`; and whether the placement advantage is purely
 level position or partly block-cache residency.
+
+---
+
+## Round 32 - correction: control rows were pooled into every category median
+
+Anon asked whether the Besu divergent cases had all been brought within 10%. Checking rather
+than answering from memory turned up a real defect in my own analysis, shipped live.
+
+**The mistake.** Every EEST workload exists twice: once doing the account-state work, and once
+as an `overhead_baseline` control that runs the same loop and deliberately touches no state.
+Measured: control rows read a median **1.9 MB**, measurement rows **8.6 GB**, a factor of 4,600.
+`ex_cat`, `sa_vs_comp`, `comp_t` and the verdict rows were all computed over both halves
+pooled. For the 32 code-reading categories the split is exactly **11 control rows to 11
+measurement rows**, so every median landed halfway between the measured value and the control's
+~1.01.
+
+This is the same class of error round 27 caught in `compare_filtered.py`, where a missing
+`overhead_baseline` key collapsed each control/measurement pair. There the controls replaced the
+measurements; here they diluted them. Both times the symptom was a result that looked better
+than it was.
+
+**What it hid.**
+
+| | pooled | measurement rows only |
+|---|---|---|
+| compaction effect, code-reading | 0.679 | **0.166** (1.5x -> 6.2x) |
+| compaction effect, leaf-only | 0.228 | **0.165** |
+| state-actor / compacted, code-reading | 0.958 | **0.913** |
+| categories inside +/-10% after treatment | 40 / 48 | **24 / 48** |
+| worst existing category | 9.9% | **19.0%** |
+
+**So the answer to the question is no, and it never was.** The corrected structure is three
+groups, and it is a better result than the flattered one:
+
+| group | n | after treatment | cause |
+|---|---|---|---|
+| code shared or absent (EOA, MINIMAL, SAME_MAX) | 24 | **5.2%** off parity | store geometry |
+| distinct contract per access (DIFF_MAX, JUMPDEST) | 16 | **17.7%** off parity | unique, incompressible code records |
+| absence proofs (NON_EXISTING) | 8 | **9.1x** apart | generated store has no bloom filters |
+
+The second group is the same pair geth flagged (`BALANCE/DIFF_MAX`) and Nethermind devotes a
+section to. Round 24's cf07 geometry already explains the ordering: state-actor's code records
+average 398 B at `phys/log` 0.863, jochemnet's 7,671 B at 0.371. Order the classes by how much
+unique contract code they touch and you have ordered the residual.
+
+**The headline is unchanged at 8x** - the absence categories have no control rows, so that
+number was never contaminated.
+
+**Guards added**, because a control that is never asserted is not a control: every control
+category must sit within 5% of parity, and neither half of the treatment may move it by more
+than 5%. Measured 1.018-1.019, moved 0.5% by the drain and 1.0% by the compaction. Both tables
+in the article now carry a control row, and the 660/440 split is stated in the opening
+paragraph.
+
+**Correction on the record:** rounds 20, 29 and 30 recorded "40 of 40 EXISTING categories within
+the band, median 5.4%". Superseded 2026-09-16: that was 24 of 40 within the band on measurement
+rows, with 16 at 17.7%. The claim that every existing class converges was pooling, not physics.
