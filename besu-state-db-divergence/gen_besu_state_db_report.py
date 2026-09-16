@@ -727,6 +727,15 @@ def main():
         code_bpg[arm] = median([bpg(m, arm) for m in DARK]) - floor
     code_bpg["ratio"] = code_bpg["state_actor"] / code_bpg["compacted"]
     CB = D["code_block_sim"]
+    AM = D["account_mix"]
+    # How many accounts share each distinct bytecode. This is the one property both remaining
+    # tiers come out of, so it is derived rather than described.
+    reuse = {}
+    for k, store in (("jochemnet", "jochemnet"), ("state_actor", "state_actor")):
+        accts = props[store]["06"]["entries"]
+        contracts = accts * (100 - AM[k]["eoa_pct"]) / 100
+        reuse[k] = {"contracts": contracts, "codes": props[store]["07"]["entries"],
+                    "per_code": contracts / props[store]["07"]["entries"]}
 
     # geometry chain
     g06j, g06s = props["jochemnet"]["06"], props["state_actor"]["06"]
@@ -811,6 +820,8 @@ def main():
     assert CB["jochemnet"]["fixture_deflate"] < 0.05 and CB["state_actor"]["fixture_deflate"] < 0.05, \
         "the fixture contracts are no longer near-free to store"
     assert CB["small_block"]["tenants"] == 0, "the smaller block still admits co-tenants"
+    assert reuse["jochemnet"]["per_code"] > 10 > reuse["state_actor"]["per_code"], \
+        "the bytecode-reuse gap the residual rests on has closed"
     assert 1.4 < CB["state_actor"]["block_comp"] / CB["jochemnet"]["block_comp"] < 2.6, \
         "the modelled block no longer brackets the measured code-read ratio"
     assert 1.4 < code_bpg["ratio"] < 2.6, f"code-read ratio moved: {code_bpg['ratio']:.2f}"
@@ -1247,6 +1258,19 @@ def main():
       f"within {abs(comp_ratio/GREF['compression_ratio']-1)*100:.1f}% of these, on a different "
       f"storage engine, with a different compression algorithm and an eight times larger "
       f"block. Whatever this is, it is not an artifact of one engine.</p>")
+    w(f"<p>Both tiers come out of one property of the generated state, and it takes a sentence "
+      f"to measure. Sampling each store's account keyspace, {AM['jochemnet']['eoa_pct']:.1f}% "
+      f"of the snapshot's records are plain externally-owned accounts carrying the two empty "
+      f"constants, against {AM['state_actor']['eoa_pct']:.1f}% of the generated store's, which "
+      f"puts {thousands(round(reuse['jochemnet']['contracts']))} contract accounts in the "
+      f"snapshot against {thousands(round(reuse['state_actor']['contracts']))} in the generated "
+      f"store. The snapshot resolves those to {thousands(reuse['jochemnet']['codes'])} distinct "
+      f"bytecodes and the generated store to {thousands(reuse['state_actor']['codes'])}: "
+      f"mainnet reuses each bytecode about "
+      f"{reuse['jochemnet']['per_code']:.0f} times, and the generated store reuses none "
+      f"({reuse['state_actor']['per_code']:.2f}). That is why the account records compress "
+      f"worse, because a shared code hash becomes a unique one, and it is why a code read pays "
+      f"for block padding.</p>")
     w('<h3>The code half is not the code being read</h3>')
     w(f"<p>The same chain does not explain the {len(dark)} distinct-code categories, and it is "
       f"worth saying why rather than stretching it. Isolate what the code read itself costs by "
@@ -1298,7 +1322,9 @@ def main():
       f"{CB['small_block']['jochemnet_comp']} bytes on the snapshot against "
       f"{CB['small_block']['state_actor_comp']} on the generated store, and the penalty "
       f"inverts. Or give the generator a contract population shaped like mainnet's, including "
-      f"its duplication, since mainnet is full of repeated proxy and token bytecode. Neither is "
+      f"its duplication, since mainnet reuses each bytecode about "
+      f"{reuse['jochemnet']['per_code']:.0f} times and the generated store reuses none. "
+      f"Neither is "
       f"a change to Besu. It is also why the geth study never met this: pebble defaults to "
       f"4 KiB blocks, a quarter of what both of these stores use.</p>")
     w('<h3>The same experiment on two clients</h3>')

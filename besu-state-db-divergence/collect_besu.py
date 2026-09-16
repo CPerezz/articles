@@ -165,6 +165,18 @@ data["prerun_bundle_bytes"] = 10062313486
 # the way RocksDB does. The fixture blobs compress to ~1% on BOTH stores, so a code read is not
 # paying for the contract it reads -- it pays for whatever shares its 32 KiB block. Deflate
 # stands in for LZ4 here: comparative, not RocksDB's own figure. Probe: BlockSim.java.
+# Composition of the flat account keyspace. A Bonsai flat account is RLP(nonce, balance,
+# storageRoot, codeHash); an EOA carries EMPTY_TRIE_ROOT and EMPTY_CODE_HASH, two shared
+# constants that compress across a block where a contract's two unique hashes do not. Probe:
+# AcctMix.java. Deflate stands in for LZ4 and exaggerates the gap, so RocksDB's own block
+# figures stay authoritative for magnitude; this is here for composition.
+data["account_mix"] = {
+    "probe": "AcctMix.java, read-only open, 200 blocks sampled per store",
+    "jochemnet": {"records": 89673, "mean_record": 73.2, "eoa_pct": 80.8,
+                  "empty_root_pct": 92.9, "block_comp_deflate": 5590},
+    "state_actor": {"records": 82360, "mean_record": 79.7, "eoa_pct": 68.6,
+                    "empty_root_pct": 98.3, "block_comp_deflate": 9249},
+}
 data["code_block_sim"] = {
     "note": "Data-block cost of a fixture code read, modelled from each store's own cf07 by "
             "packing records the way RocksDB does (flush once uncompressed size passes "
