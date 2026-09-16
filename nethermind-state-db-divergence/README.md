@@ -43,6 +43,13 @@ hash mismatch. Use the `existing-snapshot` family's 14-EIP set, which adds
 | `data/report_data.json` | Every value the report renders. The only input to the generator. |
 | `figures/fig_*.svg` | The seven charts as standalone files, site palette derived from `crt_theme.CSS` so a figure cannot disagree with how it renders in the page. |
 
+- Experiment B1 re-ran the 266-test subset on both arms with the flat DB block cache cut
+  1 GiB -> 8 MiB (`collect_b1.py` folds the result into `data/report_data.json` under
+  `cache_experiment`). The pre-registered prediction - control moving to 0.85-0.95 - was
+  falsified: control moved +3.0% to 0.707 and every account category moved under 0.9%. Cache
+  carry-over is therefore eliminated as the cause of the control gap, and the parity result is
+  shown to survive a 128x cache reduction.
+
 ## Regenerate
 
 ```
@@ -84,14 +91,23 @@ sentence the data no longer supports.
 - Merging the affected column families down and stripping the pre-run brings every state-reading
   category to parity: existing accounts within 2–3%, storage within 3%, ether transfers within
   2%, absent accounts within 10%. Tests agreeing within ±10% go from 12.8% to 53.0%.
-- `EXISTING_CONTRACT_DIFF_MAX` is the one cell that stays out, at 1.55× bytes, and it is a code
-  database effect: 45 GB on the generated store against 7.6 GB on the snapshot. The residual is
-  monotonic in how much contract code the access mode touches. The geth study flagged the same
-  cell without explaining it.
+- `EXISTING_CONTRACT_DIFF_MAX` is the one cell that stays out, and it localises to a single
+  square of a 2×2: opcodes that **load the callee's code** against a **different contract each
+  access** sit at 0.640, while the same opcodes reusing one contract are at 0.983 and the two
+  opcodes that only read the account row (BALANCE, EXTCODEHASH) are at 0.97. So it is neither
+  distinctness on its own nor the account row.
+- **The code-database explanation for that cell is refuted**, and the article says so. Reading
+  code is cheaper on the generated store at every granularity we can measure: 10,513 B/196 µs
+  against 14,208 B/346 µs for a cold random lookup, 4,186 B/read against 9,705 for a cold sweep
+  of 3,000 distinct maximum-size contracts, and the two stores hold the same number of
+  maximum-size contracts (442 vs 433 per 400k accounts). The cell is reported as open.
 - What remains is a fixed ~179 MB per-test read on the generated store plus a ~10% proportional
   term, which is why tests that do no account work sit at 0.71 while tests reading gigabytes sit
-  at parity. Client startup, trie placement and measurement-window asymmetry are all ruled out;
-  the origin is not yet pinned to a column family.
+  at parity. Part of it is a **harness defect**: the page cache is dropped between the setup and
+  measured steps but the client is not restarted, so Nethermind's own RocksDB block cache carries
+  over. The arms invert across the steps — jochemnet reads 31.5 MB in setup and 1.8 MB when
+  measured, state-actor 9.4 MB then 96.1 MB. Diagnosed, not fixed: every number here still
+  carries it. Client startup, trie placement and measurement-window asymmetry are ruled out.
 - Category medians are not the whole story, so the page carries dispersion as well: the
   `EXISTING_EOA` middle half is 0.970–0.991 with 108/110 tests inside ±10% of parity, whereas
   the storage category sits on parity at 1.034 while ranging 0.549–2.094 with only 47/88 inside

@@ -4489,6 +4489,82 @@
    }
   ]
  },
+ "cache_experiment": {
+  "big": {
+   "n": 266,
+   "steps": {
+    "joc": {
+     "control": {
+      "n": 80,
+      "setup_mb": 31.5,
+      "test_mb": 1.8
+     },
+     "measured": {
+      "n": 120,
+      "setup_mb": 31.5,
+      "test_mb": 3545.2
+     }
+    },
+    "sa": {
+     "control": {
+      "n": 80,
+      "setup_mb": 9.5,
+      "test_mb": 96.4
+     },
+     "measured": {
+      "n": 120,
+      "setup_mb": 9.4,
+      "test_mb": 4385.2
+     }
+    }
+   },
+   "thr": {
+    "CONTROL": 0.6864,
+    "absent account": 0.9395,
+    "existing EOA": 0.9829,
+    "existing contract": 0.9666
+   }
+  },
+  "cache_bytes": {
+   "big": 1073741824,
+   "small": 8388608
+  },
+  "small": {
+   "n": 266,
+   "steps": {
+    "joc": {
+     "control": {
+      "n": 80,
+      "setup_mb": 31.5,
+      "test_mb": 1.8
+     },
+     "measured": {
+      "n": 120,
+      "setup_mb": 31.5,
+      "test_mb": 3545.2
+     }
+    },
+    "sa": {
+     "control": {
+      "n": 80,
+      "setup_mb": 9.4,
+      "test_mb": 106.3
+     },
+     "measured": {
+      "n": 120,
+      "setup_mb": 9.5,
+      "test_mb": 4392.0
+     }
+    }
+   },
+   "thr": {
+    "CONTROL": 0.7073,
+    "absent account": 0.9311,
+    "existing EOA": 0.9784,
+    "existing contract": 0.9697
+   }
+  }
+ },
  "measured": {
   "amortisation": {
    "points": [
@@ -4540,6 +4616,26 @@
    ],
    "src": "probe-flat -mode seq, Account CF, cold caches + fresh process per point, fill_cache=false, 100% hits, the EEST fixtures' own key population"
   },
+  "code_population": {
+   "joc": {
+    "at_max": 433,
+    "mean": 676,
+    "p50": 45,
+    "p90": 957,
+    "pct": 19.13,
+    "with_code": 76527
+   },
+   "sa": {
+    "at_max": 442,
+    "mean": 397,
+    "p50": 23,
+    "p90": 23,
+    "pct": 31.29,
+    "with_code": 125167
+   },
+   "scanned": 400000,
+   "src": "probe-flat -mode codescan: walk the account family, decode each slim-RLP row's codeHash, measure the code entry behind it"
+  },
   "code_probe": {
    "joc": {
     "bytes": 14208,
@@ -4554,6 +4650,18 @@
     "us": 196.3
    },
    "src": "probe-flat -mode sample/probe against code/, cold caches, fresh process, 100% hits, reader opened with the store's real per-CF options"
+  },
+  "code_sweep": {
+   "joc": {
+    "bytes": 9705,
+    "total_mb": 29.1
+   },
+   "n": 3000,
+   "sa": {
+    "bytes": 4186,
+    "total_mb": 12.6
+   },
+   "src": "probe-flat -mode codesample + probe: a cold sweep of N distinct contracts whose code is at or above the 24,576-byte maximum, caches dropped, fresh process"
   },
   "eip_trap": {
    "fourteen": [
@@ -4604,6 +4712,12 @@
     "useful": 19821
    },
    "src": "probe-flat -mode filters: RocksDB bloom tickers, reader opened with the real filter policy. A reader without a filter_policy will not consult filters that are present."
+  },
+  "fixture_eoas": {
+   "probed": 20000,
+   "src": "probe-flat -mode codesize over the fixture address range",
+   "with_code_joc": 0,
+   "with_code_sa": 0
   },
   "footprint": {
    "boot_read_gb": {
