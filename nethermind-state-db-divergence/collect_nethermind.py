@@ -441,6 +441,44 @@ MEASURED = {
         "compaction_seconds_account": 185.1,
         "tests": 1463
     },
+    "code_population": {
+        "src": "probe-flat -mode codescan: walk the account family, decode each slim-RLP row's codeHash, measure the code entry behind it",
+        "scanned": 400000,
+        "sa": {
+                "with_code": 125167,
+                "pct": 31.29,
+                "p50": 23,
+                "p90": 23,
+                "mean": 397,
+                "at_max": 442
+        },
+        "joc": {
+                "with_code": 76527,
+                "pct": 19.13,
+                "p50": 45,
+                "p90": 957,
+                "mean": 676,
+                "at_max": 433
+        }
+    },
+    "code_sweep": {
+        "src": "probe-flat -mode codesample + probe: a cold sweep of N distinct contracts whose code is at or above the 24,576-byte maximum, caches dropped, fresh process",
+        "n": 3000,
+        "sa": {
+                "bytes": 4186,
+                "total_mb": 12.6
+        },
+        "joc": {
+                "bytes": 9705,
+                "total_mb": 29.1
+        }
+    },
+    "fixture_eoas": {
+        "src": "probe-flat -mode codesize over the fixture address range",
+        "probed": 20000,
+        "with_code_sa": 0,
+        "with_code_joc": 0
+    },
     "three_client": {
         "src": "geth and Besu figures from the two sibling reports in this repo",
         "state_gib": {"geth": 674, "besu": 532, "nethermind": 409},

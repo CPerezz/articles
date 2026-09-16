@@ -1325,3 +1325,45 @@ New structure, following geth's:
 
 "What we ruled out" deleted. Dumbbell gained an in-figure legend (a standalone SVG has no caption).
 Eight figures, seven tables.
+
+---
+
+## Round 21 - Experiment C: DIFF_MAX localised to one square, three explanations refuted
+
+### The square
+The grid already contained its own control. Splitting the same cells by whether the opcode loads
+the callee's code, and by whether the contract differs each access:
+
+| | one contract, reused (SAME_MAX) | a different contract each (DIFF_MAX) |
+|---|---|---|
+| **loads the code** (CALL, CALLCODE, DELEGATECALL, STATICCALL, EXTCODECOPY, EXTCODESIZE) | 0.983 (0.972-0.991) | **0.640 (0.626-0.775)** |
+| **account row only** (BALANCE, EXTCODEHASH) | 0.977 | 0.969, 0.972 |
+
+One cell of four. Not the account row, not distinctness on its own: **loading a distinct
+contract's code**. This also corrects the grid caption, which claimed every row behaves the same -
+true of the grid overall, false inside the DIFF_MAX column, which is the one that matters.
+
+### Three refutations, all measured
+| measurement | state-actor | jochemnet | verdict |
+|---|---|---|---|
+| cold random code lookup | 10,513 B / 196 us | 14,208 B / 346 us | generated store **cheaper** |
+| cold sweep, 3,000 distinct >=24,576 B contracts | **4,186 B/read**, 12.6 MB | 9,705 B/read, 29.1 MB | generated store **cheaper** |
+| contracts at/above 24,576 B per 400k accounts | 442 | 433 | same population |
+
+Contract populations differ but not in the direction needed: the generated store holds *more*
+contracts (31.29% of accounts vs 19.13%) that are *far smaller* (median 23 B vs 45 B, mean 397 vs
+676), and its maximum-size contracts compress to 4,186 bytes on disk against jochemnet's 9,705.
+Reading code is cheaper on the generated store at every granularity measurable.
+
+Also checked: all 20,000 addresses in the fixture range carry **no code at all** on either arm, so
+the fixture EOAs are not the contracts in question.
+
+**Verdict: the effect is real, confined to one square, and every explanation that fits the square
+is contradicted by direct measurement.** Recorded as open rather than reaching for a fourth story.
+Four oracles now pin the square and the two refutations.
+
+### Experiment B1 launched 2026-09-16 10:43
+`--FlatDb.BlockCacheSizeBudget` defaults to 1 GiB; B1 sets it to 8 MiB on **both** arms and runs
+the 266-test subset on each, sequentially (concurrent arms pollute each other's I/O). If the
+cross-step block-cache carry-over is what holds the control category at 0.708, shrinking the cache
+should move it toward parity while leaving the account categories within a few percent.

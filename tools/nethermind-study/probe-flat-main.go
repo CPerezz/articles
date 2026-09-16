@@ -27,11 +27,13 @@ import (
 	"log"
 	"math/rand/v2"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/linxGnu/grocksdb"
 
 	"github.com/ethereum/state-actor/internal/neth/flat"
@@ -302,6 +304,8 @@ func main() {
 	// Shifting the address base turns the same probe into a pure-miss workload, which is how
 	// filter loss shows up: a filter only ever saves work on keys that are absent.
 	abase := flag.Uint64("abase", 0x1000, "first synthetic account address for -mode seq")
+	db2Path := flag.String("db2", "", "second database (the code/ store) for -mode codesize")
+	minSize := flag.Int("minsize", 24000, "minimum code size for -mode codesample")
 	flag.Parse()
 	if *dbPath == "" {
 		log.Fatal("-db required")
@@ -601,6 +605,211 @@ func main() {
 				}
 			}
 		}
+
+	case "codesize":
+		// What does an *additional distinct contract* cost? Random code lookups said the generated
+		// store is the cheaper one per read, so the DIFF_MAX residual cannot be "its code database
+		// is bigger". It has to come from the size, or the number, of the contracts the fixtures
+		// actually touch - which random sampling never looks at. This walks the fixture address
+		// range, pulls each account's codeHash out of its slim-RLP row, and measures the code
+		// entry it points at.
+		if *db2Path == "" {
+			log.Fatal("-db2 (the code database) is required for -mode codesize")
+		}
+		codeDB, codeHandles := openRO(*db2Path)
+		defer codeDB.Close()
+		codeCF := codeHandles[0]
+		for i, nm := range openedCFNames {
+			if nm == "default" {
+				codeCF = codeHandles[i]
+			}
+		}
+
+		var sizes []int
+		accounts, withCode, undecodable, shown := 0, 0, 0, 0
+		for i := 0; i < *n; i++ {
+			addr := make([]byte, 20)
+			binary.BigEndian.PutUint64(addr[12:], *abase+uint64(i))
+			v, err := db.GetCF(ro, cf, crypto.Keccak256(addr)[:20])
+			if err != nil {
+				log.Fatalf("account get: %v", err)
+			}
+			if !v.Exists() {
+				v.Free()
+				continue
+			}
+			raw := make([]byte, v.Size())
+			copy(raw, v.Data())
+			v.Free()
+			accounts++
+
+			var fields [][]byte
+			if err := rlp.DecodeBytes(raw, &fields); err != nil {
+				undecodable++
+				if shown < 3 {
+					fmt.Printf("  undecodable account row (%d bytes): %x\n", len(raw), raw)
+					shown++
+				}
+				continue
+			}
+			if len(fields) < 4 || len(fields[3]) != 32 {
+				continue
+			}
+			withCode++
+			cv, err := codeDB.GetCF(ro, codeCF, fields[3])
+			if err != nil {
+				log.Fatalf("code get: %v", err)
+			}
+			if cv.Exists() {
+				sizes = append(sizes, cv.Size())
+			}
+			cv.Free()
+		}
+
+		fmt.Printf("  addresses probed : %d\n", *n)
+		fmt.Printf("  accounts present : %d (undecodable rows %d)\n", accounts, undecodable)
+		fmt.Printf("  with code        : %d, code entries found %d\n", withCode, len(sizes))
+		if len(sizes) > 0 {
+			sort.Ints(sizes)
+			sum := 0
+			for _, x := range sizes {
+				sum += x
+			}
+			fmt.Printf("  code size bytes  : min %d  p50 %d  p90 %d  max %d  mean %d\n",
+				sizes[0], sizes[len(sizes)/2], sizes[9*len(sizes)/10], sizes[len(sizes)-1],
+				sum/len(sizes))
+			fmt.Printf("  total code bytes : %d over %d contracts\n", sum, len(sizes))
+		}
+
+	case "codescan":
+		// The fixture EOA range carries no code, so characterise the contract population of each
+		// store directly: walk the account family, pull codeHash out of the rows that have one,
+		// and measure the code entry behind it. If one store's contracts are uniformly maximal
+		// and the other's follow mainnet's size distribution, then "a different contract per
+		// access" costs a different amount on each, which is what DIFF_MAX measures.
+		if *db2Path == "" {
+			log.Fatal("-db2 (the code database) is required for -mode codescan")
+		}
+		codeDB, codeHandles := openRO(*db2Path)
+		defer codeDB.Close()
+		codeCF := codeHandles[0]
+		for i, nm := range openedCFNames {
+			if nm == "default" {
+				codeCF = codeHandles[i]
+			}
+		}
+
+		it := db.NewIteratorCF(ro, cf)
+		defer it.Close()
+		var sizes []int
+		scanned, withCode := 0, 0
+		for it.SeekToFirst(); it.Valid() && scanned < *n; it.Next() {
+			v := it.Value()
+			raw := make([]byte, v.Size())
+			copy(raw, v.Data())
+			v.Free()
+			scanned++
+
+			var fields [][]byte
+			if err := rlp.DecodeBytes(raw, &fields); err != nil {
+				continue
+			}
+			if len(fields) < 4 || len(fields[3]) != 32 {
+				continue
+			}
+			withCode++
+			cv, err := codeDB.GetCF(ro, codeCF, fields[3])
+			if err != nil {
+				log.Fatalf("code get: %v", err)
+			}
+			if cv.Exists() {
+				sizes = append(sizes, cv.Size())
+			}
+			cv.Free()
+		}
+
+		fmt.Printf("  accounts scanned : %d\n", scanned)
+		fmt.Printf("  with code        : %d (%.2f%%), code entries resolved %d\n",
+			withCode, 100*float64(withCode)/float64(max(scanned, 1)), len(sizes))
+		if len(sizes) > 0 {
+			sort.Ints(sizes)
+			sum := 0
+			for _, x := range sizes {
+				sum += x
+			}
+			atMax := 0
+			for _, x := range sizes {
+				if x >= 24000 {
+					atMax++
+				}
+			}
+			fmt.Printf("  code size bytes  : min %d  p10 %d  p50 %d  p90 %d  max %d  mean %d\n",
+				sizes[0], sizes[len(sizes)/10], sizes[len(sizes)/2],
+				sizes[9*len(sizes)/10], sizes[len(sizes)-1], sum/len(sizes))
+			fmt.Printf("  at/above 24000 B : %d of %d (%.1f%%)\n",
+				atMax, len(sizes), 100*float64(atMax)/float64(len(sizes)))
+		}
+
+	case "codesample":
+		// Collect the code hashes of large contracts so a cold *sweep* of distinct contracts can
+		// be measured. Single-lookup probes said the generated store is cheaper per read; a sweep
+		// is a different question, because touching N distinct entries in a 45 GB database shares
+		// far fewer physical blocks than touching N in a 7.6 GB one.
+		if *db2Path == "" {
+			log.Fatal("-db2 (the code database) is required for -mode codesample")
+		}
+		codeDB, codeHandles := openRO(*db2Path)
+		defer codeDB.Close()
+		codeCF := codeHandles[0]
+		for i, nm := range openedCFNames {
+			if nm == "default" {
+				codeCF = codeHandles[i]
+			}
+		}
+
+		f, err := os.Create(*keysFile)
+		if err != nil {
+			log.Fatalf("create %s: %v", *keysFile, err)
+		}
+		wtr := bufio.NewWriter(f)
+		it := db.NewIteratorCF(ro, cf)
+		defer it.Close()
+		scanned, kept := 0, 0
+		for it.SeekToFirst(); it.Valid() && kept < *n; it.Next() {
+			v := it.Value()
+			raw := make([]byte, v.Size())
+			copy(raw, v.Data())
+			v.Free()
+			scanned++
+
+			var fields [][]byte
+			if err := rlp.DecodeBytes(raw, &fields); err != nil {
+				continue
+			}
+			if len(fields) < 4 || len(fields[3]) != 32 {
+				continue
+			}
+			cv, err := codeDB.GetCF(ro, codeCF, fields[3])
+			if err != nil {
+				log.Fatalf("code get: %v", err)
+			}
+			big := cv.Exists() && cv.Size() >= *minSize
+			cv.Free()
+			if !big {
+				continue
+			}
+			if err := binary.Write(wtr, binary.LittleEndian, uint16(len(fields[3]))); err != nil {
+				log.Fatal(err)
+			}
+			if _, err := wtr.Write(fields[3]); err != nil {
+				log.Fatal(err)
+			}
+			kept++
+		}
+		wtr.Flush()
+		f.Close()
+		fmt.Printf("scanned %d accounts, kept %d code hashes of >= %d bytes -> %s\n",
+			scanned, kept, *minSize, *keysFile)
 
 	case "keys":
 		// Dump raw key shapes so the two stores' encodings can be compared directly.

@@ -40,6 +40,8 @@ SHORT = {
     "ETHER transfer receivers": "ether transfer",
     "CONTROL overhead_baseline": "control (no state work)",
 }
+LOADS_CODE = {"CALL", "CALLCODE", "DELEGATECALL", "STATICCALL", "EXTCODECOPY", "EXTCODESIZE"}
+
 MODE_ORDER = ["EXISTING_EOA", "EXISTING_CONTRACT_MINIMAL", "EXISTING_CONTRACT_SAME_MAX",
               "EXISTING_CONTRACT_JUMPDEST", "EXISTING_CONTRACT_DIFF_MAX"]
 MODE_CODE = {
@@ -461,6 +463,19 @@ def main():
                      if m in ("EXISTING_EOA", "EXISTING_CONTRACT_MINIMAL",
                               "EXISTING_CONTRACT_SAME_MAX")])
     assert dm < others - 0.15, f"DIFF_MAX is no longer the outlying column: {dm} vs {others}"
+    # The DIFF_MAX square: the section claims exactly one of four cells is off. Pin all four.
+    def _cell(mode, loads):
+        return median([row[mode]["thr"] for op, row in AFT["grid"].items()
+                       if mode in row and (op in LOADS_CODE) == loads])
+    _dmc, _dma = _cell("EXISTING_CONTRACT_DIFF_MAX", True), _cell("EXISTING_CONTRACT_DIFF_MAX", False)
+    _smc, _sma = _cell("EXISTING_CONTRACT_SAME_MAX", True), _cell("EXISTING_CONTRACT_SAME_MAX", False)
+    assert _dmc < 0.8, f"DIFF_MAX code-loading opcodes no longer the outlier: {_dmc:.3f}"
+    for name, v in (("DIFF_MAX account-only", _dma), ("SAME_MAX code-loading", _smc),
+                    ("SAME_MAX account-only", _sma)):
+        assert v > 0.9, f"{name} left parity ({v:.3f}); the 2x2 argument needs three clean cells"
+    # and the code database must stay cheaper on the generated store, or the refutation is void
+    assert M["code_probe"]["sa"]["bytes"] < M["code_probe"]["joc"]["bytes"], "code lookup refutation void"
+    assert M["code_sweep"]["sa"]["bytes"] < M["code_sweep"]["joc"]["bytes"], "code sweep refutation void"
     # the cross-client claim: every client's generated arm is near parity once treated, and
     # meaningfully slower before. If a sibling study is re-cut, this fails rather than misquotes.
     assert tc["besu_sa_over_plain"] < 0.6 < tc["besu_sa_over_compacted"] < 1.1, \
@@ -750,8 +765,10 @@ def main():
              f"&ndash;"
              f"{max(gcol[m] for m in ('EXISTING_EOA','EXISTING_CONTRACT_MINIMAL','EXISTING_CONTRACT_SAME_MAX')):.2f}. "
              f"The absent column is the uneven one at {gcol['NON_EXISTING_ACCOUNT']:.2f}, which "
-             f"is the same dispersion its category showed above. Every row behaves the same, so "
-             f"this is not an opcode effect &mdash; it is something the two dark modes share."))
+             f"is the same dispersion its category showed above. Within the DIFF_MAX column the "
+             f"rows are <em>not</em> uniform, and the split is the whole story: the opcodes that "
+             f"execute the callee's code sit near {median([row['EXISTING_CONTRACT_DIFF_MAX']['thr'] for op, row in AFT['grid'].items() if op in LOADS_CODE and 'EXISTING_CONTRACT_DIFF_MAX' in row]):.2f} "
+             f"while BALANCE and EXTCODEHASH, which only read the account row, stay at parity."))
     w("<p>Sorting the access modes by how much contract code they touch orders it cleanly:</p>")
     w("<table><tr><th>access mode</th><th>what it touches</th><th class=n>jochemnet MB</th>"
       "<th class=n>state-actor MB</th><th class=n>bytes sa/joc</th>"
@@ -780,80 +797,74 @@ def main():
              f"{(dm_m['saMB']-sm['saMB'])/max(dm_m['jocMB']-sm['jocMB'],1):.1f}&times; the "
              f"marginal cost per additional distinct contract."))
 
-    cdb = M.get("code_probe")
-    w("<h3>What we do not know</h3>")
-    if cdb:
-        w(f"<p>The obvious explanation is that the generated store's code database is larger "
-          f"&mdash; {esc(fp['sa']['code'])} against {esc(fp['joc']['code'])}, in "
-          f"{thousands(cdb['sa']['ssts'])} SST files against {thousands(cdb['joc']['ssts'])}. "
-          f"<b>Measured directly, that explanation fails.</b> A cold random code lookup costs "
-          f"{cdb['sa']['bytes']:,} bytes and {cdb['sa']['us']:.0f} us on state-actor against "
-          f"{cdb['joc']['bytes']:,} bytes and {cdb['joc']['us']:.0f} us on jochemnet &mdash; the "
-          f"bigger database is the <em>cheaper</em> one per lookup. Whatever makes an additional "
-          f"distinct contract expensive on the generated store, it is not the size of the code "
-          f"database on its own.</p>")
-    w("<p>So this cell stays on the open list. The ordering is solid and reproduced on two "
-      "clients; the mechanism is not established, and we would rather say so than publish the "
-      "first plausible story that fits.</p>")
+    # The data contains its own control: SAME_MAX is the same opcodes against one reused
+    # contract, so it separates "a distinct contract" from "contract code at all".
+    def cell(mode, loads):
+        vals = [c["thr"] for op, row in AFT["grid"].items() if mode in row
+                for c in [row[mode]] if (op in LOADS_CODE) == loads]
+        return median(vals), min(vals), max(vals), len(vals)
 
-    b0 = add["buckets"][0]
-    small_b = [b for b in add["buckets"] if b["jocMB"] < 4000]
-    fixed_mb = sorted(b["excess"] for b in small_b)[len(small_b) // 2]
-    big_b = add["buckets"][-1]
-    w(f"<p>What is left has two terms, and only one of them is interesting. Sorting every test "
-      f"by how much it reads on jochemnet, the extra volume state-actor pulls sits near "
-      f"{fixed_mb:.0f} MB for everything up to a few gigabytes &mdash; a fixed cost, not a "
-      f"penalty per unit of work. On top of it runs a ~10% proportional component, which only "
-      f"becomes visible in the largest bucket, where 10% of "
-      f"{big_b['jocMB']:.0f} MB is most of the {big_b['excess']:.0f} MB measured:</p>")
-    wr = AFT["worst"]
-    n_ctrl = sum(1 for r in wr if r["control"])
-    w(f"<p>It is worth naming the individual tests that are still furthest from parity, because "
-      f"{n_ctrl} of these {len(wr)} are control tests &mdash; tests that deliberately do no "
-      f"account-state work at all:</p>")
-    w("<table><tr><th class=n>ratio</th><th>opcode</th><th>access mode</th><th class=n>gas</th>"
-      "<th>control?</th><th class=n>jochemnet MB</th><th class=n>state-actor MB</th></tr>")
-    for r in wr:
-        w(f"<tr><td class=\"n bad\">{r['thr']:.3f}</td><td>{esc(r['opcode'] or '&mdash;')}</td>"
-          f"<td><code>{esc(r['mode'] or r['family'])}</code></td>"
-          f"<td class=n>{r['gas']}M</td>"
-          f"<td>{'yes' if r['control'] else 'no'}</td>"
-          f"<td class=n>{r['jocMB']:.0f}</td><td class=n>{r['saMB']:.0f}</td></tr>")
-    w(f"<caption>The worst {len(wr)} tests in the whole suite, and {n_ctrl} of them do no "
-      f"account work. They read {min(r['jocMB'] for r in wr):.0f}&ndash;"
-      f"{max(r['jocMB'] for r in wr):.0f} MB on jochemnet against "
-      f"{min(r['saMB'] for r in wr):.0f}&ndash;{max(r['saMB'] for r in wr):.0f} MB on "
-      f"state-actor. Nothing about account access explains them, which is the clue the next "
-      f"chart follows.</caption></table>")
+    dm_code = cell("EXISTING_CONTRACT_DIFF_MAX", True)
+    dm_acct = cell("EXISTING_CONTRACT_DIFF_MAX", False)
+    sm_code = cell("EXISTING_CONTRACT_SAME_MAX", True)
+    sm_acct = cell("EXISTING_CONTRACT_SAME_MAX", False)
 
-    w(figure(chart_additive(add["buckets"]),
-             f"Median excess per test, by how much work the test does. Four buckets spanning a "
-             f"1600&times; range of test size sit on the same dashed line, which is the fixed "
-             f"term; only the largest departs from it, by roughly 10% of its own volume. The "
-             f"throughput ratio underneath follows mechanically: a test reading "
-             f"{b0['jocMB']:.1f} MB is swamped by the fixed cost and lands at {b0['thr']:.3f}, "
-             f"while anything reading hundreds of megabytes absorbs it and sits at parity."))
-    w(f"<p>Part of this is Defect 2. The control tests read "
-      f"{D['steps']['control']['joc']['setup']:.1f} MB of setup on jochemnet against "
-      f"{D['steps']['control']['sa']['setup']:.1f} MB on state-actor, and whatever that setup "
-      f"leaves in the client's block cache is already resident when the measurement starts. On a "
-      f"test that would otherwise read a megabyte or two, that difference <em>is</em> the "
-      f"measurement. It does not account for all of it &mdash; the totals across both steps are "
-      f"still {D['steps']['control']['joc']['setup']+D['steps']['control']['joc']['test']:.1f} MB "
-      f"against {D['steps']['control']['sa']['setup']+D['steps']['control']['sa']['test']:.1f} MB "
-      f"&mdash; so the remainder stays open rather than being declared solved.</p>")
-    w(f"<p>So the model is <code>state-actor &asymp; 1.1 &times; jochemnet + "
-      f"{fixed_mb:.0f} MB</code>, and the control row retires as a special case "
-      f"rather than a mystery: those tests do no account work, read "
-      f"{ac['CONTROL overhead_baseline']['jocMB']:.1f} MB on jochemnet, and are therefore "
-      f"entirely overhead. Three explanations are already dead. It is not client startup "
-      f"&mdash; jochemnet's boot reads more. It is not trie placement &mdash; merging the "
-      f"state-node family moved the control by a percent. And it is not the measurement window "
-      f"&mdash; the first payload carries almost all of each test's bytes on both arms. Its "
-      f"origin is only partly pinned: some is the cross-step cache carry-over above, the rest is "
-      f"not yet attributed to a column family. Nethermind exposes no RocksDB statistics switch, "
-      f"so that attribution needs client instrumentation we do not have. It is bounded, and "
-      f"invisible to any test that does real work.</p>")
+    w("<h3>Where exactly it lives</h3>")
+    w("<p>Splitting the same cells two ways isolates it to a single square. Along one axis, "
+      "whether the opcode loads the callee's code at all; along the other, whether the contract "
+      "is a different one each access or the same one reused:</p>")
+    w("<table><tr><th></th><th class=n>one contract, reused</th>"
+      "<th class=n>a different contract each access</th></tr>")
+    w(f"<tr><td>opcodes that <b>load the code</b><br><span class=note>CALL, CALLCODE, "
+      f"DELEGATECALL, STATICCALL, EXTCODECOPY, EXTCODESIZE</span></td>"
+      f"<td class=n>{sm_code[0]:.3f}</td>"
+      f"<td class=\"n bad\">{dm_code[0]:.3f}</td></tr>")
+    w(f"<tr><td>opcodes that read <b>only the account row</b><br><span class=note>BALANCE, "
+      f"EXTCODEHASH</span></td><td class=n>{sm_acct[0]:.3f}</td>"
+      f"<td class=n>{dm_acct[0]:.3f}</td></tr>")
+    w(f"<caption>One square out of four. Reusing a contract is fine even for the opcodes that "
+      f"execute it ({sm_code[1]:.3f}&ndash;{sm_code[2]:.3f} across {sm_code[3]} opcodes), and "
+      f"under DIFF_MAX the two opcodes that never touch code are at parity "
+      f"({dm_acct[1]:.3f}, {dm_acct[2]:.3f}). Only <b>loading a distinct contract's code</b> is "
+      f"expensive, at {dm_code[0]:.3f} across {dm_code[3]} opcodes "
+      f"({dm_code[1]:.3f}&ndash;{dm_code[2]:.3f}). So it is not the account row, and it is not "
+      f"distinctness on its own.</caption></table>")
+
+    w("<h3>What we ruled out</h3>")
+    cp, cs, cpop = M["code_probe"], M["code_sweep"], M["code_population"]
+    w("<p>The obvious answer is the code database: the generated store's is "
+      f"{esc(cp['sa']['size'])} against {esc(cp['joc']['size'])}. Measured three ways, it is "
+      "wrong in every one of them.</p>")
+    w("<table><tr><th>measurement</th><th class=n>state-actor</th><th class=n>jochemnet</th>"
+      "<th>verdict</th></tr>")
+    w(f"<tr><td>cold random code lookup</td><td class=n>{cp['sa']['bytes']:,} B</td>"
+      f"<td class=n>{cp['joc']['bytes']:,} B</td>"
+      f"<td>generated store is <b>cheaper</b></td></tr>")
+    w(f"<tr><td>cold sweep, {thousands(cs['n'])} distinct maximum-size contracts</td>"
+      f"<td class=n>{cs['sa']['bytes']:,} B/read</td>"
+      f"<td class=n>{cs['joc']['bytes']:,} B/read</td>"
+      f"<td>generated store is <b>cheaper</b></td></tr>")
+    w(f"<tr><td>contracts at or above the 24,576-byte maximum</td>"
+      f"<td class=n>{cpop['sa']['at_max']}</td><td class=n>{cpop['joc']['at_max']}</td>"
+      f"<td>same population</td></tr>")
+    w(f"<caption>Per {thousands(cpop['scanned'])} accounts scanned. The generated store holds "
+      f"more contracts ({cpop['sa']['pct']:.1f}% of accounts against "
+      f"{cpop['joc']['pct']:.1f}%) but far smaller ones (median "
+      f"{cpop['sa']['p50']} B against {cpop['joc']['p50']} B), and its maximum-size contracts "
+      f"compress to {cs['sa']['bytes']:,} bytes on disk against jochemnet's "
+      f"{cs['joc']['bytes']:,}. Reading code is cheaper on the generated store at every "
+      f"granularity we can measure, which is the opposite of what the benchmark reports."
+      f"</caption></table>")
+
+    w("<h3>What is still open</h3>")
+    w(f"<p>So the effect is real, it is confined to one square of the table above, and the "
+      f"three explanations that fit that square are each contradicted by a direct measurement. "
+      f"We are leaving it here rather than reaching for a fourth story: the honest statement is "
+      f"that executing a <em>distinct</em> contract costs the generated store "
+      f"{1/dm_code[0]:.2f}&times; what it costs the snapshot, and we cannot yet say why. "
+      f"The fixture accounts themselves are not the answer either &mdash; all "
+      f"{thousands(M['fixture_eoas']['probed'])} addresses in the range the tests use carry no "
+      f"code at all on either arm.</p>")
 
     # ---------------------------------------------------------------- three clients
     w("<h2>Three clients, one artifact</h2>")
