@@ -43,6 +43,13 @@ hash mismatch. Use the `existing-snapshot` family's 14-EIP set, which adds
 | `data/report_data.json` | Every value the report renders. The only input to the generator. |
 | `figures/fig_*.svg` | The seven charts as standalone files, site palette derived from `crt_theme.CSS` so a figure cannot disagree with how it renders in the page. |
 
+- Experiment B1 re-ran the 266-test subset on both arms with the flat DB block cache cut
+  1 GiB -> 8 MiB (`collect_b1.py` folds the result into `data/report_data.json` under
+  `cache_experiment`). The pre-registered prediction - control moving to 0.85-0.95 - was
+  falsified: control moved +3.0% to 0.707 and every account category moved under 0.9%. Cache
+  carry-over is therefore eliminated as the cause of the control gap, and the parity result is
+  shown to survive a 128x cache reduction.
+
 ## Regenerate
 
 ```

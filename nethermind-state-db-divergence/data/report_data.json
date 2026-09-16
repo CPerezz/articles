@@ -4489,6 +4489,82 @@
    }
   ]
  },
+ "cache_experiment": {
+  "big": {
+   "n": 266,
+   "steps": {
+    "joc": {
+     "control": {
+      "n": 80,
+      "setup_mb": 31.5,
+      "test_mb": 1.8
+     },
+     "measured": {
+      "n": 120,
+      "setup_mb": 31.5,
+      "test_mb": 3545.2
+     }
+    },
+    "sa": {
+     "control": {
+      "n": 80,
+      "setup_mb": 9.5,
+      "test_mb": 96.4
+     },
+     "measured": {
+      "n": 120,
+      "setup_mb": 9.4,
+      "test_mb": 4385.2
+     }
+    }
+   },
+   "thr": {
+    "CONTROL": 0.6864,
+    "absent account": 0.9395,
+    "existing EOA": 0.9829,
+    "existing contract": 0.9666
+   }
+  },
+  "cache_bytes": {
+   "big": 1073741824,
+   "small": 8388608
+  },
+  "small": {
+   "n": 266,
+   "steps": {
+    "joc": {
+     "control": {
+      "n": 80,
+      "setup_mb": 31.5,
+      "test_mb": 1.8
+     },
+     "measured": {
+      "n": 120,
+      "setup_mb": 31.5,
+      "test_mb": 3545.2
+     }
+    },
+    "sa": {
+     "control": {
+      "n": 80,
+      "setup_mb": 9.4,
+      "test_mb": 106.3
+     },
+     "measured": {
+      "n": 120,
+      "setup_mb": 9.5,
+      "test_mb": 4392.0
+     }
+    }
+   },
+   "thr": {
+    "CONTROL": 0.7073,
+    "absent account": 0.9311,
+    "existing EOA": 0.9784,
+    "existing contract": 0.9697
+   }
+  }
+ },
  "measured": {
   "amortisation": {
    "points": [

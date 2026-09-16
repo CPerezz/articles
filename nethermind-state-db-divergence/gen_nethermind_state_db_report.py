@@ -160,8 +160,11 @@ def chart_amortisation(points):
     o.append(S.label(sx.to(jl["n"]) - 6, sy2.to(jl["joc_mb"]) - 10,
                      f"saturates at {jl['joc_mb']:.0f} MB", "end", "big"))
 
-    for p in points:
-        o.append(S.label(sx.to(p["n"]), b2 + 22, thousands(p["n"]), "middle", "tick"))
+    # The first and last ticks sit on the axis ends, so centring them hangs half the label
+    # outside the figure box. Anchor the outer two inward.
+    for i, p in enumerate(points):
+        anchor = "start" if i == 0 else "end" if i == len(points) - 1 else "middle"
+        o.append(S.label(sx.to(p["n"]), b2 + 22, thousands(p["n"]), anchor, "tick"))
     o.append(S.label((L + W - R) / 2, H - 6, "cold lookups performed", "middle", "ax"))
     return S.svg(W, H, "".join(o))
 
@@ -454,6 +457,17 @@ def main():
     wr_ = AFT["worst"]
     assert sum(1 for r in wr_ if r["control"]) > len(wr_) / 2, \
         "the worst tests are no longer dominated by controls; rewrite the residual section"
+    # The cache refutation. The article says starving the block cache did not close the control
+    # gap and did not move the account result; if either stops being true, the section is wrong.
+    ce_ = D["cache_experiment"]
+    assert ce_["small"]["thr"]["CONTROL"] / ce_["big"]["thr"]["CONTROL"] - 1 < 0.10, \
+        "the cache reduction closed much of the control gap; the refutation no longer holds"
+    assert max(abs(ce_["small"]["thr"][c] / ce_["big"]["thr"][c] - 1)
+               for c in ("existing EOA", "existing contract", "absent account")) < 0.05, \
+        "account categories moved under cache starvation; parity may be cache-driven after all"
+    assert (ce_["small"]["steps"]["joc"]["control"]["test_mb"]
+            == ce_["big"]["steps"]["joc"]["control"]["test_mb"]), \
+        "jochemnet's control reads moved with the cache; the 'it reads what it needs' line is out"
     # The grid has to stay a column, not a scatter, or the code argument is not an argument.
     g_ = AFT["grid"]
     assert len(g_) >= 6, f"opcode grid lost opcodes: {sorted(g_)}"
@@ -707,13 +721,15 @@ def main():
              f"they collapse from a smear across the left of the axis onto the parity band."))
 
     # ---------------------------------------------------------------- residual
-    w("<h2>Defect 2: the measured step inherits its own setup step's cache</h2>")
+    w("<h2>Defect 2: the measured step begins with a warm client &mdash; "
+      "and that is not what the control gap is</h2>")
     st = D["steps"]
     w("<p>The harness drops the OS page cache between the setup payload and the measured one. It "
       "cannot drop the client's <em>own</em> cache: Nethermind is not restarted inside a test "
       "&mdash; <code>container-recreate</code> rolls back per test, not per step &mdash; so the "
-      "RocksDB block cache carries whatever setup pulled in straight into the measurement. The "
-      "two arms are warmed by very different amounts:</p>")
+      "RocksDB block cache carries whatever setup pulled in straight into the measurement. That "
+      "is a real gap in the method, and the two arms enter the measurement warmed by very "
+      "different amounts:</p>")
     w("<table><tr><th>tests</th><th>arm</th><th class=n>setup reads</th>"
       "<th class=n>measured reads</th><th class=n>total</th></tr>")
     for key, lbl in (("control", "control (no account work)"), ("measured", "reads accounts")):
@@ -731,20 +747,55 @@ def main():
       f"only variable effect is how much of each store it happens to leave cached.</caption>"
       f"</table>")
     w(figure(chart_steps(st),
-             "The same numbers on a log axis. A measurement that begins with a warm client cache "
-             "is measuring the setup payload as much as the test, and the harness has no control "
-             "over that cache today."))
-    w(f"<p><b>What would fix it:</b> restart the client, or flush its block cache, between the "
-      f"setup and the measured step. That is affordable &mdash; the harness already recreates a "
-      f"container per test in seconds. Per-step <em>compaction</em>, the other obvious lever and "
-      f"the one geth used, is not affordable here: Nethermind exposes no compaction RPC, and "
-      f"doing it offline costs {M['harness']['compaction_seconds_account']:.0f} s for the "
-      f"account family alone &mdash; about {M['harness']['compaction_seconds_account']*M['harness']['tests']/86400:.0f} "
-      f"days across {thousands(M['harness']['tests'])} tests &mdash; about "
-      f"{M['harness']['compaction_seconds_account']*M['harness']['tests']/3600/12.7:.0f}&times; "
-      f"the runtime of the suite it is supposed to be preparing.</p>")
-    w("<p class=note>This defect is diagnosed but <b>not fixed</b> in the numbers on this page. "
-      "Everything below still carries it.</p>")
+             "The same numbers on a log axis. The arms are inverted between the two steps: "
+             "jochemnet does its reading during setup, state-actor during the measurement. The "
+             "obvious reading is that one arm enters the measurement warm and the other does "
+             "not, which is what the next experiment tests."))
+    # The obvious reading of the table above is that the control gap is carry-over. It is the
+    # kind of explanation that is satisfying enough to publish without testing, so we tested it.
+    ce = D["cache_experiment"]
+    big_gib = ce["cache_bytes"]["big"] / 2 ** 30
+    small_mib = ce["cache_bytes"]["small"] / 2 ** 20
+    order = ["CONTROL", "existing EOA", "existing contract", "absent account"]
+    ctl_move = ce["small"]["thr"]["CONTROL"] / ce["big"]["thr"]["CONTROL"] - 1
+    acct_move = max(abs(ce["small"]["thr"][c] / ce["big"]["thr"][c] - 1)
+                    for c in order if c != "CONTROL")
+    w(f"<p><b>So we starved the cache.</b> Both arms re-ran the same "
+      f"{thousands(ce['small']['n'])} tests with the flat database's block cache cut from "
+      f"{big_gib:.0f}&nbsp;GiB to {small_mib:.0f}&nbsp;MiB, a factor of "
+      f"{ce['cache_bytes']['big'] // ce['cache_bytes']['small']}. Same stores, same tests, same "
+      f"treatment, and the client's own startup log confirms the reduction reached it. If the "
+      f"control gap were the setup step's leftovers, taking the leftovers away had to close "
+      f"it.</p>")
+    w(f"<table><tr><th>category</th><th class=n>{big_gib:.0f} GiB cache</th>"
+      f"<th class=n>{small_mib:.0f} MiB cache</th><th class=n>change</th></tr>")
+    for c in order:
+        b, s = ce["big"]["thr"][c], ce["small"]["thr"][c]
+        w(f"<tr><td>{esc(c)}</td><td class=n>{b:.3f}</td><td class=n>{s:.3f}</td>"
+          f'<td class="n{"" if abs(s/b-1) < 0.05 else " bad"}">{(s/b-1)*100:+.1f}%</td></tr>')
+    w(f"<caption>Throughput ratio, state-actor over jochemnet, on identical test ids. We had "
+      f"pre-registered the prediction that control would move to 0.85&ndash;0.95. It moved "
+      f"{ctl_move*100:+.1f}%, to {ce['small']['thr']['CONTROL']:.3f}. Every account category "
+      f"moved by less than {acct_move*100:.1f}%.</caption></table>")
+    w(f"<p>The read volumes say the same thing from the other side. Starving the cache pushed "
+      f"state-actor's control reads <em>up</em>, from "
+      f"{ce['big']['steps']['sa']['control']['test_mb']:.1f} MB to "
+      f"{ce['small']['steps']['sa']['control']['test_mb']:.1f} MB, while jochemnet's stayed at "
+      f"{ce['small']['steps']['joc']['control']['test_mb']:.1f} MB &mdash; unmoved to the "
+      f"decimal. A store being fed by a warm cache reads more when you take the cache away. "
+      f"jochemnet did not, because {ce['small']['steps']['joc']['control']['test_mb']:.1f} MB is "
+      f"what its control payload actually needs.</p>")
+    w("<p><b>So the explanation is dead and the defect is not.</b> The harness still cannot flush "
+      "the client's cache, and it should be able to &mdash; restarting the client between steps "
+      "is affordable, since a container is already recreated per test in seconds. But the cache "
+      "is worth a few per cent here, not the gap, and the control asymmetry has to be a property "
+      "of the two stores rather than an artifact of how we measured them. What property, we do "
+      "not know.</p>")
+    w(f"<p class=note>One lever remains untested: this reduced the flat database's block cache, "
+      f"while Nethermind sizes its trie and database budgets from total machine memory "
+      f"independently. That does not rescue the carry-over story &mdash; a cache cannot explain "
+      f"reads that do not happen &mdash; but it does mean 'cache' is eliminated as the cause, "
+      f"not as a contributor.</p>")
 
     w("<h2>What is left, and how much of it we can account for</h2>")
     # ------------------------------------------------- open item: DIFF_MAX
@@ -912,11 +963,14 @@ def main():
       f"{hw['compaction_seconds_account']:.0f} s per column family here &mdash; about "
       f"{days:.1f} days across {thousands(hw['tests'])} tests, six times the runtime of the "
       f"suite it would be preparing.</li>")
-    w("<li><b>Give the harness control of the client's cache, not just the page cache.</b> "
-      "Dropping <code>/proc/sys/vm/drop_caches</code> between steps leaves the client's own "
-      "RocksDB block cache warm, so a measured step partly reflects what its own setup payload "
-      "happened to load. Restarting the client between steps is affordable; the harness already "
-      "recreates a container per test in seconds.</li>")
+    w(f"<li><b>Give the harness control of the client's cache, not just the page cache.</b> "
+      f"Dropping <code>/proc/sys/vm/drop_caches</code> between steps leaves the client's own "
+      f"RocksDB block cache warm, so a measured step partly reflects what its own setup payload "
+      f"happened to load. Restarting the client between steps is affordable; the harness already "
+      f"recreates a container per test in seconds. Measure before you assume, though: starving "
+      f"that cache here moved the result by "
+      f"{(D['cache_experiment']['small']['thr']['CONTROL'] / D['cache_experiment']['big']['thr']['CONTROL'] - 1)*100:.0f}%, "
+      f"which is worth having and is not an explanation.</li>")
     w("<li><b>Print a locality diagnostic:</b> read bytes per unit of gas, per arm. Flat in gas "
       f"means a bounded working set and therefore an artifact &mdash; jochemnet read "
       f"{cc[0]['jocMB']:.0f} MB at {cc[0]['gas']}M and {cc[-1]['jocMB']:.0f} MB at "
@@ -936,8 +990,11 @@ def main():
     w(f"<p>Two caveats stop that being a blanket endorsement. Executing a <em>distinct</em> "
       f"contract still costs the generated store {1/dm_code[0]:.2f}&times; what it costs the "
       f"snapshot and we cannot say why, so anything code-execution heavy is not yet covered. And "
-      f"Defect 2 is diagnosed but unfixed, so the numbers here still contain an unknown amount "
-      f"of cross-step cache help.</p>")
+      f"the control gap &mdash; tests doing no account work at all, where the generated store "
+      f"reads {D['cache_experiment']['small']['steps']['sa']['control']['test_mb']:.0f} MB "
+      f"against {D['cache_experiment']['small']['steps']['joc']['control']['test_mb']:.1f} MB "
+      f"&mdash; survived having its most likely cause tested and eliminated. It is a real "
+      f"difference between the two stores and we cannot yet name it.</p>")
 
     # ---------------------------------------------------------------- errata
     w("<h2>What we got wrong on the way</h2>")
@@ -963,6 +1020,13 @@ def main():
       "the opposite: reading code is cheaper on that store per lookup, cheaper on a sweep of "
       "distinct maximum-size contracts, and the two stores hold the same number of them. The "
       "section above now reports the cell as open.</li>")
+    ce_e = D["cache_experiment"]
+    w(f"<li><b>We had a fourth explanation and it failed too.</b> The control gap looked like "
+      f"cross-step cache carry-over, and we pre-registered the prediction that starving the "
+      f"block cache would pull it to 0.85&ndash;0.95. It moved to "
+      f"{ce_e['small']['thr']['CONTROL']:.3f}. The section above reports the eliminated "
+      f"explanation rather than the one we expected to be writing, which is the only reason "
+      f"this list is worth keeping.</li>")
     w("</ul>")
     w("<p class=note>The numbers in this page are computed from the collected run data at build "
       "time; the generator refuses to emit the page if the data stops supporting the sentences "
