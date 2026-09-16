@@ -59,14 +59,62 @@ func readBytes() uint64 {
 	return 0
 }
 
+
+// statTickers parses RocksDB's statistics dump into a ticker -> count map. The dump is the only
+// way grocksdb exposes tickers; there is no typed accessor in this binding.
+func statTickers(o *grocksdb.Options) map[string]int64 {
+	out := map[string]int64{}
+	if o == nil {
+		return out
+	}
+	for _, line := range strings.Split(o.GetStatisticsString(), "\n") {
+		f := strings.Fields(line)
+		// shape: "<name> COUNT : <n>" and for histograms "<name> P50 : ..."
+		if len(f) >= 4 && f[1] == "COUNT" && f[2] == ":" {
+			if v, err := strconv.ParseInt(f[3], 10, 64); err == nil {
+				out[f[0]] = v
+			}
+		}
+	}
+	return out
+}
+
+// dbOptsForStats holds the DB-level Options when statistics are enabled, so the filters mode can
+// read tickers back out of them.
+var dbOptsForStats *grocksdb.Options
+
+// openedCFNames records the column families openRO actually opened.
+var openedCFNames []string
+
 func openRO(path string) (*grocksdb.DB, []*grocksdb.ColumnFamilyHandle) {
 	opts := grocksdb.NewDefaultOptions()
 	opts.SetCreateIfMissing(false)
-	cfOpts := make([]*grocksdb.Options, len(flat.ColumnNames))
-	for i := range cfOpts {
-		cfOpts[i] = grocksdb.NewDefaultOptions()
+	opts.EnableStatistics()
+	dbOptsForStats = opts
+	// Work against any Nethermind RocksDB, not just flat/: the code, state and blocks databases
+	// carry their own column-family sets, and DIFF_MAX needs code/ measured directly rather than
+	// inferred from the ordering of the account-access modes.
+	names := flat.ColumnNames
+	if listed, err := grocksdb.ListColumnFamilies(grocksdb.NewDefaultOptions(), path); err == nil &&
+		len(listed) > 0 {
+		names = listed
 	}
-	db, hs, err := grocksdb.OpenDbForReadOnlyColumnFamilies(opts, path, flat.ColumnNames, cfOpts, false)
+
+	cfOpts := make([]*grocksdb.Options, len(names))
+	for i, nm := range names {
+		// A reader with no filter_policy configured will not consult the filters that are in the
+		// files: RocksDB only builds a filter reader when a policy is set at open. Opening with
+		// default options therefore measures any store as if it had no filters at all, which is
+		// exactly what made an earlier run of this probe report zero bloom activity on both arms
+		// and equal cost for present and absent keys.
+		if spec, ok := flatSpecs[nm]; ok {
+			cfOpts[i] = specOptions(spec)
+		} else {
+			cfOpts[i] = grocksdb.NewDefaultOptions()
+		}
+	}
+	openedCFNames = names
+	db, hs, err := grocksdb.OpenDbForReadOnlyColumnFamilies(opts, path, names, cfOpts, false)
 	if err != nil {
 		log.Fatalf("open %s: %v", path, err)
 	}
@@ -269,16 +317,6 @@ func main() {
 		return
 	}
 
-	cfIdx := -1
-	for i, nm := range flat.ColumnNames {
-		if nm == *cfName {
-			cfIdx = i
-		}
-	}
-	if cfIdx < 0 {
-		log.Fatalf("unknown cf %q; have %v", *cfName, flat.ColumnNames)
-	}
-
 	var db *grocksdb.DB
 	var handles []*grocksdb.ColumnFamilyHandle
 	if *mode == "compact" {
@@ -287,6 +325,16 @@ func main() {
 		db, handles = openRO(*dbPath)
 	}
 	defer db.Close()
+	cfIdx := -1
+	for i, nm := range openedCFNames {
+		if nm == *cfName {
+			cfIdx = i
+		}
+	}
+	if cfIdx < 0 {
+		log.Fatalf("unknown cf %q; have %v", *cfName, openedCFNames)
+	}
+
 	cf := handles[cfIdx]
 	ro := grocksdb.NewDefaultReadOptions()
 	ro.SetFillCache(false) // each lookup must pay its own way
@@ -487,6 +535,72 @@ func main() {
 		db.CompactRangeCF(cf, grocksdb.Range{Start: nil, Limit: nil})
 		fmt.Printf("  compaction    : %.1f s\n", time.Since(start).Seconds())
 		fmt.Printf("  levels after  : %v\n", levels())
+
+	case "filters":
+		// Do these SST files actually carry filters, and do the filters reject absent keys?
+		//
+		// Counting bytes cannot answer this: a column family built with no filter policy and one
+		// whose filter is present but never consulted read identically. RocksDB's own bloom
+		// tickers can - bloom.filter.useful counts negatives a filter rejected without touching
+		// a data block. Besu's study found a generated store written with no filters at all, so
+		// this is the same class of defect being checked for on Nethermind.
+		present := make([][]byte, 0, *n)
+		absent := make([][]byte, 0, *n)
+		for i := 0; i < *n; i++ {
+			a1, a2 := make([]byte, 20), make([]byte, 20)
+			binary.BigEndian.PutUint64(a1[12:], *abase+uint64(i))
+			binary.BigEndian.PutUint64(a2[12:], 0x900000000+uint64(i))
+			present = append(present, crypto.Keccak256(a1)[:20])
+			absent = append(absent, crypto.Keccak256(a2)[:20])
+		}
+
+		run := func(keys [][]byte) (hits, miss int, bytes uint64, el time.Duration) {
+			before := readBytes()
+			t0 := time.Now()
+			for _, k := range keys {
+				v, err := db.GetCF(ro, cf, k)
+				if err != nil {
+					log.Fatalf("get: %v", err)
+				}
+				if v.Exists() {
+					hits++
+				} else {
+					miss++
+				}
+				v.Free()
+			}
+			return hits, miss, readBytes() - before, time.Since(t0)
+		}
+
+		// Warm the table readers first: on a cold handle the first lookups pay for index and
+		// filter blocks, which would otherwise be charged to whichever phase ran first.
+		run(present[:min(len(present), 2000)])
+
+		for _, phase := range []struct {
+			name string
+			keys [][]byte
+		}{{"absent keys", absent}, {"present keys", present}} {
+			s0 := statTickers(dbOptsForStats)
+			h, m, by, el := run(phase.keys)
+			s1 := statTickers(dbOptsForStats)
+			fmt.Printf("  %-13s n=%d hits=%d miss=%d  %6.1f us/lookup  %7.0f bytes/lookup\n",
+				phase.name, len(phase.keys), h, m,
+				float64(el.Microseconds())/float64(len(phase.keys)),
+				float64(by)/float64(len(phase.keys)))
+			for _, t := range []string{
+				"rocksdb.bloom.filter.useful",
+				"rocksdb.bloom.filter.full.positive",
+				"rocksdb.bloom.filter.full.true.positive",
+				"rocksdb.block.cache.filter.hit",
+				"rocksdb.block.cache.filter.miss",
+				"rocksdb.table.open.io.micros",
+			} {
+				d := s1[t] - s0[t]
+				if d != 0 || strings.Contains(t, "bloom") {
+					fmt.Printf("      %-42s %d\n", t, d)
+				}
+			}
+		}
 
 	case "keys":
 		// Dump raw key shapes so the two stores' encodings can be compared directly.

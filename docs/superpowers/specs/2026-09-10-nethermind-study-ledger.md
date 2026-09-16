@@ -1200,3 +1200,65 @@ Not yet attributed to a column family. Ruled out: client boot I/O (jochemnet's i
 6.53 vs 4.81 GB) and trie placement (compacting `StateNodes` moved it 1%). Remaining candidate is
 per-CF attribution from RocksDB LOG statistics during a single controlled test - optional, since
 the term is bounded and invisible to any test doing real state work.
+
+---
+
+## Round 20 - article critique; two probe results that change the findings
+
+Anon's review: drop "What we ruled out"; the per-category/per-test signalling is still too thin;
+the "contiguous corner of the tree" claim is wrong for a hash-addressed trie; "Removing the
+confound" never says the treatment is compaction; the DIFF_MAX and residual sections assert
+without concluding; and the article should follow geth's shape - problem, defects found, one
+section per fix with its own before/after, then the unexplained remainder.
+
+### Harness reality check
+- `BENCHMARKOOR_POST_PRERUN_CMD` exists **only on branch `state-db-journal-drain`** (commit
+  `c3c46f1`), never on master. It runs an operator command after the pre-run and before
+  `schelk promote`, aborting the promote on failure - exactly the hook this study needed.
+- `BENCHMARKOOR_COMPACT_BETWEEN_STEPS` is **named in a source comment and never implemented**
+  anywhere in benchmarkoor's history. The per-setup-payload compaction is intent, not code.
+- The Nethermind runs used **neither**. The treatment was the hook's effect achieved by hand
+  (compact the promoted image, strip `pre_runs` so replaying it could not re-cluster). Same end
+  state, but not reproducible by a third party and never described as such.
+
+### Probe defect found and fixed (invalidates two earlier readings)
+`openRO` opened every column family with `NewDefaultOptions()`, i.e. **`filter_policy=nullptr`**.
+RocksDB only constructs a filter reader when a policy is configured at open, so the probe measured
+both stores *as if they had no filters*. Fixed by opening with the store's real per-CF options.
+
+| Account CF, 20k keys | state-actor | jochemnet |
+|---|---|---|
+| absent keys | **2.5 us, 73 B** | **2.8 us, 87 B** |
+| present keys | 165 us, 7,314 B | 204 us, 7,305 B |
+| `bloom.filter.useful` on absent | 19,821 / 20,000 | 19,786 / 20,000 |
+| false positives | 179 | 214 |
+
+Consequences:
+1. **No Besu-style defect.** Both stores carry working ribbon filters at ~1% false-positive rate.
+   The hypothesis that the generated store was written without filters is dead.
+2. Round 15's claim that "misses cost the same as hits on both arms" was **the probe bug**, not a
+   property of the stores. Absent lookups are ~100x cheaper than present ones.
+3. That retroactively **vindicates round 13**: stripping filters from the files really is why the
+   non-existing cell inverted to 19x. Round 15's retraction of that explanation was itself wrong.
+4. All earlier byte figures were taken with a filterless reader, which inflates *hit* cost by
+   ~11% (SA 8,140 -> 7,314 B) equally on both arms. Hits are unaffected in shape because a filter
+   never saves a hit, so the amortisation curve's saturation-vs-linear result stands; the absolute
+   bytes in it are ~11% high on both arms and must be labelled as such.
+
+### The DIFF_MAX explanation is refuted
+The article says DIFF_MAX costs 1.55x because the generated store's `code/` is 45 GB against 7.6 GB.
+Measured directly, cold random code lookups go the other way:
+
+| arm | code/ | SSTs | bytes/lookup | us/lookup |
+|---|---|---|---|---|
+| state-actor | 45 GB | 734 | **10,513** | **196** |
+| jochemnet | 7.6 GB | 126 | **14,208** | **346** |
+
+Per-lookup code reads are *cheaper* on the generated store. So size alone does not explain it. What
+the benchmark actually shows is an **incremental** effect: going from SAME_MAX (one contract reused)
+to DIFF_MAX (a different contract per access) costs state-actor +1,776 MB and jochemnet only
++383 MB. The monotonic ordering in the code ladder is real; the mechanism attributed to it is not
+established. DIFF_MAX returns to the open list.
+
+Probe now opens any Nethermind database (`ListColumnFamilies`, CF resolved after the open) so
+`code/`, `state/` and `blocks/` can be measured the same way as `flat/`.
