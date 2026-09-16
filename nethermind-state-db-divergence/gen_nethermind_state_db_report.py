@@ -532,6 +532,16 @@ def main():
       "store can hold in a corner. Whatever is happening, it is specific to reading accounts "
       "that exist.</caption></table>")
 
+    bg = BEF["grid"]
+    bcells = [c["thr"] for row in bg.values() for c in row.values()]
+    boff = sum(1 for r in bcells if not (0.9 <= r <= 1.1))
+    w(figure(chart_grid(bg),
+             f"Every opcode against every access mode, before any treatment: "
+             f"{boff} of {len(bcells)} cells are outside &plusmn;10% of parity, ranging from "
+             f"{min(bcells):.2f} to {max(bcells):.2f}. This is not a few bad tests &mdash; it is "
+             f"nearly the whole matrix. The single column that stays dim is the one whose "
+             f"lookups never read an account record at all."))
+
     cc = BEF["cost_curve"]
     w(figure(chart_cost_curves(cc),
              f"Read volume against gas for the contract-reading tests. jochemnet stays flat "
@@ -823,6 +833,15 @@ def main():
              f"throughput ratio underneath follows mechanically: a test reading "
              f"{b0['jocMB']:.1f} MB is swamped by the fixed cost and lands at {b0['thr']:.3f}, "
              f"while anything reading hundreds of megabytes absorbs it and sits at parity."))
+    w(f"<p>Part of this is Defect 2. The control tests read "
+      f"{D['steps']['control']['joc']['setup']:.1f} MB of setup on jochemnet against "
+      f"{D['steps']['control']['sa']['setup']:.1f} MB on state-actor, and whatever that setup "
+      f"leaves in the client's block cache is already resident when the measurement starts. On a "
+      f"test that would otherwise read a megabyte or two, that difference <em>is</em> the "
+      f"measurement. It does not account for all of it &mdash; the totals across both steps are "
+      f"still {D['steps']['control']['joc']['setup']+D['steps']['control']['joc']['test']:.1f} MB "
+      f"against {D['steps']['control']['sa']['setup']+D['steps']['control']['sa']['test']:.1f} MB "
+      f"&mdash; so the remainder stays open rather than being declared solved.</p>")
     w(f"<p>So the model is <code>state-actor &asymp; 1.1 &times; jochemnet + "
       f"{fixed_mb:.0f} MB</code>, and the control row retires as a special case "
       f"rather than a mystery: those tests do no account work, read "
@@ -831,8 +850,10 @@ def main():
       f"&mdash; jochemnet's boot reads more. It is not trie placement &mdash; merging the "
       f"state-node family moved the control by a percent. And it is not the measurement window "
       f"&mdash; the first payload carries almost all of each test's bytes on both arms. Its "
-      f"origin is not yet pinned to a column family, which we would rather say than round off; "
-      f"it is bounded, and invisible to any test that does real work.</p>")
+      f"origin is only partly pinned: some is the cross-step cache carry-over above, the rest is "
+      f"not yet attributed to a column family. Nethermind exposes no RocksDB statistics switch, "
+      f"so that attribution needs client instrumentation we do not have. It is bounded, and "
+      f"invisible to any test that does real work.</p>")
 
     # ---------------------------------------------------------------- three clients
     w("<h2>Three clients, one artifact</h2>")
