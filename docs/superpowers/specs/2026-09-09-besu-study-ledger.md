@@ -2863,3 +2863,94 @@ Three ways out, and the choice changes what gets measured, so it is a decision r
   tree at `<source_dir>/geth/chaindata`.
 - Smoke stores under `/sa-smoke/` (~25 GB), deletable once a fill passes.
 - NVMe free 2,073 GB, jochemnet virgin read-only and untouched.
+
+---
+
+## Round 45 - the fill works. The recipe, and why every earlier attempt failed
+
+**151 passed, 21 failed, 11m12s.** Fixtures written, anchored to the smoke store's own genesis.
+Round 44's conclusion that this was an unfixable harness limitation was wrong, and the thing that
+broke it open was reading the archived **state-actor** bundle instead of reasoning about it.
+
+### Read the archived artifact, not the docs
+
+Round 44 diagnosed against cache entry `6142626aac06abc4`, which is the **jochemnet** bundle:
+`snapshotBlockNumber 0x174795f` = 24,410,463, a post-pre-run mainnet head. The state-actor bundle
+is `3cf555c593bcb136`, and it says something different:
+
+| field | value | what it means |
+|---|---|---|
+| `snapshotBlockNumber` | **`0x0`** | anchored at genesis; the state-actor path needs **no pre-run** |
+| `network` | Amsterdam | an Amsterdam fill on a genesis-anchored store is possible |
+| payload 1 `timestamp` | **`0xd` = 13** | blocks are built on **synthetic** timestamps from genesis, not wall clock |
+| `slotNumber` | `0x0` | present, so the filler does emit it |
+| `filling-transition-tool` | `Geth/v1.17.5-unstable-5749cbce-20260716` | not the `bdf6e17f` the jochemnet bundle used |
+| `_info.url` ref | `2282c757b3699d...` | the state-actor eest ref |
+
+The timestamp is the whole answer. Because blocks are built at genesis+12n, Amsterdam has to be
+active almost at genesis. Round 43 set `--override.amsterdam=1769856769`, a real wall-clock date,
+which put every built block *before* the fork; round 44 then chased the symptom through three
+geth versions. The fix is `--override.amsterdam=1`.
+
+### The recipe that works
+
+```yaml
+builder:
+  eest_payloads:
+    eest_repo: https://github.com/ethereum/execution-specs.git
+    eest_ref: 2282c757b3699d506de112b8a48b6b538df7ed1f   # full 40 chars, payload level
+    targets:
+      - name: geth
+        client: geth
+        filler_client: geth
+        filler_image: docker.io/ethpandaops/geth:glamsterdam-devnet-7
+        source_dir: /path/with/geth/chaindata/underneath
+        output_dir: /data/fixtures/<store>/geth
+        fork: amsterdam
+        gas_benchmark_values: [100]
+        tests: [tests/benchmark/stateful/bloatnet/test_account_query.py]
+        filler_extra_args: ["--override.amsterdam=1"]
+```
+
+Every element is load-bearing, and each one cost an iteration:
+
+1. `eest_ref` is **payload level**; per target it is silently ignored and the run falls back to
+   `forks/amsterdam`. The only evidence is the log line `Using cloned EEST repo for fill
+   commit=...`. Check it every run.
+2. `eest_ref` needs the **full 40-character sha**. `2282c757` is accepted and then ignored.
+3. `--override.amsterdam=1`, **and nothing else**. Adding `--override.bpo1/bpo2` fails with
+   `missing entry for fork "bpo1" in blobSchedule`, because state-actor's genesis schedules only
+   cancun/osaka/prague. Our genesis has no bpo times, so there is nothing to order against and
+   amsterdam=1 is legal on its own.
+4. state-actor at `95e5a10` can emit only **osaka or prague** genesis (`--list-forks`), never
+   amsterdam, so the override is mandatory, not optional.
+5. The geth store needs `<source_dir>/geth/chaindata`. state-actor writes chaindata flat into
+   `--db`. Pointed at the flat directory geth boots on an **empty trie**, reports `accounts=0`,
+   and otherwise looks healthy.
+6. The fill image `benchmarkoor-eest-fill:local` does not auto-build under podman; build it from
+   `ethpandaops/benchmarkoor:pkg/builder/Dockerfile.eest-filler`.
+7. No `pre_runs` for a state-actor store.
+
+Verified on the output: `snapshotBlockNumber 0x0`, `snapshotBlockHash 0x28d1c11afe...` equal to
+the genesis geth logged for that store, `network Amsterdam`, `slotNumber 0x0`, ref `2282c757`.
+Same shape as the archived bundle.
+
+### The 21 failures, and why they do not block us
+
+| tests | n | cause |
+|---|---|---|
+| `test_balance_query`, `test_extcodesize_bytecode_sizes` | 16 | `Stub 'bloatnet_factory_0_5kb' not found in address stubs` |
+| `test_account_access` | 5 | `Transaction 0 in block 3 has receipt status 0, expected 1` |
+
+The 16 need contracts a setup pre-run deploys, and they are **not in our suite**: the 48-category
+grid is `test_account_access` alone. The 5 that are ours reverted, and the likely reason is store
+size: a 4 GB smoke store holds 83,891 contracts in total, against the 150,000 24,576-byte
+`max_diff` contracts the harder account modes need. That is a claim to re-test on the 350 GB
+store, not to assume.
+
+### Generation
+
+`sa-gen-geth-v3` has finished the 422,156,697 EOAs and is on contracts, 3.9% at ~108/s, ETA about
+18 h, then phase 2 builds the trie. The DB is 1 GB so far because phase 1 accumulates into the
+HDD spill and phase 2 writes the store; the earlier besu run had the same shape and took 10h31m.
+No restarts. md2 free 2,066 GB.
