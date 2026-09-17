@@ -2554,3 +2554,92 @@ identical 20 h. Rebuild once, for the store that decides the PR.
 
 Recorded as a prerequisite in `2026-09-17-state-actor-corpus-prompt.md`: whoever regenerates a
 store for validation must produce the geth twin too, or the store cannot be benchmarked at all.
+
+---
+
+## Round 41 - article brought to current status, and two pooled-control bugs it surfaced
+
+Plan adjudicated by debate (plan mode, 2 rounds). Phase 1 of that plan is done and published.
+
+### The attribution the debate forced me to check, and got right
+
+I briefed the debaters that `cf06` 0.433 was the #137/#138 result measured on v2. The critic
+demanded that be verified rather than inferred. It was wrong. `git merge-base --is-ancestor`
+settles it: v2's base is `70f14ee` (#114), and **neither `c0e1162` (#137) nor `95e5a10` (#138)
+is an ancestor of the v2 branch**. v2's only delta is my own `754e8db`, which dropped the
+delegation *rate* to 0.03% rather than making designators repeat. So:
+
+- v2's `cf06` 0.433 is my one-liner's number, not the PRs'.
+- The PRs' store-level evidence is the 4 GB build from `main-95e5a10`: `cf06` **0.447**,
+  reuse **32.0** per bytecode.
+- #137 is the better fix and supersedes mine: it keeps mainnet's delegation rate and pools the
+  designators, where I had merely made them rare.
+
+The article states 0.447 and attributes it to the 4 GB build. Every store-level number in the new
+prose carries the store it was measured on.
+
+### Two bugs found, same root cause, both published wrong until today
+
+1. **Besu, per-workload agreement.** The prose read "per workload rather than per category, 0%
+   becomes 31%". `wl_after` counts over the 660 measurement rows but divided by `len(common)` =
+   1,100, i.e. the control rows were back in the denominator. Correct figure **52%**. Round 32
+   excluded controls from every category median and missed this one statistic.
+2. **Nethermind, cross-client table.** It carried frozen besu literals
+   (`besu_sa_over_plain 0.288`, `besu_sa_over_compacted 0.962`, bytes `2.916`/`1.124`, 108 cells)
+   under a comment claiming they were computed from besu's data file. They were computed over a
+   108-cell set that **pooled the controls in**. The controls sit at parity and read ~0.1x the
+   bytes, so pooling them pulled besu toward agreement: published **0.962x** against a measured
+   **0.908x**, and **2.92x** the bytes against **10.06x**. Now derived live from
+   `besu-state-db-divergence/data/report_data.json` at collect time, controls excluded, with an
+   assert that fails if anyone freezes it again.
+
+Both are the same mistake in two articles: a control designed to prove the harness is honest,
+averaged into the thing it was controlling for.
+
+### Provenance error I published and then fixed
+
+The new prose cited 17,724 disk bytes per cold code read as "the generated store", but that was
+measured on the v2 rebuild, while every other number in the article comes from v1. Re-measured on
+v1: **17,597 bytes** against the snapshot's 901, with v2's 17,724 kept as corroboration that the
+figure is not an accident of one build. 0.7% apart, so the mechanism is identical in both. Wall
+time dropped from the claim: v1 now lives on the HDD array and the snapshot on NVMe, so 232 us
+against 56 us was measuring the device.
+
+### What the article now says
+
+New or rewritten: the #133 own-goal (merged 2026-08-04, our store generated 2026-09-09 from
+`e4cb205-dirty`, **36 days** stale) with the absent-lookup mechanism measured at 1.002 -> 0.010
+blocks; the #137+#138 outcome on account records; the #138 over-correction on distinct code
+(`cf07` 0.056 against 0.371, 6.6x); a "Where this stands" table of three mechanisms and three
+states; and the gas-budget gradient, which rules out both a fixed per-read and a fixed per-block
+cost. The +/-10% band no longer reads as "half the suite is clean": 0 of 48 categories reach
+parity, 0 of 660 workloads beat the snapshot, and the closest category is 5.7% slow once the
+control offset is taken as the true zero.
+
+New oracles, each one guarding a sentence: no dash may reach the page (entity or literal); no
+measurement workload may beat the snapshot; no category may reach parity; the gradient must be
+non-increasing per class and flat within 0.02 for the control; the nethermind besu reference must
+be a controls-excluded derivation over at least 40 cells.
+
+Numeric non-regression versus the previous build: **exactly one token removed, `31`**, and 66
+added, all in the new sections. No unrelated computed value moved.
+
+Published `b37978e`, both articles live and byte-identical. The user had pushed three nethermind
+commits mid-flight; their work was taken wholesale and my correction re-applied on top of it.
+
+### One plan step dropped
+
+The plan called for archiving v2 to HDD (~500 GB, 5-7 h) before wiping it, because wiping makes
+its measurements unreproducible. That is no longer true: the only published number that came from
+v2 has been re-measured on v1, which is already archived at `/data/sa-besu-archive/v1`. v2 is a
+diagnostic store from a superseded tree with no payload bundle and no geth twin, so nothing can
+ever be benchmarked on it. Skipping the archive, and recording that as a decision rather than an
+omission.
+
+### Safety rails in place before any disk work
+
+`/dev/loop0` (jochemnet virgin, 1,122 GB, the only copy of the snapshot store) set read-only via
+`blockdev --setro`, verified. The stale schelk state file renamed to
+`state.json.jochemnet-stale.DO-NOT-RESTORE.loop-ids-wrong` and chmod 000, because it names
+`/dev/loop1` as its scratch and loop1 is now a live volume. `run-stages.sh` chmod 000 and replaced
+by `run-stages-v3.sh` with `teardown()` deleted, that function being `rm -f /schelk-vols/*.img`.

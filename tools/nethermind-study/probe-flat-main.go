@@ -276,6 +276,9 @@ func rebuildCFs(path string, want []string, targetLevel int) {
 	// whose data is parked at L3 therefore gets rewritten *into L3* and stays compaction-pending;
 	// the round-18 rebuild only reached L6 on jochemnet because its data was already there.
 	if targetLevel >= 0 {
+		// target_level is ignored unless change_level is set: RocksDB only relocates output
+		// files when explicitly told the level may change.
+		cro.SetChangeLevel(true)
 		cro.SetTargetLevel(int32(targetLevel))
 	}
 
