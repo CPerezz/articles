@@ -2710,3 +2710,80 @@ holding at 2,073 GB. Supervised as `gen-geth-v3`.
 Next, in order: 2-test fill against the geth smoke store to validate flags and builder wiring;
 besu 350 GB generation after the geth twin finishes (sequential, the spill is seek-bound); store
 gates on both; full fill; then the 129-test go/no-go arm before any 22 h arm.
+
+---
+
+## Round 43 - the fill pipeline wired end to end, and the one blocker left
+
+Phase 0 of the plan, done on 4-5 GB smoke stores rather than after 11 h of generation. Six
+defects found and cleared in sequence; the seventh is the real one.
+
+### The builder config schema, learned from the validator
+
+`/usr/local/bin/benchmarkoor` is 70 MB and mode `--x`, not readable, which is why `strings`
+returned nothing for every field name and briefly suggested the binary had no eest support. It
+does. The validator is a better source of truth than any guess, and it teaches the schema one
+error at a time:
+
+- `builder.eest_payloads.targets[].filler_client` is **required**, and the supported set is
+  **`geth, besu, nethermind`**. Worth recording against round 40, which concluded from upstream
+  docs that only geth can fill: benchmarkoor at least believes Besu can. Not yet tested.
+- `tests`, `fork`, `gas_benchmark_values`, `filler_client`, `filler_image`, `source_dir`,
+  `output_dir` are **per target**.
+- `eest_repo` and `eest_ref` are **eest_payloads-level**. Set per target they are silently
+  ignored, and the run falls back to the default `forks/amsterdam`. That failure is invisible
+  except in one log line, `Using cloned EEST repo for fill commit=...`; check it every time.
+- `eest_ref` needs a **full 40-character sha**. `2282c757` was accepted and then ignored.
+- The fill container image defaults to `benchmarkoor-eest-fill:local` and the embedded
+  Dockerfile did not auto-build under podman. Built by hand from
+  `ethpandaops/benchmarkoor:pkg/builder/Dockerfile.eest-filler` and tagged to that exact name.
+- The geth store needs a datadir layout: state-actor writes chaindata flat into `--db`, geth
+  wants `<source_dir>/geth/chaindata`. Pointed at the flat directory, geth boots on an **empty
+  trie** and reports `accounts=0` while looking perfectly healthy. A hardlink tree fixes it.
+- Fork activation: without it `eth_blobBaseFee` returns null and the filler dies on
+  `int(None, 16)`. With `--override.amsterdam=1` geth refuses the fork ordering, `bpo2` being
+  enabled at 1767747671. The override has to sit after the last scheduled fork.
+
+### The two eest refs, and a correction to round 42
+
+The archived arms were **not** filled at one ref. The jochemnet bundle is
+`d9ad55b3` (2026-08-06); the state-actor bundle is `2282c757` (2026-07-22). Round 42 pinned
+`d9ad55b3` for a state-actor store, which is the wrong lineage. This is also the most likely
+source of the 1.9% control offset that has been unexplained since round 34: the two arms ran
+payloads built two weeks and one ref apart.
+
+### The blocker
+
+Whichever coherent pair is used, the fill fails on the same thing:
+
+- eest `2282c757` + geth master: geth rejects the payload attributes,
+  `JSONRPCError -32602 {'err': 'nil slotnumber post-amsterdam'}`. The July filler does not send
+  a slot number; September geth requires one.
+- eest `forks/amsterdam` (a9792ab) + geth master: the filler refuses first,
+  `AssertionError: fork requires a slot number in the block header but the client does not
+  report one for its head block`.
+
+Both are one cause: **a genesis block carries no slot number, and we are filling for Amsterdam.**
+Generating with `--fork` omitted, which state-actor documents as "the latest fork the chosen
+client can write", does not help, and the reason is worth keeping: the fork sets the genesis
+header and config, not the account state, so the state root came out identical
+(`0xe600513f...`) to the `--fork=osaka` store. **Which means the 350 GB generation already
+running is not wasted.**
+
+The fix is the stage the jochemnet pipeline has and the state-actor pipeline does not:
+`builder.pre_runs`, which advances the store one funded, gas-ramped block past the fork boundary
+and persists the result for `eest_payloads` to build on. The archived state-actor fill never
+needed it because its eest/geth pair predated the slot-number requirement entirely.
+
+### State
+
+- `sa-gen-geth-v3` running, phase 1 at 59.5%, 234k accounts/s, spill on md3, md2 free steady.
+  Usable as-is per the state-root finding above.
+- Fill image built; `ethpandaops/geth:master` pulled (1.17.6-unstable, `6c5b3cc3`); eest clone
+  cache at `/root/.cache/benchmarkoor/eest-repos`.
+- Smoke stores at `/sa-smoke/{geth,besu,geth-latest}` plus the hardlink datadir trees, ~20 GB,
+  to be deleted once the pipeline passes.
+- Next: add a `builder.pre_runs` target ahead of `eest_payloads`, re-run the 2-test fill on the
+  smoke store, and only then fill the real twin. Also worth one cheap test while the generation
+  runs: `filler_client: besu`, which if it works removes the geth twin from every future
+  regeneration.
