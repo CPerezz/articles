@@ -1439,3 +1439,51 @@ fresh .NET process. Hypothesis: .NET tiered compilation still promoting the inte
 methods during state-actor's measurement (tier-0 code = proportional slowdown; tiering thread =
 extra parallel CPU; no I/O; worst on short CPU-bound payloads). Decided by the `.NET Tiered Com`
 share inside test-step windows, from /proc utime+stime per task at 0.5 s.
+
+## Round 28 (result) - the thread profile names it: RocksDB compaction on state-actor
+
+Per-thread CPU (utime+stime from /proc, 0.5 s) inside the measured steps of 40 identical
+control tests, published config:
+
+| thread | jochemnet | state-actor |
+|---|---|---|
+| rocksdb:low | 0.00 | **25.43 s (41%)** |
+| .NET Tiered Com | 22.60 (70%) | 21.06 (34%) |
+| .NET TP Worker | 8.91 (28%) | 10.93 (18%) |
+| .NET BGC | 0.01 | 3.71 (6%) |
+| total | 32.2 s / 0.71 cores | 61.9 s / 1.24 cores |
+
+RocksDB's low-priority background thread - compaction - accounts for 25.4 of the 29.7 extra
+CPU-seconds. Tiered JIT compilation is large but symmetric (~22 s inside the windows on both
+arms): a cost of restarting the client per test, not the difference. The JIT-timing hypothesis
+(setup 0.24 s vs 0.04 s wall) is therefore dead.
+
+**Correction to earlier statements this session:** the compaction treatment (round 18) was
+applied to *jochemnet*, not state-actor. Level layouts prove it: jochemnet Account L6:37,
+StateNodes L6:158 (the rebuilt shape); state-actor Account **L3:92 (23.7 GB)**, Storage L4:404,
+Metadata L1, StateNodes L6:602 - exactly as generated. `rocksdb.compaction-pending=1` on
+state-actor's Account CF and 0 on every other CF. Mechanism: the generator leaves Account parked
+at L3; the client opens with auto-compaction on and immediately schedules it; it runs through
+the measured step on rocksdb:low; container-recreate discards the work; the same compaction
+restarts on every one of 1,463 tests. With the page cache dropped it re-reads its input SSTs
+(the 96 MB); with drops disabled the inputs were cached, reads went to zero, CPU stayed (E4).
+CPU-bound cells lose ~30-40% to the contention, I/O-bound cells hide it, writes are unaffected
+or faster - the three regimes of round 27.
+
+DIFF_MAX detail: both arms' max-size contracts are the same EEST filler (`00 || address ||
+0x5b x 24,555`), so code content is not the difference; EXTCODESIZE-in-DIFF_MAX at 0.626
+(no jumpdest analysis) equals CALL-in-DIFF_MAX, so the cost is in loading, under compaction
+contention on CPU and NVMe. Storage `SlotEncoding` (RLP on state-actor, legacy on jochemnet)
+is a separate, storage-only generator-version difference.
+
+## Round 32 (running) - settle state-actor's Account CF, promote, re-measure
+
+Rounds 29-31 (parallel-execution and JIT A/Bs, DIFF_MAX read attribution) were stopped as moot.
+Killing them with SIGKILL wedged jochemnet's dm-era device; recovered with `dmsetup remove` +
+`schelk full-recover` (1.6 TB, 17 min). Lesson recorded: never SIGKILL a benchmarkoor run.
+Plan: `probe-flat -mode rebuild -cf Account` on state-actor (CompactRange, bottommost force,
+the store's own per-CF specs - the round-18 path), `schelk promote`, then control (40) and the
+regime-3 slice (DIFF_MAX/SAME_MAX/warm/sload_same_key/NON_EXISTING at 160M) on state-actor
+only, against the published runs as baseline. Pre-registered prediction: control 0.708 -> >0.9,
+DIFF_MAX code-exec 0.64 -> >0.9, sload_same_key 0.81 -> >0.9, warm query 0.90 -> ~1.0;
+compaction-pending=0 after promote; rocksdb:low absent from a re-profile.
