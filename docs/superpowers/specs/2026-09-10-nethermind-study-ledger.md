@@ -1592,3 +1592,38 @@ measurement on every arm - the pre-run problem again, at the JIT level.
 
 Round 35's ledger text landed inside commit 7243233 (another workstream's `git add -A`);
 content intact.
+
+## Round 36 (result) - CONFIRMED: regime 3a is JIT warm-up, from the fixtures' extra empty block
+
+40 control tests per arm, published config, state-actor on the settled-Account image:
+
+| variant | thr sa/joc | cpu sa/joc | sa control step | joc control step |
+|---|---|---|---|---|
+| baseline | 0.726 | 1.538 | 0.165 s (30.7 MGas/s) | 0.118 s (45.2) |
+| `--Blocks.ParallelExecution=false` (+BatchRead) | 0.556 | 1.864 | 0.132 s | 0.075 s |
+| **`DOTNET_TieredCompilation=0`** | **1.143** | 1.520 | **0.094 s (55.3)** | 0.110 s (48.3) |
+
+Pre-registered prediction held: removing tiered JIT moved control from ~0.70 to 1.14. The gain is
+asymmetric (state-actor +43%, jochemnet +7%) because the asymmetry *is* warm-up: jochemnet's
+first (warm-up) block is its EVM-heavy setup block, state-actor's is a 0-gas fork-activation
+block the fixtures add because its chain starts at genesis, so its EVM enters the measured
+block 1.4 ms after 46 ms of tier-0 execution. Parallel execution exonerated (disabling it hurts
+state-actor more). Regime 3a - control, sload_same_key, warm query, non-existing, ~660 tests -
+is a fixture-structure artifact, not a store property. Java-based clients (Besu) may carry the
+same artifact on the same fixtures.
+
+## Round 37 - perf with JIT symbols: not run (filter selected 0 tests; opcode precedes
+`overhead_baseline` in the id - third time). Superseded by round 36.
+
+## Round 38 (running, night3) - the code DB carries the same generator defect
+
+state-actor `code/` (cf default): 134.4M entries, **L4:734 files, 45.7 GB, compaction-pending=1**,
+no bloom filter. jochemnet `code/`: L0:3 (9 MB) L1:6 (132 MB) L3:117 (6.9 GB), pending=1 but
+small enough to finish at boot. Every DIFF_MAX test hammers this DB while the client compacts
+45 GB underneath it - the +1.4 GB reads and +5 s per test, and the 9 s of rocksdb:low that
+survived settling Account. `compactWholeDB` gained change_level/target 6 and
+disable_auto_compactions; night3 settles it, promotes, re-measures DIFF_MAX (slice38), then runs
+the regime-3 slice (R39) and the 266 subset (R40) on both arms with TieredCompilation=0.
+Follow-up owed: settle jochemnet's code DB too for strict symmetry (small, fast).
+The first night2 attempt mis-read an empty probe result as "settled" (probe needed `-cf default`);
+night3 refuses to proceed on an empty probe.
