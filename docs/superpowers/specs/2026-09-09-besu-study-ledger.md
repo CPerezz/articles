@@ -3031,3 +3031,79 @@ Rate recovered from 90/s once the smoke fills stopped competing for the array. W
 Next actions, in order, each now a single command: `gate-v3.sh` on the finished pair, then
 `benchmarkoor build --config v3-fill.yaml`, then the fixture-anchor oracles, then the schelk pair
 and the 129-test go/no-go before any 22 h arm.
+
+---
+
+## Round 47 - a missing flag invalidated the first generation, and the whole campaign is now armed unattended
+
+### The bug: `--spec` is not optional
+
+Validating the last unproven link before an unattended run found a defect that would have killed
+the campaign at roughly hour 30. Running the geth-filled smoke fixtures against the besu smoke
+store got past the anchor (no SYNCING, so **a geth-filled bundle does drive a besu arm** - that
+assumption is now proven) and then died inside Besu:
+
+```
+SystemCallNoCodeAtAddressException: Invalid system call address: 0x0000bff46984e3725691fa540a8c7589300d8282
+```
+
+That address is in `/home/CPerezz/state-actor-spec-baseline.yaml`, byte-exact:
+
+```yaml
+- kind: contract
+  name: eip8282-builder-deposit-requests-glamsterdam-devnet-7
+  address: 0x0000bff46984e3725691fa540a8c7589300d8282
+```
+
+with a comment stating that clients reject a block if these have no code. The archived runs passed
+`--spec` explicitly; my generations did not, so they used state-actor's built-in default, which
+omits the EIP-8282 devnet-7 builder-request predeploys. With `--spec` the generator gains a
+**phase 0, spec storage**, which materialises exactly the template entities the harder account
+modes need, and which my specless runs never had.
+
+The specless geth generation was killed at ~7% of contracts and its 650 GB reclaimed. Cheap
+lesson: **an omitted flag produced a store that generated, gated and filled perfectly and only
+failed at the arm.** The one-test arm gate is what would have caught it, which is why it is now a
+phase of its own rather than a step inside the big arm.
+
+### Also settled
+
+- A geth-filled bundle's `snapshotBlockHash` matches the besu store's genesis. This was the
+  load-bearing assumption behind the whole twin approach and it had never been tested.
+- `local_fixtures_dir` needs `fixtures_subdir: blockchain_tests_stateful_engine`; without it
+  benchmarkoor looks for `fixtures/blockchain_tests_engine_x` and fails.
+
+### `/root/bench/run-v3-campaign.sh` - armed, detached, needs nobody
+
+Six phases, each writing to `/root/bench/v3-campaign.state`, each failing fast with a marker
+rather than cascading:
+
+1. **generate the geth twin** with `--spec`, detached under dockerd, spill bind-mounted to the
+   HDD array. Refuses to continue on a nonzero exit.
+2. **hardlink datadir tree** at `/sa-geth/v3-dd/geth/chaindata`, free, and the layout without
+   which geth silently opens an empty trie.
+3. **generate the besu store**, same flags. Sequential on purpose: both spill to the same array
+   and phase 1 is seek-bound.
+4. **store gates** via `gate-v3.sh`: state roots must match, and only the root is asserted, never
+   `accounts_created`/`contracts_created`, because round 42 measured the two writers agreeing on
+   the root while disagreeing on both counters.
+5. **fill** at `2282c757` with `--override.amsterdam=1`. The exit code is deliberately ignored,
+   because `test_balance_query` and `test_extcodesize_bytecode_sizes` always error without an
+   address-stub mapping and neither is in our grid. Judged instead by oracles: the eest ref in the
+   log must be `2282c757`, every fixture must carry **one** anchor, and there must be at least 300
+   `test_account_access` ids. Then the twin is reclaimed, which is what makes room for the arm.
+6. **provision the schelk pair**, refusing to proceed if a new loop device lands on loop0, then a
+   **one-test arm gate** that must pass 1/1, then the **129-test go/no-go arm** with the archived
+   filter so the comparison is like for like.
+
+Hard rules encoded in the script: loop0 is verified `blockdev --getro 1` before anything runs;
+no image is ever removed by glob; nothing runs concurrently with an arm.
+
+Deliberately **not** automated: the analysis and the second publish. Numbers get reviewed before
+they go on a page.
+
+### State at arming
+
+Phase 0 spec storage running at 251 slots/s, 3 spec warnings confirming the baseline spec is
+loaded, spill on md3, md2 free 2,054 GB, loop0 read-only and untouched. Watched by `v3-campaign`.
+Expect roughly 10-11 h per generation from the v2 precedent, so about 24-30 h to the go/no-go.

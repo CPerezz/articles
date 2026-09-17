@@ -143,6 +143,8 @@ func openRW(path string) (*grocksdb.DB, []*grocksdb.ColumnFamilyHandle) {
 func compactWholeDB(path string) {
 	opts := grocksdb.NewDefaultOptions()
 	opts.SetCreateIfMissing(false)
+	// Only the explicit CompactRange may write; a background job would race it.
+	opts.SetDisableAutoCompactions(true)
 	names, err := grocksdb.ListColumnFamilies(opts, path)
 	if err != nil {
 		log.Fatalf("list cfs %s: %v", path, err)
@@ -150,6 +152,7 @@ func compactWholeDB(path string) {
 	cfOpts := make([]*grocksdb.Options, len(names))
 	for i := range cfOpts {
 		cfOpts[i] = grocksdb.NewDefaultOptions()
+		cfOpts[i].SetDisableAutoCompactions(true)
 	}
 	db, handles, err := grocksdb.OpenDbColumnFamilies(opts, path, names, cfOpts)
 	if err != nil {
@@ -167,8 +170,14 @@ func compactWholeDB(path string) {
 	fmt.Printf("db=%s cfs=%v\n", path, names)
 	fmt.Printf("  levels before : %v\n", shape())
 	start := time.Now()
+	// Same trap as rebuildCFs: without change_level + target_level the output lands in the
+	// deepest level that already has files, which for a generated store is not the bottom.
+	cro := grocksdb.NewCompactRangeOptions()
+	cro.SetBottommostLevelCompaction(grocksdb.KForce)
+	cro.SetChangeLevel(true)
+	cro.SetTargetLevel(6)
 	for i, h := range handles {
-		db.CompactRangeCF(h, grocksdb.Range{Start: nil, Limit: nil})
+		db.CompactRangeCFOpt(h, grocksdb.Range{Start: nil, Limit: nil}, cro)
 		fmt.Printf("  compacted cf %-12s (%.1f s elapsed)\n", names[i], time.Since(start).Seconds())
 	}
 	fmt.Printf("  levels after  : %v\n", shape())
@@ -424,6 +433,14 @@ func main() {
 		w.Flush()
 		f.Close()
 		fmt.Printf("sampled %d random-seek keys from cf=%s -> %s\n", count, *cfName, *keysFile)
+
+	case "files":
+		// RocksDB keeps every CF's SSTs in one directory, so a traced read of "001234.sst" says
+		// nothing by itself. The live-files list maps each file to its CF and level; joined with
+		// the tracer's per-inode bytes it attributes I/O to column families.
+		for _, f := range db.GetLiveFilesMetaData() {
+			fmt.Printf("%s %s %d %d\n", strings.TrimPrefix(f.Name, "/"), f.ColumnFamilyName, f.Level, f.Size)
+		}
 
 	case "dump":
 		// Full key+value dump, for column families small enough to read whole. The Metadata CF
