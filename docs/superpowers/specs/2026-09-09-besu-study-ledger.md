@@ -2787,3 +2787,79 @@ needed it because its eest/geth pair predated the slot-number requirement entire
   smoke store, and only then fill the real twin. Also worth one cheap test while the generation
   runs: `filler_client: besu`, which if it works removes the geth twin from every future
   regeneration.
+
+---
+
+## Round 44 - the fill blocker is the harness, not the config or the client
+
+Continued from round 43. Every config defect is now cleared and the failure has been narrowed to
+one thing that config cannot fix.
+
+### The geth version is not the variable
+
+Pulled `ethpandaops/geth:glamsterdam-devnet-7` and it is **the exact archived filler**:
+`Git Commit bdf6e17fdf6f423bf46b85167b455654cc48766e`, matching the archived fixtures'
+`filling-transition-tool: ClientBackend[Geth/v1.17.6-unstable-bdf6e17f-20260803]`. It has
+`--override.amsterdam`. It still fails identically:
+
+```
+building gas-bump block 1: engine_newPayloadV5: RPC error -32602: Invalid parameters
+```
+
+The matrix, for the record:
+
+| filler image | `--override.amsterdam` | result |
+|---|---|---|
+| `geth:master` (1.17.6, `6c5b3cc3`, Sep) | yes | gas-bump block rejected, `nil slotnumber post-amsterdam` |
+| `geth:glamsterdam-devnet-7` (1.17.6, `bdf6e17f`, Aug) | yes | gas-bump block rejected, same -32602 |
+| `geth:bal-devnet-7` | **no** | `flag provided but not defined: -override.amsterdam` |
+
+### What the archived artifacts prove
+
+- The archived fixtures carry `slotNumber` **present, value `0x0`**, with `newPayloadVersion: 5`.
+  So the pipeline that produced them did emit the field.
+- The artifact tree contains `benchmarkoor-build-artifacts/pre-runs/geth/pre_run_bundle`, so the
+  pre-run stage is real and was used.
+- That cached bundle's `snapshotBlockNumber` is `0x174795f` = **24,410,463**, a jochemnet head
+  after its pre-run, not a state-actor genesis. Which means the bundle I diagnosed against in
+  round 39 was the **jochemnet** one, and the round-39 statement that the state-actor bundle
+  demands `0x4525339a` needs re-checking against the actual state-actor bundle before it is
+  relied on. The conclusion of round 39 is unaffected: payloads are anchored per store and must
+  be refilled. The specific hash attribution is not.
+
+### Where that leaves it
+
+The installed `benchmarkoor` builds its gas-bump block without the Amsterdam fields geth requires
+of `engine_newPayloadV5`, and a state-actor genesis has a timestamp of 0 while block 1 is built at
+wall-clock time (now 1789662982 against an Amsterdam activation of 1769856769), so block 1 is
+unavoidably post-Amsterdam. There is no activation timestamp that puts the gas-bump block before
+the fork and the benchmark blocks after it, because the harness builds both after genesis with
+real timestamps. This is a harness limitation, not a configuration error, and the archived
+state-actor fill never hit it because it ran an older toolchain end to end.
+
+Three ways out, and the choice changes what gets measured, so it is a decision rather than a fix:
+
+1. **Newer benchmarkoor.** The upstream build that produced the archived artifacts emits
+   `slotNumber`. Getting a build whose gas-bump path does the same unblocks everything and keeps
+   the fork at Amsterdam. Cost: unknown, depends on upstream.
+2. **Fill at Osaka instead.** The pipeline would very likely run, since the whole slot-number
+   requirement is post-Amsterdam. Cost: the arm no longer matches the archived Amsterdam arms, so
+   the snapshot arm has to be re-derived and re-run at Osaka too, and the published comparison
+   moves fork.
+3. **Ask upstream for a state-actor genesis that can anchor an Amsterdam fill**, i.e. one whose
+   head carries a slot number. This is the same class of request as the corpus PR and could ride
+   with it.
+
+### State left running and on disk
+
+- `sa-gen-geth-v3`: phase 1 at 80.2%, 211k accounts/s. **Keep it.** Round 43 established that the
+  genesis fork does not change the account state (identical state root `0xe600513f...` with
+  `--fork=osaka` and with `--fork` omitted), so this store anchors any fork choice.
+- Fill image `benchmarkoor-eest-fill:local` built; `geth:master` and `geth:glamsterdam-devnet-7`
+  pulled; eest clone cache at `/root/.cache/benchmarkoor/eest-repos`.
+- Working config `/root/bench/v3-fill-smoke.yaml`, with the schema corrections of round 43 baked
+  in: per-target `tests`/`fork`/`filler_client`/`filler_image`/`source_dir`/`output_dir`,
+  payload-level `eest_repo`/`eest_ref` with a full 40-char sha, and the geth datadir hardlink
+  tree at `<source_dir>/geth/chaindata`.
+- Smoke stores under `/sa-smoke/` (~25 GB), deletable once a fill passes.
+- NVMe free 2,073 GB, jochemnet virgin read-only and untouched.

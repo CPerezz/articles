@@ -1534,3 +1534,33 @@ unmoved CF - same options, same level, no behavioural change. RocksDB ignores `t
 unless `change_level=true` is also set. Wired both; the driver was stopped between runs (never
 SIGKILL a benchmarkoor run) and round 35 re-runs the sequence with a guard that refuses to
 promote unless the rebuild reports `pending=0` and `levels=L6:`.
+
+## Round 35 (result) - Account settled at L6; the compaction was real and was NOT the cause
+
+With `change_level=true` + `target_level=6`: `Account L3:92 -> L6:92, pending=0` (234 s),
+promoted (33 GB, 20 s), verified on the virgin image. Re-measured on state-actor only, against
+the published runs on identical ids:
+
+| cell | thr before | thr after | cpu before | cpu after | sa reads before | after |
+|---|---|---|---|---|---|---|
+| CONTROL (40) | 0.695 | **0.697** | 2.28 | 1.71 | 85.7 MB | 12.1 MB |
+| DIFF_MAX code-exec (8) | 0.638 | 0.653 | 1.11 | 1.06 | 5603 | 5453 |
+| SAME_MAX code-exec (8) | 0.980 | 0.992 | 1.00 | 1.03 | | |
+| NON_EXISTING code-exec (8) | 0.946 | 1.058 | 1.31 | 1.16 | | |
+| warm query (7) | 0.891 | 0.850 | 1.19 | 1.18 | 228.8 | 13.8 |
+
+Profile on the settled image: rocksdb:low 8.97 s (was 21.7-25.4), BGC 0.68 (was 3.7-4.3),
+Tiered Com 21.6, TP Worker 11.4 (joc 8.9); 43.7 CPU-s / 0.91 cores (was 56-62 / 1.2). The
+generator defect is fixed in the image and the re-reads are gone. **Control throughput did not
+move.** The compaction thread was a genuine, now-removed difference, and it was not what made the
+control loop slow. Falsified by intervention.
+
+What remains: the executing threads themselves do ~28% more work on state-actor (TP Worker
+11.4 vs 8.9 s over 40 tests; the extra ~2.5 CPU-s equals the extra wall time, 40 x ~50 ms).
+Identical payload, reads now 12 MB, contention mostly gone. Candidates for a per-iteration CPU
+multiplier on identical code: JIT tier state at measurement time (jochemnet's setup waits
+0.2 s on I/O, state-actor's does not) and optimistic parallel execution re-running conflicting
+transactions. Both are the round-29 A/Bs I cancelled; they run next.
+
+Host stopped completing SSH sessions at ~15:55 UTC (banner returned, key accepted, session setup
+stalls - the round-5 signature; cleared on its own after ~2 h then). Nothing of mine was running.
