@@ -343,6 +343,31 @@ func main() {
 	ro := grocksdb.NewDefaultReadOptions()
 	ro.SetFillCache(false) // each lookup must pay its own way
 
+	// The control-test gap is ~96 MB of reads for a payload that touches no accounts. A cold
+	// client must fault in each SST's index and filter before it can answer anything, and those
+	// blocks live outside the block cache when cache_index_and_filter_blocks is false. So the
+	// per-CF index+filter footprint is a candidate for a fixed per-boot cost, and RocksDB will
+	// report it without a new binding: aggregated-table-properties is a plain string property.
+	if *mode == "props" {
+		for i, nm := range openedCFNames {
+			fmt.Printf("######## CF %s ########\n", nm)
+			for _, p := range []string{
+				"rocksdb.aggregated-table-properties",
+				"rocksdb.levelstats",
+				"rocksdb.estimate-num-keys",
+				"rocksdb.total-sst-files-size",
+				"rocksdb.live-sst-files-size",
+			} {
+				v := db.GetPropertyCF(p, handles[i])
+				if v == "" {
+					continue
+				}
+				fmt.Printf("---- %s\n%s\n", p, strings.TrimRight(v, "\n"))
+			}
+		}
+		return
+	}
+
 	switch *mode {
 	case "sample":
 		// Walk the CF and keep every stride-th key, giving a spread across the whole keyspace

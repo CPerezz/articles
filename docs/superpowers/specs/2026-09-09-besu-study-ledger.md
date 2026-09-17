@@ -1955,3 +1955,91 @@ paragraph.
 **Correction on the record:** rounds 20, 29 and 30 recorded "40 of 40 EXISTING categories within
 the band, median 5.4%". Superseded 2026-09-16: that was 24 of 40 within the band on measurement
 rows, with 16 at 17.7%. The claim that every existing class converges was pooling, not physics.
+
+---
+
+## Round 33 - regenerated from latest main: two of three cleared, one did not
+
+### The premise was wrong, and in a useful direction
+
+No PRs were filed. `ethereum/state-actor` has two open PRs, #109 (July) and #21 (April), neither
+related; nothing from CPerezz since 2026-09-01, nothing in forks, no branch newer than main.
+
+But two of the three fixes were already on `main`:
+
+- **`11389bc` `fix(besu): align generated RocksDB configuration (#133)`, 2026-08-04.** "Besu Bloom
+  filters are now enabled on every column family... full Bloom filter at 10 bits/key, matching
+  Besu", with a `TestEveryColumnFamilyHasBloomFilter` guard. It fixes the exact defect round 24
+  found: `bf := NewBloomFilter(10)` was reused across CF table options and `SetFilterPolicy`
+  takes ownership of the native policy, so every CF after the first silently got none.
+- **`70f14ee` `Add configurable-sized contract templates (#114)`, 2026-08-26.**
+
+Our store was generated 2026-09-09 from `e4cb205-dirty`, a dirty WIP tree not even a valid object
+in the repo today. **The filter defect we wrote up for upstream had been fixed a month before we
+measured it.** We benchmarked a stale build. That is ours, not theirs.
+
+### What was built
+
+Branch `besu-residual-integration` = `origin/main` (70f14ee) + `754e8db`, which sets
+`DefaultEOAFlavors().HasDelegation` from 0.30 to 0.0003. The 0.30 was documented as
+"mainnet-shaped" and is not: mainnet designators are 4.2% of 2,416,222 code records, about 101,500
+against 354,792,873 accounts, or 0.03%. The arithmetic closed exactly beforehand: 0.30 x ~430M
+autofilled accounts = ~129M, against 134.4M cf07 records at 94.6% designators.
+
+Regenerated with the same spec, seed 42, fork osaka, gas-limit 1e9, target 350GB. 10h31m,
+exit 0. `accounts_created` 422,329,889 + `contracts_created` 8,366,849 = 430,696,738, identical to
+v1's account total; contracts 16x fewer. New state root `0x2efb7792...`, DB 524 GB on disk.
+
+### Verdict, measured on the store
+
+| | v1 (what the article measured) | v2 | mainnet snapshot |
+|---|---|---|---|
+| filter policy, every CF | `(none)`, 0 B | **bloomfilter, 10.00 bits/key** | bloomfilter, 10.00 bits/key |
+| 23-byte 7702 designators in cf07 | 94.6% | **3.4%** | 4.2% |
+| plain-EOA share | 68.6% | **98.1%** | 80.8% |
+| cf06 phys/log | 0.513 | **0.422** | 0.434 |
+| cf06 compressed B/block | 16,697 | **13,755** | 14,147 |
+| account block, modelled | 9,249 B | **4,860 B** | 5,590 B |
+| cf07 entries | 134,442,676 | **7,916,852** | 2,416,222 |
+| cf07 phys/log | 0.863 | **0.840** | 0.371 |
+| code-read block, modelled | 10,718 B | **11,105 B** | 5,912 B |
+| code-block co-tenants | 32.5 x 352 B | **2.2 x 5,613 B** | 2.4 x 7,298 B |
+
+**P-bloom - CLEARED.** Filters on every column family at exactly 10 bits/key, matching Besu. The
+8.5x absence class has no mechanism left.
+
+**P-account - CLEARED, and over-corrected.** cf06 now compresses *better* than the snapshot
+(0.422 vs 0.434) and its blocks are smaller (13,755 vs 14,147). The reason is worth naming: the
+delegation fix took the contract share to 1.94% where mainnet is 19.2%, so this arm now
+under-represents contracts instead of over-representing delegations. Parity by accident, from the
+other side.
+
+**P-code - NOT CLEARED.** The modelled block a distinct-contract read fetches went 10,718 ->
+11,105 B against the snapshot's 5,912: unchanged, 1.88x. The co-tenant *count* now matches mainnet
+(2.2 against 2.4), but the co-tenants are unique incompressible ~5.6 KB contracts (cf07 phys/log
+0.840) where mainnet's are ~7.3 KB contracts that compress to 0.449. This was the prediction made
+before launching, and it held.
+
+So the remaining dig is exactly PR 3, bytecode **reuse**: mainnet serves 68.1M contract accounts
+from 2.42M distinct bytecodes, about 28 per blob; v2 serves 8.37M from 7.92M, about 1.06 per blob.
+Fixing size without fixing reuse leaves the code block where it was.
+
+### Two operational lessons
+
+1. An attached `docker run` launched over `tsh ssh` died at 16m25s with rc=137 and no kernel OOM,
+   no systemd-oomd, no cgroup limit and no error output: the container's lifetime was tied to the
+   SSH session. `docker run -d` under dockerd survived 10.5 h. Generation belongs to the daemon,
+   not to a login session.
+2. `TMPDIR` is not honoured for the streamsort spill; it went to the container's `/tmp`, on the
+   root device, and reached 176 GB in one hour while `du` of the DB showed 44 GB. Bind-mounting
+   `/tmp` onto the 9 TB array fixed it and cost wall time (10.5 h against v1's 4.9 h, spill moved
+   from NVMe to HDD). Mount the spill explicitly; do not trust the variable.
+
+### Still open
+
+The throughput re-run. NVMe is now at 96% (145 GB free) and the SA arm's expected path
+`/schelk/state-actor/v1/besu` no longer exists, since the 1.4 T schelk volume is 81% full with the
+jochemnet snapshot. Device parity, both arms on md2 NVMe, is a controlled variable. Plan: only the
+state-actor arm needs re-running, compared against the archived treated-jochemnet results, valid
+within the measured 0.2-1.3% pipeline reproducibility. That frees `besu-joc-scratch.img` (1.4 T,
+restorable from virgin) to make room for a v2 volume on NVMe.
