@@ -293,9 +293,12 @@ data["status"] = {
     # Absent-lookup cost, measured directly with a RocksDB probe on each store.
     "filters": {"unfiltered_blocks": 1.002, "filtered_blocks": 0.010,
                 "snapshot_blocks": 0.038, "filter_useful": 0.990, "bits_per_key": 10.0},
-    # One cold read of a DIFF_MAX contract, disk bytes from /proc/self/io.
-    "code_read": {"store": "350 GB rebuild", "sa_bytes": 17724, "snap_bytes": 901,
-                  "sa_us": 231.9, "snap_us": 56.0},
+    # One cold read of a DIFF_MAX contract, disk bytes from /proc/self/io, page cache
+    # dropped first. Measured on the store this article measures; a later rebuild of the
+    # same generator lineage gave 17,724, so the figure is not an accident of one build.
+    # No wall time: the two stores sit on different devices, so only bytes compare.
+    "code_read": {"store": "v1, the store this article measures", "sa_bytes": 17597,
+                  "snap_bytes": 901, "corroborating_rebuild_bytes": 17724},
 }
 
 json.dump(data, sys.stdout)

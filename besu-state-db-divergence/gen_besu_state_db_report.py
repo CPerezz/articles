@@ -1435,11 +1435,12 @@ def main():
       f"One cold read of a {thousands(CB['fixture_bytes'])}-byte contract, page cache dropped, "
       f"counting the bytes the block layer actually served: "
       f"{thousands(ST['code_read']['sa_bytes'])} bytes on the generated store against "
-      f"{thousands(ST['code_read']['snap_bytes'])} on the snapshot as published, and "
-      f"{ST['code_read']['sa_us']:.0f}&nbsp;&micro;s against "
-      f"{ST['code_read']['snap_us']:.0f}&nbsp;&micro;s of wall. The population is the same "
-      f"contracts in both stores, so that is the mechanism of this section, weighed once on a "
-      f"scale rather than derived.</p>")
+      f"{thousands(ST['code_read']['snap_bytes'])} on the snapshot, a factor of "
+      f"{ST['code_read']['sa_bytes'] / ST['code_read']['snap_bytes']:.0f}. The population is "
+      f"the same contracts in both stores, and a later rebuild of the same generator lineage "
+      f"gave {thousands(ST['code_read']['corroborating_rebuild_bytes'])}, so this is the "
+      f"mechanism of this section weighed on a scale rather than derived. Bytes only: the two "
+      f"stores no longer sit on the same device, and wall time would be measuring that.</p>")
     w('<h3>Where this stands</h3>')
     w(f"<p>Three mechanisms, three states. Every row's store-level column is a measurement on "
       f"a store built from the merged fix; not one of them is a throughput measurement, "
