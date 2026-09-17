@@ -2156,3 +2156,83 @@ throughput* until an arm runs, but the store-level gate for it is closed.
 
 Measured on the virgin by mounting `/dev/loop0` with `-o ro,noload`, so no journal replay and no
 writes; unmounted afterwards and the image verified unchanged.
+
+---
+
+## Round 36 - #138 over-corrects: one runtime tiled is not a code population
+
+Answered without waiting for v3, because #138's effect is a property of the bytes it emits.
+
+### What #138 actually does
+
+`internal/autofill/code_pool.go`:
+
+```go
+func poolCode(j int, s Sampler) ([]byte, common.Hash) {
+	src := templates.ERC20RuntimeBytecode          // 1,723 bytes, one OZ v5 runtime
+	code := make([]byte, s.Draw(...))              // truncated normal, mean 5,120 B, [1 KiB, 24 KiB]
+	for n := copy(code, src[j%len(src):]); n < len(code); {
+		n += copy(code[n:], src)                   // tile the same runtime
+	}
+	...
+}
+```
+
+`DistinctBytecodes = numContracts / 32`, matching `MainnetAccountsPerDistinctBytecode = 32`.
+
+So the count is right (32 per blob against mainnet's 28.2) and the mean size is right (5,079 B
+replicated against a fixture-corrected mainnet 5,265 B). **The content is not.** The source
+runtime is 1,723 bytes and the mean code size is 5,120, so every blob is the same runtime tiled
+about three times, rotated by `j`. Blobs are therefore self-similar internally *and* to each
+other.
+
+### Measured, by replicating poolCode and compressing its output
+
+| | individual record | packed into a 32 KiB block |
+|---|---|---|
+| #138 pool, deflate | **0.2165** | **0.1060** |
+| #138 pool, LZ4 -1 | **0.260** | **0.119** |
+| mainnet, records >=1 KiB, deflate (n=4,000) | **0.443** | 0.329 (derived) |
+| v2 (unique random), deflate | ~1.00 | 0.955 |
+| mainnet cf07 phys/log, RocksDB's own LZ4 | - | **0.371** |
+
+**#138's bytecode is about 2x too compressible individually and about 3x too compressible when
+packed.** Modelled cost of the data block a distinct-contract read fetches (additive model,
+calibrated to within 14-26% on the snapshot and v2, understating both):
+
+| store | modelled block | vs snapshot's measured 5,912 B |
+|---|---|---|
+| v1 (measured) | 10,718 B | 1.81x |
+| v2 (measured) | 11,105 B | 1.88x |
+| **v3 (#138, modelled)** | **~1,046 B** | **~0.18x** |
+
+### Verdict and pre-registered prediction for v3
+
+#138 does not close the distinct-code class; it **flips the sign**. Expect the class to go from
+0.82 (18% slower) to *faster* than the snapshot, still outside +/-10% but on the other side, and
+expect cf07 phys/log to land near 0.12-0.26 against mainnet's 0.371. This is pre-registered
+before v3 is probed.
+
+The code's own comment anticipated exactly this: "ponytail: one real contract sliced at rotating
+offsets, not a corpus. Upgrade to a small corpus if a benchmark shows it over-compresses." It
+over-compresses.
+
+### The fix, with the target numbers
+
+A **corpus**, not one runtime: draw from N distinct real runtimes at mainnet frequency. Mainnet's
+own population, from its cf07 (41,486 records sampled), is heavy-tailed with distinct spikes that
+are the duplicated proxies and tokens: 216 B x 2,223, 23 B x 1,734 (7702 designators), 77 B x
+1,038, 22,142 B x 964, 1,359 B x 828, 173 B x 778, 45 B x 635. Acceptance targets for the corpus:
+
+- individual record deflate ~0.443 (mainnet, >=1 KiB)
+- cf07 phys/log ~0.371 (RocksDB LZ4, CF-wide)
+- mean record ~5,265 B and accounts per blob ~28 (both already met by #138)
+- modelled fixture block 5,912 B +/- 12%
+
+### A separate finding, and it is about the fixtures, not the generator
+
+The 24,576-byte `max_diff` fixture contracts deflate to **0.011 on the mainnet store too**
+(n=4,000). So the fixture's own code is unrealistically compressible on *both* arms: the
+distinct-code class has never measured "reading realistic contract code", it has measured the
+cost of the block padding around a near-free record. That is an EEST fixture-realism issue,
+independent of state-actor, and it caps how much realism the generator side can buy.
