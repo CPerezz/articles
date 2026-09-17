@@ -2117,3 +2117,42 @@ per distinct bytecode against mainnet's 28.2; manifest gained `distinct_bytecode
 supersedes our local 0.0003 one-liner, which only made designators rare rather than shared.
 Built `state-actor-besu:main-95e5a10` from `origin/main` and launched v3 detached under dockerd
 with `/tmp` bind-mounted to the HDD array. v2 is kept, so the three stores isolate each fix.
+
+---
+
+## Round 35 - the absence class, measured rather than predicted
+
+Anon asked whether the bloom fix had already settled the non-existing class, since round 34's
+table still showed it 9.07x slow. It had, at the mechanism level; the table was v1's throughput,
+which is the only throughput data that exists. Framing error on my part: those are historical
+numbers, not status.
+
+So the mechanism was measured directly instead of waiting for a 22 h arm. `MissCost.java` opens a
+store read-only with its own OPTIONS, looks up 20,000 keys of the store's own cf06 key shape
+(32 bytes, verified from the store) that are absent, and reads RocksDB's own statistics.
+`BLOOM_FILTER_USEFUL` counts filter rejections that skipped a block, so a store with no filter
+cannot increment it.
+
+| | v1 (no filters) | v2 (filters) | snapshot (filters) |
+|---|---|---|---|
+| BLOOM_FILTER_USEFUL per lookup | **0.000** | **0.990** | 3.518 |
+| **data-block reads per absent lookup** | **1.002** | **0.010** | **0.038** |
+| filter false positives | - | 200 (1.0%) | 750 (3.75%) |
+| wall per lookup (different devices, not comparable) | 11.9 us | 2.6 us | 3.8 us |
+
+**Every absent lookup on v1 read a data block; 99% of them on v2 are rejected by the filter
+without touching one.** A 100x reduction in the operation that cost the class 50.1x the bytes.
+The 1.0% false-positive rate is what 10 bits/key gives.
+
+Two details worth keeping. The snapshot consults a filter **3.5 times per lookup** because this
+measurement is against the *uncompacted* virgin, where a lookup descends several files and each
+one rejects; v2 is a single sorted run, so one check suffices. That also explains its higher
+aggregate false-positive count, ~1% per check over 3.5 checks. Compacted to a single run, the
+snapshot's figures should converge on v2's, so the expectation for the benchmark is **parity or
+marginally better for the synthetic store**, not merely improvement.
+
+The absence class therefore has no mechanism left to explain. It stays listed as unmeasured *in
+throughput* until an arm runs, but the store-level gate for it is closed.
+
+Measured on the virgin by mounting `/dev/loop0` with `-o ro,noload`, so no journal replay and no
+writes; unmounted afterwards and the image verified unchanged.
