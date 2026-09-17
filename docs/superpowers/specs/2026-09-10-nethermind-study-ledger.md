@@ -1627,3 +1627,21 @@ the regime-3 slice (R39) and the 266 subset (R40) on both arms with TieredCompil
 Follow-up owed: settle jochemnet's code DB too for strict symmetry (small, fast).
 The first night2 attempt mis-read an empty probe result as "settled" (probe needed `-cf default`);
 night3 refuses to proceed on an empty probe.
+
+## Round 38 (result) - code DB settled on state-actor; DIFF_MAX does not move
+
+state-actor `code/`: `L4:734 (45.7 GB) -> L6:729 (44.6 GB), pending=0` (185 s), promoted (26 s).
+DIFF_MAX code-exec on identical ids: published 0.638 -> Account settled 0.653 -> +code settled
+**0.651**; state-actor step 14.96 -> 14.58 s; reads 5,603 -> 4,895 MB. Third falsification for
+this cell (code content, code-DB size, compaction). CPU ratio ~1.06 against a 1.5x time ratio:
+DIFF_MAX is I/O-bound, state-actor reads ~20% more bytes and waits longer. Which CF the extra
+bytes come from is the next fact (round 41: tracer + live-file->CF map, DIFF_MAX vs SAME_MAX).
+
+For symmetry jochemnet's `code/` was settled too: `[0:3 1:6 3:117] -> [6:113]`, pending=0
+(107 s), promoted (13.9 GB, 8.8 s). Both arms now carry Account, StateNodes and code at L6 with
+their own per-CF options. Pipeline night4 (detached): R39 regime-3 slice with
+`DOTNET_TieredCompilation=0` on both arms; R40 the 266 subset on both arms, settled images +
+TieredCompilation=0 - the corrected cross-category comparison; then round 41.
+
+Two sessions today the host stopped completing SSH sessions (15:55-17:44, ~19:20-20:13 UTC),
+both shortly after a batch ended; detached work unaffected each time.
