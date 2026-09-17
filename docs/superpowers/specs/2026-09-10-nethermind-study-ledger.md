@@ -1645,3 +1645,34 @@ TieredCompilation=0 - the corrected cross-category comparison; then round 41.
 
 Two sessions today the host stopped completing SSH sessions (15:55-17:44, ~19:20-20:13 UTC),
 both shortly after a batch ended; detached work unaffected each time.
+
+## Round 39 (result) - with the JIT equalised, every regime-3 cell collapses; DIFF_MAX was jochemnet's JIT
+
+Regime-3 slice, both arms, `DOTNET_TieredCompilation=0`, settled images, identical ids:
+
+| cell | published | JIT-eq both | joc step pub -> now | sa step pub -> now |
+|---|---|---|---|---|
+| DIFF_MAX code-exec (8) | 0.638 | **0.944** | 9.51 -> **13.61 s** | 14.96 -> 14.54 s |
+| DIFF_MAX BAL/HASH (2) | 0.973 | 0.984 | 8.45 -> 8.34 | 8.68 -> 8.47 |
+| NON_EXISTING code-exec (8) | 0.946 | 1.107 | 0.36 -> 0.19 | 0.39 -> 0.17 |
+| NON_EXISTING BAL/HASH (2) | 0.990 | 1.149 | 0.35 -> 0.19 | 0.35 -> 0.16 |
+| SAME_MAX code-exec (8) | 0.980 | 0.996 | 8.28 -> 8.22 | 8.41 -> 8.27 |
+| sload_same_key (2) | 1.093 | 1.124 | 0.37 -> 0.07 | 0.34 -> 0.07 |
+| warm query (7) | 0.891 | **1.468** | 0.43 -> **0.07** | 0.44 -> **0.05** |
+
+DIFF_MAX: state-actor barely moved; **jochemnet slowed from 9.5 to 13.6 s** once tiered JIT/PGO
+was removed. Its advantage on that cell was the JIT reaching the hot path early on jochemnet and
+late or never on state-actor - the control-loop mechanism on a 15 s test. Three store-level
+explanations were refuted for this cell; the fourth was never in the store.
+
+Short tests: warm query 0.43 -> 0.07 s, sload_same_key 0.37 -> 0.07 s, non-existing 0.35 -> 0.17 s
+on both arms. The published absolute numbers for sub-second tests are ~5-6x too slow on *both*
+arms - they measure tier-0 interpreter code and JIT warm-up, and the between-arm ratios were a
+warm-up race decided by fixture structure. Applies to any JIT-hosted client restarted per test
+(Besu/JVM presumably; geth is AOT).
+
+Combined with round 36 (control 0.726 -> 1.143): with JIT equalised, no cell has state-actor
+slower than 0.94 and most sit at parity or state-actor-faster. TieredCompilation=0 is the clean
+diagnostic, not the recommended config: a live node runs tier-1+PGO code, so the harness fix is
+an EVM-heavy warm-up phase after boot on every arm, discarded before measurement (the pre-run
+idea, applied to the JIT). R40 (266 subset, JIT-eq, both settled) running for the full picture.
