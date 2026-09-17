@@ -2954,3 +2954,23 @@ store, not to assume.
 18 h, then phase 2 builds the trie. The DB is 1 GB so far because phase 1 accumulates into the
 HDD spill and phase 2 writes the store; the earlier besu run had the same shape and took 10h31m.
 No restarts. md2 free 2,066 GB.
+
+### Round 45 addendum - besu as the filler: tested, not cleared
+
+Worth 11 minutes because it would remove the geth twin from every future regeneration, which is
+about 20 h of critical path each time. `builder.eest_payloads.targets[].filler_client` accepts
+`besu`, and the config validated, but the filler client refuses to boot:
+
+```
+Failed to start Besu: Supplied genesis block does not match chain data stored in /data
+```
+
+Cause is my override shape, not besu. `genesis_eip_override: {timestamp: 1}` moved the **genesis
+header's** timestamp, which changes the genesis hash, so Besu's genesis-vs-stored check fails.
+Upstream uses `genesis_eip_override: {timestamp: <activation>, eips: [...]}`, i.e. a fork-schedule
+entry rather than a header edit, and the `eips` list for Amsterdam is not something to guess at
+while a 20 h generation is on the clock.
+
+So: **unresolved, not refuted.** The geth path works and is in use. If anyone wants the twin gone,
+the experiment is one config field away and the smoke stores at `/sa-smoke/besu` are still there
+for it.
