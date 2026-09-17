@@ -2309,3 +2309,70 @@ established.
 v3 keeps generating (~8 h left). It is now a store built with known-wrong code content, so it
 measures the absent and account classes only. Do not spend a 22 h arm on it; the ~3 h subset is
 the right instrument, and the full arm waits for the corpus PR.
+
+---
+
+## Round 38 - enumerating the diff, and a framing error of mine that it exposes
+
+Anon asked for the full list of what still differs and where. Enumerated all 48 categories from
+`report_data.json` (660 measurement rows + 440 control rows, `state_actor` vs `compacted`).
+
+### The framing error
+
+Rounds 32-37 reported "24 of 48 categories inside +/-10%", which reads as "half the suite is
+clean". It is not what the data says:
+
+- **0 of 660 measurement rows is faster than the snapshot.** Max ratio 0.984.
+- **0 of 48 category medians is at parity.** Best is `CALLCODE/EXISTING_EOA` at 0.960, i.e. 4.1%
+  slower; control-normalised, 6.1% slower.
+- The control arm sits at **1.019** - state-actor is 1.9% *faster* on work touching no account
+  state. So the parity line for measurement rows is 1.019, not 1.000, and every category is below
+  it.
+
+The +/-10% band was adopted as the acceptance gate for the *generator*, and it is fine for that.
+But quoted as a description of the study it hides a uniform 6-8% floor under the whole suite.
+Corrected statement: **every category reading account state is slower on the synthetic store; the
+suite splits into three bands, not into pass and fail.**
+
+| class | cats | rows | outside +/-10% | median | control-normalised | penalty | mechanism |
+|---|---|---|---|---|---|---|---|
+| absent | 8 | 110 | 110 | 0.117 | 0.115 | 770% | CLOSED (#133) |
+| distinct-code | 16 | 220 | 209 | 0.828 | 0.813 | 23.1% | **OPEN** |
+| shared/no-code | 24 | 330 | 0 | 0.947 | 0.930 | 7.6% | CLOSED (#137/#138) |
+
+### Two taxonomy defects in my own class split
+
+1. **`CALL/NON_EXISTING_ACCOUNT` with `value_sent=1` is not an absence proof.** Split by
+   `value_sent`: 0.119 (range 0.110-0.156) at `value_sent=0`, **0.765** (0.751-0.777) at
+   `value_sent=1`. Sending ether to an account that does not exist *creates* it - a write path.
+   So the absent class is really 99 pure-read rows at 0.099-0.156 plus 11 write-path rows at
+   0.765, and the class median of 0.117 is a blend of two mechanisms.
+2. **The 11 distinct-code rows that "land inside the band" are all `value_sent=1` `CALL` rows** at
+   0.901-0.916. They pass on write-path dilution, not because the read is clean. There is no gas
+   budget or opcode at which a distinct-contract read is at parity.
+
+### A property of the residual that rules out the fixed-cost model
+
+Median ratio by gas budget, 100M -> 300M:
+
+| class | 100M | 200M | 300M |
+|---|---|---|---|
+| absent | 0.147 | 0.112 | 0.099 |
+| distinct-code | 0.852 | 0.823 | 0.790 |
+| shared/no-code | 0.952 | 0.947 | 0.940 |
+| **control** | **1.021** | **1.020** | **1.020** |
+
+The gap **widens monotonically with the gas budget** in all three measurement classes while the
+control stays flat to within 1%. A constant per-read penalty predicts a flat ratio; a constant
+per-block overhead predicts the ratio *improving* with gas. Neither fits. The penalty per read
+grows with the number of reads in the block, which is a working-set effect, and it means any
+single-number summary of the residual is budget-dependent. Round 34's `t = f + v*G` fit reached
+the same conclusion from the other direction.
+
+### Scope caveat that applies to this whole table
+
+Every throughput figure above was measured on **v1** (`state_actor_source: e4cb205-dirty`),
+generated before #133, #137 and #138 existed. Store-level gates now say 32 of the 48 categories
+(absent 8, shared/no-code 24) have had their mechanism removed. **None of them has been
+re-measured.** This table is the last measured diff, not the current one. The only category group
+whose mechanism is still open is distinct-code: 16 categories, 220 workloads, median 0.828.
