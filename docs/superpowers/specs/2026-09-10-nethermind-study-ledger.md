@@ -1518,3 +1518,19 @@ remains the evidence.
 
 ## Round 33 (running) - replicate the baseline profile on the unsettled image
 ## Round 34 (armed) - rebuild Account to L6 explicitly, promote, re-profile and re-measure
+
+## Round 33 (result) - baseline profile replicated on the unsettled image
+
+Second profile of 40 control tests on state-actor, same config: rocksdb:low 21.69 s (39%),
+Tiered Com 18.22 (32%), TP Worker 11.20 (20%), BGC 4.27 (8%); 56.2 CPU-s / 1.22 cores inside
+the windows. Same shape as round 28 (25.43 / 21.06 / 10.93 / 3.71). The compaction thread is a
+stable feature of the unsettled image, not a one-off.
+
+## Round 34 (result) - `-level 6` alone does not move the files
+
+`CompactRange` with `SetTargetLevel(6)` still produced `Account L3:92`, `pending=1` (237 s), and
+this time `promote` succeeded (33 GB, 20 s), so the virgin image now carries the rewritten but
+unmoved CF - same options, same level, no behavioural change. RocksDB ignores `target_level`
+unless `change_level=true` is also set. Wired both; the driver was stopped between runs (never
+SIGKILL a benchmarkoor run) and round 35 re-runs the sequence with a guard that refuses to
+promote unless the rebuild reports `pending=0` and `levels=L6:`.
