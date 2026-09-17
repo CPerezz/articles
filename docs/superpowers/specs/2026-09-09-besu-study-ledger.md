@@ -2236,3 +2236,76 @@ The 24,576-byte `max_diff` fixture contracts deflate to **0.011 on the mainnet s
 distinct-code class has never measured "reading realistic contract code", it has measured the
 cost of the block padding around a near-free record. That is an EEST fixture-realism issue,
 independent of state-actor, and it caps how much realism the generator side can buy.
+
+---
+
+## Round 37 - probed #138, and the prediction was right in direction and wrong in size
+
+### Probing the live v3 store failed, for a reason worth recording
+
+v3 is 14% through phase 1, so `cf06`/`cf07` are still in the generator's memtable and WAL. A
+read-only RocksDB open in another process sees SSTs only, so both column families read as empty
+while `cf08`/`cf09` (already flushed, 333 M and 461 M entries) read fine. Separately, every probe
+that discovers column families via `OptionsUtil.loadLatestOptions` fails outright on a
+state-actor store: it writes OPTIONS with librocksdb 10.10 and Besu's 10.6.2 rejects
+`max_manifest_space_amp_pct` until Besu reopens the store and rewrites the file - which needs the
+write lock the generator holds.
+
+Fix, archived as `tools/besu-study/LiveGeom.java`: `RocksDB.listColumnFamilies` needs no OPTIONS
+file and table properties live inside each SST, so plain `ColumnFamilyOptions` suffice. Works on
+a live store, takes no lock, writes nothing. This supersedes the boot-Besu-first dance that
+rounds 30-36 used.
+
+### The measurement, on a 4 GB store built from `state-actor-besu:main-95e5a10`
+
+| metric | v1 | v2 | **#138** | mainnet | #138 vs target |
+|---|---|---|---|---|---|
+| `cf07` phys/log, RocksDB LZ4 | 0.863 | 0.840 | **0.056** | 0.371 | **0.15x** |
+| pooled record deflate, >=1 KiB | - | ~1.00 | **0.2147** | 0.443 | 0.48x |
+| packed 32 KiB block deflate | - | 0.955 | **0.1116** | 0.329 | 0.34x |
+| `cf06` phys/log | 0.513 | 0.422 | **0.447** | 0.434 | 1.03x |
+
+Round 36 predicted individual deflate 0.2165 and packed 0.1060 from a replication of `poolCode`;
+measured 0.2147 and 0.1116. The replication was exact. **What it underestimated is the CF-wide
+figure: predicted 0.12-0.26, measured 0.056.** The reason is cross-record redundancy - every pool
+entry is a rotation of the same 1,723-byte source, so LZ4 compresses entries against each other
+inside a data block, not merely within an entry. **6.6x too compressible, not 2-3x.**
+
+`cf06` at 0.447 vs mainnet 0.434 is parity, 3% on the expensive side. Round 35's worry that #137
+over-corrected the account class (0.422, cheaper than mainnet) is resolved: #138's pooled code
+brought it back across the line. That class is done.
+
+### An anomaly that resolved benignly
+
+The smoke store reports 180,692 `contracts_created` but only 2,882 records in `cf07`, which looks
+like the pool collapsing under rotation collisions. It is not: the manifest records
+`num_contracts = 83,886` and `distinct_bytecodes = 2,621`, exactly 83,886/32. The pool governs
+autofill contracts only; the other ~96,806 contracts are spec-loaded templates carrying their own
+code. **Realised reuse is 32.0 accounts per distinct bytecode against mainnet's 28.2 - correct.**
+So #138 got reuse and size right and only content wrong, which is a much smaller fix than round
+36 implied.
+
+### Hand-off written
+
+`docs/superpowers/specs/2026-09-17-state-actor-corpus-prompt.md` (191 lines, self-contained,
+every figure fact-checked against `report_data.json` and the probes). Three hard gates - pooled
+record deflate 0.39-0.50, packed block 0.28-0.38, `cf07` phys/log 0.31-0.43 - plus three
+invariants to preserve, and the lower-tail size-histogram gap explicitly deferred.
+
+Design note handed over: prefix real corpus members, never tile, because tiling is the defect.
+The interesting question asked of the implementer is whether hitting the CF-wide gate needs more
+corpus members than the per-record gate does - that answers whether mainnet's code
+compressibility is within-contract or across-contract redundancy, which this study never
+established.
+
+### Status of the three classes
+
+| class | mechanism | store-level gate | throughput |
+|---|---|---|---|
+| absent (8 cats) | filters - closed | 0.010 vs 1.002 block reads | unmeasured, expect parity |
+| shared/no-code (24 cats) | account entropy - closed | `cf06` 0.447 vs 0.434 | unmeasured, expect parity |
+| distinct-code (16 cats) | code content - **open, PR pending** | `cf07` 0.056 vs 0.371 | v1 0.761 per-gas slope |
+
+v3 keeps generating (~8 h left). It is now a store built with known-wrong code content, so it
+measures the absent and account classes only. Do not spend a 22 h arm on it; the ~3 h subset is
+the right instrument, and the full arm waits for the corpus PR.
