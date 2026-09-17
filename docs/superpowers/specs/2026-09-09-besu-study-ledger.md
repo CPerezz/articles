@@ -3155,3 +3155,59 @@ not Besu:
 Not acted on, because the geth path is already validated and running. But it is worth finishing
 later: a working besu filler removes the geth twin from every future regeneration, which is about
 11 h of generation and 674 GB each time. The test is one spec-generated besu store away.
+
+---
+
+## Round 49 - the verdict is pre-registered and validated before the data exists
+
+`tools/besu-study/analyse-v3.py`, also on the box at `/root/bench/analyse-v3.py` beside a copy of
+the archived `report_data.json`. It turns a v3 results dir into a PASS/FAIL verdict against
+thresholds fixed now, so the conclusion cannot be chosen after seeing the numbers.
+
+### Two gates that decide whether the comparison is even legitimate
+
+1. **Gas identity.** Every test must burn the same gas as the archived arm to 1e-6, or the two
+   arms were not asked to do the same work.
+2. **The control canary.** v3 is compared against the **archived** compacted-snapshot arm rather
+   than a rebuilt one, so any drift in host, image or harness since then would read as a store
+   effect. Control rows touch no account state, so their ratio isolates exactly that. Required:
+   median within 0.013 of the archived 1.019, and no per-budget median off the overall by more
+   than 0.020. A miss neither attributes the cause nor proves a pass; it only means the archived
+   reference cannot carry small-effect claims, and the write-up is then limited to the collapse
+   of the 0.117 and 0.828 regimes, with parity arrival and sign-flip magnitude deferred to a
+   rebuilt snapshot arm.
+
+### Pre-registered class expectations
+
+| class | archived | expected | rationale |
+|---|---|---|---|
+| absent, 8 cats | 0.117 | collapse to ~1.0 | #133 filters, measured 1.002 -> 0.010 block reads |
+| shared/no-code, 24 cats | 0.947 | rise above 0.947 | #137+#138, `cf06` 0.513 -> 0.447 against 0.434 |
+| distinct-code, 16 cats | 0.828 | **sign flip above 1.0** | #138 over-corrects 6.6x, so too fast rather than closed |
+
+### Validated against ground truth before use
+
+Fed the archived state-actor arm in as if it were new. It reproduced every published figure
+exactly: 1,100 tests split 660/440, gas identity 0 differing, canary **1.0187** with 0.0080 drift,
+classes **0.117 / 0.947 / 0.828**, 0 of 660 rows faster than the snapshot, 341 inside +/-10%, and
+the gas gradient matching round 38's table (absent 0.147 -> 0.099, dark 0.852 -> 0.790). It also
+correctly reported the class expectations as **NOT as predicted** on that input, which is the
+point: the gates discriminate rather than rubber-stamp.
+
+`v3-arm-full.yaml` staged too, identical to the filter arm with the filter removed, so the 22 h
+run is one command if the go/no-go passes.
+
+### Everything downstream is now one command each
+
+```
+/root/bench/gate-v3.sh                                     # store gates
+benchmarkoor build  --config /root/bench/v3-fill.yaml      # fill
+benchmarkoor run    --config /root/bench/v3-arm-gate.yaml  # 1-test gate
+benchmarkoor run    --config /root/bench/v3-arm-filter.yaml # 129-test go/no-go
+/root/bench/analyse-v3.py /data/bench-results/v3-filter \
+                          /root/bench/report_data_archived.json
+benchmarkoor run    --config /root/bench/v3-arm-full.yaml  # 22 h, only if the above passes
+```
+
+The first four are already automated inside `run-v3-campaign.sh`. The analysis and the full arm
+are deliberately manual: a 22 h arm should start on a verdict someone has read.
