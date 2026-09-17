@@ -3107,3 +3107,51 @@ they go on a page.
 Phase 0 spec storage running at 251 slots/s, 3 spec warnings confirming the baseline spec is
 loaded, spill on md3, md2 free 2,054 GB, loop0 read-only and untouched. Watched by `v3-campaign`.
 Expect roughly 10-11 h per generation from the v2 precedent, so about 24-30 h to the go/no-go.
+
+---
+
+## Round 48 - a false alarm worth recording, and besu can fill after all
+
+### The false alarm
+
+Monitoring phase 0 of the geth twin, the counter read 90,112 slots at 305/s while the spec's
+`storage-pattern-10gb` entity declares `final: 335545082`. That extrapolates to 12.7 days, and
+against v2's besu writer hitting 110.6k/s it looked like the geth writer was 360x slower and the
+campaign was dead. I was about to restructure the whole thing.
+
+Measuring first is what saved it. Both writers warm up the same way:
+
+| elapsed | v2 besu (archived) | v3 geth (live) |
+|---|---|---|
+| early | 4,096 @ 74/s, 32,768 @ 278/s, 61,440 @ 323/s | 61,440 @ 295/s, 90,112 @ 305/s |
+| ~15 min | 91,361,280 @ **110.6k/s** | 59,752,448 @ **96.1k/s** |
+
+The slow samples were warmup in both cases. Remaining 275.8M slots at ~100k/s is about 45
+minutes, and phase 0 is a bounded prelude rather than the campaign. **No change made.**
+
+The lesson is narrow and reusable: on this generator, any rate sampled inside the first ten
+minutes of a phase is warmup and must not be extrapolated. The comparison that settles it is the
+archived run's own early samples, which are in
+`/home/CPerezz/sa-besu-v2-20260916-232105.log`.
+
+### Besu can be the filler, and the field name was the whole problem
+
+Round 45's addendum left this unresolved. It is now nearly closed, and the blocker was my config,
+not Besu:
+
+- `genesis_eip_override: {timestamp: 1}` was wrong: it moves the genesis header's timestamp, so
+  Besu's genesis-vs-stored check fails.
+- The right shape is the one the archived **arm** config uses:
+  `genesis_fork_override: { amsterdam: 1 }`, and the builder additionally requires an explicit
+  `genesis:` path beside it (`genesis_fork_override requires genesis`).
+- With both set, Besu boots, the correct eest ref loads, and the filler gets a real answer out of
+  `testing_buildBlockV1`: `JSONRPCError -32603 Error building block: Block creation failed
+  unexpectedly`. **Not "method not found"** - so Besu implements the testing namespace, and round
+  40's docs-based conclusion that only geth can fill is wrong.
+- That remaining error is almost certainly the specless smoke store again: no EIP-8282 devnet-7
+  predeploys, so the end-of-block system call has no code to call and block creation fails. The
+  same defect, in a different costume, for the third time.
+
+Not acted on, because the geth path is already validated and running. But it is worth finishing
+later: a working besu filler removes the geth twin from every future regeneration, which is about
+11 h of generation and 674 GB each time. The test is one spec-generated besu store away.
