@@ -1367,3 +1367,75 @@ Four oracles now pin the square and the two refutations.
 the 266-test subset on each, sequentially (concurrent arms pollute each other's I/O). If the
 cross-step block-cache carry-over is what holds the control category at 0.708, shrinking the cache
 should move it toward parity while leaving the account categories within a few percent.
+
+---
+
+## Round 22 - B1/B1b: the block cache and memory hint move nothing
+
+Both arms, 266-test subset, flat DB block cache 1 GiB -> 8 MiB (client log confirms: 2 MB to
+accounts, 5 MB to storage). Pre-registered prediction: control 0.708 -> 0.85-0.95. Result:
+control 0.686 -> 0.707 (+3.0%), every account category within 0.9%. B1b added
+`--Init.MemoryHint=4000000000` (trie 750 MB, DB 3001 MB): control-only, no change.
+**Falsified.** Cache carry-over from setup is additionally bounded by measured budget: setup reads
+31.5 MB and writes 0.0 MB against a 104.5 MB gap, so <=30% in *any* client cache.
+
+## Round 23 - E4: remove all cache drops; the 96 MB is real re-read and is non-causal
+
+200 tests/arm with `drop_memory_caches: disabled`. state-actor's control reads 96.4 -> **0.0 MB**;
+its control throughput 31.0 -> 27.8 MGas/s. Removing 100% of the I/O left it slower. Paired over
+identical ids: cold cpu ratio 2.248, no-drop cpu ratio 1.769 with reads at zero.
+**The control gap is CPU, not I/O.**
+
+## Round 24 - locality and saturation: jochemnet's benchmark accounts are not privileged
+
+Cold, per arm: fixture accounts (0x1000+) vs random pre-existing accounts.
+joc 183.6 vs 185.4 us, sa 209.7 vs 205.4 us; blocks/lookup 1.98 vs 1.99 on both. Footprint growth
+20k->200k lookups identical to 0.5% (162.5/403.1/796.9/1196.7 MB vs 162.6/404.4/802.1/1198.0).
+Both arms sit at the compacted-LSM floor (~2 blocks per lookup) - a floor our own compaction put
+them on. Storage-layer residual: 1.11-1.14x.
+
+## Round 25 - warm client via rpc-debug-setHead: works, contaminated, withdrawn
+
+setHead keeps one client alive (1 boot / 40 tests, 0 failures, rollback verified). Control
+inverted to sa/joc 2.031 with cpu 0.914. But fixture accounts are reused across gas points with the
+client's caches never cleared, so it is not a valid store comparison. Withdrawn; a 1,463-test
+"corrected" run on it was killed at stage 2.
+
+## Round 26 - the noise floor, finally measured
+
+Same store, same config, twice (133 tests at 160M): overall 75.2% within +/-10%.
+existing EOA 100% (med 1.003), existing contract 98% (0.999), non-existing 60% (0.946),
+CONTROL 40% (1.018, range 0.62-1.77). Floor by duration on cache-knob pairs: <0.2 s 41%,
+0.2-1 s 54%, 1-5 s 85%, >=5 s 98%. Noise-adjusted ledger: of 687 tests outside +/-10%, ~388 are
+consistent with noise, ~299 are real; 100 of those are in the >=5 s population (84 existing
+contract, 25 ether, 2 EOA, 0 storage). Control's per-test values are noise; its median is not
+(1.018 same-store vs 0.708 cross-store). The worst-12 table (all 12 under 0.2 s) and the storage
+spread oracle (span 0.80 reproduced on the same store) present noise as signal.
+
+## Round 27 - divergence by operation: three regimes
+
+Grid opcode x account_mode, 11 gas points per cell.
+- Regime 1, cold reads (EOA/MINIMAL/SAME_MAX, all opcodes): 0.967-0.983, 0-1/11 outside. Parity.
+- Regime 2, writes (CALL v=1, sstore, ether): 1.01-1.08. state-actor faster.
+- Regime 3, CPU-bound: control 0.64-0.85 uniform across opcode and mode; DIFF_MAX 0.62-0.64 only
+  under code-executing opcodes (BALANCE/EXTCODEHASH in DIFF_MAX stay at 0.97); JUMPDEST 0.92 only
+  under code-executing opcodes; sload_same_key 0.812; warm query 0.86-0.95.
+Control: cpu ratio 2.2x vs wall 1.4x, cpu/sec 1.89 vs 1.21 -> extra parallel CPU, not a slower
+executing thread. Control gas scales 3.5 -> 10.4 M across the gas parameter and the ratio is flat
+(0.65-0.74), so the cost is per-iteration, not per-boot.
+
+Structural comparison (rocksdb.aggregated-table-properties): same CF set, identical key sizes
+(28/60/16/11/36 B) so the trie layout is the same; state-actor +21% entries; Account values 25 vs
+16 B, Storage 28 vs 10 B. Metadata CF: both have CurrentState; state-actor also has Layout=Flat
+and **SlotEncoding=RLP** (1.39.0+). jochemnet lacks the marker -> its Storage CF is read as
+legacy raw bytes. Different SLOAD read paths; storage tests only (88). Chain-profile confound
+ruled out: `--config=none` on both arms. Launch args identical apart from genesis and fixtures.
+
+## Round 28 - per-thread CPU profile (running) and the JIT precondition
+
+Setup step: joc 0.24 s wall / 0.53 cpu-s / 31.5 MB; sa 0.04 s / 0.54 cpu-s / 9.4 MB. Identical
+CPU, 6x wall: state-actor reaches its 0.12-0.18 s measured step 0.2 s earlier in the life of a
+fresh .NET process. Hypothesis: .NET tiered compilation still promoting the interpreter's hot
+methods during state-actor's measurement (tier-0 code = proportional slowdown; tiering thread =
+extra parallel CPU; no I/O; worst on short CPU-bound payloads). Decided by the `.NET Tiered Com`
+share inside test-step windows, from /proc utime+stime per task at 0.5 s.
