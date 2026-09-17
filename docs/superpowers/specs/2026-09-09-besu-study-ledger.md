@@ -2974,3 +2974,60 @@ while a 20 h generation is on the clock.
 So: **unresolved, not refuted.** The geth path works and is in use. If anyone wants the twin gone,
 the experiment is one config field away and the smoke stores at `/sa-smoke/besu` are still there
 for it.
+
+---
+
+## Round 46 - downstream pre-staged so the critical path is generation only
+
+The remaining work is blocked on a 14 h generation plus phase 2, then a second generation. Nothing
+about that is parallelisable: both spill to the HDD array and phase 1 is seek-bound, so running
+them together halves each. What is removable is latency and discovery, so all three downstream
+steps are now armed or staged and none of them needs a decision made later under time pressure.
+
+### `/root/bench/chain-v3.sh` - armed, running under setsid
+
+Waits for `sa-gen-geth-v3` to exit, refuses to continue on a nonzero code, then:
+1. builds `/sa-geth/v3-dd/geth/chaindata` as a **hardlink** tree over `/sa-geth/v3`, which costs
+   no space and is the layout the filler needs. Round 43: pointed at state-actor's flat chaindata,
+   geth opens an empty trie, reports `accounts=0`, and otherwise looks healthy.
+2. launches the besu store detached with spill bind-mounted to `/data/spill/besu-v3`, and waits.
+
+Emits `CHAIN_OK` or `CHAIN_FAIL`. No idle host between the two generations.
+
+### `/root/bench/v3-fill.yaml` - staged with the round 45 recipe
+
+Full 11 gas budgets, `eest_ref` at payload level as a 40-char sha, `filler_image`
+`geth:glamsterdam-devnet-7`, `filler_extra_args: ["--override.amsterdam=1"]`, `source_dir`
+pointing at the hardlink tree, output to `/data/fixtures/v3-95e5a10/geth`. The two traps that cost
+iterations are written into the file as comments: verify `Using cloned EEST repo for fill
+commit=...` names `2282c757` on every run, and never add the bpo overrides.
+
+### `/root/bench/gate-v3.sh` - staged and dry-run against the smoke pair
+
+Four gates, all read-only, seconds to run: state roots must match; besu store geometry; absent
+lookup cost; cold code read. It asserts on the **state root only**, never on
+`accounts_created`/`contracts_created`, because round 42 measured the two writers agreeing on the
+root while disagreeing on both counters.
+
+The dry run against the 4 GB smoke pair passed and reproduced the #138 signature exactly, which is
+also a check on the gate itself:
+
+| metric | smoke (#138) | pre-registered band | reads |
+|---|---|---|---|
+| roots | identical | must match | PASS |
+| `cf06` phys/log | 0.447 | 0.43-0.46 | account class closed |
+| `cf07` phys/log | 0.056 | ~0.06-0.26 | over-corrected, as expected |
+| filters | present, every CF | 10 bits/key | #133 in effect |
+
+Expectations are written into the script so the comparison is pre-registered rather than
+rationalised after the numbers land.
+
+### State
+
+`sa-gen-geth-v3`: EOAs done (422,156,697), contracts 5.3% at 136/s, ETA ~14 h, then phase 2.
+Rate recovered from 90/s once the smoke fills stopped competing for the array. Watched by
+`gen-geth-v3b` for 70 h. md2 free 2,066 GB. Jochemnet virgin read-only, untouched.
+
+Next actions, in order, each now a single command: `gate-v3.sh` on the finished pair, then
+`benchmarkoor build --config v3-fill.yaml`, then the fixture-anchor oracles, then the schelk pair
+and the 129-test go/no-go before any 22 h arm.
