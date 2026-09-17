@@ -2643,3 +2643,70 @@ omission.
 `state.json.jochemnet-stale.DO-NOT-RESTORE.loop-ids-wrong` and chmod 000, because it names
 `/dev/loop1` as its scratch and loop1 is now a live volume. `run-stages.sh` chmod 000 and replaced
 by `run-stages-v3.sh` with `teardown()` deleted, that function being `rm -f /schelk-vols/*.img`.
+
+---
+
+## Round 42 - space reclaimed, cross-client gate passed, geth twin generating
+
+### Wipe
+
+v2 torn down and deleted: `/schelk` unmounted, dm-era `besu_sa2_era` removed, loop1 and loop2
+detached only after confirming by backing file that each backed a `besu-sa2-*` image, then both
+images removed by explicit name, then `/sa-besu/v2`. **NVMe free 388 GB -> 2,086 GB.** The
+jochemnet virgin is still attached on loop0, still `blockdev --getro 1`, 1,122 GB, untouched.
+No archive was taken, per round 41's reasoning.
+
+### Both generator images rebuilt
+
+Round 39's docker reclaim had removed `state-actor-besu:main-95e5a10`, so both writers were
+rebuilt from the checkout at `95e5a10`: `state-actor-geth:main-95e5a10` and
+`state-actor-besu:main-95e5a10`. The host binary at `~/bin/state-actor` is from Aug 27 and
+predates all three PRs; it is not used.
+
+### The gate that had to pass before spending 20 h
+
+A geth-filled payload bundle can only drive a Besu arm if both writers produce the same genesis,
+and that rests on the generator being client-independent. Verified on 4 GB smoke stores from the
+same image pair, same seed and fork:
+
+| | state root | accounts_created | contracts_created |
+|---|---|---|---|
+| geth | `0xe600513fd68489a34fc314aa8435d715f41768dad13056044f2de496b691bdf7` | 4,824,648 | 83,891 |
+| besu | **same** | 4,727,847 | 180,692 |
+
+**Roots identical.** The counters are not, and that is worth recording: a state root commits to
+every account, so two stores agreeing on the root hold the same accounts, which means
+`accounts_created` and `contracts_created` are per-writer bookkeeping rather than state. Do not
+assert on them; assert on the root. Layout also differs: the besu store carries
+`besu-chainspec.json` and a `database/` subdirectory, the geth store writes its files at the top
+level, which is what `source_dir` must point at.
+
+### Generating
+
+```
+docker run -d --name sa-gen-geth-v3 -v /sa-geth/v3:/data \
+  -v /data/spill/geth-v3:/tmp -e TMPDIR=/tmp state-actor-geth:main-95e5a10 \
+  --db=/data --client=geth --target-size=350GB --seed=42 --fork=osaka --gas-limit=1000000000
+```
+
+Both of round 37's operational failures are addressed in that line: detached under dockerd, so
+the container's lifetime is not tied to an SSH session that got it SIGKILLed at 16 m with
+rc=137; and the streamsort spill bind-mounted onto the HDD array at `/tmp`, because `TMPDIR`
+alone is not honoured and the spill reached 176 GB on the root device in one hour. Confirmed at
+90 s: 8% of phase 1, 448k accounts/s, target 422,156,697 accounts, spill growing on md3, md2 free
+holding at 2,073 GB. Supervised as `gen-geth-v3`.
+
+### Filler prerequisites staged while it runs
+
+- `ethpandaops/geth:master` pulled: 1.17.6-unstable, commit `6c5b3cc3`. The archived bundle was
+  filled by `Geth/v1.17.6-unstable-bdf6e17f-20260803`, so same minor version, different commit.
+- Execution-specs worktree at `~/eest-d9ad55b3`, detached at
+  `d9ad55b33b7018e194a63cd167411dbb80f410e3`, the exact ref in the archived fixtures'
+  `_info.url`. Confirmed present at that ref: `tests/benchmark/stateful/bloatnet/`
+  `test_account_query.py`, the `fill-stateful` plugin and its ini, `ClientBackend`, and the
+  `snapshot_block_number`/`snapshot_block_hash` fixture fields. Filling at this ref is what keeps
+  the new test ids comparable with every archived arm.
+
+Next, in order: 2-test fill against the geth smoke store to validate flags and builder wiring;
+besu 350 GB generation after the geth twin finishes (sequential, the spill is seek-bound); store
+gates on both; full fill; then the 129-test go/no-go arm before any 22 h arm.
