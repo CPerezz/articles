@@ -2471,3 +2471,86 @@ Then the 129-test filter, two arms, about 2.6 h each.
   `schelk init-from --virgin /dev/loop0`.
 - `run-stages.sh` `teardown()` does `rm -f /schelk-vols/*.img`. Never call it while the jochemnet
   virgin matters.
+
+---
+
+## Round 40 - yes, the payloads are rebuildable: benchmarkoor has a first-class hook, with one hard constraint
+
+Anon asked whether the payloads can be rebuilt and whether benchmarkoor has a hook. Both yes, and
+I had it wrong in round 39.
+
+### Correction to round 39
+
+I wrote that benchmarkoor "cannot build payloads (no `getPayload`/`payloadAttributes` anywhere)".
+That was the wrong probe. benchmarkoor does not build blocks itself; it *orchestrates* a filler.
+The installed binary has the command:
+
+```
+benchmarkoor build   Build datadirs and fixtures declared under the builder.* config blocks
+  - builder.state_actor    materialises pre-populated client datadirs by invoking state-actor
+  - builder.pre_runs       advances a snapshot datadir and persists the result
+  - builder.eest_payloads  generates stateful EEST benchmark fixtures by running fill-stateful
+                           against a filler client booted on a snapshot
+```
+
+with `--limit-eest-payload-target`, `--force`, `--rebuild-on-diff`. Builds are decoupled from
+`benchmarkoor run` by design: they write artifacts that a later run consumes through its normal
+test-source provider. The consuming side already exists too -
+`tests.source.eest_fixtures.local_fixtures_dir` (and `local_fixtures_tarball`), so replaying
+locally filled fixtures needs no code change at all.
+
+### How the anchor problem solves itself
+
+Round 39's blocker was that a bundle pins `snapshotBlockHash`. It turns out nothing pins it in
+config: `pkg/builder/eest_payloads.go` boots the filler on the store, calls
+`eth_getBlockByNumber("latest", false)` (`pkg/builder/rpc.go`), and passes the result as
+`--snapshot-block=<hash>`. Upstream documents why it is a hash and not `latest`: a reorg between
+session start and fixture write would silently re-anchor the fixture. So the pipeline adapts to
+whatever store you point it at - v2's `0x223a49bd...` included. The pin is an output, not an input.
+
+The resulting invocation (from `buildFillArgs`):
+
+```
+uv run fill-stateful -v \
+  --rpc-endpoint=http://<filler>:<rpc> --engine-endpoint=http://<filler>:<engine> \
+  --engine-jwt-secret-file=/jwt/jwtsecret \
+  --fork=amsterdam --snapshot-block=<hash queried live> --output=/out \
+  --gas-benchmark-values=100,120,140,160,180,200,220,240,260,280,300 \
+  tests/benchmark/stateful/bloatnet -m repricing
+```
+
+### The hard constraint: the filler must be geth
+
+`fill-stateful` replaces fill's t8n backend with `ClientBackend`
+(`packages/testing/src/execution_testing/client_clis/client_backend.py`), which builds each block
+with **`testing_buildBlockV1`** - a Geth-only RPC extension - and advances the chain with
+`engine_newPayloadVX`/`engine_forkchoiceUpdatedVX`. Besu, Nethermind, Erigon and Reth appear only
+in secondary paths (opcode-trace and debug-rewind fallbacks); upstream states the only
+production-ready backend is `ethpandaops/geth:master`. There is no JSON `pre` alloc path for these
+fixtures - the pre-state *is* the store.
+
+So **every store needs a geth twin to be fillable.** That is affordable because the generator is
+client-independent: v1's geth and besu stores shared state root `0x5b305cc0...`, and the
+`eest-payloads/geth/` bundle drove the Besu arm successfully. One geth twin, one fill, one bundle,
+usable for every client under test.
+
+### Cost to do it for v2, and why we should not
+
+1. Rebuild the host state-actor binary from v2's source (`70f14ee` + `754e8db`) - minutes. The
+   host binary defaults to `-client geth`, so the geth path needs no container.
+2. Generate the geth twin: ~650 GB, ~10 h. Needs `/sa-besu/v2` deleted first (525 GB, safe - its
+   content is in the schelk virgin); 388 GB free today, 913 GB after.
+3. Pull `ethpandaops/geth:master`, boot it on the twin, fill at eest ref
+   `d9ad55b33b7018e194a63cd167411dbb80f410e3` - the exact ref in the fixtures' `_info.url`, so the
+   test ids stay identical to the archived arms and the comparison holds. ~1-3 h.
+4. Re-derive the compacted snapshot arm: 1,122 GB, ~3 h. Only fits after the throwaway geth twin
+   is deleted.
+5. Two arms x 129 tests, ~2.6 h each.
+
+About 20 h of exclusive device time. **Do not spend it on v2.** v2's mechanism is already measured
+without any of this (round 39: 3.0x the disk bytes and 4.1x the wall per distinct-contract code
+read). The store that actually needs a throughput arm is the corpus-fix store, and it pays the
+identical 20 h. Rebuild once, for the store that decides the PR.
+
+Recorded as a prerequisite in `2026-09-17-state-actor-corpus-prompt.md`: whoever regenerates a
+store for validation must produce the geth twin too, or the store cannot be benchmarked at all.

@@ -179,6 +179,26 @@ contracts, while the generator emits only the latter. That is a separate realism
 `CodeSampler` rather than to the pool, and it should not be bundled into this PR. Note it in the
 PR body as follow-up work.
 
+## One infrastructure prerequisite, if anyone benchmarks this
+
+The acceptance criteria above are all store-level and need no benchmark. If someone does want a
+throughput arm on the regenerated store, note that EEST stateful payloads are anchored to a
+specific store: a fixture pins `snapshotBlockHash`, and a store with a different state root has a
+different genesis hash, so an existing bundle's payloads are rejected with SYNCING. Payloads must
+be refilled per store.
+
+Refilling uses `fill-stateful`, whose `ClientBackend` builds blocks with `testing_buildBlockV1` -
+a **Geth-only** RPC extension. So a fillable store needs a **geth twin**: generate the same spec
+and seed with `--client=geth` as well. That is sound because the generator is client-independent -
+identical spec and seed give the same state root across clients - and one geth-filled bundle then
+drives every client under test.
+
+Practically: generate both `--client=geth` and the client you intend to benchmark, then
+`benchmarkoor build` with a `builder.eest_payloads` target pointing `source_dir` at the geth
+store; it boots the filler, queries the genesis hash itself, and writes fixtures that
+`tests.source.eest_fixtures.local_fixtures_dir` consumes. Budget roughly a full day of exclusive
+device time for generation plus fill.
+
 ## What to report back
 
 1. The three acceptance figures and the three invariants, measured, with the store size and the

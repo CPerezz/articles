@@ -239,7 +239,7 @@ func specOptions(s cfSpec) *grocksdb.Options {
 // rebuildCFs force-rewrites the named column families with correct options. kForce is required:
 // a CF already sitting entirely in its bottom level is a no-op for a plain CompactRange, so the
 // wrong-option files would survive untouched.
-func rebuildCFs(path string, want []string) {
+func rebuildCFs(path string, want []string, targetLevel int) {
 	cfOpts := make([]*grocksdb.Options, len(flat.ColumnNames))
 	for i, nm := range flat.ColumnNames {
 		spec, ok := flatSpecs[nm]
@@ -272,6 +272,12 @@ func rebuildCFs(path string, want []string) {
 
 	cro := grocksdb.NewCompactRangeOptions()
 	cro.SetBottommostLevelCompaction(grocksdb.KForce)
+	// The default target (-1) is "the deepest level that already has files". A generated store
+	// whose data is parked at L3 therefore gets rewritten *into L3* and stays compaction-pending;
+	// the round-18 rebuild only reached L6 on jochemnet because its data was already there.
+	if targetLevel >= 0 {
+		cro.SetTargetLevel(int32(targetLevel))
+	}
 
 	for _, cf := range want {
 		cf = strings.TrimSpace(cf)
@@ -306,13 +312,14 @@ func main() {
 	abase := flag.Uint64("abase", 0x1000, "first synthetic account address for -mode seq")
 	db2Path := flag.String("db2", "", "second database (the code/ store) for -mode codesize")
 	minSize := flag.Int("minsize", 24000, "minimum code size for -mode codesample")
+	targetLevel := flag.Int("level", -1, "output level for -mode rebuild (-1 = deepest level that already has files)")
 	flag.Parse()
 	if *dbPath == "" {
 		log.Fatal("-db required")
 	}
 
 	if *mode == "rebuild" {
-		rebuildCFs(*dbPath, strings.Split(*cfName, ","))
+		rebuildCFs(*dbPath, strings.Split(*cfName, ","), *targetLevel)
 		return
 	}
 
