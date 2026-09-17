@@ -1564,3 +1564,31 @@ transactions. Both are the round-29 A/Bs I cancelled; they run next.
 
 Host stopped completing SSH sessions at ~15:55 UTC (banner returned, key accepted, session setup
 stalls - the round-5 signature; cleared on its own after ~2 h then). Nothing of mine was running.
+
+## Round 36 (running) - the fixtures differ by one empty block, and it shifts the JIT
+
+Per-payload timing of one control test on each arm (profile runs):
+- jochemnet setup: fcU 22 ms; block 535.5k gas **238.7 ms**; fcU 45 ms. test: block 5.57 M gas
+  **122.1 ms**; fcU 1.5 ms.
+- state-actor setup: fcU 15 ms; **empty block, 0 gas, 244.2 ms**; fcU 19 ms; block 535.5k gas
+  **46.1 ms**; fcU 1.4 ms. test: block 5.57 M gas **289.6 ms**; fcU 2.5 ms.
+
+state-actor's fixtures carry an extra empty block (chain at genesis, Amsterdam override at
+timestamp 1 -> a fork-activation block). The first block after boot costs ~240 ms on both arms
+regardless of content - process warm-up. On jochemnet that block is the EVM-heavy setup block,
+followed by a 45 ms gap: the interpreter's hot methods pass .NET's 100 ms call-counting delay
+and tier up before the test block. On state-actor the warm-up is spent on an empty block; the
+EVM's first real work is the 46 ms setup block and the test block starts 1.4 ms later, on
+tier-0 code with the JIT compiling underneath. The harness's gas-weighted setup timing ignores
+the 0-gas block, which is why state-actor's setup reads 0.04 s. E4 (page cache warm) already
+showed jochemnet's setup stays 0.23 s with 5.5 MB of reads, so the wait is not I/O.
+
+Fits every regime-3a property: proportional per-iteration slowdown, extra CPU, zero I/O,
+uniform across opcode and mode, shrinking with measured-step length (0.71 at 0.12 s -> 0.85-0.92
+at 0.4 s -> ~0.98 at 9 s), unchanged by settling Account. Pre-registered: with
+`DOTNET_TieredCompilation=0` on both arms the control ratio moves from ~0.70 toward 1.0.
+Harness implication: a client restarted per test must be given equal EVM warm-up before
+measurement on every arm - the pre-run problem again, at the JIT level.
+
+Round 35's ledger text landed inside commit 7243233 (another workstream's `git add -A`);
+content intact.
