@@ -270,6 +270,34 @@ data["geth_reference"] = {
     "state_actor_items": 6404913405, "state_actor_gib": 674.25,
     "journal_bytes": 398721024, "journal_layers": 4248,
 }
+# Upstream outcome. Every store-level number below carries the store it was measured on,
+# because three different stores are in play: the 350 GB store this article measures
+# (state_actor_source e4cb205-dirty, no filters, unique code hashes), a 350 GB rebuild used
+# only for diagnosis, and a 4 GB store built from main after #137 and #138 landed.
+data["status"] = {
+    "prs": [
+        {"n": 133, "sha": "11389bc", "merged": "2026-08-04", "ours": False,
+         "title": "fix(besu): align generated RocksDB configuration"},
+        {"n": 137, "sha": "c0e1162", "merged": "2026-09-17", "ours": True,
+         "title": "autofill: 2% EIP-7702 delegation from a fixed 256-target pool"},
+        {"n": 138, "sha": "95e5a10", "merged": "2026-09-17", "ours": True,
+         "title": "autofill: share contract bytecode from a deterministic pool"},
+    ],
+    "measured_store_built": "2026-09-09",
+    # After #137 and #138, on a 4 GB store built from main at 95e5a10.
+    "after": {"store": "main-95e5a10 4 GB", "cf06_phys": 0.447, "per_bytecode": 32.0,
+              "cf07_phys": 0.056, "record_deflate": 0.2147, "block_deflate": 0.1116},
+    # Mainnet targets, from the snapshot.
+    "target": {"cf06_phys": 0.434, "per_bytecode": 28.2, "cf07_phys": 0.371,
+               "record_deflate": 0.443, "block_deflate": 0.329},
+    # Absent-lookup cost, measured directly with a RocksDB probe on each store.
+    "filters": {"unfiltered_blocks": 1.002, "filtered_blocks": 0.010,
+                "snapshot_blocks": 0.038, "filter_useful": 0.990, "bits_per_key": 10.0},
+    # One cold read of a DIFF_MAX contract, disk bytes from /proc/self/io.
+    "code_read": {"store": "350 GB rebuild", "sa_bytes": 17724, "snap_bytes": 901,
+                  "sa_us": 231.9, "snap_us": 56.0},
+}
+
 json.dump(data, sys.stdout)
 print(f"full: {[ (k, len(v)) for k,v in data['full'].items() ]}", file=sys.stderr)
 print(f"filtered: {[ (k, len(v)) for k,v in data['filtered'].items() ]}", file=sys.stderr)

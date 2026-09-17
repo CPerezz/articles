@@ -8,6 +8,7 @@ article states as fact.
 Usage: python3 gen_besu_state_db_report.py
 """
 import collections
+import datetime
 import html
 import json
 import os
@@ -774,6 +775,28 @@ def main():
     # and everything else. This is the same pair the geth and Nethermind studies isolate.
     dark = [r for r in verdict if r[2] in DARK]
     light = [r for r in verdict if r[0] != "absent" and r[2] not in DARK]
+    # Clearing the band is not the same as agreeing, so name the closest category and the
+    # fastest single workload. verdict is sorted by the compacted ratio, so the last row is
+    # the closest to parity.
+    best_cat = verdict[-1]
+    max_row = max(F["state_actor"][c]["mgas_s"] / F["compacted"][c]["mgas_s"] for c in meas)
+    # Upstream outcome, plus the gap between the fix landing and our store being built. That
+    # gap is the reason one of the three findings is our own goal rather than a generator bug.
+    ST = D["status"]
+    PR = {p["n"]: p for p in ST["prs"]}
+    DAYS_STALE = (datetime.date.fromisoformat(ST["measured_store_built"])
+                  - datetime.date.fromisoformat(PR[133]["merged"])).days
+    # The residual against gas budget. A fixed per-read cost would be flat here and a fixed
+    # per-block cost would improve with the budget; the point of carrying all the budgets is
+    # that neither happens, so the oracle below is what keeps the prose honest.
+    GAS = sorted({c[2] for c in meas})
+    def _grad(keys, pick):
+        return [median([F["state_actor"][c]["mgas_s"] / F["compacted"][c]["mgas_s"]
+                        for c in keys if c[2] == g and pick(c)]) for g in GAS]
+    grad = {"absent": _grad(meas, lambda c: c[1] == "NON_EXISTING_ACCOUNT"),
+            "dark": _grad(meas, lambda c: c[1] in DARK),
+            "light": _grad(meas, lambda c: c[1] != "NON_EXISTING_ACCOUNT" and c[1] not in DARK),
+            "ctrl": _grad(ctrls, lambda c: True)}
 
     # ---- oracles ----------------------------------------------------------
     # These guard derivations, not conclusions: they fail generation if the inputs stop
@@ -809,6 +832,25 @@ def main():
     assert not any(inband(r[4]) for r in dark), "a distinct-code category reached the band"
     assert not any(inband(r[4]) for r in verdict if r[0] == "absent"), \
         "an absence category reached the band"
+    # Clearing the band is the weaker claim; these guard the stronger one the prose makes.
+    assert max_row < 1.0, \
+        f"a measurement workload is faster than the snapshot: {max_row:.3f}"
+    assert best_cat[4] == max(r[4] for r in verdict), "verdict stopped being sorted by ratio"
+    assert best_cat[4] < 1.0, \
+        f"a category reached parity: {best_cat[1]}/{best_cat[2]} at {best_cat[4]:.3f}"
+    assert ctrl_vs_comp > 1.0, \
+        f"the control is no longer faster on the generated store: {ctrl_vs_comp:.3f}"
+    # The gradient claim: every measurement class degrades as the budget grows, the control
+    # does not. Endpoints carry the prose; the middle is checked for monotonic drift so the
+    # sentence cannot survive a series that wanders.
+    for cls in ("absent", "dark", "light"):
+        assert grad[cls][-1] < grad[cls][0], \
+            f"{cls} no longer degrades with gas: {grad[cls][0]:.3f} -> {grad[cls][-1]:.3f}"
+        assert all(b <= a + 0.01 for a, b in zip(grad[cls], grad[cls][1:])), \
+            f"{cls} gradient is not non-increasing: {[round(v, 3) for v in grad[cls]]}"
+    assert max(grad["ctrl"]) - min(grad["ctrl"]) < 0.02, \
+        f"the control is not flat across budgets: {[round(v, 3) for v in grad['ctrl']]}"
+    assert all(v > 1.0 for v in grad["ctrl"]), "the control stopped favouring the generated store"
     for b, op, m, before, after in verdict:
         assert (after > before) == (b != "absent") or abs(after - before) < 0.05, \
             f"{op}/{m}: treatment moved the wrong way ({before:.3f} -> {after:.3f})"
@@ -1049,7 +1091,7 @@ def main():
     w('<h3>The databases themselves</h3>')
     w(f"<p>Both stores run the same RocksDB settings on every state column family: "
       f"<code>compression={P['compression']}</code> and "
-      f"<code>block_size={thousands(P['block_size'])}</code>, byte-identical. Key–value "
+      f"<code>block_size={thousands(P['block_size'])}</code>, byte-identical. Key-value "
       f"separation is enabled on exactly two column families, neither of which holds state: the "
       f"snapshot's {thousands(C['shipped']['blob_files'])} blob files and "
       f"{C['shipped']['blob_bytes']/1e9:.0f} GB are block bodies and receipts. The generated "
@@ -1084,7 +1126,7 @@ def main():
     w(f"<p>The published snapshot ships a write-ahead log of "
       f"{thousands(C['shipped']['wal_bytes'])} bytes across "
       f"{C['shipped']['wal_files']} files, and the pre-run replay leaves it that size or "
-      f"larger. A write-ahead log is where a key–value store puts writes that have not yet "
+      f"larger. A write-ahead log is where a key-value store puts writes that have not yet "
       f"been folded into its sorted files, so a gigabyte of it sitting inside a snapshot is "
       f"exactly the shape of a benchmark artifact: state that lives in one place on disk and "
       f"another in memory, restored on every boot.</p>")
@@ -1183,8 +1225,19 @@ def main():
       f"artifact leaving. Take agreement to within ±{BAND*100:.0f}% of parity as the bar: "
       f"<b>{cat_before} of {len(verdict)}</b> categories cleared it against the snapshot as "
       f"published, and <b>{cat_after} of {len(verdict)}</b> clear it against the compacted "
-      f"one. Per workload rather than per category, {100*wl_before/len(common):.0f}% becomes "
-      f"{100*wl_after/len(common):.0f}%.</p>")
+      f"one. Per measurement workload rather than per category, "
+      f"{100*wl_before/len(meas):.0f}% becomes {100*wl_after/len(meas):.0f}%.</p>")
+    w(f"<p>Read that bar carefully, because it flatters the generated store. Clearing a "
+      f"±{BAND*100:.0f}% band is not the same as agreeing. Not one of the {len(verdict)} "
+      f"categories reaches parity: the closest is {best_cat[1]}&nbsp;{SHORT_MODE[best_cat[2]]} at "
+      f"{best_cat[4]:.3f}&times;, and not one of the {len(meas)} measurement workloads is "
+      f"faster than the snapshot. The best single workload of the {len(meas)} manages "
+      f"{max_row:.3f}&times;. The control workloads, which run the same loop and touch no "
+      f"account state, sit at {ctrl_vs_comp:.3f}&times;, so the generated store is "
+      f"{pc(ctrl_vs_comp)} <em>faster</em> on work that reads nothing. Measured against that as "
+      f"the true zero, every category that reads account state is at least "
+      f"{pc(best_cat[4]/ctrl_vs_comp)} slow. The band hides a floor; it does not mean half the "
+      f"suite is clean.</p>")
     w(fig("verdict"))
     w(f"<p>The {cat_after} that converge are the categories whose contract code is shared "
       f"or absent, and they land at a median of {pc(median([r[4] for r in light]))} off "
@@ -1230,6 +1283,25 @@ def main():
       + " to ".join(f"{sa_bytes[b]:.2f}&times;" for b in ("leaf-only", "code-reading")) +
       " on reads that find their key may also be filter absence rather than the record geometry "
       "of the next section. The two are not separated here.</p>")
+    w(f"<p>This one was already fixed upstream before the store was built. "
+      f"<a href=\"https://github.com/ethereum/state-actor/pull/{PR[133]['n']}\">"
+      f"state-actor #{PR[133]['n']}</a> ({PR[133]['sha']}) put a full bloom filter at "
+      f"{ST['filters']['bits_per_key']:.0f} bits/key on every column family and merged on "
+      f"{PR[133]['merged']}; the store measured here was generated on "
+      f"{ST['measured_store_built']} from a working tree "
+      f"(<code>{D['provenance']['state_actor_source']}</code>) that predated it by "
+      f"{DAYS_STALE} days. So the 50&times; is real, reproducible from the archived store, and "
+      f"our own doing: we measured a build that had already been superseded.</p>")
+    w(f"<p>The mechanism is fixed rather than argued. Probing each store directly for the cost "
+      f"of one absent-account lookup: the unfiltered store reads "
+      f"{ST['filters']['unfiltered_blocks']:.3f} data blocks per lookup and its filter is "
+      f"consulted never; a filtered store built from the same generator reads "
+      f"{ST['filters']['filtered_blocks']:.3f} blocks and rejects "
+      f"{ST['filters']['filter_useful']:.3f} lookups per lookup at the filter, which is a "
+      f"{ST['filters']['unfiltered_blocks'] / ST['filters']['filtered_blocks']:.0f}&times; "
+      f"reduction in exactly the operation this section is about. The snapshot reads "
+      f"{ST['filters']['snapshot_blocks']:.3f}. Whatever remains in the absence class after "
+      f"that is not filter absence.</p>")
 
     # ===================================================================== 8
     w('<h2>The residual</h2>')
@@ -1271,6 +1343,21 @@ def main():
       f"({reuse['state_actor']['per_code']:.2f}). That is why the account records compress "
       f"worse, because a shared code hash becomes a unique one, and it is why a code read pays "
       f"for block padding.</p>")
+    w(f"<p>That property is now fixed upstream, in the two places it came from. "
+      f"<a href=\"https://github.com/ethereum/state-actor/pull/{PR[137]['n']}\">"
+      f"state-actor #{PR[137]['n']}</a> ({PR[137]['sha']}) draws each delegation designator "
+      f"from a fixed pool of 256 authorities instead of minting a unique one per account, so "
+      f"designators repeat the way real ones do, at a delegation rate still matched to "
+      f"mainnet. <a href=\"https://github.com/ethereum/state-actor/pull/{PR[138]['n']}\">"
+      f"#{PR[138]['n']}</a> ({PR[138]['sha']}) gives contracts a shared bytecode pool sized to "
+      f"mainnet's reuse. Measured on a small store built from the result: account records go "
+      f"from {props['state_actor']['06']['phys_over_logical']:.3f} to "
+      f"{ST['after']['cf06_phys']:.3f} physical over logical against the snapshot's "
+      f"{ST['target']['cf06_phys']:.3f}, and reuse lands at "
+      f"{ST['after']['per_bytecode']:.1f} accounts per distinct bytecode against mainnet's "
+      f"{ST['target']['per_bytecode']:.1f}. The record geometry this section measures is "
+      f"therefore gone as a mechanism; whether the throughput follows is a rerun, not an "
+      f"inference, and it has not been done.</p>")
     w('<h3>The code half is not the code being read</h3>')
     w(f"<p>The same chain does not explain the {len(dark)} distinct-code categories, and it is "
       f"worth saying why rather than stretching it. Isolate what the code read itself costs by "
@@ -1327,6 +1414,66 @@ def main():
       f"Neither is "
       f"a change to Besu. It is also why the geth study never met this: pebble defaults to "
       f"4 KiB blocks, a quarter of what both of these stores use.</p>")
+    w(f"<p>The second of those was taken, and it went too far. "
+      f"<a href=\"https://github.com/ethereum/state-actor/pull/{PR[138]['n']}\">"
+      f"#{PR[138]['n']}</a>'s pool is one real ERC20 runtime of about 1.7 KB, tiled to reach "
+      f"the sampled code size and rotated per pool entry, so entries are self-similar inside "
+      f"themselves and to each other. It gets reuse and size right and content wrong: on a "
+      f"store built from it, the code column family compresses to "
+      f"{ST['after']['cf07_phys']:.3f} physical over logical against mainnet's "
+      f"{ST['target']['cf07_phys']:.3f}, individual records deflate to "
+      f"{ST['after']['record_deflate']:.3f} against mainnet's "
+      f"{ST['target']['record_deflate']:.3f}, and a packed block to "
+      f"{ST['after']['block_deflate']:.3f} against "
+      f"{ST['target']['block_deflate']:.3f}. That is "
+      f"{ST['target']['cf07_phys'] / ST['after']['cf07_phys']:.1f}&times; too compressible, so "
+      f"the expected effect on this class is that it changes sign rather than closes. Real "
+      f"mainnet code compresses because many <em>different</em> contracts repeat across "
+      f"accounts, not because one contract repeats inside itself, and the fix is a corpus. "
+      f"The PR's own comment predicted this failure mode.</p>")
+    w(f"<p>Independent of the generator, the cost itself is measurable rather than modelled. "
+      f"One cold read of a {thousands(CB['fixture_bytes'])}-byte contract, page cache dropped, "
+      f"counting the bytes the block layer actually served: "
+      f"{thousands(ST['code_read']['sa_bytes'])} bytes on the generated store against "
+      f"{thousands(ST['code_read']['snap_bytes'])} on the snapshot as published, and "
+      f"{ST['code_read']['sa_us']:.0f}&nbsp;&micro;s against "
+      f"{ST['code_read']['snap_us']:.0f}&nbsp;&micro;s of wall. The population is the same "
+      f"contracts in both stores, so that is the mechanism of this section, weighed once on a "
+      f"scale rather than derived.</p>")
+    w('<h3>Where this stands</h3>')
+    w(f"<p>Three mechanisms, three states. Every row's store-level column is a measurement on "
+      f"a store built from the merged fix; not one of them is a throughput measurement, "
+      f"because that needs a regenerated store and a refilled payload set.</p>")
+    w("<table><tr><th>class</th><th class=n>categories</th><th>mechanism</th><th>fix</th>"
+      "<th>store-level check</th></tr>")
+    for cls, n, mech, pr, chk in (
+            ("absent", n_absent, "no bloom filter on any column family",
+             f"#{PR[133]['n']}, not ours",
+             f"{ST['filters']['unfiltered_blocks']:.3f} &rarr; "
+             f"{ST['filters']['filtered_blocks']:.3f} blocks per absent lookup"),
+            ("shared or absent code", len(light), "unique code hashes and unique designators",
+             f"#{PR[137]['n']} + #{PR[138]['n']}",
+             f"cf06 {props['state_actor']['06']['phys_over_logical']:.3f} &rarr; "
+             f"{ST['after']['cf06_phys']:.3f}, target {ST['target']['cf06_phys']:.3f}"),
+            ("distinct code", len(dark), "block co-tenancy, not code compressibility",
+             f"#{PR[138]['n']} overshoots",
+             f"cf07 {ST['after']['cf07_phys']:.3f}, target "
+             f"{ST['target']['cf07_phys']:.3f}")):
+        w(f"<tr><td>{cls}</td><td class=n>{n}</td><td>{mech}</td><td>{pr}</td>"
+          f"<td>{chk}</td></tr>")
+    w("<caption>The first two mechanisms are removed at the level this article measured them. "
+      "The third is not: the fix for it overshot, and the class is expected to change sign "
+      "rather than reach parity.</caption></table>")
+    w(f"<p>One thing the rerun will have to explain that this article cannot. The gap is not a "
+      f"fixed cost per read, and not a fixed cost per block: it grows with the gas budget. "
+      f"Across {len(GAS)} budgets from {min(GAS)}M to {max(GAS)}M the absence class goes "
+      f"{grad['absent'][0]:.3f} to {grad['absent'][-1]:.3f}, distinct code "
+      f"{grad['dark'][0]:.3f} to {grad['dark'][-1]:.3f}, and shared code "
+      f"{grad['light'][0]:.3f} to {grad['light'][-1]:.3f}, while the control holds flat at "
+      f"{grad['ctrl'][0]:.3f} to {grad['ctrl'][-1]:.3f}. A constant per-read penalty predicts "
+      f"a flat ratio and a constant per-block overhead predicts the ratio improving as the "
+      f"budget grows. Neither happens, so any one number for the residual is a number about a "
+      f"gas budget.</p>")
     w('<h3>The same experiment on two clients</h3>')
     w(f"<p>The generator is deterministic across clients: the same seed and spec produced "
       f"{thousands(P['state_actor_items'])} items here against "
@@ -1369,6 +1516,10 @@ def main():
     w("</body></html>")
 
     doc = add_toc("\n".join(o))
+    # House style is hyphens. Dashes creep back in through hand-written prose, so fail the
+    # build rather than publish them, entity or literal.
+    for bad in ("\u2014", "\u2013", "&mdash;", "&ndash;"):
+        assert bad not in doc, f"dash in the emitted page: {bad!r}"
     with open(OUT, "w") as fh:
         fh.write(doc)
     print(f"wrote {os.path.relpath(OUT, HERE)} ({os.path.getsize(OUT)} bytes), "
