@@ -2043,3 +2043,77 @@ jochemnet snapshot. Device parity, both arms on md2 NVMe, is a controlled variab
 state-actor arm needs re-running, compared against the archived treated-jochemnet results, valid
 within the measured 0.2-1.3% pipeline reproducibility. That frees `besu-joc-scratch.img` (1.4 T,
 restorable from virgin) to make room for a v2 volume on NVMe.
+
+---
+
+## Round 34 - consolidation, and the fixed/slope fit that changes every target
+
+### Where the gap stands (v1 throughput, the only throughput data that exists)
+
+660 measurement rows against the compacted snapshot: **341 inside +/-10% (51.7%), 319 outside**.
+Per category: **24 of 48 inside**. The 319 failures are entirely two classes, and a third never
+fails:
+
+| class | cats | workloads outside | median ratio |
+|---|---|---|---|
+| absent (NON_EXISTING) | 8 | 110 of 110 (100%) | 0.110 -> 9.07x |
+| distinct-code (DIFF_MAX, JUMPDEST) | 16 | 209 of 220 (95%) | 0.823 -> 1.21x |
+| shared/no-code (EOA, MINIMAL, SAME_MAX) | 24 | **0 of 330** | 0.948 |
+| control | - | 7 of 440 | 1.019 |
+
+Gas drift: shared flat 0.95 -> 0.94; distinct-code 0.85 -> 0.79; absent 0.15 -> 0.10.
+
+### A0: fit t = f + v*G per category, and the drift dissolves into a slope
+
+A pure per-read block-cost model predicts a flat ratio, so the drift needed explaining. Fitting
+wall time against gas used over the 11 budgets, per category, per arm:
+
+| class | n | f_ref (s) | f_syn (s) | f_syn - f_ref | v_ref/v_syn |
+|---|---|---|---|---|---|
+| shared/no-code | 24 | 1.327 | 1.210 | -0.117 | **0.933** |
+| distinct-code | 16 | 2.605 | 1.685 | **-0.919** | **0.761** |
+| absent | 8 | 0.473 | 1.200 | +0.727 | **0.076** |
+| control | 32 | 0.136 | 0.137 | **+0.001** | **1.019** |
+
+**The drift is a fixed-term artefact, and fitting it out makes every gap bigger, not smaller.**
+The synthetic arm carries a *smaller* fixed cost on the two existing-account classes (-0.92 s on
+distinct-code), which flatters it at low budgets; as the budget grows the slope shows through.
+Corrected per-gas penalties: shared **6.7%** (not 5.2%), distinct-code **31%** (not 21%), absent
+**13.2x** (not 9.07x). Single-budget ratios understate all three.
+
+**And the 1.9% control offset is not a fixed-term artefact.** The control's fixed terms match to
+1 ms (0.136 vs 0.137 s) while its *slope* ratio is 1.019. So the synthetic arm is genuinely 1.9%
+faster per unit gas on work that touches no account state. That is a real floor, not a startup
+cost, and it cannot be fitted away. The plan-debate pre-registered the opposite ("the drift is a
+fixed-term artefact, the 1.9% floor is retired"); the fit falsifies half of that. Most likely
+cause is the one asymmetry already on the record: the two arms run *different EEST payload bundle
+builds* (`eest-payloads-jochemnet-v1-...d9ad55b3-20260807` against
+`...state-actor-v1-...2282c757-20260722`), so the control tests are not the same transactions.
+Aligning the bundles is now a prerequisite for claiming anything under ~2%.
+
+### Consequence for targets
+
+Every class target moves from "median ratio" to "slope ratio with the fixed term reported and
+subtracted", and a throughput ratio quoted at a single gas budget is not meaningful without its
+budget. This is a methodology correction that belongs upstream alongside the
+measurement/control-pooling one.
+
+### Space reclaimed
+
+`besu-joc-scratch.img` (1.4 TB, the compacted-jochemnet scratch) unmounted, dm-era torn down,
+loop detached, file re-created sparse. NVMe **145 GB -> 1.6 TB** free. The virgin image is
+untouched and still attached, so the scratch is re-derivable with `schelk full-recover` plus a
+90-minute recompaction. Docker build cache, stopped containers, inactive volumes and the two
+stale generator images: another 22 GB. The old v1 store was *kept*: it is 533 GB on the HDD array
+which has 9 TB free, so deleting it would not have helped the device that was tight, and it is
+the only copy of the store the published article measured.
+
+### v3 is generating
+
+All three fixes are upstream: #133 (bloom on every CF, 10 bits/key), **#137** (delegation 0.30 ->
+0.02 *and* designators from a fixed 256-target pool, so the values repeat), **#138** (every
+contract draws one of NumContracts/32 slices of an embedded OZ ERC20 runtime, i.e. ~32 accounts
+per distinct bytecode against mainnet's 28.2; manifest gained `distinct_bytecodes`). #137
+supersedes our local 0.0003 one-liner, which only made designators rare rather than shared.
+Built `state-actor-besu:main-95e5a10` from `origin/main` and launched v3 detached under dockerd
+with `/tmp` bind-mounted to the HDD array. v2 is kept, so the three stores isolate each fix.
