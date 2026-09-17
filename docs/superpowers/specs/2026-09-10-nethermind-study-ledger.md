@@ -1487,3 +1487,34 @@ regime-3 slice (DIFF_MAX/SAME_MAX/warm/sload_same_key/NON_EXISTING at 160M) on s
 only, against the published runs as baseline. Pre-registered prediction: control 0.708 -> >0.9,
 DIFF_MAX code-exec 0.64 -> >0.9, sload_same_key 0.81 -> >0.9, warm query 0.90 -> ~1.0;
 compaction-pending=0 after promote; rocksdb:low absent from a re-profile.
+
+## Round 32 (result) - aborted by the schelk lock; but the rebuild revealed the generator bug
+
+My concurrent `schelk full-recover` of jochemnet (needed after the SIGKILL) held schelk's global
+lock for 17 min: state-actor's baseline slice died at test 3, `promote` failed, and both
+re-measure runs got 0 tests. **The state-actor virgin image is unchanged.**
+
+The rebuild itself ran (303 s) and did nothing useful: `Account L0:1 L3:92 -> L3:92`, still
+`compaction-pending=1`. Cause: RocksDB's manual `CompactRange` with the default `target_level=-1`
+compacts into the deepest level that already holds files. Round 18 reached L6 on jochemnet only
+because its Account already lived at L6.
+
+The generator made the same mistake. The virgin image carries the generation run's RocksDB LOG
+(2026-09-11 19:31-23:04, `create_if_missing=1`, 2,781 memtable flushes, 13,591 auto compactions
+`LevelMaxLevelSize`, 163 `ManualCompaction`, shutdown mid-job). Its finishing pass on Account is
+8 manual jobs, all `Compacting N@2 + M@3 files to L3` - never to L6. With
+`level_compaction_dynamic_level_bytes=false` L3's target is 12.8 GB and the generator left
+23.7 GB there, so `compaction-pending=1` from the moment generation ended. The CFs with
+`dynamic=true` (StateNodes, StorageNodes) were compacted "to L6" by the same pass and are fine.
+Storage sits at L4 under its 256 GB target and is not pending.
+
+**Generator fix:** for every CF with `level_compaction_dynamic_level_bytes=false`, the finishing
+`CompactRange` must set an explicit `target_level = num_levels-1` (or open with dynamic levels
+for the pass). Probe gained `-mode rebuild -level N` for the post-hoc equivalent.
+
+Also learned: Nethermind does not append to the store's `LOG` (RocksDB info log goes elsewhere),
+so per-boot compaction jobs are not recoverable from the mounted volume; the per-thread profile
+remains the evidence.
+
+## Round 33 (running) - replicate the baseline profile on the unsettled image
+## Round 34 (armed) - rebuild Account to L6 explicitly, promote, re-profile and re-measure
