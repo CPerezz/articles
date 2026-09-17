@@ -2376,3 +2376,98 @@ generated before #133, #137 and #138 existed. Store-level gates now say 32 of th
 (absent 8, shared/no-code 24) have had their mechanism removed. **None of them has been
 re-measured.** This table is the last measured diff, not the current one. The only category group
 whose mechanism is still open is distinct-code: 16 categories, 220 workloads, median 0.828.
+
+---
+
+## Round 39 - v2 confirmed: the distinct-code diff is still there, measured at the block layer
+
+Anon asked to re-run the one remaining class against v2 and confirm the diff persists. The
+throughput run is blocked (below); the mechanism is now measured model-free, which answers the
+question the run was meant to answer.
+
+### v2 gates as the right isolation store
+
+`LiveGeom` on `/sa-besu/v2`:
+
+| metric | v2 | snapshot | reading |
+|---|---|---|---|
+| `cf06` phys/log | **0.433** | 0.434 | account class at parity - closed |
+| filters, every CF | present, 10.0 bits/key | present | absence class closed (#133) |
+| `cf07` phys/log | **0.841** | 0.371 | **code class fully open** |
+| pooled record deflate >=1 KiB | **1.0021** | 0.443 | pure random - no #138, as intended |
+
+So v2 is the first store where the code class is isolated: the other two mechanisms are gone and
+this one is untouched. v3 would have been the wrong instrument - #138's over-compressed code
+(round 37) contaminates exactly this class. v3 was therefore killed and its 480 GB reclaimed.
+
+### The measurement
+
+`tools/besu-study/CodeReadCost.java`. The `EXISTING_CONTRACT_DIFF_MAX` population is 150,000
+contracts of exactly 24,576 bytes, and both stores derive from the same state-actor spec
+(hash `74dea7d1...`), so selecting `cf07` values of that exact length selects the same contracts
+in both. Two-phase: sample keys, drop the host page cache, then read. Disk bytes from
+`/proc/self/io read_bytes`, 4 GB block cache on both arms so the block counter is first-touch
+rather than thrash.
+
+| per cold code read | **v2** | snapshot (as published) |
+|---|---|---|
+| **DISK bytes** | **17,724 B** | **901 B** |
+| data blocks, first touch | 0.983 | 0.532 |
+| block bytes, uncompressed | 39,005 B | 25,627 B |
+| wall | 231.9 us | 56.0 us |
+
+The co-tenants are the whole story: the block is 39,005 B on v2 against 25,627 B on the snapshot,
+and the 13,378 B of difference is v2's incompressible neighbours. The fixture contract itself
+deflates to 0.011 on **both** stores, so it contributes nothing either way - exactly the
+"block co-tenancy, not code compressibility" conclusion of round 36, now measured on a real read
+instead of modelled by `BlockSim`.
+
+**Two failed probe designs, recorded so they are not repeated.** (1) Single-process: collecting
+the key sample warms precisely the blocks the read loop then reads, so both stores reported an
+identical 380,928 disk bytes - JVM startup only. (2) Default 8 MB block cache: 14.4 data blocks
+per read, which measures cache thrash, not the store. Both numbers were discarded.
+
+### Honest scaling of the result
+
+19.7x is against the **as-published** snapshot, and that arm flatters itself: the fixture blobs
+were deployed by pre-runs, so in an uncompacted store they cluster in the newest SSTs - visible
+as 0.532 blocks per read, i.e. sampled fixtures sharing blocks. The article's reference arm is the
+**compacted** snapshot, whose code block `BlockSim` put at 5,912 B. Against that reference v2 is
+**~3.0x the disk bytes per distinct-contract code read**. Either way the mechanism is present and
+large, and 3.0x on bytes is the right order to produce the measured 17-21% throughput penalty.
+
+### Why the throughput run is blocked: fixtures are pinned to store lineage
+
+Provisioned v2 into a schelk virgin/scratch pair with the same dm-era rollback the archived
+`s2-sa` arm used (method-identical, so no confound), then ran a 2-test gate. It failed
+`passed=0 total=2`: `engine_newPayload` returns SYNCING.
+
+Cause, confirmed by hashes: an EEST payload bundle pins `snapshotBlockHash` and `startBlockHash`.
+The state-actor bundle demands `0x4525339a...`; v2's genesis is `0x223a49bd...`. Same spec hash
+gives the same *addresses*, but v2's state root is `0x2efb7792...` against v1's `0x5b305cc0...`,
+so the genesis block hash differs and every payload's `parentHash` misses.
+
+**This is a structural cost of the whole programme, not a v2 quirk: every regenerated store needs
+a freshly built EEST payload bundle.** It applies to v3, and it will apply to the corpus-fix store
+that PR validation depends on. No state-actor bundle matching v2 exists upstream (a newer
+*jochemnet* stateful bundle, `e269bb44-20260916`, was published yesterday).
+
+For a real throughput arm, two prerequisites, in this order:
+1. Build an EEST payload bundle against v2's genesis `0x223a49bd...`. Transactions are identical
+   to the v1 bundle - the addresses did not move - so only block headers need refilling.
+2. Re-derive the compacted snapshot arm: `schelk full-recover` (~90 min) + `rockscompact`
+   (~91 min). Needs 1,122 GB; only 388 GB is free, so `/sa-besu/v2` must be deleted first - safe,
+   its content now lives in the schelk virgin.
+
+Then the 129-test filter, two arms, about 2.6 h each.
+
+### Host state left behind
+
+- `/schelk/state-actor/v1/besu` = v2, promoted, dm-era `besu_sa2_era`, 388 GB free.
+- `/var/lib/schelk/state.json` now binds the **v2** pair. The old jochemnet binding is kept as
+  `state.json.jochemnet-stale` with a README: it names `/dev/loop1` as its scratch, but loop1 is
+  now the v2 virgin, so restoring that file as-is would destroy v2. The jochemnet virgin
+  (1,122 GB, loop0, the only copy of the snapshot store) is intact and re-adoptable via
+  `schelk init-from --virgin /dev/loop0`.
+- `run-stages.sh` `teardown()` does `rm -f /schelk-vols/*.img`. Never call it while the jochemnet
+  virgin matters.

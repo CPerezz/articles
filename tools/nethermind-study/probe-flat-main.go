@@ -357,6 +357,12 @@ func main() {
 				"rocksdb.estimate-num-keys",
 				"rocksdb.total-sst-files-size",
 				"rocksdb.live-sst-files-size",
+				// Whether RocksDB considers this CF's shape unfinished. A generated store can
+				// leave files parked at intermediate levels; the client then compacts in the
+				// background on every open, and a per-test image restore discards the work.
+				"rocksdb.compaction-pending",
+				"rocksdb.estimate-pending-compaction-bytes",
+				"rocksdb.num-running-compactions",
 			} {
 				v := db.GetPropertyCF(p, handles[i])
 				if v == "" {
@@ -408,6 +414,22 @@ func main() {
 		w.Flush()
 		f.Close()
 		fmt.Printf("sampled %d random-seek keys from cf=%s -> %s\n", count, *cfName, *keysFile)
+
+	case "dump":
+		// Full key+value dump, for column families small enough to read whole. The Metadata CF
+		// holds a handful of entries the client consults at boot to decide how to treat the flat
+		// store, and the two arms have a different number of them.
+		it := db.NewIteratorCF(ro, cf)
+		defer it.Close()
+		shown := 0
+		for it.SeekToFirst(); it.Valid() && shown < *n; it.Next() {
+			k, v := it.Key(), it.Value()
+			fmt.Printf("  key=%x\n  val=%x  (%d bytes)\n", k.Data(), v.Data(), v.Size())
+			k.Free()
+			v.Free()
+			shown++
+		}
+		fmt.Printf("cf=%s entries dumped=%d\n", *cfName, shown)
 
 	case "probe":
 		f, err := os.Open(*keysFile)
@@ -800,6 +822,7 @@ func main() {
 		it := db.NewIteratorCF(ro, cf)
 		defer it.Close()
 		scanned, kept := 0, 0
+		var shape struct{ n, size, jd, push, distinct int }
 		for it.SeekToFirst(); it.Valid() && kept < *n; it.Next() {
 			v := it.Value()
 			raw := make([]byte, v.Size())
@@ -819,6 +842,35 @@ func main() {
 				log.Fatalf("code get: %v", err)
 			}
 			big := cv.Exists() && cv.Size() >= *minSize
+			if big && shape.n < 64 {
+				// DIFF_MAX executes each store's *own* max-size contracts, so their bytecode
+				// shape - not their size - is what a per-contract analysis cost depends on.
+				// Jumpdest analysis marks every 0x5b outside PUSH data; a filler of JUMPDESTs
+				// is the pathological case for any set-based implementation.
+				code := cv.Data()
+				jd, push, distinct := 0, 0, map[byte]bool{}
+				for i := 0; i < len(code); i++ {
+					b := code[i]
+					distinct[b] = true
+					if b >= 0x60 && b <= 0x7f { // PUSH1..PUSH32: skip immediate data
+						push++
+						i += int(b - 0x5f)
+						continue
+					}
+					if b == 0x5b {
+						jd++
+					}
+				}
+				shape.n++
+				shape.size += len(code)
+				shape.jd += jd
+				shape.push += push
+				shape.distinct += len(distinct)
+				if shape.n <= 3 {
+					fmt.Printf("  code[%d] size=%d jumpdest=%d push=%d distinct_bytes=%d head=%x\n",
+						shape.n, len(code), jd, push, len(distinct), code[:min(48, len(code))])
+				}
+			}
 			cv.Free()
 			if !big {
 				continue
@@ -835,6 +887,10 @@ func main() {
 		f.Close()
 		fmt.Printf("scanned %d accounts, kept %d code hashes of >= %d bytes -> %s\n",
 			scanned, kept, *minSize, *keysFile)
+		if shape.n > 0 {
+			fmt.Printf("BYTECODE SHAPE over %d max-size contracts: avg size=%d avg jumpdest=%d avg push=%d avg distinct_bytes=%d\n",
+				shape.n, shape.size/shape.n, shape.jd/shape.n, shape.push/shape.n, shape.distinct/shape.n)
+		}
 
 	case "keys":
 		// Dump raw key shapes so the two stores' encodings can be compared directly.
