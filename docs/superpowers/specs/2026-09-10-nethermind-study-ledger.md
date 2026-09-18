@@ -1843,3 +1843,60 @@ defensible without a replicate.
   bloom filter to the code DB; any further store surgery before R43.
 
 All three chained and detached: R42 -> R43 -> R44.
+
+## Round 42 (result) - format_version restored to 5 on both code DBs
+
+joc `L6:113 -> L6:113`, sa `L6:729 -> L6:726`, both `pending=0`, `format_version=5` verified
+before promoting (promotes: 4.1 s / 24.0 s). `compactWholeDB` now transcribes the client's table
+options instead of taking grocksdb's defaults. My contamination is out of both golden images.
+
+## Round 43 (result) - the deciding experiment: half my prediction was wrong
+
+Two replicas per arm of the identical corrected configuration (266-test subset, settled stores,
+`DOTNET_TieredCompilation=0`). All four runs 266/266, zero failures.
+
+**This configuration's own reproducibility, measured for the first time** (same arm, two runs):
+jochemnet 221/266 within +-10% (83%, median 0.9993); state-actor 192/266 (72%, median 1.0006).
+
+**Per-test divergence is noise.** Cross-store outside +-10%: 108 in replica 1, 131 in replica 2,
+87 in both - but in the *same direction* in both, with state-actor slower: **1 test out of 266**.
+The "defensible list" is mostly sign-flippers: rep1 0.610 / rep2 1.136, rep1 1.162 / rep2 0.621,
+and so on. Prediction "fewer than 5 of the 11 survive" - **confirmed, 1 survives**.
+
+**Cell medians are not noise, and that falsifies the other half of my prediction.** I predicted
+DIFF_MAX's 0.934 would move by more than +-0.03. It moved by **0.005**:
+
+| cell | replica 1 | replica 2 | swing | published |
+|---|---|---|---|---|
+| **DIFF_MAX code-exec** (16) | **0.928** | **0.933** | **+0.005** | 0.643 |
+| **JUMPDEST code-exec** (16) | **0.938** | **0.937** | **-0.000** | 0.925 |
+| SAME_MAX code-exec (16) | 0.993 | 0.988 | -0.005 | 0.980 |
+| MINIMAL code-exec (16) | 0.997 | 0.991 | -0.006 | 0.980 |
+| EXISTING_EOA code-exec (16) | 0.987 | 0.994 | +0.007 | 0.982 |
+| DIFF_MAX **BAL/HASH** (4) | 1.013 | 1.001 | -0.012 | 0.973 |
+| JUMPDEST **BAL/HASH** (4) | 0.991 | 0.997 | +0.006 | 0.972 |
+| ether transfer (36) | 1.049 | 1.073 | +0.023 | 1.014 |
+| storage slot (12) | 1.053 | 1.066 | +0.013 | 1.078 |
+| NON_EXISTING code-exec (16) | 1.092 | 1.209 | +0.117 | 0.932 |
+| CONTROL (80) | 1.137 | 1.183 | +0.046 | 0.686 |
+| sload_same_key (4) | 1.265 | 1.348 | +0.083 | 1.040 |
+| warm query (14) | 1.286 | 1.293 | +0.006 | 0.920 |
+
+So the last category is **real, reproducible to half a per cent, and precisely shaped**: about
+**7% on DIFF_MAX and 6% on JUMPDEST, but only under opcodes that load the callee's code**. The
+same two modes under BALANCE/EXTCODEHASH - which read the account row and never the code - are at
+**parity (1.013, 0.991)**. MINIMAL and SAME_MAX, which do load code but small or reused code, are
+also at parity (0.99). The axis is therefore *loading a large contract's code that was not just
+loaded*, and nothing else.
+
+Two honest caveats on the same table: the short/sub-second cells (CONTROL 1.14-1.18, warm query
+1.29, sload_same_key 1.27-1.35, NON_EXISTING 1.09-1.21) sit above parity because
+`TieredCompilation=0` over-corrects, and their swings (up to +0.12) are as large as several of the
+effects being discussed. Only the >=5 s cells (all the DIFF_MAX/JUMPDEST/SAME_MAX/MINIMAL/EOA
+rows, ether, storage) carry weight.
+
+## Round 44 - attribution attempt failed on a YAML escape, relaunched
+
+`filter: "...AccountMode\.EXISTING..."` - `\.` is an invalid escape in a double-quoted YAML
+scalar, so benchmarkoor refused the config and all four traced runs executed 0 tests. Changed to
+`AccountMode[.]` (verified through a YAML parse before shipping) and relaunched as R44b.
