@@ -1763,3 +1763,83 @@ corrected category below 0.9.
 
 Collectors added: `collect_jit.py` (profile, A/B, slice, subset, settle, drops) and
 `collect_noise.py` (replica floor by category and duration).
+
+---
+
+## Round 42-44 - is the code DB configured correctly, and closing the last category
+
+### The code DB is configured correctly on both arms
+
+Every read-path knob is byte-identical between arms *and* matches what the client writes:
+`kSnappyCompression, block_size=4096, block_restart_interval=16, index_type=kBinarySearch,
+data_block_index_type=kDataBlockBinarySearch, cache_index_and_filter_blocks=false, num_levels=7,
+level_compaction_dynamic_level_bytes=true, max_bytes_for_level_base=268435456,
+target_file_size_base=67108864, optimize_filters_for_hits=false, whole_key_filtering=true`.
+
+Two things look wrong and are not:
+- **`filter_policy=nullptr`** - no bloom filter on either arm. Correct here: with every file at L6
+  and disjoint key ranges a code-hash lookup consults exactly one file, so a filter would only add
+  bytes. Changing it is a client change, not a store fix.
+- **55x the entries at 1/21 the size** - state-actor 134,442,676 entries, avg 358 B, 48.2 GB raw /
+  44 GB on disk, 7.50M data blocks, 729 files; jochemnet 2,417,142 entries, avg 7,629 B, 18.4 GB
+  raw / 7.5 GB, 1.42M data blocks, 113 files. Structural: the code DB is keyed by code hash, so
+  mainnet dedups proxies and clones while state-actor embeds the account address in each
+  contract's bytecode and nothing dedups.
+
+### My contamination, found and fixed (R42)
+
+`compactWholeDB` used grocksdb defaults, which agree with the client on compression, block size
+and restart interval but write **`format_version=6` where the client writes 5** - a read-path
+change to the block trailer and index encoding. Applied to all 729 sa and 113 joc code files,
+symmetric and before every corrected measurement, so it biases no comparison, but the stores
+stopped matching a real node's layout. Same options-drift class as the round-13 error that
+silently dropped a ribbon filter. `compactWholeDB` now transcribes the client's table options
+explicitly (format 5, binary-search index, no filter policy) and R42 rewrites both code DBs,
+verifying `format_version=5` before promoting.
+
+### Why "code-related" is probably the wrong label
+
+Reading code is *cheaper* on state-actor at every granularity measured: 10,513 B / 196 us vs
+14,208 B / 345 us per cold random lookup; 4,186 vs 9,705 B/read on a cold sweep of 3,000 distinct
+>=24,576-byte contracts (its filler bytecode compresses to ~4.2 KB). `EXTCODESIZE`-in-DIFF_MAX
+diverges as much as `CALL`-in-DIFF_MAX and needs no jumpdest analysis, so analysis is out. Across
+the 131 reliable (>5 s) tests, throughput correlates with CPU at **-0.48** and with reads at
+**+0.08**, and the slower-11 and faster-18 groups have the *same* read ratio (1.12 both ways).
+
+### The marginal-distinctness measurement, and why it forces R43 first
+
+SAME_MAX and DIFF_MAX are the same opcodes at the same gas against same-size contracts, so their
+difference is the cost of distinctness. Matched (opcode, value_sent, gas) pairs:
+
+| | marginal read | marginal time |
+|---|---|---|
+| published | joc +118 MB, sa +263 MB (2.23x) | joc +0.28 s, sa +0.60 s (2.17x) |
+| corrected (sub40) | joc +500 MB, sa +656 MB (1.31x) | joc +2.21 s, sa **+1.84 s (0.84x)** |
+
+After correction the cost of distinctness is *cheaper* on state-actor in time, and jochemnet's
+marginal time jumped 0.28 -> 2.21 s - the JIT effect again. But the same statistic from the
+`slice39` runs of the *same* configuration gives joc +5.38 s vs sa +6.23 s (**1.16x, opposite
+sign**). Also: if every marginal byte were a code read at the sweep's cost, the implied distinct
+accesses per test are 51,558 (joc) against 156,617 (sa) - impossible, since payload and gas are
+identical. So the cell's residual is at or below run-to-run variation and no mechanism claim is
+defensible without a replicate.
+
+### Plan (adjudicated alone: `/plan-debate` returned empty bodies for every role, 4th failure, reported)
+
+- **R42** restore `format_version=5` on both code DBs, verify, promote. ~10 min offline.
+  Prediction: no measurable throughput change.
+- **R43** *the deciding experiment*: two replicas per arm of the corrected configuration
+  (266-test subset, both stores settled, `DOTNET_TieredCompilation=0`), then intersect the tests
+  outside +/-10%. ~9 h detached. Pre-registered: fewer than 5 of the 11 "state-actor slower"
+  tests appear in both replicas, and DIFF_MAX's 0.934 moves by more than +/-0.03. If so, this
+  category is noise and the output is a bound, not a mechanism.
+- **R44** per-CF read attribution of DIFF_MAX vs SAME_MAX, both arms. Pre-registered: under 25%
+  of the marginal bytes are `code`; the rest Account + StateNodes. ~40 min.
+  Tracer bug found and fixed: it printed wall-clock `hh:mm:ss` and the consumer guessed the date.
+  `nsecs` is boot-relative on this kernel (equals /proc/uptime), so the fix is
+  `strftime("%s", nsecs)`; verified against `date +%s`.
+- **Rejected**: `perf` with JIT symbols (the CPU spread is symmetric, 0.68-1.57 in both
+  directions on identical payloads, and the asymmetric component is already removed); adding a
+  bloom filter to the code DB; any further store surgery before R43.
+
+All three chained and detached: R42 -> R43 -> R44.
