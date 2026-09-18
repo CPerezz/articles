@@ -3272,3 +3272,64 @@ md2 free bottomed at 1,067 GB. Both were released on completion, back to 2,066 G
 the same root `0xeb3e9632...` and therefore the same genesis hash as the payload anchor. That
 equality is what makes a geth-filled bundle valid for a Besu arm, and the 1-test arm gate is what
 proves it rather than assuming it.
+
+---
+
+## Round 51 - the rest of the campaign fires itself
+
+Anon is away for about ten hours and asked for everything remaining to run without a trigger.
+The two steps that were deliberately manual, the 22 h full suite and the publish, are now split:
+the arm is automated behind a pre-registered gate, the publish is not.
+
+### `gonogo-v3.py` - what licenses a device-day
+
+Three thresholds, taken from the adjudicated plan and fixed before any v3 number existed. They
+gate the **spend**, not the conclusion: a pass says the store is coherent enough to be worth a
+day of device time, it does not decide what the residual is.
+
+| # | threshold | why |
+|---|---|---|
+| 1 | every filter-arm test passes | a failure means store, fixtures or rollback disagree, and 22 h would inherit it |
+| 2 | absent class, control-normalised, in 0.85-1.15 | #133 removed the mechanism; still near 0.117 means the filters are not in play |
+| 3 | distinct-code median > 0.95 | #138 over-corrects, so this class should be at or above parity; still near 0.828 means #138 never took effect |
+
+Validated the same way as the analyser, against real data rather than belief:
+
+| input | result |
+|---|---|
+| archived v1 arm | **NO-GO** (absent 0.115, distinct-code 0.828) |
+| synthetic store with both mechanisms fixed | **GO** (absent 0.962, distinct-code 1.060) |
+| same, but 3 tests failing | **NO-GO** (gate 1) |
+
+### `run-v3-phase2.sh` - armed, detached
+
+Waits on the state file rather than a pid, so the running orchestrator is never edited underneath
+itself. Stands down quietly if phase 1 failed. On GO it refuses to start if any generation
+container is still alive, runs the full suite, then writes `v3-verdict-full.txt` and a single
+consolidated `v3-REPORT.txt` covering the store manifest, the store gates, the go/no-go and both
+verdicts.
+
+### `hourly-snapshot.sh`
+
+One line an hour to `v3-hourly.log`: phase, generator progress, arm and fill counts, free space,
+and `loop0` read-only status. The point is that the run can be reconstructed afterwards without
+trusting anyone's memory of what was on a screen.
+
+### One risk closed before it could bite
+
+`v3-arm-full.yaml` was the only arm config with no `filter:` key, because it was produced by
+deleting the line. That made it a structural variant nothing would exercise until after the
+go/no-go, roughly a day in. Replaced with a match-all `regex:.`, so by the time the full arm
+starts, the gate and filter arms have already proven the identical config shape.
+
+### Deliberately still manual
+
+Publishing. The article is generated and oracle-guarded, but the prose that interprets a result
+is a judgement, and a public page should not acquire one unattended. Phase 2 writes the complete
+analysis so that publishing is review plus prose, not analysis.
+
+### State at handover
+
+besu store in phase 2/2 building state trie, 46.4%, about 2 h out. Then gates, schelk pair,
+1-test arm gate, 129-test go/no-go, and on a GO the full suite. Three processes armed:
+`run-v3-campaign2.sh` (15 h 35 m), `run-v3-phase2.sh`, `hourly-snapshot.sh`.
