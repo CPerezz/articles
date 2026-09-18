@@ -1710,3 +1710,56 @@ SlotEncoding differs (storage tests only, jochemnet is the legacy one).
 Remaining after JIT equalisation, to be read from R40: whether any category sits below ~0.94
 with n>=20, and the storage-slot cells (SlotEncoding). Per-test noise: 60-75% within +/-10% on
 the same store for sub-second tests; 98% for tests over 5 s.
+
+## Round 40 (result) - the corrected subset: no category below 0.93, and the correction overshoots
+
+266-test subset, both arms, settled stores + `DOTNET_TieredCompilation=0`, identical ids:
+
+| category | n | published | corrected | CPU sa/joc |
+|---|---|---|---|---|
+| existing contract | 80 | 0.968 | **0.982** | 1.05 |
+| existing EOA | 20 | 0.979 | **0.986** | 1.20 |
+| ether transfer | 36 | 1.013 | 1.086 | 0.97 |
+| storage slot | 12 | 1.034 | 1.132 | 0.72 |
+| CONTROL | 80 | 0.708 | **1.145** | 0.95 |
+| sload_same_key | 4 | 0.812 | 1.192 | 1.05 |
+| non-existing | 20 | 0.904 | 1.197 | 0.95 |
+| warm query | 14 | 0.896 | **1.539** | 1.00 |
+| overall median | 266 | 0.959 | **1.046** | |
+
+DIFF_MAX code-exec 0.642 -> 0.934 (n=16). Nothing sits below 0.93. But the correction is not
+neutral: it *overshoots*, because disabling tiering costs jochemnet the promoted code it used to
+reach mid-test, so the short categories land above parity (warm query 1.54). Overall within-10%
+barely moves (53.0% -> 52.6%) - the divergence changed sign rather than disappearing. The honest
+statement is a bracket: every state-reading category lies between the two columns, within a few
+per cent of parity in both. The recommended fix is an equal discarded burn-in block per arm, not
+`TieredCompilation=0`.
+
+## Round 41 - read attribution: produced no rows
+
+The tracer ran and the inode/CF maps were collected, but the window-alignment join emitted empty
+tables (the `WINDOW hh:mm:ss` stamps are wall-clock without a date and my day-offset guess did
+not match the run's windows). Not re-run: DIFF_MAX's remainder after warm-up equalisation is
+0.944 with a CPU ratio of 0.79 on ~4.9 GB of reads per test, so the open question is now "why
+~20% more bytes", not "which subsystem". A correct version needs the tracer to print epoch
+seconds; noted for whoever picks it up.
+
+## Article rewritten and published - `bcf1bfe`, live, byte-identical
+
+Defect 2 replaced end to end: the client-cache story is gone, the JIT mechanism is in with the
+fixture asymmetry, per-thread profile, the three-configuration A/B, the regime-3 slice and the
+corrected subset. The step figure survives with a caption that states what it does *not* show.
+Removed: the worst-12 table (all twelve tests ran under 0.2 s) and the storage-spread oracle
+(the same store reproduces the span it demanded). Requalified: the dispersion figure now states
+the reproducibility floor. Recommendations now lead with warm-up equalisation and the generator's
+`change_level` fix; the cache recommendation is demoted to "useful control, wrong suspect".
+Errata gained the two mis-attributions and the reproducibility admission.
+
+Eleven new oracles, each verified to refuse generation when contradicted: the JIT intervention
+crossing parity, parallel execution staying exonerated, the JIT thread's share on both arms,
+settling removing the compaction thread, DIFF_MAX closing and staying I/O-bound, the no-drop
+reads vanishing without a speed-up, short tests not reproducing, long tests reproducing, and no
+corrected category below 0.9.
+
+Collectors added: `collect_jit.py` (profile, A/B, slice, subset, settle, drops) and
+`collect_noise.py` (replica floor by category and duration).
