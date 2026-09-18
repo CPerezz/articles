@@ -56,6 +56,27 @@ hash mismatch. Use the `existing-snapshot` family's 14-EIP set, which adds
   carry-over is therefore eliminated as the cause of the control gap, and the parity result is
   shown to survive a 128x cache reduction.
 
+- **Second mechanism, found by intervention: the JIT.** The harness restarts the client per
+  test, and state-actor's fixtures spend the process's first ~240 ms on an empty
+  fork-activation block while jochemnet's spend it executing 535k gas of EVM work. So
+  jochemnet's interpreter is promoted to optimised code before its measured block and
+  state-actor's is not. Per-thread CPU sampling (`/proc`, 0.5 s) shows the .NET tiering thread
+  taking a third to a half of all measured-step CPU on *both* arms. Equalising it with
+  `DOTNET_TieredCompilation=0` moves the control tests 0.726 -> 1.143, DIFF_MAX
+  code-exec 0.642 -> 0.944 (jochemnet *slows* 9.7 -> 13.6 s), and the
+  sub-second categories run 5-6x faster on both arms. `collect_jit.py` folds all of it into
+  `data/report_data.json` under `jit_experiment`.
+- **Store defects found and fixed, neither of which moved a ratio.** The generator's finishing
+  `CompactRange` left state-actor's Account CF at L3:92 (23.7 GB), compaction-pending and both arms' code databases
+  compaction-pending; RocksDB writes manual-compaction output into the deepest level that
+  already holds files unless given `change_level` plus a target level. Settling them removed the
+  background compaction thread and changed throughput by nothing measurable.
+- **Reproducibility floor, measured at last.** Same store, same config, twice:
+  100/133 tests within +/-10% overall, 39% for tests under 0.2 s against
+  97% for tests over 5 s (`collect_noise.py` -> `noise`). An earlier version of the page
+  ranked the twelve most divergent tests; all twelve ran under 0.2 s, so that table ranked
+  noise and is gone.
+
 ## Regenerate
 
 ```

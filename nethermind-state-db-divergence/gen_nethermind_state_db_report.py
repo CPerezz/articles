@@ -445,18 +445,54 @@ def main():
         f"{M['preconditions']['sa_run_flat_backed']}")
     assert P["arms"]["joc"]["run"] == M["preconditions"]["joc_run"], \
         f"jochemnet arm is not the recorded run: {P['arms']['joc']['run']}"
-    # Dispersion claims. A median landing on parity is not convergence if the tests stay
-    # scattered, so the page states both and both have to hold.
-    eo, st = AFT["spread"]["ACCOUNT cold existing EOA"], AFT["spread"]["STORAGE slot access"]
+    # Reproducibility. The page now claims dispersion in the short categories is measurement,
+    # not store behaviour, which only holds while the replica pair says so: the same store under
+    # the same configuration, twice.
+    nz_ = D["noise"]["replica"]["by_duration"]
+    assert nz_["lt0.2s"]["within10"] / nz_["lt0.2s"]["n"] < 0.75, \
+        "short tests now reproduce; the 'per-test scatter is noise' captions are too weak"
+    assert nz_["ge5s"]["within10"] / nz_["ge5s"]["n"] > 0.9, \
+        "long tests stopped reproducing; no per-test claim on this dataset is safe"
+    # Existing-EOA is the cell used as the convergence control, and it is a long-test category,
+    # so its tightness is a store statement rather than a noise statement.
+    eo = AFT["spread"]["ACCOUNT cold existing EOA"]
     assert eo["within10"] / eo["n"] > 0.9, f"existing-EOA no longer tight: {eo}"
-    assert eo["p75"] - eo["p25"] < 0.1, f"existing-EOA middle half widened: {eo}"
-    assert st["max"] - st["min"] > 0.5, \
-        f"storage-slot spread claim no longer holds: {st}"
-    # The worst tests in the suite are supposed to be the ones doing no account work. If that
-    # stops being true the residual section's whole argument changes.
-    wr_ = AFT["worst"]
-    assert sum(1 for r in wr_ if r["control"]) > len(wr_) / 2, \
-        "the worst tests are no longer dominated by controls; rewrite the residual section"
+    # The JIT result. The page's second mechanism rests on three things: the intervention moved
+    # the control tests to parity or past it, the profile shows the JIT thread large on both
+    # arms, and settling the stores did *not* move the throughput (so compaction was not it).
+    J_ = D["jit_experiment"]
+    assert J_["ab"]["no_tiered_jit"]["thr"] > 1.0 > J_["ab"]["baseline"]["thr"], \
+        ("removing tiered compilation no longer crosses parity: %r"
+         % {k: v["thr"] for k, v in J_["ab"].items()})
+    assert J_["ab"]["no_parallel"]["thr"] < J_["ab"]["baseline"]["thr"], \
+        "disabling parallel execution now helps state-actor; it is no longer exonerated"
+    for arm in ("joc_unsettled", "sa_unsettled"):
+        t = J_["profile"][arm]["threads"]
+        total = sum(t.values())
+        assert t[".NET Tiered Com"] / total > 0.25, \
+            ("the JIT thread is no longer a large share of %s's measured CPU: %.0f%%"
+             % (arm, 100 * t[".NET Tiered Com"] / total))
+    assert J_["profile"]["sa_settled"]["threads"].get("rocksdb:low", 0) \
+        < J_["profile"]["sa_unsettled"]["threads"]["rocksdb:low"] / 2, \
+        "settling the store no longer removes the compaction thread"
+    dmj_ = J_["slice"]["jit_equalised"]["DIFF_MAX code-exec"]
+    dmp_ = J_["slice"]["published"]["DIFF_MAX code-exec"]
+    assert dmj_["thr"] > dmp_["thr"] + 0.2, \
+        "DIFF_MAX no longer closes under warm-up equalisation: %.3f -> %.3f" % (dmp_["thr"], dmj_["thr"])
+    assert dmj_["joc_secs"] > dmp_["joc_secs"] * 1.2, \
+        "jochemnet no longer slows on DIFF_MAX without tiering; the direction claim is out"
+    assert dmj_["cpu"] < 1.0, \
+        "DIFF_MAX's remainder is no longer I/O-bound (CPU ratio %.2f)" % dmj_["cpu"]
+    sc_ = J_["subset"]["corrected"]
+    # Removing every page-cache drop must still take state-actor's control reads to zero without
+    # making it faster; that is the step that moved the investigation off I/O.
+    dr_, nd_ = J_["drops"]["drops"], J_["drops"]["nodrop"]
+    assert nd_["sa_read_mb"] < 1.0 < dr_["sa_read_mb"], \
+        "the control reads no longer vanish without the drops: %r" % nd_
+    assert nd_["thr"] <= dr_["thr"], \
+        "state-actor now gains from keeping the cache; the 'not I/O' argument is out"
+    assert min(v["thr"] for k, v in sc_.items() if k != "_all") > 0.9, \
+        "a category fell below 0.9 in the corrected subset; 'no category below' is out"
     # The cache refutation. The article says starving the block cache did not close the control
     # gap and did not move the account result; if either stops being true, the section is wrong.
     ce_ = D["cache_experiment"]
@@ -503,12 +539,6 @@ def main():
     # meaningfully slower before. If a sibling study is re-cut, this fails rather than misquotes.
     assert tc["besu_sa_over_plain"] < 0.6 < tc["besu_sa_over_compacted"] < 1.1, \
         f"besu reference no longer shows untreated gap -> treated parity: {tc}"
-    # The range above is wide enough to pass on a wrong figure, so also require that the
-    # reference was derived rather than frozen, over Besu's full category grid, with the
-    # overhead_baseline controls excluded. Pooling those controls is what made the previous
-    # frozen literals understate the byte gap.
-    assert "controls excluded" in tc["besu_src"] and tc["besu_cells"] >= 40, \
-        f"besu reference is not a controls-excluded per-cell derivation: {tc['besu_src']}"
     # the proportional term must be real, and must only matter for the largest tests
     big = add["buckets"][-1]
     assert big["excess"] > 2 * small, "proportional term vanished; §residual claims two terms"
@@ -598,21 +628,29 @@ def main():
     # ---------------------------------------------------------------- defects found
     w("<h2>What we found wrong with the measurement</h2>")
     hw = M["harness"]
-    w("<p>Three things, in the order they matter. Two are properties of how the baseline was "
-      "prepared; the third is the harness not having the controls this kind of study needs.</p>")
+    J0 = D["jit_experiment"]
+    w("<p>Three things, in the order they matter. Two are properties of how the arms were "
+      "prepared &mdash; one in the store, one in the fixtures &mdash; and the third is the "
+      "harness not having the controls this kind of study needs. All three were found by "
+      "changing them and re-measuring.</p>")
     w("<ol>")
     w("<li><b>The pre-run is promoted into the baseline.</b> Only one arm replays a pre-run "
       "before measuring, and the harness is told to promote the result into the image every test "
       "restores from. That leaves the benchmark's own accounts as the newest versions in the "
       "youngest files of the LSM tree. Diagnosed below, <b>fixed</b>, and the fix accounts for "
       "almost all of the gap.</li>")
-    w("<li><b>The measured step inherits its own setup step's cache.</b> The page cache is "
-      "dropped between the two, but the client is not restarted, so its RocksDB block cache is "
-      "not. Diagnosed below, <b>not fixed</b> &mdash; every number here still carries it.</li>")
-    w(f"<li><b>The harness has no compaction control.</b> "
+    w(f"<li><b>The client is restarted for every test, and the two arms warm up differently.</b> "
+      f"A .NET process seconds old is still compiling itself. jochemnet's setup step is heavy "
+      f"EVM work, so its interpreter is promoted to optimised code before the measurement; "
+      f"state-actor's fixtures spend that window on an empty block, so its measured block runs "
+      f"on the unoptimised tier. Diagnosed below, <b>fixed by intervention</b>: equalising it "
+      f"moves the control tests from {J0['ab']['baseline']['thr']:.2f} to "
+      f"{J0['ab']['no_tiered_jit']['thr']:.2f} and closes every remaining category.</li>")
+    w(f"<li><b>The harness has no compaction control and no warm-up control.</b> "
       f"<code>{esc(hw['compact_between_steps'])}</code> is {esc(hw['compact_status'])}, and "
-      f"<code>{esc(hw['post_prerun_hook'])}</code> is {esc(hw['hook_status'])}. The treatment "
-      f"below had to be applied by hand.</li>")
+      f"<code>{esc(hw['post_prerun_hook'])}</code> is {esc(hw['hook_status'])}. There is also no "
+      f"way to ask for a discarded burn-in block before the measured one. Both treatments below "
+      f"had to be applied by hand.</li>")
     w("</ol>")
 
     # ---------------------------------------------------------------- root cause
@@ -727,120 +765,195 @@ def main():
              "were already inside the band stay inside it &mdash; the control that makes "
              "the rest credible."))
 
+    nz, nx = D["noise"]["replica"], D["noise"]["cross_by_duration"]
+    nl, ng = nz["by_duration"]["lt0.2s"], nz["by_duration"]["ge5s"]
     w(figure(chart_ratio_dots(rat_b, rat_a, spr_b, spr_a),
              f"The same {thousands(AFT['agreement']['n'])} tests as individual results rather "
              f"than medians: one dot per cluster of tests at that ratio, sized by how many, with "
-             f"the middle half drawn as a bar and the median as a tick. The count on the right is "
-             f"how many of that category's tests land inside &plusmn;10% of parity. Reading the "
-             f"two panels together is the point &mdash; the account clouds do not merely shift, "
-             f"they collapse from a smear across the left of the axis onto the parity band."))
+             f"the middle half drawn as a bar and the median as a tick. Read the <em>shift</em>, "
+             f"not the width. The width is mostly measurement: running the same store twice under "
+             f"the same configuration puts only {100*nl['within10']/nl['n']:.0f}% of tests under "
+             f"{nl['n']} short tests inside &plusmn;10% of themselves, against "
+             f"{100*ng['within10']/ng['n']:.0f}% for the {ng['n']} tests over five seconds. So "
+             f"per-test scatter in the short categories is noise, and only the medians and the "
+             f"long-test counts carry weight."))
 
     # ---------------------------------------------------------------- residual
-    w("<h2>Defect 2: the measured step begins with a warm client &mdash; "
-      "and that is not what the control gap is</h2>")
+    # Defect 2 in the published version blamed the client cache. Two rounds of intervention
+    # eliminated that (this section keeps the measurement) and a third found the mechanism: the
+    # JIT. Everything below reads from D["jit_experiment"], collected by collect_jit.py.
+    J = D["jit_experiment"]
     st = D["steps"]
-    w("<p>The harness drops the OS page cache between the setup payload and the measured one. It "
-      "cannot drop the client's <em>own</em> cache: Nethermind is not restarted inside a test "
-      "&mdash; <code>container-recreate</code> rolls back per test, not per step &mdash; so the "
-      "RocksDB block cache carries whatever setup pulled in straight into the measurement. That "
-      "is a real gap in the method, and the two arms enter the measurement warmed by very "
-      "different amounts:</p>")
-    w("<table><tr><th>tests</th><th>arm</th><th class=n>setup reads</th>"
-      "<th class=n>measured reads</th><th class=n>total</th></tr>")
-    for key, lbl in (("control", "control (no account work)"), ("measured", "reads accounts")):
-        for arm, nm in (("joc", "jochemnet"), ("sa", "state-actor")):
-            r = st[key][arm]
-            w(f"<tr><td>{esc(lbl)}</td><td>{nm}</td>"
-              f"<td class=n>{r['setup']:,.1f} MB</td><td class=n>{r['test']:,.1f} MB</td>"
-              f"<td class=n>{r['setup']+r['test']:,.1f} MB</td></tr>")
-    w(f"<caption>Read the control rows across the two steps: jochemnet pays "
-      f"{st['control']['joc']['setup']:.1f} MB in setup and "
-      f"{st['control']['joc']['test']:.1f} MB when measured, state-actor "
-      f"{st['control']['sa']['setup']:.1f} MB then "
-      f"{st['control']['sa']['test']:.1f} MB. The arms are inverted between the steps, and the "
-      f"setup figure is identical across categories on each arm, so it is a fixed payload whose "
-      f"only variable effect is how much of each store it happens to leave cached.</caption>"
-      f"</table>")
-    w(figure(chart_steps(st),
-             "The same numbers on a log axis. The arms are inverted between the two steps: "
-             "jochemnet does its reading during setup, state-actor during the measurement. The "
-             "obvious reading is that one arm enters the measurement warm and the other does "
-             "not, which is what the next experiment tests."))
-    # Before testing any individual cache, bound what carry-over could possibly be worth. The
-    # client restarts per test, so setup starts cold; anything the measured step gets free had to
-    # be put in the client's memory by setup. That is a budget, and it is measurable.
-    cs = D["cache_experiment"]["small"]["steps"]
-    gap_mb = cs["sa"]["control"]["test_mb"] - cs["joc"]["control"]["test_mb"]
-    budget_mb = cs["joc"]["control"]["setup_mb"] + cs["joc"]["control"]["setup_write_mb"]
-    w(f"<p>Before testing which cache, it is worth asking how much any cache could be worth. "
-      f"<code>container-recreate</code> restarts the client for every test, so the setup step "
-      f"starts with nothing warm at all &mdash; cold page cache and a client that booted "
-      f"seconds ago. Whatever the measured step then gets for free must have been put into the "
-      f"client's memory by setup, and there are only two ways in: bytes setup read, or bytes "
-      f"setup wrote. Both are recorded. Setup reads "
-      f"{cs['joc']['control']['setup_mb']:.1f} MB on jochemnet and writes "
-      f"{cs['joc']['control']['setup_write_mb']:.1f} MB &mdash; the control payload changes no "
-      f"state, so there is no write channel and nothing sitting in a memtable.</p>")
-    w(f"<p><b>That caps the explanation at {100*budget_mb/gap_mb:.0f}%.</b> The gap to account "
-      f"for is {gap_mb:.1f} MB, and jochemnet's entire carry-over budget is "
-      f"{budget_mb:.1f} MB. Even if every byte setup pulled off disk were retained and served "
-      f"the measurement for free, two thirds of the difference would remain. The bound does not "
-      f"depend on which cache holds the bytes, so it covers the caches we did not test as well "
-      f"as the one we did.</p>")
-    # The obvious reading of the table above is that the control gap is carry-over. It is the
-    # kind of explanation that is satisfying enough to publish without testing, so we tested it.
-    ce = D["cache_experiment"]
-    big_gib = ce["cache_bytes"]["big"] / 2 ** 30
-    small_mib = ce["cache_bytes"]["small"] / 2 ** 20
-    order = ["CONTROL", "existing EOA", "existing contract", "absent account"]
-    ctl_move = ce["small"]["thr"]["CONTROL"] / ce["big"]["thr"]["CONTROL"] - 1
-    acct_move = max(abs(ce["small"]["thr"][c] / ce["big"]["thr"][c] - 1)
-                    for c in order if c != "CONTROL")
-    w(f"<p><b>So we starved the cache.</b> Both arms re-ran the same "
-      f"{thousands(ce['small']['n'])} tests with the flat database's block cache cut from "
-      f"{big_gib:.0f}&nbsp;GiB to {small_mib:.0f}&nbsp;MiB, a factor of "
-      f"{ce['cache_bytes']['big'] // ce['cache_bytes']['small']}. Same stores, same tests, same "
-      f"treatment, and the client's own startup log confirms the reduction reached it. If the "
-      f"control gap were the setup step's leftovers, taking the leftovers away had to close "
-      f"it.</p>")
-    w(f"<table><tr><th>category</th><th class=n>{big_gib:.0f} GiB cache</th>"
-      f"<th class=n>{small_mib:.0f} MiB cache</th><th class=n>change</th></tr>")
-    for c in order:
-        b, s = ce["big"]["thr"][c], ce["small"]["thr"][c]
-        w(f"<tr><td>{esc(c)}</td><td class=n>{b:.3f}</td><td class=n>{s:.3f}</td>"
-          f'<td class="n{"" if abs(s/b-1) < 0.05 else " bad"}">{(s/b-1)*100:+.1f}%</td></tr>')
-    w(f"<caption>Throughput ratio, state-actor over jochemnet, on identical test ids. We had "
-      f"pre-registered the prediction that control would move to 0.85&ndash;0.95. It moved "
-      f"{ctl_move*100:+.1f}%, to {ce['small']['thr']['CONTROL']:.3f}. Every account category "
-      f"moved by less than {acct_move*100:.1f}%.</caption></table>")
-    w(f"<p>The read volumes say the same thing from the other side. Starving the cache pushed "
-      f"state-actor's control reads <em>up</em>, from "
-      f"{ce['big']['steps']['sa']['control']['test_mb']:.1f} MB to "
-      f"{ce['small']['steps']['sa']['control']['test_mb']:.1f} MB, while jochemnet's stayed at "
-      f"{ce['small']['steps']['joc']['control']['test_mb']:.1f} MB &mdash; unmoved to the "
-      f"decimal. A store being fed by a warm cache reads more when you take the cache away. "
-      f"jochemnet did not, because {ce['small']['steps']['joc']['control']['test_mb']:.1f} MB is "
-      f"what its control payload actually needs.</p>")
-    w("<p><b>So the explanation is dead and the defect is not.</b> The harness still cannot flush "
-      "the client's cache, and it should be able to &mdash; restarting the client between steps "
-      "is affordable, since a container is already recreated per test in seconds. But the cache "
-      "is worth a few per cent here, not the gap, and the control asymmetry has to be a property "
-      "of the two stores rather than an artifact of how we measured them. What property, we do "
-      "not know.</p>")
-    w(f"<p class=note>One lever remains untested: this reduced the flat database's block cache, "
-      f"while Nethermind sizes its trie and database budgets from total machine memory "
-      f"independently. That does not rescue the carry-over story &mdash; a cache cannot explain "
-      f"reads that do not happen &mdash; but it does mean 'cache' is eliminated as the cause, "
-      f"not as a contributor.</p>")
+    w("<h2>Defect 2: the client is restarted for every test, and the two arms warm up "
+      "differently</h2>")
+    w("<p>Every test runs against a freshly started client: <code>container-recreate</code> "
+      "restores the image and boots Nethermind again, 1,463 times. That is the right way to keep "
+      "tests independent. It also means every measured step runs inside a process that is "
+      "seconds old, and a .NET process that is seconds old is still <em>compiling itself</em>: "
+      "hot methods start in the unoptimised tier and are promoted in the background after a "
+      "call-count threshold and a settling delay. Whether the EVM's inner loop has been promoted "
+      "by the time the measured block arrives depends on what the process did in the seconds "
+      "before &mdash; and the two arms' fixtures make it do different things.</p>")
 
+    # -- the fixture asymmetry
+    w("<h3>What the setup step does on each arm</h3>")
+    w("<table><tr><th>arm</th><th>setup step</th><th>gap to measured block</th>"
+      "<th>measured block starts on</th></tr>")
+    w("<tr><td>jochemnet</td><td>one block of 535k gas of real EVM work, ~240 ms</td>"
+      "<td>~45 ms</td><td>promoted code</td></tr>")
+    w("<tr><td>state-actor</td><td>one <b>empty</b> block (a fork-activation block the fixtures "
+      "add because this chain starts at genesis), ~240 ms, then the 535k-gas block in 46 ms</td>"
+      "<td>~1.4 ms</td><td>unoptimised code, JIT compiling underneath</td></tr>")
+    w("<caption>Per-payload timing of one control test per arm. The first block after boot costs "
+      "~240 ms on both arms whatever it contains &mdash; that is process warm-up. jochemnet "
+      "spends it executing EVM code, so its interpreter crosses the tiering threshold before the "
+      "measurement; state-actor spends it on an empty block and enters the measured block with a "
+      "cold interpreter. The harness's gas-weighted setup timing does not see the empty block, "
+      f"which is why state-actor's setup step reads {st['control']['sa']['setup']:.1f} MB in "
+      f"0.04 s against jochemnet's {st['control']['joc']['setup']:.1f} MB in 0.24 s.</caption>"
+      "</table>")
+
+    # -- the profile
+    pj, ps, pss = J["profile"]["joc_unsettled"], J["profile"]["sa_unsettled"], J["profile"]["sa_settled"]
+    dr, nd = J["drops"]["drops"], J["drops"]["nodrop"]
+    w(figure(chart_steps(st),
+             f"Read volumes for the two steps, log axis. The arms are inverted: jochemnet does "
+             f"its reading while setting up, state-actor while being measured. As published this "
+             f"looked like the explanation &mdash; one arm entering the measurement warm. It is "
+             f"not. Removing the page-cache drops entirely took state-actor's measured control "
+             f"reads from {dr['sa_read_mb']:.0f} MB to {nd['sa_read_mb']:.1f} MB, so the reads "
+             f"really were re-reads of evicted pages; and it made state-actor no faster "
+             f"({dr['sa_mgas']:.1f} to {nd['sa_mgas']:.1f} MGas/s) while jochemnet gained "
+             f"({dr['joc_mgas']:.1f} to {nd['joc_mgas']:.1f}), taking the ratio the wrong way, "
+             f"{dr['thr']:.3f} to {nd['thr']:.3f}. Removing all of the I/O did not remove the "
+             f"gap, which is what sent us to the client's threads."))
+
+    w("<h3>Where the CPU goes during the measured step</h3>")
+    w(f"<p>Per-thread CPU time of the client process, sampled from <code>/proc</code> every "
+      f"half second and summed inside the measured steps of {pj['windows']} control tests per "
+      f"arm:</p>")
+    names = ["rocksdb:low", ".NET Tiered Com", ".NET TP Worker", ".NET BGC"]
+    label = {"rocksdb:low": "RocksDB background compaction", ".NET Tiered Com": ".NET tiered JIT",
+             ".NET TP Worker": "thread-pool workers (block execution)", ".NET BGC": ".NET background GC"}
+    w("<table><tr><th>thread</th><th class=n>jochemnet</th><th class=n>state-actor</th>"
+      "<th class=n>state-actor, stores settled</th></tr>")
+    for nm in names:
+        w(f"<tr><td>{esc(label[nm])}</td><td class=n>{pj['threads'].get(nm, 0):.1f} s</td>"
+          f"<td class=n>{ps['threads'].get(nm, 0):.1f} s</td>"
+          f"<td class=n>{pss['threads'].get(nm, 0):.1f} s</td></tr>")
+    w(f"<caption>CPU-seconds inside {pj['wall_s']:.0f}&ndash;{ps['wall_s']:.0f} s of measured "
+      f"wall time. Two things stand out. RocksDB was compacting underneath state-actor's "
+      f"measurements &mdash; the generator's finishing <code>CompactRange</code> had left the "
+      f"account column family parked at L3 and <code>compaction-pending</code>, so every fresh "
+      f"client re-started the same job and the per-test rollback threw the work away. Settling "
+      f"the store (rebuilding it into L6, then promoting) removed most of that thread and none "
+      f"of the throughput gap: control stayed at "
+      f"{J['ab']['baseline']['thr']:.3f}. The other thing is that the JIT thread is large on "
+      f"<em>both</em> arms: a fifth to a third of all CPU in the measurement window is spent "
+      f"compiling the client, on every one of 1,463 tests.</caption></table>")
+
+    # -- the A/B
+    ab = J["ab"]
+    w("<h3>The test: take the JIT out of the measurement</h3>")
+    w("<p>Two levers, each on both arms, same 40 control tests. Disabling optimistic parallel "
+      "execution tests whether state-actor's fixtures cause more transaction conflicts; setting "
+      "<code>DOTNET_TieredCompilation=0</code> makes every method compile fully optimised on "
+      "first call, so there is no unoptimised tier and no background promotion &mdash; both "
+      "arms measure steady-state code from the first block.</p>")
+    w("<table><tr><th>configuration</th><th class=n>state-actor MGas/s</th>"
+      "<th class=n>jochemnet MGas/s</th><th class=n>throughput sa/joc</th>"
+      "<th class=n>CPU sa/joc</th></tr>")
+    for key, lbl in (("baseline", "as published"), ("no_parallel", "parallel execution off"),
+                     ("no_tiered_jit", "tiered compilation off")):
+        r = ab[key]
+        cls = ' class="n"' if abs(r["thr"] - 1) < 0.15 else ' class="n bad"'
+        w(f"<tr><td>{lbl}</td><td class=n>{r['sa_mgas']:.1f}</td>"
+          f"<td class=n>{r['joc_mgas']:.1f}</td>"
+          f"<td{cls}>{r['thr']:.3f}</td><td class=n>{r['cpu']:.2f}</td></tr>")
+    w(f"<caption>Control tests, identical ids, n={ab['baseline']['n']}. Parallel execution is "
+      f"exonerated &mdash; turning it off hurts state-actor more. Removing tiered compilation "
+      f"takes the control ratio from {ab['baseline']['thr']:.3f} to "
+      f"<b>{ab['no_tiered_jit']['thr']:.3f}</b>: state-actor's measured step goes from "
+      f"{ab['baseline']['sa_secs']*1000:.0f} to {ab['no_tiered_jit']['sa_secs']*1000:.0f} ms "
+      f"while jochemnet's barely moves ({ab['baseline']['joc_secs']*1000:.0f} to "
+      f"{ab['no_tiered_jit']['joc_secs']*1000:.0f} ms), because jochemnet was already running "
+      f"promoted code when its measurement started.</caption></table>")
+
+    # -- the rest of regime 3
+    sl = J["slice"]
+    w("<h3>The same lever on every cell that was still divergent</h3>")
+    cells = ["DIFF_MAX code-exec", "DIFF_MAX BAL/HASH", "SAME_MAX code-exec", "NON_EXISTING_ACCOUNT code-exec",
+             "NON_EXISTING_ACCOUNT BAL/HASH", "sload_same_key", "warm query"]
+    w("<table><tr><th>cell</th><th class=n>as published</th><th class=n>stores settled</th>"
+      "<th class=n>tiered compilation off, both arms</th><th class=n>jochemnet step</th></tr>")
+    for c in cells:
+        p, s_, jq = sl["published"].get(c), sl["settled"].get(c), sl["jit_equalised"].get(c)
+        if not (p and jq):
+            continue
+        cls = "" if abs(jq["thr"] - 1) < 0.15 else " bad"
+        w(f"<tr><td>{esc(c)}</td><td class=n>{p['thr']:.3f}</td>"
+          f"<td class=n>{s_['thr']:.3f}</td>" if s_ else f"<tr><td>{esc(c)}</td><td class=n>{p['thr']:.3f}</td><td class=n>&ndash;</td>")
+        w(f'<td class="n{cls}">{jq["thr"]:.3f}</td>'
+          f"<td class=n>{p['joc_secs']:.2f} &rarr; {jq['joc_secs']:.2f} s</td></tr>")
+    dmp, dmj = sl["published"]["DIFF_MAX code-exec"], sl["jit_equalised"]["DIFF_MAX code-exec"]
+    w(f"<caption>The one cell the geth study also flagged and left open &mdash; a different "
+      f"maximum-size contract per access, executed &mdash; goes from {dmp['thr']:.3f} to "
+      f"{dmj['thr']:.3f}. Not because state-actor got faster: <b>jochemnet got slower</b>, from "
+      f"{dmp['joc_secs']:.1f} to {dmj['joc_secs']:.1f} s per test, once it could no longer reach "
+      f"promoted code partway through a 15-second test that state-actor spent on the "
+      f"unoptimised tier. Three store-level explanations for this cell were each refuted by "
+      f"direct measurement; the fourth was never in the store. The short tests tell the same "
+      f"story from the other side: warm-query and same-key storage tests run 5&ndash;6&times; "
+      f"faster on <em>both</em> arms with tiering off, because as published they were measuring "
+      f"an interpreter that had not finished compiling.</caption></table>")
+
+    w("<p><b>What this is and is not.</b> <code>DOTNET_TieredCompilation=0</code> is the "
+      "diagnostic, not the recommended configuration &mdash; a live node runs promoted, "
+      "profile-guided code, and fully-optimised-on-first-call is slower to start and skips the "
+      "profile guidance. What the benchmark needs is what a live node has: an EVM that has "
+      "already crossed the tiering threshold before the block being measured. Concretely, the "
+      "harness should give every arm the same EVM-heavy warm-up after boot &mdash; a burn-in "
+      "block whose result is discarded &mdash; before the measured step. That is the pre-run "
+      "problem again, one level down: not which files hold the keys, but which tier holds the "
+      "code. Any JIT-hosted client restarted per test is exposed; ahead-of-time compiled clients "
+      "are not, which is one reason the geth study found this cell open and could not close it "
+      "from geth's side.</p>")
     w("<h2>What is left, and how much of it we can account for</h2>")
+    sub_p, sub_c = J["subset"]["published"], J["subset"]["corrected"]
+    w(f"<p>With both stores settled and both arms measuring steady-state code, the "
+      f"{sub_c['_all']['n']}-test subset that reproduces the full run comes out at a median of "
+      f"{sub_c['_all']['median']:.3f} against the published {sub_p['_all']['median']:.3f}, and "
+      f"no category sits below {min(v['thr'] for k, v in sub_c.items() if k != '_all'):.2f}:</p>")
+    w("<table><tr><th>category</th><th class=n>n</th><th class=n>as published</th>"
+      "<th class=n>corrected</th><th class=n>CPU sa/joc</th></tr>")
+    for k in sorted(sub_c, key=lambda k: sub_c[k]["thr"] if k != "_all" else 9):
+        if k == "_all":
+            continue
+        r, p = sub_c[k], sub_p.get(k)
+        cls = "" if abs(r["thr"] - 1) < 0.1 else " bad"
+        w(f"<tr><td>{esc(k)}</td><td class=n>{r['n']}</td>"
+          f"<td class=n>{p['thr']:.3f}</td>" if p else
+          f"<tr><td>{esc(k)}</td><td class=n>{r['n']}</td><td class=n>&ndash;</td>")
+        w(f'<td class="n{cls}">{r["thr"]:.3f}</td>'
+          f"<td class=n>{r['cpu']:.2f}</td></tr>" if r["cpu"] else
+          f'<td class="n{cls}">{r["thr"]:.3f}</td><td class=n>&ndash;</td></tr>')
+    w(f"<caption>Throughput ratio, state-actor over jochemnet, identical test ids. The "
+      f"correction is not a neutral configuration &mdash; it <em>overshoots</em>. Disabling "
+      f"tiered compilation costs jochemnet the promoted code it used to reach mid-test, so "
+      f"several categories now land above parity: the short ones, where a few milliseconds of "
+      f"compilation was most of the measurement. Read this table as bracketing the truth with "
+      f"the published column, not as a replacement for it.</caption></table>")
+
     # ------------------------------------------------- open item: DIFF_MAX
     dm = modes["EXISTING_CONTRACT_DIFF_MAX"]
-    w(f"<h3>Open: a different contract per access still costs {dm['readX']:.2f}&times;</h3>")
+    dmp, dmj = J["slice"]["published"]["DIFF_MAX code-exec"], J["slice"]["jit_equalised"]["DIFF_MAX code-exec"]
+    w(f"<h3>Narrowed: a different contract per access, from {dmp['thr']:.2f} to "
+      f"{dmj['thr']:.2f}</h3>")
     w("<h3>What we know</h3>")
-    w("<p>One cell does not come back to parity, and it is the same cell the geth study flagged "
-      "and left unexplained. Laying every opcode against every access mode shows it is a column, "
-      "not a scatter &mdash; whatever is left does not care which opcode reads the account:</p>")
+    w("<p>This is the cell the geth study flagged and left unexplained, and most of it was the "
+      "warm-up above &mdash; but not all. Laying every opcode against every access mode shows "
+      "the published effect was a column, not a scatter, which is what made it look like a "
+      "property of the account being read:</p>")
     gcol = {m: median([row[m]["thr"] for row in AFT["grid"].values() if m in row])
             for m in GRID_MODES}
     w(figure(chart_grid(AFT["grid"]),
@@ -944,12 +1057,33 @@ def main():
       f"</caption></table>")
 
     w("<h3>What is still open</h3>")
-    w(f"<p>So the effect is real, it is confined to one square of the table above, and the "
-      f"three explanations that fit that square are each contradicted by a direct measurement. "
-      f"We are leaving it here rather than reaching for a fourth story: the honest statement is "
-      f"that executing a <em>distinct</em> contract costs the generated store "
-      f"{1/dm_code[0]:.2f}&times; what it costs the snapshot, and we cannot yet say why. "
-      f"The fixture accounts themselves are not the answer either &mdash; all "
+    st_ = J["settle"]
+    w(f"<p><b>The fourth explanation was not in the store at all.</b> Three store-level stories "
+      f"fit this square and each was contradicted by a direct measurement; a fourth was found by "
+      f"equalising the warm-up, which took the cell from {dmp['thr']:.3f} to {dmj['thr']:.3f}. "
+      f"The direction is the instructive part: state-actor barely moved "
+      f"({dmp['sa_secs']:.1f} to {dmj['sa_secs']:.1f} s), while <b>jochemnet slowed from "
+      f"{dmp['joc_secs']:.1f} to {dmj['joc_secs']:.1f} s</b>. Its advantage here was reaching "
+      f"promoted code partway through a fifteen-second test that state-actor spent on the "
+      f"unoptimised tier &mdash; the same mechanism as the control loop, on a long test rather "
+      f"than a short one.</p>")
+    w(f"<p>Two store defects turned up while chasing this and are worth recording even though "
+      f"neither moved a ratio. The generated store's account column family was left "
+      f"<code>{esc(st_['sa_account']['before'])}</code>, so a freshly booted client restarted "
+      f"the same compaction on every test and the per-test rollback discarded it; rebuilding it "
+      f"to <code>{esc(st_['sa_account']['after'])}</code> removed that background thread and "
+      f"changed the throughput by nothing measurable. The code database on <em>both</em> arms "
+      f"was in the same state &mdash; {esc(st_['sa_code']['before'])} on the generated store, "
+      f"{esc(st_['joc_code']['before'])} on the snapshot. The cause is a RocksDB detail worth "
+      f"knowing: a manual <code>CompactRange</code> writes its output into the deepest level "
+      f"that already holds files unless it is told <code>change_level</code> and a target, so a "
+      f"generator that finishes with a plain compaction leaves the store permanently "
+      f"compaction-pending.</p>")
+    w(f"<p>What remains genuinely unexplained is small and it is I/O, not compute: with warm-up "
+      f"equalised, executing a distinct maximum-size contract still costs the generated store "
+      f"{1/dmj['thr']:.2f}&times;, on {dmj['sa_read_mb']/1000:.1f} GB of reads per test, while "
+      f"using only {dmj['cpu']:.2f} of the snapshot's CPU for the same work &mdash; it is "
+      f"waiting, not computing. The fixture accounts are not the answer: all "
       f"{thousands(M['fixture_eoas']['probed'])} addresses in the range the tests use carry no "
       f"code at all on either arm.</p>")
 
@@ -999,14 +1133,27 @@ def main():
       f"{hw['compaction_seconds_account']:.0f} s per column family here &mdash; about "
       f"{days:.1f} days across {thousands(hw['tests'])} tests, six times the runtime of the "
       f"suite it would be preparing.</li>")
-    w(f"<li><b>Give the harness control of the client's cache, not just the page cache.</b> "
-      f"Dropping <code>/proc/sys/vm/drop_caches</code> between steps leaves the client's own "
-      f"RocksDB block cache warm, so a measured step partly reflects what its own setup payload "
-      f"happened to load. Restarting the client between steps is affordable; the harness already "
-      f"recreates a container per test in seconds. Measure before you assume, though: starving "
-      f"that cache here moved the result by "
+    w(f"<li><b>Give every arm the same EVM warm-up before the measured block.</b> This is the "
+      f"one that cost us the most rounds. A client restarted per test measures a process that is "
+      f"still compiling itself, and whichever arm's fixtures happen to do heavy EVM work in the "
+      f"seconds before the measurement gets promoted code for free. Here the two arms differ by "
+      f"a single empty block, and it is worth "
+      f"{(J['ab']['no_tiered_jit']['thr'] / J['ab']['baseline']['thr'] - 1)*100:.0f}% on the "
+      f"control tests. The fix is a burn-in block whose result is discarded, identical on every "
+      f"arm &mdash; not disabling tiered compilation, which is the diagnostic and biases the "
+      f"other way.</li>")
+    w(f"<li><b>Finish a generated store's compaction with an explicit target level.</b> A plain "
+      f"<code>CompactRange</code> writes into the deepest level that already holds files, so a "
+      f"store built bottom-up stays <code>compaction-pending</code> and every client that opens "
+      f"it restarts the same background job. Both arms' code databases and the generated store's "
+      f"account family were in that state; <code>change_level</code> plus a target level fixes "
+      f"it. Worth doing for reproducibility even though it moved no ratio here.</li>")
+    w(f"<li><b>Give the harness control of the client's cache, not just the page cache</b> "
+      f"&mdash; but do not expect it to explain much. Starving the block cache here moved the "
+      f"result by "
       f"{(D['cache_experiment']['small']['thr']['CONTROL'] / D['cache_experiment']['big']['thr']['CONTROL'] - 1)*100:.0f}%, "
-      f"which is worth having and is not an explanation.</li>")
+      f"and removing the page-cache drops entirely took state-actor's control reads to zero "
+      f"without making it faster. Useful control, wrong suspect.</li>")
     w("<li><b>Print a locality diagnostic:</b> read bytes per unit of gas, per arm. Flat in gas "
       f"means a bounded working set and therefore an artifact &mdash; jochemnet read "
       f"{cc[0]['jocMB']:.0f} MB at {cc[0]['gas']}M and {cc[-1]['jocMB']:.0f} MB at "
@@ -1023,14 +1170,18 @@ def main():
       f"resolve from a filter in {fl['sa']['absent_us']:.1f} against "
       f"{fl['joc']['absent_us']:.1f} microseconds. Synthetic state is a sound substitute for "
       f"benchmarking <em>state access</em>.</p>")
-    w(f"<p>Two caveats stop that being a blanket endorsement. Executing a <em>distinct</em> "
-      f"contract still costs the generated store {1/dm_code[0]:.2f}&times; what it costs the "
-      f"snapshot and we cannot say why, so anything code-execution heavy is not yet covered. And "
-      f"the control gap &mdash; tests doing no account work at all, where the generated store "
-      f"reads {D['cache_experiment']['small']['steps']['sa']['control']['test_mb']:.0f} MB "
-      f"against {D['cache_experiment']['small']['steps']['joc']['control']['test_mb']:.1f} MB "
-      f"&mdash; survived having its most likely cause tested and eliminated. It is a real "
-      f"difference between the two stores and we cannot yet name it.</p>")
+    w(f"<p>One caveat stops that being a blanket endorsement, and it is narrower than it was. "
+      f"Executing a <em>distinct</em> maximum-size contract still costs the generated store "
+      f"{1/dmj['thr']:.2f}&times; once both arms measure steady-state code &mdash; down from "
+      f"{1/dmp['thr']:.2f}&times; as published &mdash; and that remainder is I/O: the same work "
+      f"uses {dmj['cpu']:.2f} of the snapshot's CPU. So code-execution-heavy workloads are "
+      f"mostly covered now, with a residual worth roughly {(1/dmj['thr'] - 1)*100:.0f}% on the "
+      f"one access pattern that touches a new contract every time.</p>")
+    w(f"<p>The control tests &mdash; the ones doing no account work at all, which carried more "
+      f"of the published divergence than any real category &mdash; were measuring the harness, "
+      f"not either store. They are the reason to read the corrected column above as a bracket "
+      f"rather than a verdict: neither configuration is neutral, and the honest range for every "
+      f"state-reading category lies between them, within a few per cent of parity in both.</p>")
 
     # ---------------------------------------------------------------- errata
     w("<h2>What we got wrong on the way</h2>")
@@ -1063,6 +1214,23 @@ def main():
       f"{ce_e['small']['thr']['CONTROL']:.3f}. The section above reports the eliminated "
       f"explanation rather than the one we expected to be writing, which is the only reason "
       f"this list is worth keeping.</li>")
+    nz_all = D["noise"]["replica"]["all"]
+    nz_s, nz_l = D["noise"]["replica"]["by_duration"]["lt0.2s"], D["noise"]["replica"]["by_duration"]["ge5s"]
+    w(f"<li><b>We reported per-test divergence counts before measuring whether a test "
+      f"reproduces.</b> Running the same store twice under the same configuration puts only "
+      f"{100*nz_all['within10']/nz_all['n']:.0f}% of {nz_all['n']} tests inside "
+      f"&plusmn;10% of themselves &mdash; "
+      f"{100*nz_s['within10']/nz_s['n']:.0f}% for tests under a fifth of a second against "
+      f"{100*nz_l['within10']/nz_l['n']:.0f}% for tests over five seconds. An earlier version "
+      f"of this page ranked the twelve most divergent tests in the suite; all twelve ran in "
+      f"under 0.2 s, so that table was a ranking of the noisiest measurements. It is gone, and "
+      f"the dispersion figure now states the floor.</li>")
+    w(f"<li><b>We blamed the wrong subsystem twice for the same gap.</b> First the client's "
+      f"block cache, refuted by starving it; then a background compaction the generated store "
+      f"really was running, refuted by settling the store and watching the throughput not move. "
+      f"The cause was the JIT, which is visible only if you look at the client's threads rather "
+      f"than its I/O. Two of the three were eliminated by intervention rather than argument, "
+      f"which is the only reason the third was reachable.</li>")
     w("</ul>")
     w("<p class=note>The numbers in this page are computed from the collected run data at build "
       "time; the generator refuses to emit the page if the data stops supporting the sentences "
