@@ -1900,3 +1900,60 @@ rows, ether, storage) carry weight.
 `filter: "...AccountMode\.EXISTING..."` - `\.` is an invalid escape in a double-quoted YAML
 scalar, so benchmarkoor refused the config and all four traced runs executed 0 tests. Changed to
 `AccountMode[.]` (verified through a YAML parse before shipping) and relaunched as R44b.
+
+## Round 44b / 45 (result) - it is not the code database: state-actor resolves state reads through the Merkle trie
+
+Per-CF attribution of one traced test per cell, every page-cache fill mapped to a file and each
+SST to its column family. (The first pass mislabelled jochemnet because its snapshot path
+contains `nethermind` as an intermediate directory; anchored on each arm's datadir root instead.)
+
+**R44b - DIFF_MAX vs SAME_MAX (EXTCODESIZE), marginal cost of contract distinctness:**
+
+| inside the datadir | jochemnet | state-actor |
+|---|---|---|
+| code | **+275 MB (100%)** | +310 MB (30%) |
+| flat/StateNodes | **0** | **+716 MB (70%)** |
+| flat/Account | -0.3 (flat) | -0.4 (flat) |
+
+Code reads are equal between arms (275 vs 310 MB) and account reads are unchanged by
+distinctness on both. The whole asymmetry is trie-node traffic that only state-actor performs.
+
+**R45 - the same attribution on tests that touch no code at all:**
+
+| | jochemnet | state-actor |
+|---|---|---|
+| BALANCE / EXISTING_EOA - trie nodes | **0** | **1,379.9 MB** |
+| EXTCODESIZE / MINIMAL - trie nodes | **0** | **690.7 MB** |
+| flat/Account | 421 / 402 MB | 422 / 403 MB |
+| legacy Patricia `state/` | 157 / 0 MB | 0 / 0 |
+
+state-actor reads 0.7-1.4 GB of `flat/StateNodes` on a pure BALANCE test. **The trie traffic is
+universal on state-actor, not code-related.** It scales with the number of distinct accounts a
+test touches, which is why the code-heavy modes (a new max-size contract per access) show the
+largest gap while EOA/MINIMAL/SAME_MAX stay at parity - the extra reads are absorbed by the NVMe
+until the volume roughly triples. Consistent with the earlier CPU evidence for that cell
+(ratio 0.79: state-actor waits, it does not compute).
+
+**Why: the generated store has no persisted-snapshot layer.** jochemnet's datadir carries
+`persistedSnapshot/{arena,blob,catalog}` (plus `metadata`, `blockAccessLists`,
+`blobTransactions`); state-actor has none of them, though both clients open a
+`PersistedSnapshotCatalog` at boot. Both stores DO have a populated trie - state-actor's
+`StateNodes` holds 596M nodes in 48.9 GB, and the generator's own `internal/neth/flat/doc.go`
+states the flat backend relocates the Merkle trie into the node column families rather than
+eliminating it, and emits both the nodes and the flat leaf rows. So nothing is missing from the
+flat column DB itself; what is missing is the newer serving structure a client-written flat DB
+accumulates. Without it the client appears to resolve reads through the trie; with it,
+jochemnet answers from `flat/Account` alone and never touches `StateNodes`.
+
+**Status of this claim:** the attribution is one traced test per cell, but the effect is 0 vs
+1.4 GB, far outside anything noise could produce. The causal step - that the persisted snapshot
+is what suppresses the trie reads - is inferred from the structural difference and is NOT yet
+demonstrated by intervention. That is the next experiment, and it is a generator change rather
+than a store edit.
+
+## Round 44 first attempt - YAML escape
+
+`filter: "...AccountMode\.EXISTING..."`: `\.` is an invalid escape in a double-quoted YAML
+scalar, so benchmarkoor refused the config and all four traced runs executed 0 tests. Changed to
+`AccountMode[.]`, verified through a YAML parse before shipping. Third identifier mistake of this
+kind; the lesson each time is to validate the selector before spending runs on it.
