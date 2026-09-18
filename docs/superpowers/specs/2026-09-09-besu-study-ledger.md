@@ -3211,3 +3211,64 @@ benchmarkoor run    --config /root/bench/v3-arm-full.yaml  # 22 h, only if the a
 
 The first four are already automated inside `run-v3-campaign.sh`. The analysis and the full arm
 are deliberately manual: a 22 h arm should start on a verdict someone has read.
+
+---
+
+## Round 50 - twin built, payloads filled and verified, and a bug in my own orchestrator
+
+### The geth twin
+
+Exit 0 in **10 h 44 m**, matching v2's 10h31m precedent. 534.6 GB, 422,456,696 accounts,
+**8,240,042 contracts**, state root `0xeb3e963236f608e46ba678a2877c2ecb3fe3a0d8795692f65f8af30326918379`.
+
+Two numbers in there are the treatment, visible without a benchmark. The root is new, different
+from v1's `0x5b305cc0...` and v2's `0x2efb7792...`, which is what identical spec and seed with
+changed record and code bytes has to produce. And contracts came out at 8.24M against v1's
+134,892,673, a **16x reduction**, which is #138's bytecode pool doing exactly what it merged to do.
+
+### A bug in the reordered orchestrator, caught by reading the state file
+
+`fill-ok` was marked, and the state file also contained
+`TypeError: string indices must be integers`. The inline fill oracle crashed on the `pre_run`
+fixture, whose top level is a single object rather than a mapping of test ids, and in the
+reordered script I had dropped the `|| exit 1` after the heredoc. So the oracle died, wrote no
+`CAMPAIGN_FAIL`, and the campaign marked the fill verified and moved on to an 11 h generation.
+
+**It happened to be right, which is the worst way to be right.** Re-ran the check properly as
+`tools/besu-study/verify-fill.py`:
+
+| check | result |
+|---|---|
+| gas budgets | **11 of 11**, 0100M through 0300M |
+| test ids | 1,716 |
+| `test_account_access` ids | **1,100**, exactly the archived suite (660 measurement + 440 control) |
+| distinct anchors | **1**, `0xb645fc09b98810a78302e456daddc4b460951bd9d11d640416f69eabf2699b99` |
+| gas recorded per test | yes |
+
+ORACLE PASS. The lesson is not about python: a phase that reports success when its verifier
+crashes is worse than a phase with no verifier, because it launders the absence of evidence into
+evidence. Any future inline oracle gets `|| DIE`, and `verify-fill.py` exists so the check is a
+file with a test rather than a heredoc.
+
+### Test-id comparability, settled
+
+The plan wanted the new test-id set to equal the archived arm's. Raw comparison said every one of
+the 1,100 differed, which looked alarming. It is a path prefix: the new ids start
+`tests/benchmark/...` and the archived ones `benchmark/...`. Stripping the file path,
+**symmetric difference 0**. `analyse-v3.py` parses by regex on opcode, account_mode, gas,
+value_sent and overhead_baseline, so the prefix never reaches the join. v3 will line up against
+the archived arms row for row.
+
+### Space, and a constraint worth remembering
+
+The fill transiently **doubles** the twin: benchmarkoor clones the datadir to
+`/tmp/benchmarkoor-datadir-eest-fill-geth-*`, so 499 GB of store became 1,000 GB of footprint and
+md2 free bottomed at 1,067 GB. Both were released on completion, back to 2,066 GB. Budget for
+2x the twin on any future fill.
+
+### Now
+
+`gen-besu-begin`. The besu store is generating with the same spec and seed, so it should land on
+the same root `0xeb3e9632...` and therefore the same genesis hash as the payload anchor. That
+equality is what makes a geth-filled bundle valid for a Besu arm, and the 1-test arm gate is what
+proves it rather than assuming it.

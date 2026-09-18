@@ -149,10 +149,30 @@ func compactWholeDB(path string) {
 	if err != nil {
 		log.Fatalf("list cfs %s: %v", path, err)
 	}
+	// grocksdb's defaults are NOT Nethermind's for these databases. They agree on compression,
+	// block size and restart interval, but grocksdb writes format_version 6 where the client
+	// writes 5 - a read-path difference in the block trailer and index encoding. Transcribe the
+	// client's table options explicitly so a compaction cannot silently re-encode the store.
 	cfOpts := make([]*grocksdb.Options, len(names))
 	for i := range cfOpts {
-		cfOpts[i] = grocksdb.NewDefaultOptions()
-		cfOpts[i].SetDisableAutoCompactions(true)
+		o := grocksdb.NewDefaultOptions()
+		o.SetDisableAutoCompactions(true)
+		o.SetCompression(grocksdb.SnappyCompression)
+		o.SetNumLevels(7)
+		o.SetLevelCompactionDynamicLevelBytes(true)
+		o.SetMaxBytesForLevelBase(268435456)
+		o.SetTargetFileSizeBase(67108864)
+		b := grocksdb.NewDefaultBlockBasedTableOptions()
+		b.SetBlockSize(4096)
+		b.SetBlockRestartInterval(16)
+		b.SetFormatVersion(5)
+		b.SetIndexType(grocksdb.KBinarySearchIndexType)
+		b.SetDataBlockIndexType(grocksdb.KDataBlockIndexTypeBinarySearch)
+		b.SetCacheIndexAndFilterBlocks(false)
+		b.SetWholeKeyFiltering(true)
+		// filter_policy stays unset: the client runs these databases without one.
+		o.SetBlockBasedTableFactory(b)
+		cfOpts[i] = o
 	}
 	db, handles, err := grocksdb.OpenDbColumnFamilies(opts, path, names, cfOpts)
 	if err != nil {
