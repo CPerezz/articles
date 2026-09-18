@@ -1676,3 +1676,37 @@ slower than 0.94 and most sit at parity or state-actor-faster. TieredCompilation
 diagnostic, not the recommended config: a live node runs tier-1+PGO code, so the harness fix is
 an EVM-heavy warm-up phase after boot on every arm, discarded before measurement (the pre-run
 idea, applied to the JIT). R40 (266 subset, JIT-eq, both settled) running for the full picture.
+
+## Round 40-41 status - completed unattended; host unreachable since ~23:20 UTC
+
+R40 (266 subset, both arms, settled images, TieredCompilation=0) and R41 (per-CF read
+attribution of DIFF_MAX vs SAME_MAX) were chained and run without supervision; by their own
+timing both finished before 02:30 UTC. The host stopped completing SSH sessions from ~23:20 UTC
+and had not resumed by 03:20 UTC local+? (4 h - longest so far; banner and ICMP fine, session
+setup hangs, `gas-repricing` is not in Teleport so there is no second path). Results are on disk
+under /bench/logs/night/{night4-verdict.txt,round41-verdict.txt}; nothing is lost by waiting.
+
+### Where the investigation stands (before R40's numbers)
+
+Two mechanisms, both found by intervention, both artifacts of the *procedure*, neither a store
+property:
+
+1. **Placement** (rounds 11-16): the pre-run promoted into jochemnet's image put the fixture
+   accounts in a handful of young SSTs. Compaction equalised it. 17x -> account reads at parity.
+2. **JIT warm-up** (rounds 28-39): the harness restarts the client per test; state-actor's
+   fixtures add a 0-gas fork-activation block, so its EVM enters the measured block on tier-0
+   code with the JIT compiling underneath, while jochemnet's EVM tiers up during its heavy setup
+   block. Removing tiered compilation on both arms: control 0.73 -> 1.14, DIFF_MAX 0.64 -> 0.94
+   (jochemnet's own DIFF_MAX slowed 9.5 -> 13.6 s), warm/short cells 0.85-0.95 -> 1.1-1.5, with
+   all sub-second tests 5-6x faster on both arms. Every regime-3 cell was this.
+
+Also found and fixed in the images along the way, none of which moved a ratio: state-actor's
+Account CF (generator's CompactRange left it at L3, compaction-pending) and both arms' code DBs
+(L4:734 / L0:3,L1:6,L3:117). Structural differences catalogued and ruled out: RocksDB options
+identical, chain profile identical (--config=none), fixture accounts read like random accounts,
+footprint growth identical, cache carry-over <=30% by budget and 3% measured, Storage
+SlotEncoding differs (storage tests only, jochemnet is the legacy one).
+
+Remaining after JIT equalisation, to be read from R40: whether any category sits below ~0.94
+with n>=20, and the storage-slot cells (SlotEncoding). Per-test noise: 60-75% within +/-10% on
+the same store for sub-second tests; 98% for tests over 5 s.
