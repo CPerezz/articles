@@ -2080,3 +2080,46 @@ pass (`probe-flat -mode rebuild` + `schelk promote`). The image under measuremen
 hand, so R54 remains a valid test of the fix's premise. Out of scope and still true: state-actor
 emits no `metadata` DB, so Nethermind regenerates the FlatDb compaction offset at every boot - R48
 proved that is not a source of I/O, but it is still a difference between the two stores.
+
+## Rounds 54-56 (result) and the article update - published
+
+**R54 falsified the prediction.** 266-test subset, both arms, identical corrected config, settled
+store, precondition verified at launch (`compaction jobs at boot = 0`), 266/266 with zero failures
+on both arms:
+
+| cell | R43 r1 | R43 r2 | R54 settled | move | R43 replica swing |
+|---|---|---|---|---|---|
+| DIFF_MAX code-exec | 0.928 | 0.933 | **0.938** | +0.007 | 0.005 |
+| JUMPDEST code-exec | 0.938 | 0.937 | **0.943** | +0.005 | 0.000 |
+
+7.0% slower -> 6.2%. Removing 33-90 MB/s of continuous background I/O from every test bought a
+tenth of a seven-point gap. `CONTROL` stays at 1.142, i.e. state-actor is 14% *faster* on tests
+that do no state work at all. Several unrelated cells moved far more than the two under study
+(`NON_EXISTING_ACCOUNT BAL/HASH` +0.217, `sload_same_key` -0.207), consistent with the measured
+floor, so R54 cannot resolve small effects - but a seven-point gap closing would have been
+unmissable.
+
+**R55/R56 - the attribution, re-run quiet, and it finally agrees with the throughput.** Non-code
+access (BALANCE/EOA vs EXTCODESIZE/MINIMAL): state-actor's marginal is 19.3 MB from
+`flat/Account` against jochemnet's 16.2 MB across its whole datadir, and `flat/StateNodes`
+contributes 0.0 MB where it had shown 689. Distinct max-size contract per access, six matched
+pairs per arm (EXTCODESIZE/CALL/EXTCODECOPY x 160M/240M): **2,821 MB against 1,671 MB = 1.69x**,
+of which 2,444 MB is the code database; `flat/Account` is flat (-1.0 MB) and the trie families
+stay at zero (-0.1 MB). Published was 2.23x, the contaminated "corrected" run said 1.31x.
+
+**Correction to my own framing.** I had explained the old numbers as "inflation proportional to
+test duration". That does not survive arithmetic: DIFF_MAX tests run 1.76 s (160M) and 2.67 s
+(240M), so at the measured 33 MB/s idle rate the phantom is 58-87 MB - about 2% of a per-test
+byte column, nowhere near the 716 MB it added to the *marginal*. The actual mechanism is that the
+per-CF probes compare two separate runs, each with its own boot, so background traffic enters each
+window in proportion to how long that window stayed open, and it landed on the difference between
+two large numbers. The article says it this way, not the duration way.
+
+**Article updated and live** at `a11d0ed`, byte-identical to the local build, published from a
+clean checkout of `origin/main` with zero sibling folders touched. New section "Defect 3: the
+generated store makes the client rewrite it"; the overview list goes from three defects to four;
+the residual section is rebuilt on the settled-store attribution; the recommendation now covers
+`kForce` as well as the target level and links state-actor#139; two errata items added. Three new
+figures: `fig_seqno_paths` (the move-vs-rewrite diagram), `fig_idle_reads`, `fig_marginal_cf`.
+Five new oracles, including one that fails the build if settling the store ever *does* move
+DIFF_MAX - the section is written around that null result, so it must not be able to rot silently.
