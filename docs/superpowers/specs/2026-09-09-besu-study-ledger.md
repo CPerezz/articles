@@ -3333,3 +3333,80 @@ analysis so that publishing is review plus prose, not analysis.
 besu store in phase 2/2 building state trie, 46.4%, about 2 h out. Then gates, schelk pair,
 1-test arm gate, 129-test go/no-go, and on a GO the full suite. Three processes armed:
 `run-v3-campaign2.sh` (15 h 35 m), `run-v3-phase2.sh`, `hourly-snapshot.sh`.
+
+---
+
+## Round 52 - v3 measured: every pre-registered prediction landed
+
+### The campaign completed phase 1 unattended
+
+`gen-besu-done` -> `gates-ok` -> `schelk-ok` -> `arm-gate-ok` -> `filter-arm-done` -> `CAMPAIGN_OK`,
+with no intervention. Two load-bearing facts fell out of it:
+
+- **Cross-client determinism holds at 350 GB.** The besu store's state root is
+  `0xeb3e963236f608e46ba678a2877c2ecb3fe3a0d8795692f65f8af30326918379`, **identical to the geth
+  twin's**. Verified at 4 GB in round 42, now at full scale. (Account counters differ again,
+  414,009,993 against the twin's 422,456,696, which is the same per-writer bookkeeping noise
+  round 42 flagged. The root is the authority.)
+- **The anchor assumption is proven, not assumed.** The 1-test arm gate passed, so the besu
+  genesis really does equal the payload anchor `0xb645fc09...` that a *geth*-filled bundle was
+  built against. That is the single assumption the whole twin approach rested on.
+
+### A NO-GO that was my bug, not a result
+
+Phase 2 recorded `gonogo-NO-GO` and stood down. The reason was not a measurement:
+`FAIL: no measurement rows joined to the archived compacted arm`. Two defects, both mine, both in
+code I had "validated":
+
+1. A test id encodes gas as `benchmark-gas-value_100M`, **not** `gas_100M`. My regex keyed on
+   `gas_`, matched nothing, dropped every row, and produced an empty join.
+2. There is no per-test `status` field. Pass and fail counts live in
+   `steps.test.aggregated.{success,fail}`, so my gate-1 counter read 0/0 forever.
+
+Both were invisible because I validated by **monkeypatching the loader** and feeding archived rows
+straight in. That exercised the comparison logic and never once exercised the parsing. The lesson
+is specific: a validation that stubs the input boundary cannot certify the input boundary. Parsing
+is now a shared `v3lib.py` with both scripts importing it, so there is one copy to be wrong.
+
+### The result, on the 129-test arm
+
+| class | cats | rows | archived | **v3** | pre-registered | outcome |
+|---|---|---|---|---|---|---|
+| absent | 3 | 12 | 0.124 | **0.998** | collapse to ~1.0 | **as predicted** |
+| shared/no-code | 9 | 36 | 0.942 | **0.974** | rise from 0.947 | **as predicted** |
+| distinct-code | 6 | 24 | 0.835 | **1.439** | sign flip above 1.0 | **as predicted** |
+
+Gas identity: 0 of 120 tests differ by more than 1e-6, so both arms did the same work. 30 of 72
+measurement rows are now *faster* than the snapshot, against 0 of 660 before. 52 of 72 sit inside
++/-10%, against 341 of 660.
+
+Read plainly: **#133's filters closed the absence class**, 0.124 to 0.998, the 8x penalty gone.
+**#138 did not close the distinct-code class, it inverted it**, 0.835 to **1.439**, i.e. the
+synthetic store is now 44% *faster* than mainnet on exactly the reads it was too slow on. That is
+round 37's 6.6x over-compression showing up in throughput, predicted before the store existed.
+The gradient confirms the direction rather than contradicting it: dark goes 1.340, 1.470, 1.501
+across 100M/200M/300M, so the over-correction *grows* with read volume.
+
+### The control canary failed, and that constrains the write-up
+
+1.0034 against the archived 1.019, off by 0.0156 where the tolerance is 0.013. Per-budget drift
+0.0137, inside its 0.020.
+
+By the rule fixed in round 49, that means the archived reference cannot carry small-effect claims.
+Statable: the collapse of the 0.117 regime and the inversion of the 0.828 regime, both enormous.
+Not statable from this arm: whether the shared/no-code class has actually *arrived* at parity
+(0.974 is a 2.6% claim against a reference that moved 1.6%), and the precise magnitude of the
+sign flip.
+
+Worth noting what the canary drift probably is, without treating the guess as a finding: the
+control offset moved **toward** 1.000. Round 43 identified that the archived arms were filled at
+two different eest refs, and v3 is the first arm whose payloads were filled at the same ref as its
+comparison. A bundle-build artifact shrinking is the obvious candidate, and it would mean the
+long-unexplained 1.9% was partly ours. That is a hypothesis for a rebuilt snapshot arm to settle,
+not a conclusion.
+
+### Now running
+
+Full suite armed and started: `full-arm-begin`, 1,100 tests, about 22 h, on a GO from the
+corrected gate. On completion phase 2 writes `v3-verdict-full.txt` and the consolidated
+`v3-REPORT.txt`.

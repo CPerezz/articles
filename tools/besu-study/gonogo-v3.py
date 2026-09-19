@@ -27,44 +27,15 @@ DARK = ("EXISTING_CONTRACT_DIFF_MAX", "EXISTING_CONTRACT_JUMPDEST")
 ABSENT = "NON_EXISTING_ACCOUNT"
 
 
-def parse(tid):
-    return dict(re.findall(r"(opcode|account_mode|gas|value_sent|overhead_baseline)"
-                           r"_(?:AccountMode\.)?([A-Za-z0-9_]+)", tid))
-
-
-def load(results_dir):
-    runs = sorted(d for d in glob.glob(os.path.join(results_dir, "runs", "*")) if os.path.isdir(d))
-    if not runs:
-        print(f"FAIL: no runs under {results_dir}")
-        sys.exit(1)
-    res = json.load(open(os.path.join(runs[-1], "result.json")))
-    rows, npass, nfail = {}, 0, 0
-    for tid, meta in res.get("tests", {}).items():
-        status = str(meta.get("status", "")).lower()
-        if status in ("passed", "pass", "ok", "success"):
-            npass += 1
-        elif status:
-            nfail += 1
-        agg = (meta.get("steps", {}).get("test") or {}).get("aggregated")
-        if not agg:
-            continue
-        ns = agg.get("gas_used_time_total") or agg.get("time_total")
-        gas = agg.get("gas_used_total")
-        if not ns or not gas:
-            continue
-        f = parse(tid)
-        if not all(k in f for k in ("opcode", "account_mode", "gas")):
-            continue
-        g = int(re.sub(r"[^0-9]", "", f["gas"]) or 0)
-        rows[(f["opcode"], f["account_mode"], g, int(f.get("value_sent", -1)),
-              f.get("overhead_baseline") == "True")] = gas / (ns / 1e9) / 1e6
-    return rows, npass, nfail
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from v3lib import load, DARK, ABSENT
 
 
 def main():
     results = sys.argv[1] if len(sys.argv) > 1 else "/data/bench-results/v3-filter"
     dpath = sys.argv[2] if len(sys.argv) > 2 else "/root/bench/report_data_archived.json"
     rows, npass, nfail = load(results)
+    rows = {k: v["mgas_s"] for k, v in rows.items()}
     D = json.load(open(dpath))
     key = lambda r: (r["opcode"], r["mode"], r["gas"], r["value_sent"], r["baseline"])
     comp = {key(r): r["mgas_s"] for r in D["full"]["compacted"]}

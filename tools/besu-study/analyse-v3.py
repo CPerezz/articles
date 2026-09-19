@@ -30,37 +30,13 @@ DARK = ("EXISTING_CONTRACT_DIFF_MAX", "EXISTING_CONTRACT_JUMPDEST")
 ABSENT = "NON_EXISTING_ACCOUNT"
 
 
-def parse(tid):
-    return dict(re.findall(r"(opcode|account_mode|gas|value_sent|overhead_baseline)"
-                           r"_(?:AccountMode\.)?([A-Za-z0-9_]+)", tid))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from v3lib import load, cls, DARK, ABSENT
 
 
 def arm(results_dir):
-    runs = sorted(d for d in glob.glob(os.path.join(results_dir, "runs", "*")) if os.path.isdir(d))
-    if not runs:
-        sys.exit(f"no runs under {results_dir}")
-    index = json.load(open(os.path.join(runs[-1], "result.json")))["tests"]
-    rows = {}
-    for tid, meta in index.items():
-        agg = (meta.get("steps", {}).get("test") or {}).get("aggregated")
-        if not agg:
-            continue
-        ns = agg.get("gas_used_time_total") or agg.get("time_total")
-        gas = agg.get("gas_used_total")
-        if not ns or not gas:
-            continue
-        f = parse(tid)
-        if not all(k in f for k in ("opcode", "account_mode", "gas")):
-            continue
-        g = int(re.sub(r"[^0-9]", "", f["gas"]) or 0)
-        key = (f["opcode"], f["account_mode"], g,
-               int(f.get("value_sent", -1)), f.get("overhead_baseline") == "True")
-        rows[key] = dict(mgas_s=gas / (ns / 1e9) / 1e6, gas_used=gas)
+    rows, _succ, _fail = load(results_dir)
     return rows
-
-
-def cls(mode):
-    return "absent" if mode == ABSENT else ("dark" if mode in DARK else "light")
 
 
 def med(xs):
