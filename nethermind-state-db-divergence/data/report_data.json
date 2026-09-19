@@ -4489,6 +4489,629 @@
    }
   ]
  },
+ "bottommost": {
+  "attribution": {
+   "code": {
+    "after": {
+     "joc": {
+      "_windows": 1,
+      "cf": {
+       "24402727": {
+        "dm": 679.9,
+        "marg": 274.7,
+        "sm": 405.1
+       },
+       "other": {
+        "dm": 1561.8,
+        "marg": 525.1,
+        "sm": 1036.7
+       }
+      },
+      "total_marg": 799.9
+     },
+     "sa": {
+      "_windows": 1,
+      "cf": {
+       "blockAccessLists": {
+        "dm": 0.0,
+        "marg": 0.0,
+        "sm": 0.0
+       },
+       "blockNumbers": {
+        "dm": 0.0,
+        "marg": 0.0,
+        "sm": 0.0
+       },
+       "blocks": {
+        "dm": 0.0,
+        "marg": -0.0,
+        "sm": 0.0
+       },
+       "code": {
+        "dm": 310.2,
+        "marg": 310.2,
+        "sm": 0.0
+       },
+       "flat/Account": {
+        "dm": 403.2,
+        "marg": -0.3,
+        "sm": 403.5
+       },
+       "headers": {
+        "dm": 0.0,
+        "marg": 0.0,
+        "sm": 0.0
+       },
+       "logs": {
+        "dm": 0.0,
+        "marg": 0.0,
+        "sm": 0.0
+       },
+       "metadata": {
+        "dm": 0.0,
+        "marg": 0.0,
+        "sm": 0.0
+       },
+       "other": {
+        "dm": 1677.8,
+        "marg": 649.4,
+        "sm": 1028.3
+       },
+       "receipts": {
+        "dm": 0.0,
+        "marg": 0.0,
+        "sm": 0.0
+       }
+      },
+      "total_marg": 959.7
+     }
+    },
+    "before": {
+     "joc": {
+      "_windows": 1,
+      "cf": {
+       "24402727": {
+        "dm": 677.7,
+        "marg": 272.6,
+        "sm": 405.1
+       },
+       "other": {
+        "dm": 1550.7,
+        "marg": 507.1,
+        "sm": 1043.6
+       }
+      },
+      "total_marg": 779.7
+     },
+     "sa": {
+      "_windows": 1,
+      "cf": {
+       "blockInfos": {
+        "dm": 0.0,
+        "marg": 0.0,
+        "sm": 0.0
+       },
+       "blockNumbers": {
+        "dm": 0.0,
+        "marg": 0.0,
+        "sm": 0.0
+       },
+       "blocks": {
+        "dm": 0.0,
+        "marg": -0.0,
+        "sm": 0.0
+       },
+       "code": {
+        "dm": 310.3,
+        "marg": 310.2,
+        "sm": 0.1
+       },
+       "flat/Account": {
+        "dm": 403.2,
+        "marg": -0.4,
+        "sm": 403.5
+       },
+       "flat/StateNodes": {
+        "dm": 1138.9,
+        "marg": 716.5,
+        "sm": 422.4
+       },
+       "flat/StateTopNodes": {
+        "dm": 0.0,
+        "marg": -0.6,
+        "sm": 0.6
+       },
+       "flat/unmapped": {
+        "dm": 369.9,
+        "marg": -1.0,
+        "sm": 371.0
+       },
+       "headers": {
+        "dm": 0.0,
+        "marg": -0.0,
+        "sm": 0.0
+       },
+       "other": {
+        "dm": 3253.9,
+        "marg": 1426.3,
+        "sm": 1827.5
+       },
+       "receipts": {
+        "dm": 0.0,
+        "marg": -0.0,
+        "sm": 0.0
+       },
+       "state": {
+        "dm": 0.0,
+        "marg": -0.0,
+        "sm": 0.0
+       }
+      },
+      "total_marg": 2453.0
+     }
+    }
+   },
+   "code_wide": {
+    "joc": {
+     "_windows": 6,
+     "cf": {
+      "24402727": {
+       "dm": 5060.3,
+       "marg": 1671.3,
+       "sm": 3388.9
+      },
+      "other": {
+       "dm": 11866.1,
+       "marg": 2523.9,
+       "sm": 9342.2
+      }
+     },
+     "total_marg": 4195.2
+    },
+    "sa": {
+     "_windows": 6,
+     "cf": {
+      "badBlocks": {
+       "dm": 0.1,
+       "marg": 0.1,
+       "sm": 0.0
+      },
+      "blobTransactions": {
+       "dm": 0.1,
+       "marg": 0.1,
+       "sm": 0.0
+      },
+      "blockAccessLists": {
+       "dm": 0.0,
+       "marg": 0.0,
+       "sm": 0.0
+      },
+      "blockInfos": {
+       "dm": 1.0,
+       "marg": 0.1,
+       "sm": 0.9
+      },
+      "blockNumbers": {
+       "dm": 0.1,
+       "marg": 0.0,
+       "sm": 0.1
+      },
+      "blocks": {
+       "dm": 0.1,
+       "marg": -0.0,
+       "sm": 0.1
+      },
+      "code": {
+       "dm": 2443.8,
+       "marg": 2443.5,
+       "sm": 0.4
+      },
+      "flat/Account": {
+       "dm": 3013.0,
+       "marg": -1.0,
+       "sm": 3014.0
+      },
+      "flat/Metadata": {
+       "dm": 0.0,
+       "marg": 0.0,
+       "sm": 0.0
+      },
+      "flat/StateNodes": {
+       "dm": 0.4,
+       "marg": -0.1,
+       "sm": 0.5
+      },
+      "flat/StateTopNodes": {
+       "dm": 2.3,
+       "marg": -0.6,
+       "sm": 2.9
+      },
+      "flat/StorageNodes": {
+       "dm": 376.9,
+       "marg": 376.9,
+       "sm": 0.0
+      },
+      "flat/unmapped": {
+       "dm": 0.0,
+       "marg": 0.0,
+       "sm": 0.0
+      },
+      "headers": {
+       "dm": 0.1,
+       "marg": 0.0,
+       "sm": 0.1
+      },
+      "logs": {
+       "dm": 0.1,
+       "marg": 0.0,
+       "sm": 0.1
+      },
+      "metadata": {
+       "dm": 0.0,
+       "marg": 0.0,
+       "sm": 0.0
+      },
+      "other": {
+       "dm": 22458.2,
+       "marg": -2046.3,
+       "sm": 24504.4
+      },
+      "persistedSnapshot": {
+       "dm": 0.1,
+       "marg": 0.1,
+       "sm": 0.1
+      },
+      "receipts": {
+       "dm": 0.1,
+       "marg": -0.0,
+       "sm": 0.1
+      },
+      "state": {
+       "dm": 0.0,
+       "marg": 0.0,
+       "sm": 0.0
+      },
+      "static-nodes.json": {
+       "dm": 0.0,
+       "marg": 0.0,
+       "sm": 0.0
+      },
+      "trusted-nodes.json": {
+       "dm": 0.0,
+       "marg": 0.0,
+       "sm": 0.0
+      }
+     },
+     "total_marg": 2820.8
+    }
+   },
+   "noncode": {
+    "after": {
+     "joc": {
+      "_windows": 1,
+      "cf": {
+       "24402727": {
+        "dm": 421.1,
+        "marg": 16.2,
+        "sm": 404.9
+       },
+       "other": {
+        "dm": 1079.3,
+        "marg": 39.0,
+        "sm": 1040.3
+       }
+      },
+      "total_marg": 55.2
+     },
+     "sa": {
+      "_windows": 1,
+      "cf": {
+       "blockAccessLists": {
+        "dm": 0.0,
+        "marg": 0.0,
+        "sm": 0.0
+       },
+       "blockNumbers": {
+        "dm": 0.0,
+        "marg": 0.0,
+        "sm": 0.0
+       },
+       "blocks": {
+        "dm": 0.0,
+        "marg": 0.0,
+        "sm": 0.0
+       },
+       "code": {
+        "dm": 0.0,
+        "marg": -0.0,
+        "sm": 0.0
+       },
+       "flat/Account": {
+        "dm": 422.5,
+        "marg": 19.3,
+        "sm": 403.1
+       },
+       "headers": {
+        "dm": 0.0,
+        "marg": 0.0,
+        "sm": 0.0
+       },
+       "logs": {
+        "dm": 0.0,
+        "marg": 0.0,
+        "sm": 0.0
+       },
+       "other": {
+        "dm": 1081.0,
+        "marg": 52.2,
+        "sm": 1028.8
+       },
+       "receipts": {
+        "dm": 0.0,
+        "marg": -0.0,
+        "sm": 0.0
+       }
+      },
+      "total_marg": 71.5
+     }
+    },
+    "before": {
+     "joc": {
+      "_windows": 1,
+      "cf": {
+       "24402727": {
+        "dm": 581.7,
+        "marg": 176.8,
+        "sm": 404.9
+       },
+       "other": {
+        "dm": 1693.2,
+        "marg": 654.0,
+        "sm": 1039.2
+       }
+      },
+      "total_marg": 830.8
+     },
+     "sa": {
+      "_windows": 1,
+      "cf": {
+       "blockInfos": {
+        "dm": 0.0,
+        "marg": 0.0,
+        "sm": 0.0
+       },
+       "blockNumbers": {
+        "dm": 0.0,
+        "marg": 0.0,
+        "sm": 0.0
+       },
+       "blocks": {
+        "dm": 0.0,
+        "marg": -0.0,
+        "sm": 0.0
+       },
+       "code": {
+        "dm": 17.0,
+        "marg": 16.9,
+        "sm": 0.1
+       },
+       "flat/Account": {
+        "dm": 422.4,
+        "marg": 19.3,
+        "sm": 403.2
+       },
+       "flat/StateNodes": {
+        "dm": 1379.9,
+        "marg": 689.2,
+        "sm": 690.7
+       },
+       "flat/StateTopNodes": {
+        "dm": 0.6,
+        "marg": 0.0,
+        "sm": 0.6
+       },
+       "flat/unmapped": {
+        "dm": 371.0,
+        "marg": 0.0,
+        "sm": 371.0
+       },
+       "headers": {
+        "dm": 0.0,
+        "marg": 0.0,
+        "sm": 0.0
+       },
+       "other": {
+        "dm": 2883.2,
+        "marg": 793.9,
+        "sm": 2089.3
+       },
+       "receipts": {
+        "dm": 0.0,
+        "marg": 0.0,
+        "sm": 0.0
+       },
+       "state": {
+        "dm": 0.0,
+        "marg": 0.0,
+        "sm": 0.0
+       }
+      },
+      "total_marg": 1519.3
+     }
+    }
+   }
+  },
+  "boot": {
+   "joc": {
+    "cf": "StorageNodes",
+    "jobs": 1,
+    "reason": "LevelMaxLevelSize"
+   },
+   "sa": {
+    "cf": "StateNodes",
+    "jobs": 14,
+    "reason": "BottommostFiles"
+   },
+   "sa_settled": {
+    "jobs": 0
+   }
+  },
+  "cells": {
+   "CONTROL": {
+    "n": 80,
+    "r1": 1.13718809225573,
+    "r2": 1.1829428264856021,
+    "settled": 1.1422426052038208
+   },
+   "DIFF_MAX BAL/HASH": {
+    "n": 4,
+    "r1": 1.012838929025912,
+    "r2": 1.0008040709587662,
+    "settled": 0.9866119000063504
+   },
+   "DIFF_MAX code-exec": {
+    "n": 16,
+    "r1": 0.9277713221509248,
+    "r2": 0.93319907227508,
+    "settled": 0.9376594796094619
+   },
+   "EXISTING_EOA BAL/HASH": {
+    "n": 4,
+    "r1": 1.0045526216689327,
+    "r2": 0.995596056590021,
+    "settled": 0.9947417999662063
+   },
+   "EXISTING_EOA code-exec": {
+    "n": 16,
+    "r1": 0.9867003861586094,
+    "r2": 0.9940730513888809,
+    "settled": 0.997321397864498
+   },
+   "JUMPDEST BAL/HASH": {
+    "n": 4,
+    "r1": 0.9910033153270394,
+    "r2": 0.9971656258570459,
+    "settled": 0.9739324180352155
+   },
+   "JUMPDEST code-exec": {
+    "n": 16,
+    "r1": 0.9378050142991746,
+    "r2": 0.9373881768536725,
+    "settled": 0.9425136465287226
+   },
+   "MINIMAL BAL/HASH": {
+    "n": 4,
+    "r1": 0.9857796271818697,
+    "r2": 0.9887360997334935,
+    "settled": 0.9981841935069333
+   },
+   "MINIMAL code-exec": {
+    "n": 16,
+    "r1": 0.9967773595583966,
+    "r2": 0.9911742288103687,
+    "settled": 0.9947814496375635
+   },
+   "NON_EXISTING_ACCOUNT BAL/HASH": {
+    "n": 4,
+    "r1": 1.1056354644931785,
+    "r2": 1.167830757248843,
+    "settled": 1.3532946548335443
+   },
+   "NON_EXISTING_ACCOUNT code-exec": {
+    "n": 16,
+    "r1": 1.091648292892084,
+    "r2": 1.209078620562387,
+    "settled": 1.2336552606013869
+   },
+   "SAME_MAX BAL/HASH": {
+    "n": 4,
+    "r1": 0.9769192358355937,
+    "r2": 0.9744929755900362,
+    "settled": 0.997590078060431
+   },
+   "SAME_MAX code-exec": {
+    "n": 16,
+    "r1": 0.9927906153421799,
+    "r2": 0.9875585351801885,
+    "settled": 0.9995418452502136
+   },
+   "ether transfer": {
+    "n": 36,
+    "r1": 1.049474067680268,
+    "r2": 1.0728532259258396,
+    "settled": 1.075964781240438
+   },
+   "sload_same_key": {
+    "n": 4,
+    "r1": 1.264986880834488,
+    "r2": 1.347511496743404,
+    "settled": 1.0991394623782582
+   },
+   "storage slot": {
+    "n": 12,
+    "r1": 1.0525235667266744,
+    "r2": 1.0657130967921518,
+    "settled": 1.0934688013730973
+   },
+   "warm query": {
+    "n": 14,
+    "r1": 1.2861925125462967,
+    "r2": 1.2926767269009738,
+    "settled": 1.3494460809103384
+   }
+  },
+  "idle": {
+   "joc_mb": 0,
+   "sa_mb": 1962,
+   "sa_settled_mb": 0,
+   "window_s": 60
+  },
+  "pr": 139,
+  "rpc": {
+   "calls": 2000,
+   "joc": {
+    "account_mb": 16.3,
+    "trie_mb": 0.0,
+    "trie_share_pct": 0.0
+   },
+   "sa": {
+    "account_mb": 16.3,
+    "trie_mb": 2181.5,
+    "trie_share_pct": 99.0
+   }
+  },
+  "settle": {
+   "StateNodes": {
+    "files_after": 207,
+    "files_before": 603,
+    "gb_after": 51.66,
+    "gb_before": 51.17,
+    "secs": 421.9
+   },
+   "StateTopNodes": {
+    "files_after": 10,
+    "files_before": 10,
+    "gb_after": 0.61,
+    "gb_before": 0.61,
+    "secs": 2.0
+   },
+   "StorageNodes": {
+    "files_after": 1126,
+    "files_before": 1211,
+    "gb_after": 281.31,
+    "gb_before": 278.82,
+    "secs": 2114.0
+   }
+  },
+  "test_secs": {
+   "DIFF_MAX_160M": 1.76,
+   "DIFF_MAX_240M": 2.67
+  },
+  "threads": {
+   "rocksdb_low_mb": 1948.6,
+   "window_s": 45
+  }
+ },
  "cache_experiment": {
   "big": {
    "n": 266,
