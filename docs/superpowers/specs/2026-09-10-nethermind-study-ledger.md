@@ -1999,9 +1999,16 @@ not Nethermind-level code, and ~0% CPU on every client thread - pure I/O.
 | state-actor | **14** | **StateNodes** | **`BottommostFiles`** |
 | jochemnet | 1 | StorageNodes | `LevelMaxLevelSize` |
 
-`kBottommostFiles` is RocksDB garbage-collecting bottommost files that still carry deletion
-tombstones. The generator rewrites trie paths while building, leaving them behind. `ttl=2592000`
-(30 days) is set on every CF of both stores but is not the trigger here - the reason field says so.
+`kBottommostFiles` is RocksDB rewriting bottommost files to zero out their sequence numbers.
+`ComputeBottommostFilesMarkedForCompaction` marks every bottommost file whose `largest_seqno != 0`
+once no snapshot protects it, so the trigger is not tombstone count but *how the file was produced*:
+files written by flush, or by a compaction that could not zero seqnos, stay marked until something
+rewrites them. That is the generator's whole output. jochemnet's files came out of a real node's
+ordinary compaction cycles and are mostly already zeroed. `ttl=2592000` (30 days) is set on every CF
+of both stores but is not the trigger here - the reason field says `BottommostFiles`, not `Ttl`.
+(The seqno mechanism is read off RocksDB's semantics, not measured; what is measured is the reason
+field, the 14 jobs, and that an explicit `CompactRange` on Account in round 34 stopped it recurring
+for that CF.)
 
 **Why it was invisible until now.** `estimate-pending-compaction-bytes` is 0 and every CF sits at
 L6, which is what rounds 18/32/34 checked. Tombstone-driven bottommost GC is not counted in either.
