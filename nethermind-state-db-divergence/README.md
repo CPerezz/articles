@@ -38,10 +38,11 @@ hash mismatch. Use the `existing-snapshot` family's 14-EIP set, which adds
 | `nethermind-state-db-report.html` | The deliverable. Zero JS, single file. Only external fetches are the site's Google-Font stylesheets (degrades to system monospace offline). |
 | `gen_nethermind_state_db_report.py` | Prose, computations, and HTML/SVG emission. Python 3 stdlib only. |
 | `collect_nethermind.py` | Runs on the benchmark host: reduces four benchmarkoor result trees to `data/report_data.json`. |
+| `collect_bottommost.py` | Runs on the benchmark host: folds the bottommost-compaction rounds (idle I/O, boot compaction reasons, the settled-store re-measurement and the per-CF attribution) into `data/report_data.json` under `bottommost`. |
 | `report_svg.py` | Inline-SVG primitives (scales, axes, dots, lines, bands). Has its own self-check. |
 | `crt_theme.py` | The site stylesheet, byte-identical to the sibling reports, kept in one place so the three cannot drift apart. |
 | `data/report_data.json` | Every value the report renders. The only input to the generator. |
-| `figures/fig_*.svg` | The seven charts as standalone files, site palette derived from `crt_theme.CSS` so a figure cannot disagree with how it renders in the page. |
+| `figures/fig_*.svg` | The eleven charts as standalone files, site palette derived from `crt_theme.CSS` so a figure cannot disagree with how it renders in the page. |
 
 - The carry-over ceiling: `container-recreate` restarts the client per test, so setup starts
   fully cold and anything the measured step gets free must have been put in the client's memory
@@ -66,11 +67,35 @@ hash mismatch. Use the `existing-snapshot` family's 14-EIP set, which adds
   code-exec 0.642 -> 0.944 (jochemnet *slows* 9.7 -> 13.6 s), and the
   sub-second categories run 5-6x faster on both arms. `collect_jit.py` folds all of it into
   `data/report_data.json` under `jit_experiment`.
-- **Store defects found and fixed, neither of which moved a ratio.** The generator's finishing
-  `CompactRange` left state-actor's Account CF at L3:92 (23.7 GB), compaction-pending and both arms' code databases
-  compaction-pending; RocksDB writes manual-compaction output into the deepest level that
-  already holds files unless given `change_level` plus a target level. Settling them removed the
-  background compaction thread and changed throughput by nothing measurable.
+- **Third mechanism, also killed by intervention: the store made the client rewrite it.** Boot
+  the client on state-actor, drop caches, issue *zero* queries, and its own `/proc/<pid>/io`
+  shows 1,962 MB read in 60 s against jochemnet's 0, on `rocksdb:low`, with every thread at 0%
+  CPU. The event log gives the reason: 14 jobs at boot, all `StateNodes`, all
+  `BottommostFiles` — RocksDB rewriting bottom-level files to zero their sequence numbers. The
+  generator's finishing `CompactRange` ran with the default
+  `bottommost_level_compaction=kIfHaveCompactionFilter` and no filter configured, so RocksDB
+  *moved* the flushed L0 files into the empty bottom level instead of rewriting them: flat tree,
+  `pending-compaction-bytes = 0`, every file still carrying `largest_seqno != 0`. Since the
+  harness restarts the client per test, the job restarted for all 1,463 tests and never
+  finished. Forcing the bottommost rewrite (`StateNodes` 603→207 files in 422 s,
+  `StorageNodes` 1,211→1,126 in 2,114 s) takes the idle client to 0 MB and 0 jobs. Fixed
+  upstream in [state-actor#139](https://github.com/ethereum/state-actor/pull/139), which
+  repairs the same call in the Besu, ethrex and reth writers too. **It moved DIFF_MAX
+  code-exec by +0.007**, against a replica-to-replica swing of 0.005 on the same cell.
+- **Two smaller store defects, same family, found earlier.** The generator's finishing
+  `CompactRange` also left state-actor's Account CF at L3:92 (23.7 GB) and both arms' code
+  databases compaction-pending; RocksDB writes manual-compaction output into the deepest level
+  that already holds files unless given `change_level` plus a target level. Settling them
+  changed throughput by nothing measurable.
+- **Per-CF read attribution, re-measured on the settled store** (`collect_bottommost.py` ->
+  `bottommost`). Every read volume collected before the fix was inflated in proportion to test
+  duration, because a ~33 MB/s background scan deposits more bytes into a longer window and the
+  distinct-contract tests are the longest. Re-run quiet: non-code access is byte-for-byte alike
+  (19.3 MB from `flat/Account` against jochemnet's 16.2 MB across its whole datadir, trie
+  families 0.0 MB down from 689), while a distinct maximum-size contract per access costs
+  2,821 MB against 1,671 MB over six matched pairs per arm — 1.69× the bytes, essentially all
+  of it the code database, with `flat/Account` flat (−1.0 MB) and the trie families still at
+  zero (−0.1 MB).
 - **Reproducibility floor, measured at last.** Same store, same config, twice:
   100/133 tests within +/-10% overall, 39% for tests under 0.2 s against
   97% for tests over 5 s (`collect_noise.py` -> `noise`). An earlier version of the page
@@ -80,7 +105,7 @@ hash mismatch. Use the `existing-snapshot` family's 14-EIP set, which adds
 ## Regenerate
 
 ```
-python3 gen_nethermind_state_db_report.py   # writes the html and the five svgs
+python3 gen_nethermind_state_db_report.py   # writes the html and the eleven svgs
 python3 report_svg.py                       # primitive self-check, prints "report_svg selfcheck ok"
 ```
 
@@ -100,8 +125,12 @@ random-key inversion the argument depends on, the amortisation shape (parity at 
 saturation at high N), per-category dispersion (that `EXISTING_EOA` stays tight and that the
 storage category stays wide), that the worst individual tests are still dominated by controls,
 that DIFF_MAX remains the outlying column of the opcode grid, the monotonicity of the code
-ladder, the two-term residual model, and the Besu reference figures quoted in the cross-client
-table. Mutating any of those inputs makes generation fail rather than quietly print a
+ladder, the two-term residual model, the Besu reference figures quoted in the cross-client
+table, and the bottommost-compaction result (that the idle client read the store, that
+settling it silenced the client, that the reason field still says `BottommostFiles`, that
+the flat read path stays byte-identical across the arms, and that settling did *not* move
+DIFF_MAX or JUMPDEST - the section is written around that null result, so a future run in
+which it does move must fail the build rather than keep the prose). Mutating any of those inputs makes generation fail rather than quietly print a
 sentence the data no longer supports.
 
 ## Findings
