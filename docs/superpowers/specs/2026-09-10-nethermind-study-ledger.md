@@ -1957,3 +1957,74 @@ than a store edit.
 scalar, so benchmarkoor refused the config and all four traced runs executed 0 tests. Changed to
 `AccountMode[.]`, verified through a YAML parse before shipping. Third identifier mistake of this
 kind; the lesson each time is to validate the selector before spending runs on it.
+
+## Rounds 46-53 - the flat state is correct; the residual is RocksDB tombstone GC on the trie CFs
+
+Prompted by the reading that "a BALANCE lookup touching 1.4 GB of trie nodes means flat state is
+broken or malformed". It is neither, and the trail ends somewhere better.
+
+**R46 - RPC-level read test.** 2,000 `eth_getBalance` calls per arm, no block processing:
+jochemnet reads 16.3 MB from `flat/Account` and **zero** trie nodes; state-actor reads **the same
+16.3 MB** from `flat/Account` plus 2,181 MB of `flat/StateNodes`. Identical flat-leaf cost, so the
+flat read path works on both. Latency 0.48 vs 0.64 ms - far too close for 1 MB of synchronous NVMe
+per lookup, which is what first suggested the trie reads were not on the read path at all.
+(First attempt aborted: `--config=none` without an engine port fails `InitializeMergePlugin`.)
+
+**R47 - idle control, the decisive one.** Same boot, same cache drop, **zero queries**, 40 s idle:
+jochemnet 0.1 MB, state-actor **3,569 MB of `flat/StateNodes` at 89 MB/s, continuously**. The reads
+are not caused by the queries. Nothing about the read path explains them.
+
+**R48 - the FlatDb compaction offset is not it.** `Generated new FlatDb compaction offset` at every
+boot looked like the cause (state-actor has no `metadata` DB to load one from; the option's help says
+"instead of loading from metadata DB"). But `--FlatDb.CompactionOffset=0` (log confirms "Using
+configured FlatDb compaction offset 0") and `--FlatDb.MaxInFlightCompactJob=0` both leave the scan
+running at 91.5 / 86.9 MB/s. Eliminated.
+
+**R49 - a false negative worth recording.** Reported the client doing 0 MB of I/O. Two bugs:
+`/proc/PID/io` was read as `ubuntu` against a root-owned container process (silently empty -> 0), and
+`pidstat` ran after the client had exited. Also missed the compaction in `flat/LOG` because RocksDB
+rotates `LOG` on open and the byte-offset tail read the wrong region.
+
+**R50 - corrected attribution.** Client's own block-layer reads over 60 s idle, zero queries:
+jochemnet **0 MB**, state-actor **1,962 MB** (~33 MB/s). It is the client.
+
+**R51 - which thread.** Block I/O by thread name over 45 s: **`rocksdb:low` 1,948 MB** (the
+`kworker/u96:*` entries are dm-era writeback servicing the same I/O). RocksDB background compaction,
+not Nethermind-level code, and ~0% CPU on every client thread - pure I/O.
+
+**R52 - the reason, from the event log.** One fresh boot each, zero queries:
+
+| arm | compaction jobs | CF | `compaction_reason` |
+|---|---|---|---|
+| state-actor | **14** | **StateNodes** | **`BottommostFiles`** |
+| jochemnet | 1 | StorageNodes | `LevelMaxLevelSize` |
+
+`kBottommostFiles` is RocksDB garbage-collecting bottommost files that still carry deletion
+tombstones. The generator rewrites trie paths while building, leaving them behind. `ttl=2592000`
+(30 days) is set on every CF of both stores but is not the trigger here - the reason field says so.
+
+**Why it was invisible until now.** `estimate-pending-compaction-bytes` is 0 and every CF sits at
+L6, which is what rounds 18/32/34 checked. Tombstone-driven bottommost GC is not counted in either.
+Account (round 34) and code (rounds 38/42) were settled by explicit `CompactRange`; **the trie
+families never were**. The harness restarts the client for every one of 1,463 tests, so the job
+restarts from scratch each time and never finishes.
+
+**Status of the fix (R53, incomplete).** `probe-flat -mode rebuild -cf
+StateNodes,StateTopNodes,StorageNodes,FallbackNodes -level 6` on state-actor: `StateNodes` is 603
+files / 51.17 GB, all already at L6. Rebuild launched 22:16 UTC and was still running 2.5 h later
+when the host stopped accepting SSH sessions for the third time this study (same PAM/logind
+signature as rounds 5 and 40-41; ping and the SSH banner both fine, session setup hangs). The
+promote only runs after the rebuild returns, so a timeout kill leaves the virgin image untouched and
+the scratch volume discardable with `schelk restore`.
+
+Two tooling notes from this block: the probe image lives in the **rootless** podman store while the
+nethermind image is in root's, so `sudo podman run` cannot see the probe (the flat dir is
+`ubuntu:ubuntu 755`, so the rebuild runs fine unprivileged); and a guard loop of the form
+`pgrep -f "benchmarkoor run"` matches **its own** command line when the script text is on a
+`bash -c` process, which silently parked R52 for 78 minutes.
+
+**What this does and does not claim.** Proven: the flat backend is detected and serving
+(`State backend: flat (existing flat DB detected)`), flat-leaf reads are byte-identical between the
+arms, and the trie traffic is background tombstone GC that runs with the client otherwise idle. Not
+yet proven: that removing it closes the ~7% DIFF_MAX / ~6% JUMPDEST gap. That needs the rebuild to
+land and the 266-test subset re-run on both arms.
