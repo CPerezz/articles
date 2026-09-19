@@ -2035,3 +2035,48 @@ nethermind image is in root's, so `sudo podman run` cannot see the probe (the fl
 arms, and the trie traffic is background tombstone GC that runs with the client otherwise idle. Not
 yet proven: that removing it closes the ~7% DIFF_MAX / ~6% JUMPDEST gap. That needs the rebuild to
 land and the 266-test subset re-run on both arms.
+
+## Round 53 (result) + upstream fix: state-actor PR #139
+
+R53 landed while the host was unreachable, and it is unambiguous. After forcing bottommost
+compaction on the trie CFs (`StateNodes` 603 -> 207 files in 422 s, `StorageNodes` 1211 -> 1126 in
+2114 s, promoted at 1.39 GB/s):
+
+| | before | after |
+|---|---|---|
+| client block-layer reads, 60 s idle, zero queries | 1,962 MB | **0 MB** |
+| `compaction_started` events at boot | 14 | **0** |
+
+(The verdict file's "10 ms per balance lookup" is my own per-call `curl` process spawn, not client
+latency - R46's 0.48/0.64 ms figures came from a different loop. Not comparable, ignore it.)
+
+**ethereum/state-actor#139 fixes this at the source.** Every writer called the plain
+`CompactRange`/`CompactRangeCF`, leaving `bottommost_level_compaction` at `kIfHaveCompactionFilter`
+with no filter configured, so RocksDB *trivially moved* the flushed L0 files into the empty bottom
+level: flat tree, every file still carrying `largest_seqno != 0`. The PR switches all call sites to
+`CompactRangeOpt`/`CompactRangeCFOpt` with `SetBottommostLevelCompaction(KForce)` - nethermind's
+three (plain DBs, receipts CFs, flat CFs), plus besu, ethrex, and reth (which ran no Close-time
+compaction at all). Both `*Opt` methods exist in the pinned `grocksdb v1.10.8`. Regression tests in
+`client/besu` and `client/nethermind` reopen with auto-compactions disabled and assert every SST
+reports `seq:0`, so they observe what `Close` left rather than what a reopen repairs.
+
+Cross-checks against this study's measurements: the mechanism is the one located in rounds 46-52;
+the option is the one R53 applied by hand; and the PR's cost estimate (~42 min at 350 GB, ~120 MB/s)
+matches R53's measured 2,536 s at 121-132 MB/s over ~330 GB. Coverage is a superset of R53's manual
+settle, which only touched the four trie families.
+
+**One claim in the PR is contradicted by this study's data.** It says "an idling node never shows
+this ... the marking needs a snapshot release, not just an open", on the evidence of Besu idling
+150 s. That holds for Besu but not for Nethermind: R50/R51/R52 measured an *idle* Nethermind with
+zero queries doing 1,962 MB / 60 s across 14 `compaction_started` events, all `StateNodes`, reason
+`BottommostFiles`. Nethermind evidently takes and releases a snapshot during startup, so the marking
+fires at boot with no client work at all. The distinction matters: it is the difference between "only
+under load" and "on every one of 1,463 per-test client restarts", which is precisely why this
+contaminated the whole suite.
+
+**What the PR does not do:** it fixes future generations only. Every already-published state-actor
+image still carries moved-not-rewritten files and needs either regeneration or the offline settle
+pass (`probe-flat -mode rebuild` + `schelk promote`). The image under measurement here is settled by
+hand, so R54 remains a valid test of the fix's premise. Out of scope and still true: state-actor
+emits no `metadata` DB, so Nethermind regenerates the FlatDb compaction offset at every boot - R48
+proved that is not a source of I/O, but it is still a difference between the two stores.
