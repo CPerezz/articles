@@ -786,6 +786,8 @@ def main():
     PR = {p["n"]: p for p in ST["prs"]}
     DAYS_STALE = (datetime.date.fromisoformat(ST["measured_store_built"])
                   - datetime.date.fromisoformat(PR[133]["merged"])).days
+    # The rerun against a store regenerated from all three merged fixes.
+    V3 = ST["v3"]
     # The residual against gas budget. A fixed per-read cost would be flat here and a fixed
     # per-block cost would improve with the budget; the point of carrying all the budgets is
     # that neither happens, so the oracle below is what keeps the prose honest.
@@ -851,6 +853,25 @@ def main():
     assert max(grad["ctrl"]) - min(grad["ctrl"]) < 0.02, \
         f"the control is not flat across budgets: {[round(v, 3) for v in grad['ctrl']]}"
     assert all(v > 1.0 for v in grad["ctrl"]), "the control stopped favouring the generated store"
+    # The rerun's claims. Each one fails generation if the data stops supporting the sentence.
+    assert V3["fail"] == 0 and V3["success"] > 0, \
+        f"the v3 arm had {V3['fail']} failing executions"
+    assert V3["measurement"] == len(meas) and V3["control"] == len(ctrls), \
+        "the v3 arm is not the same grid as the original"
+    assert abs(V3["control_ratio"] - V3["control_archived"]) <= 0.013, (
+        f"control canary moved {abs(V3['control_ratio'] - V3['control_archived']):.4f}; "
+        f"the archived arm is no longer a legitimate reference")
+    assert max(V3["gradient"]["control"]) - min(V3["gradient"]["control"]) <= 0.02, \
+        "the v3 control is not flat across budgets"
+    assert V3["classes"]["absent"]["v3"] > 0.95, "the absence class did not reach parity"
+    assert V3["classes"]["dark"]["v3"] > 1.0, "the distinct-code class did not invert"
+    assert V3["classes"]["light"]["v3"] > V3["classes"]["light"]["archived"], \
+        "the shared-code class did not improve"
+    # The inversion grows with read volume; that direction is the argument, not the endpoint.
+    assert V3["gradient"]["dark"][-1] > V3["gradient"]["dark"][0], \
+        "the distinct-code inversion no longer grows with the gas budget"
+    assert V3["faster_rows"] > 0 and max_row < 1.0, \
+        "v3 has no faster rows, or the original arm gained one"
     for b, op, m, before, after in verdict:
         assert (after > before) == (b != "absent") or abs(after - before) < 0.05, \
             f"{op}/{m}: treatment moved the wrong way ({before:.3f} -> {after:.3f})"
@@ -1442,39 +1463,70 @@ def main():
       f"mechanism of this section weighed on a scale rather than derived. Bytes only: the two "
       f"stores no longer sit on the same device, and wall time would be measuring that.</p>")
     w('<h3>Where this stands</h3>')
-    w(f"<p>Three mechanisms, three states. Every row's store-level column is a measurement on "
-      f"a store built from the merged fix; not one of them is a throughput measurement, "
-      f"because that needs a regenerated store and a refilled payload set.</p>")
-    w("<table><tr><th>class</th><th class=n>categories</th><th>mechanism</th><th>fix</th>"
-      "<th>store-level check</th></tr>")
-    for cls, n, mech, pr, chk in (
-            ("absent", n_absent, "no bloom filter on any column family",
-             f"#{PR[133]['n']}, not ours",
-             f"{ST['filters']['unfiltered_blocks']:.3f} &rarr; "
-             f"{ST['filters']['filtered_blocks']:.3f} blocks per absent lookup"),
-            ("shared or absent code", len(light), "unique code hashes and unique designators",
-             f"#{PR[137]['n']} + #{PR[138]['n']}",
-             f"cf06 {props['state_actor']['06']['phys_over_logical']:.3f} &rarr; "
-             f"{ST['after']['cf06_phys']:.3f}, target {ST['target']['cf06_phys']:.3f}"),
-            ("distinct code", len(dark), "block co-tenancy, not code compressibility",
-             f"#{PR[138]['n']} overshoots",
-             f"cf07 {ST['after']['cf07_phys']:.3f}, target "
-             f"{ST['target']['cf07_phys']:.3f}")):
-        w(f"<tr><td>{cls}</td><td class=n>{n}</td><td>{mech}</td><td>{pr}</td>"
-          f"<td>{chk}</td></tr>")
-    w("<caption>The first two mechanisms are removed at the level this article measured them. "
-      "The third is not: the fix for it overshot, and the class is expected to change sign "
-      "rather than reach parity.</caption></table>")
-    w(f"<p>One thing the rerun will have to explain that this article cannot. The gap is not a "
-      f"fixed cost per read, and not a fixed cost per block: it grows with the gas budget. "
-      f"Across {len(GAS)} budgets from {min(GAS)}M to {max(GAS)}M the absence class goes "
+    w(f"<p>All three fixes are merged, and the suite has been run again against a store "
+      f"regenerated from them. The expectations in the table below were written down before "
+      f"that store existed, from store-level measurements alone; the last column is what the "
+      f"rerun measured. {V3['measurement']} measurement workloads and {V3['control']} controls, "
+      f"the same grid as the rest of this article, with gas identical to six figures on every "
+      f"one of the {thousands(V3['tests'])} tests.</p>")
+    w("<table><tr><th>class</th><th class=n>cats</th><th>mechanism</th><th>fix</th>"
+      "<th class=n>before</th><th class=n>expected</th><th class=n>measured</th></tr>")
+    for cls, key, mech, pr, exp in (
+            ("absent", "absent", "no bloom filter on any column family",
+             f"#{PR[133]['n']}, not ours", "parity"),
+            ("shared or absent code", "light", "unique code hashes and designators",
+             f"#{PR[137]['n']} + #{PR[138]['n']}", "rises"),
+            ("distinct code", "dark", "block co-tenancy, not compressibility",
+             f"#{PR[138]['n']} overshoots", "inverts")):
+        c = V3["classes"][key]
+        w(f"<tr><td>{cls}</td><td class=n>{c['categories']}</td><td>{mech}</td><td>{pr}</td>"
+          f"<td class=n>{c['archived']:.3f}&times;</td><td class=n>{exp}</td>"
+          f"<td class=n><b>{c['v3']:.3f}&times;</b></td></tr>")
+    w(f"<caption>state-actor &divide; snapshot, per class, before and after the three fixes. "
+      f"Above 1.0 means the generated store is now the faster of the two. "
+      f"{V3['faster_rows']} of {thousands(V3['measurement'])} workloads are, against none "
+      f"of them before.</caption></table>")
+    w(f"<p>Two of the three went where the store-level numbers said they would. The absence "
+      f"class, {1/sa_vs_comp['absent']:.1f}&times; apart and the reason this article has an "
+      f"{factor}&times; in its title, is at "
+      f"{V3['classes']['absent']['v3']:.3f}&times;: gone, not reduced. The classes whose code "
+      f"is shared or absent moved from {V3['classes']['light']['archived']:.3f} to "
+      f"{V3['classes']['light']['v3']:.3f}&times;, which is close to parity and not at it.</p>")
+    w(f"<p>The third did not close. It <em>inverted</em>: the categories that read a distinct "
+      f"contract on every access went from {V3['classes']['dark']['archived']:.3f}&times; to "
+      f"<b>{V3['classes']['dark']['v3']:.3f}&times;</b>, so the generated store is now "
+      f"{pc(V3['classes']['dark']['v3'])} <em>faster</em> than the snapshot on exactly the "
+      f"reads it used to be slower on. That is the "
+      f"{ST['target']['cf07_phys'] / ST['after']['cf07_phys']:.1f}&times; over-compression of "
+      f"the previous section arriving as throughput. A store that is too fast is as wrong as a "
+      f"store that is too slow, and it is harder to notice, because nothing looks broken.</p>")
+    w(f"<p>The gas budget separates the two outcomes cleanly. Across {len(GAS)} budgets from "
+      f"{min(GAS)}M to {max(GAS)}M the absence class now sits flat between "
+      f"{min(V3['gradient']['absent']):.3f} and {max(V3['gradient']['absent']):.3f} with no "
+      f"trend, where before it fell from {grad['absent'][0]:.3f} to {grad['absent'][-1]:.3f}. "
+      f"A flat line is what a removed mechanism looks like; a shallower slope would only be a "
+      f"smaller one. The distinct-code class does the opposite and climbs monotonically from "
+      f"{V3['gradient']['dark'][0]:.3f} to {V3['gradient']['dark'][-1]:.3f}: the more reads a "
+      f"block does, the further ahead the over-compressed store gets.</p>")
+    w(f"<p>One caveat the rerun cannot remove. An EEST stateful fixture is anchored to the "
+      f"genesis of the store it was filled against, so a regenerated store needs refilled "
+      f"payloads and the two arms cannot share a bundle. The control workloads, which run the "
+      f"same loop and touch no account state, are what says the comparison survived that: they "
+      f"read {V3['control_ratio']:.4f}&times; against {V3['control_archived']:.4f}&times; on "
+      f"the original arm, a difference of "
+      f"{abs(V3['control_ratio'] - V3['control_archived']):.4f}, and hold within "
+      f"{max(V3['gradient']['control']) - min(V3['gradient']['control']):.3f} across every "
+      f"budget. Had they moved, the numbers above would be measuring the harness.</p>")
+    w(f"<p>One property of the original store the fixes did not have to explain away, because "
+      f"it was a property of the residual rather than of any one mechanism. On that store the "
+      f"gap grew with the gas budget in every measurement class, absence "
       f"{grad['absent'][0]:.3f} to {grad['absent'][-1]:.3f}, distinct code "
-      f"{grad['dark'][0]:.3f} to {grad['dark'][-1]:.3f}, and shared code "
-      f"{grad['light'][0]:.3f} to {grad['light'][-1]:.3f}, while the control holds flat at "
+      f"{grad['dark'][0]:.3f} to {grad['dark'][-1]:.3f}, shared code "
+      f"{grad['light'][0]:.3f} to {grad['light'][-1]:.3f}, while the control held flat at "
       f"{grad['ctrl'][0]:.3f} to {grad['ctrl'][-1]:.3f}. A constant per-read penalty predicts "
       f"a flat ratio and a constant per-block overhead predicts the ratio improving as the "
-      f"budget grows. Neither happens, so any one number for the residual is a number about a "
-      f"gas budget.</p>")
+      f"budget grows. Neither happened, which is why no single number for the residual was "
+      f"ever the right answer: each one was a number about a gas budget.</p>")
     w('<h3>The same experiment on two clients</h3>')
     w(f"<p>The generator is deterministic across clients: the same seed and spec produced "
       f"{thousands(P['state_actor_items'])} items here against "

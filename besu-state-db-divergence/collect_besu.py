@@ -301,6 +301,113 @@ data["status"] = {
                   "snap_bytes": 901, "corroborating_rebuild_bytes": 17724},
 }
 
+# The v3 arm: the same 1,100-workload suite against a store regenerated from main at 95e5a10,
+# i.e. after #133, #137 and #138. Payloads had to be refilled, because an EEST stateful fixture
+# is anchored to the genesis of the store it was built against. Produced by
+# tools/besu-study/analyse-v3.py over /data/bench-results/v3-full; the control rows are the
+# canary that says the archived compacted arm is still a legitimate reference.
+data["status"]["v3"] = {
+    "store": "v3-95e5a10",
+    "tests": 1100,
+    "measurement": 660,
+    "control": 440,
+    "success": 3432,
+    "fail": 0,
+    "control_ratio": 1.0164,
+    "control_archived": 1.0187,
+    "faster_rows": 314,
+    "inband_rows": 447,
+    "row_min": 0.915,
+    "row_max": 1.536,
+    "classes": {
+        "absent": {
+            "categories": 8,
+            "rows": 110,
+            "archived": 0.117,
+            "v3": 1.002
+        },
+        "light": {
+            "categories": 24,
+            "rows": 330,
+            "archived": 0.947,
+            "v3": 0.985
+        },
+        "dark": {
+            "categories": 16,
+            "rows": 220,
+            "archived": 0.828,
+            "v3": 1.461
+        }
+    },
+    "gradient": {
+        "gas": [
+            100,
+            120,
+            140,
+            160,
+            180,
+            200,
+            220,
+            240,
+            260,
+            280,
+            300
+        ],
+        "absent": [
+            1.018,
+            1.028,
+            0.992,
+            0.993,
+            1.02,
+            0.985,
+            0.987,
+            1.006,
+            0.984,
+            1.007,
+            0.999
+        ],
+        "light": [
+            0.979,
+            0.984,
+            0.995,
+            0.99,
+            0.992,
+            0.988,
+            0.984,
+            0.984,
+            0.983,
+            0.98,
+            0.977
+        ],
+        "dark": [
+            1.364,
+            1.396,
+            1.43,
+            1.448,
+            1.469,
+            1.48,
+            1.491,
+            1.494,
+            1.497,
+            1.505,
+            1.512
+        ],
+        "control": [
+            1.017,
+            1.018,
+            1.018,
+            1.016,
+            1.017,
+            1.019,
+            1.014,
+            1.02,
+            1.016,
+            1.011,
+            1.011
+        ]
+    }
+}
+
 json.dump(data, sys.stdout)
 print(f"full: {[ (k, len(v)) for k,v in data['full'].items() ]}", file=sys.stderr)
 print(f"filtered: {[ (k, len(v)) for k,v in data['filtered'].items() ]}", file=sys.stderr)
