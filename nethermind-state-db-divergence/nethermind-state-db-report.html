@@ -281,9 +281,9 @@ pre.idpre { background:#050805; border:1px solid var(--line); border-radius:3px;
 <h2>Three clients, one artifact</h2>
 <table><tr><th>client</th><th class=n>same state costs</th><th>generated vs snapshot, untreated</th><th>generated vs snapshot, treated</th></tr>
 <tr><td>geth</td><td class=n>674 GiB</td><td>2.01&ndash;5.81&times; on account reads, 0.91 on absent</td><td>1.031&ndash;1.117&times;</td></tr>
-<tr><td>Besu</td><td class=n>532 GiB</td><td>3.5&times; on account reads (2.92&times; the bytes)</td><td>0.962&times; (1.12&times; the bytes)</td></tr>
+<tr><td>Besu</td><td class=n>532 GiB</td><td>6.5&times; on account reads (10.05&times; the bytes)</td><td>0.908&times; (1.23&times; the bytes)</td></tr>
 <tr><td>Nethermind</td><td class=n>409 GiB</td><td>17&times; on account reads (8.81&times; the bytes)</td><td>0.968&ndash;0.979&times; (1.08&times; the bytes)</td></tr>
-<caption>Three engines, three storage designs, three state sizes for the same logical state &mdash; and the same artifact. The Besu and Nethermind columns are computed the same way from each study's own data (108 and 440 account cells respectively, gas matched exactly); treat the geth spread as its published range. Untreated, the generated store looks between 3&times; and 17&times; slower. Treated, all three land within a few percent of parity. That is what a methodology artifact looks like, as opposed to a property of any one database.</caption></table>
+<caption>Three engines, three storage designs, three state sizes for the same logical state &mdash; and the same artifact. The Besu and Nethermind columns are computed the same way from each study's own data (48 and 440 account cells respectively, gas matched exactly); treat the geth spread as its published range. Untreated, the generated store looks between 6&times; and 17&times; slower. Treated, all three land within a few percent of parity. That is what a methodology artifact looks like, as opposed to a property of any one database.</caption></table>
 <h2>What to do about it</h2>
 <ol>
 <li><b>Never compare a promoted-after-pre-run snapshot against a store that did not get one.</b> It is worth an order of magnitude and it does not announce itself.</li>

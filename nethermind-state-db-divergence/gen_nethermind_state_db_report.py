@@ -689,6 +689,12 @@ def main():
     # meaningfully slower before. If a sibling study is re-cut, this fails rather than misquotes.
     assert tc["besu_sa_over_plain"] < 0.6 < tc["besu_sa_over_compacted"] < 1.1, \
         f"besu reference no longer shows untreated gap -> treated parity: {tc}"
+    # The range above is wide enough to pass on a wrong figure, so also require that the
+    # reference was derived rather than frozen, over Besu's full category grid, with the
+    # overhead_baseline controls excluded. Pooling those controls is what made the frozen
+    # literals understate the byte gap, twice.
+    assert "controls excluded" in tc["besu_src"] and tc["besu_cells"] >= 40, \
+        f"besu reference is not a controls-excluded per-cell derivation: {tc['besu_src']}"
     # the proportional term must be real, and must only matter for the largest tests
     big = add["buckets"][-1]
     assert big["excess"] > 2 * small, "proportional term vanished; §residual claims two terms"

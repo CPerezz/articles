@@ -1,3 +1,4 @@
+import collections
 #!/usr/bin/env python3
 """Collect every number the Nethermind state-DB article states, into data/report_data.json.
 
@@ -16,6 +17,43 @@ import os
 import re
 import sys
 from statistics import median
+
+def besu_reference():
+    """Besu's headline ratios, derived live from the sibling study's data file.
+
+    Frozen literals here were computed with the overhead_baseline control rows pooled into the
+    measurement rows. The controls touch no account state and sit at parity while reading almost
+    no bytes, so pooling them pulled Besu's ratios toward 1.0 and understated the byte gap:
+    0.962x published against 0.908x measured, 2.92x the bytes against 10.06x. Deriving them here
+    means a re-cut of the Besu study moves this table instead of silently contradicting it.
+
+    Method matches this study's own ratios: per-cell median over opcode x account_mode,
+    measurement rows only.
+    """
+    import statistics
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        "..", "besu-state-db-divergence", "data", "report_data.json")
+    B = json.load(open(path))["full"]
+    key = lambda r: (r["opcode"], r["mode"], r["gas"], r["value_sent"], r["baseline"])
+    arms = {a: {key(r): r for r in B[a]} for a in ("plain", "compacted", "state_actor")}
+    cells = collections.defaultdict(list)
+    for k in set(arms["plain"]) & set(arms["compacted"]) & set(arms["state_actor"]):
+        if k[4]:                      # overhead_baseline control: not an account read
+            continue
+        sa, pl, cp = (arms[a][k] for a in ("state_actor", "plain", "compacted"))
+        cells[(k[0], k[1])].append((sa["mgas_s"] / pl["mgas_s"], sa["mgas_s"] / cp["mgas_s"],
+                                    sa["disk_read_bytes"] / pl["disk_read_bytes"],
+                                    sa["disk_read_bytes"] / cp["disk_read_bytes"]))
+    per_cell = [tuple(statistics.median([v[i] for v in vs]) for i in range(4))
+                for vs in cells.values()]
+    med = lambda i: round(statistics.median([c[i] for c in per_cell]), 3)
+    return {"besu_sa_over_plain": med(0), "besu_sa_over_compacted": med(1),
+            "besu_bytes_plain": med(2), "besu_bytes_compacted": med(3),
+            "besu_cells": len(per_cell),
+            "besu_src": "derived at collect time from besu-state-db-divergence/data/"
+                        "report_data.json: per-cell median over opcode x account_mode, "
+                        "measurement rows only, controls excluded, gas matched exactly"}
+
 
 RESULTS = "/bench/results"
 ARMS = {
@@ -486,12 +524,7 @@ MEASURED = {
         "geth_sa_over_uncompacted": {"EOA": 2.01, "MINIMAL": 4.80, "SAME_MAX": 5.81,
                                      "JUMPDEST": 4.94, "NON_EXISTING": 0.91},
         "geth_diffmax_sa_over_compacted": 7.71,
-        "besu_sa_over_plain": 0.288,
-        "besu_sa_over_compacted": 0.962,
-        "besu_bytes_plain": 2.916,
-        "besu_bytes_compacted": 1.124,
-        "besu_cells": 108,
-        "besu_src": "computed from besu-state-db-divergence/data/report_data.json on main, the same way as this study's own ratios: median of per-cell mgas_s ratios over the account-reading cells, with gas matched exactly",
+        **besu_reference(),
     },
 }
 
