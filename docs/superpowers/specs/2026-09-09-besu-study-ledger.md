@@ -3410,3 +3410,77 @@ not a conclusion.
 Full suite armed and started: `full-arm-begin`, 1,100 tests, about 22 h, on a GO from the
 corrected gate. On completion phase 2 writes `v3-verdict-full.txt` and the consolidated
 `v3-REPORT.txt`.
+
+---
+
+## Round 53 - the campaign closed, and the article now reports an outcome
+
+### Final result, full 1,100-workload suite
+
+```
+[PASS] gas identity: 0 of 1100 differ by more than 1e-6
+[PASS] control canary: 1.0164 vs archived 1.0187 (off 0.0023, tol 0.013), drift 0.0056
+VERDICT: PASS
+```
+
+| class | cats | rows | archived | **v3** | pre-registered | outcome |
+|---|---|---|---|---|---|---|
+| absent | 8 | 110 | 0.117 | **1.002** | collapse to ~1.0 | **as predicted** |
+| shared/no-code | 24 | 330 | 0.947 | **0.985** | rise from 0.947 | **as predicted** |
+| distinct-code | 16 | 220 | 0.828 | **1.461** | sign flip above 1.0 | **as predicted** |
+
+3,432 test executions, **0 failures**. 314 of 660 measurement workloads now faster than the
+snapshot, against 0 of 660 before. 447 of 660 inside +/-10%, against 341.
+
+Three predictions registered from store-level measurements before the store existed; three held.
+That is a stronger claim than any post-hoc explanation, and it is the reason the article now
+leads with expectation-then-measurement rather than with a diagnosis.
+
+The gradients carry more than the medians. Distinct-code climbs **monotonically** 1.364 to 1.512
+across all eleven budgets: the more reads a block does, the further ahead the over-compressed
+store gets. Absence is now **flat**, 0.984 to 1.028 with no trend, where it fell 0.147 to 0.099
+before. A flat line is what a removed mechanism looks like; a shallower slope would only be a
+smaller one.
+
+The canary passing matters procedurally. It failed on the 129-test arm (1.0034, off 0.0156) and
+at 24% of the full arm (drift 0.0213), and I said at the time that the drift was the noisiest
+statistic in the set and might tighten. It did, at 0.0056. So the archived compacted arm is a
+legitimate reference and the small-effect claims are licensed, including that shared/no-code is
+**close to parity and not at it** at 0.985.
+
+### The article
+
+Updated rather than rewritten, on purpose. The v1 investigation is the evidence chain that every
+figure, oracle and byte-level probe is built on; restructuring would have meant regenerating all
+of it to say the same thing. `Where this stands` changed from predictions to measurements, with
+the headline consequence stated plainly: **#138 did not close the distinct-code class, it
+inverted it.** The generated store is now 46% *faster* than mainnet on exactly the reads it used
+to be slower on, and a store that is too fast is as wrong as one that is too slow and harder to
+notice, because nothing looks broken.
+
+New oracles: the canary must hold within 0.013 and stay flat within 0.02; the absence class must
+reach parity; distinct-code must invert **and** its inversion must grow with the budget; the v3
+grid must match the original 660/440 split; zero failing executions.
+
+Numeric non-regression: the only tokens removed were the six store-level values that used to
+appear twice, once in prose and once in the replaced table column. Each still appears in the
+prose that argues it.
+
+### The nethermind literals came back, and were fixed a second time
+
+The latest nethermind work carried the frozen besu block forward again, restoring the published
+claim that Besu ran 3.5x on account reads at 2.92x the bytes and 0.962x once treated, against a
+measured 6.5x, 10.06x and 0.908x. Re-derived live and the generator now asserts the reference is
+a controls-excluded derivation over at least 40 cells. The pre-existing range check
+(`< 0.6 < ... < 1.1`) was wide enough to pass on a wrong figure, which is exactly why it did.
+
+Both articles published and verified byte-identical live at `1c64ca7`.
+
+### What is left
+
+- The corpus PR is still unsent, and it now has throughput evidence rather than a store-level
+  model: 1.461 and a monotonic inversion, not just `cf07` 0.056 against 0.371.
+- The shared/no-code class sits 1.5% off parity with no mechanism named for the remainder.
+- The control offset's cause is still unattributed. v3 is the first arm whose payloads were
+  filled at the same eest ref as its comparison, and the offset moved toward 1.000. That is a
+  hypothesis for a rebuilt snapshot arm, not a finding.
