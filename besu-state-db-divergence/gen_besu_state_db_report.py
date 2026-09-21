@@ -585,22 +585,24 @@ def chart_verdict(rows, band):
     return S.svg(W, H, "".join(body))
 
 
-def chart_outcome(cats, band):
+def chart_outcome(cats, band, v4=None):
     """Every category before the three fixes and after them, against the parity band.
 
     The closing bracket on the first figure. That one asked how far apart two stores holding the
     same state can look; this one answers it, and the answer is not one number. Two of the three
-    mechanisms pull their categories into the band. The third pushes its sixteen straight through
-    it, which is why the figure is not captioned as an alignment.
+    mechanisms pull their categories into the band. The third pushed its sixteen straight through
+    it under #138; `v4` carries where the corpus fix (#141) put them, as a third dot per row.
     """
+    v4 = v4 or {}
+    latest = lambda r: v4.get((r[1], r[2]), r[4])
     # Group by mechanism, then by outcome: three blocks read as three stories, where sorting
     # purely by value interleaves the absence and shared-code rows and hides both.
     order = {"light": 0, "absent": 1, "dark": 2}
-    cats = sorted(cats, key=lambda r: (order[r[0]], r[4]))
+    cats = sorted(cats, key=lambda r: (order[r[0]], latest(r)))
     LEFT, RIGHT, TOP, ROW = 250, 40, 22, 13
     H = TOP + ROW * len(cats) + 58
-    lo = min(min(r[3], r[4]) for r in cats) / 1.25
-    hi = max(max(r[3], r[4]) for r in cats) * 1.25
+    lo = min(min(r[3], r[4], latest(r)) for r in cats) / 1.25
+    hi = max(max(r[3], r[4], latest(r)) for r in cats) * 1.25
     sc = S.LogScale(lo, hi, LEFT, W - RIGHT)
     y1 = TOP + ROW * len(cats) + 2
     body = [S.band(sc.to(1 - band), sc.to(1 + band), TOP - 6, y1, "--accent", 0.10),
@@ -616,13 +618,21 @@ def chart_outcome(cats, band):
         body.append(S.line(sc.to(before), y, sc.to(after), y, "--dim", width=1.5))
         body.append(S.dot(sc.to(before), y, 3.0, "--muted",
                           title=f"{op} {m} before {before:.3f}×"))
-        body.append(S.dot(sc.to(after), y, 3.8, hue[cl],
-                          title=f"{op} {m} after {after:.3f}×"))
+        if (op, m) in v4:
+            body.append(S.line(sc.to(after), y, sc.to(v4[(op, m)]), y, hue[cl], width=1.5))
+            body.append(S.dot(sc.to(after), y, 3.0, "--dim",
+                              title=f"{op} {m} after #138 {after:.3f}×"))
+            body.append(S.dot(sc.to(v4[(op, m)]), y, 3.8, hue[cl],
+                              title=f"{op} {m} after #141 {v4[(op, m)]:.3f}×"))
+        else:
+            body.append(S.dot(sc.to(after), y, 3.8, hue[cl],
+                              title=f"{op} {m} after {after:.3f}×"))
     body.append(S.label(LEFT, H - 28, "state-actor ÷ snapshot, throughput", cls="ax"))
-    body.append(legend(LEFT, H - 10,
-                       [("before", "--muted"), ("absence", "--db-c"),
-                        ("shared code", "--db-u"), ("distinct code", "--db-sa")],
-                       trailer=f"shaded band = ±{band*100:.0f}% of parity"))
+    items = [("before", "--muted"), ("absence", "--db-c"), ("shared code", "--db-u"),
+             ("distinct code", "--db-sa")]
+    if v4:
+        items.insert(1, ("after #138, tiled pool", "--dim"))
+    body.append(legend(LEFT, H - 10, items, trailer=f"shaded band = ±{band*100:.0f}% of parity"))
     return S.svg(W, H, "".join(body))
 
 
@@ -829,6 +839,10 @@ def main():
                   - datetime.date.fromisoformat(PR[133]["merged"])).days
     # The rerun against a store regenerated from all three merged fixes.
     V3 = ST["v3"]
+    # The dark class rerun against a store built from the corpus fix (#141). Only the sixteen
+    # distinct-code categories were refilled and rerun; the other classes do not read the pool.
+    V4 = ST.get("v4")
+    V4CAT = {(r[1], r[2]): r[5] for r in V4["categories"]} if V4 else {}
     # The residual against gas budget. A fixed per-read cost would be flat here and a fixed
     # per-block cost would improve with the budget; the point of carrying all the budgets is
     # that neither happens, so the oracle below is what keeps the prose honest.
@@ -919,6 +933,34 @@ def main():
     # The controls do no account-state work, so they are the thing that must NOT move.
     assert all(abs(v - 1) <= 0.05 for v in ctrl_cats.values()), \
         f"control categories are not at parity: {min(ctrl_cats.values()):.3f}-{max(ctrl_cats.values()):.3f}"
+    # The corpus-fix rerun's claims: a partial arm, so the oracle checks its scope as much as
+    # its numbers. Whatever the verdict, the prose is generated from it, never around it.
+    if V4:
+        assert V4["pr"] == 141 and V4["sha"] == "9b23eea", "v4 provenance drifted"
+        assert V4["partial"] and set(V4["classes"]) == {"dark"}, "v4 is not the dark-only arm"
+        assert V4["classes"]["dark"]["categories"] == 16 and len(V4["categories"]) == 16, \
+            "v4 does not cover the sixteen distinct-code categories"
+        assert V4["fail"] == 0 and V4["success"] > 0, f"the v4 arm had {V4['fail']} failing executions"
+        assert V4["gas_identity_bad"] == 0, "v4 burned different gas from the archived arm"
+        assert V4["measurement"] == V4["classes"]["dark"]["rows"] + sum(s["rows"] for s in V4["spot"].values()), \
+            "v4 measurement count does not add up"
+        assert V4["measurement"] == V4["control"], "v4 rows are not paired with controls"
+        assert len(V4["gradient"]["gas"]) == len(V4["gradient"]["dark"]) == len(V4["gradient"]["control"]) \
+            == len(V4["budgets"]), "v4 gradient is ragged"
+        assert V4["classes"]["dark"]["v3"] == V3["classes"]["dark"]["v3"], "v4 lost the v3 reference"
+        assert all(r[4] == next(x[4] for x in V3["categories"] if x[1:3] == r[1:3]) for r in V4["categories"]), \
+            "v4 per-category v3 values disagree with the v3 arm"
+        d4 = V4["classes"]["dark"]["v4"]
+        canary = abs(V4["control_ratio"] - V4["control_archived"]) <= 0.013 and V4["control_drift"] <= 0.03
+        expected = ("canary_fail" if not canary else
+                    "in_band" if abs(d4 - 1) <= V4["band"] else "above" if d4 > 1 else "below")
+        assert V4["verdict"] == expected, f"v4 verdict {V4['verdict']} does not follow from the numbers ({expected})"
+        assert V4["store_geom"]["cf07"] > 5 * ST["after"]["cf07_phys"], \
+            "the v4 store's code column family still compresses like the tiled pool"
+        assert abs(V4["store_geom"]["record_deflate"] - ST["target"]["record_deflate"]) <= 0.05, \
+            "the v4 store's records do not deflate like mainnet's"
+        assert all(abs(s["v4_ratio"] - s["v3_ratio"]) <= 0.10 for s in V4["spot"].values()), \
+            "a class that does not read the pool moved on the v4 store"
     # The code-block argument: the contract itself is near-free on both stores, the block is
     # not, and shrinking the block removes the co-tenants entirely.
     assert CB["jochemnet"]["fixture_deflate"] < 0.05 and CB["state_actor"]["fixture_deflate"] < 0.05, \
@@ -964,12 +1006,18 @@ def main():
 
     # ---- figures ----------------------------------------------------------
     figs = {
-        "outcome": (chart_outcome(V3["categories"], BAND),
+        "outcome": (chart_outcome(V3["categories"], BAND, V4CAT),
                     f"The same {len(V3['categories'])} categories before the three fixes and "
                     f"after them. Two mechanisms pull their categories into the band; the "
-                    f"sixteen that read a distinct contract go straight through it, to "
-                    f"{V3['classes']['dark']['v3']:.3f}&times;. Log scale, same reference as "
-                    f"the first figure."),
+                    + (f"sixteen that read a distinct contract went straight through it under "
+                       f"#{PR[138]['n']}, to {V3['classes']['dark']['v3']:.3f}&times;, and sit at "
+                       f"{V4['classes']['dark']['v4']:.3f}&times; on the store built from "
+                       f"#{V4['pr']}, the third dot on those rows. The other "
+                       f"{len(V3['categories']) - 16} categories were not rerun for it."
+                       if V4 else
+                       f"sixteen that read a distinct contract go straight through it, to "
+                       f"{V3['classes']['dark']['v3']:.3f}&times;.")
+                    + " Log scale, same reference as the first figure."),
         "ratio_dots": (chart_ratio_dots(F, meas),
                        f"Throughput of the generated store divided by the compacted "
                        f"snapshot's, one dot per opcode and account mode, log scale. "
@@ -1400,7 +1448,8 @@ def main():
       f"the same grid as the rest of this article, with gas identical to six figures on every "
       f"one of the {thousands(V3['tests'])} tests.</p>")
     w("<table><tr><th>class</th><th class=n>cats</th><th>mechanism</th><th>fix</th>"
-      "<th class=n>before</th><th class=n>expected</th><th class=n>measured</th></tr>")
+      "<th class=n>before</th><th class=n>expected</th><th class=n>measured</th>"
+      + (f"<th class=n>after #{V4['pr']}</th>" if V4 else "") + "</tr>")
     for cls, key, mech, pr, exp in (
             ("absent", "absent", "no bloom filter on any column family",
              f"#{PR[133]['n']}, not ours", "parity"),
@@ -1411,7 +1460,9 @@ def main():
         c = V3["classes"][key]
         w(f"<tr><td>{cls}</td><td class=n>{c['categories']}</td><td>{mech}</td><td>{pr}</td>"
           f"<td class=n>{c['archived']:.3f}&times;</td><td class=n>{exp}</td>"
-          f"<td class=n><b>{c['v3']:.3f}&times;</b></td></tr>")
+          f"<td class=n><b>{c['v3']:.3f}&times;</b></td>"
+          + (f"<td class=n><b>{V4['classes']['dark']['v4']:.3f}&times;</b></td>" if V4 and key == "dark"
+             else "<td class=n>not rerun</td>" if V4 else "") + "</tr>")
     w(f"<caption>state-actor &divide; snapshot, per class, before and after the three fixes. "
       f"Above 1.0 means the generated store is now the faster of the two. "
       f"{V3['faster_rows']} of {thousands(V3['measurement'])} workloads are, against none "
@@ -1445,6 +1496,66 @@ def main():
       f"{V3['control_archived']:.4f}&times; on the original arm, flat within "
       f"{max(V3['gradient']['control']) - min(V3['gradient']['control']):.3f} across "
       f"every budget.</p>")
+    if V4:
+        G, T = V4["store_geom"], ST["target"]
+        d4, d3, d1 = V4["classes"]["dark"]["v4"], V3["classes"]["dark"]["v3"], V3["classes"]["dark"]["archived"]
+        w(f'<h3>The corpus fix, measured</h3>')
+        w(f"<p><a href=\"https://github.com/ethereum/state-actor/pull/{V4['pr']}\">#{V4['pr']}</a> "
+          f"replaces the tiled runtime with windows into {V4['corpus_contracts']} real mainnet "
+          f"contracts, one contract per pool entry, never tiled. On the same 4 GB basis as the "
+          f"{ST['after']['cf07_phys']:.3f} above, a store built from it compresses its code column "
+          f"family to {G['cf07']:.3f} physical over logical, its records deflate to "
+          f"{G['record_deflate']:.3f} against mainnet's {T['record_deflate']:.3f}, and the "
+          f"co-tenant payload beside a fixture contract to {G['packed']:.3f} against "
+          f"{V4['mainnet_packed_same_probe']:.3f} measured on the snapshot with the same probe: "
+          f"the pool now compresses like the population it stands in for. The account column "
+          f"family, which the pool does not touch, reads {G['cf06']:.3f}.</p>")
+        w(f"<p>Only the sixteen distinct-code categories were refilled and rerun, against a "
+          f"{V4['store_gb']} GB store generated the same way as the previous rerun's, "
+          f"at {len(V4['budgets'])} gas budgets: {V4['measurement']} measurement workloads with "
+          f"their {V4['control']} controls, gas identical to six figures on every one. The other "
+          f"classes never read the pool, and a spot check of {V4['spot']['absent']['rows']} absent "
+          f"and {V4['spot']['light']['rows']} shared-code workloads at {min(V4['budgets'])}M put them "
+          f"at {V4['spot']['absent']['v4_ratio']:.3f} and {V4['spot']['light']['v4_ratio']:.3f}&times;, "
+          f"where the previous rerun had {V4['spot']['absent']['v3_ratio']:.3f} and "
+          f"{V4['spot']['light']['v3_ratio']:.3f}.</p>")
+        if V4["verdict"] == "in_band":
+            w(f"<p>The distinct-code class is at <b>{d4:.3f}&times;</b>: {d1:.3f} before the fixes, "
+              f"{d3:.3f} under the tiled pool, inside the &plusmn;{V4['band']*100:.0f}% band now. "
+              f"{V4['inband_rows']} of {V4['measurement']} workloads are inside it and "
+              f"{V4['categories_closer']} of 16 categories sit closer to parity than they did, "
+              f"the rows spanning {V4['row_min']:.3f} to {V4['row_max']:.3f}&times;. "
+              f"Across the budgets the class moves from {V4['gradient']['dark'][0]:.3f} to "
+              f"{V4['gradient']['dark'][-1]:.3f}: the slope that grew with every extra read under "
+              f"the tiled pool is gone. Three mechanisms, three closures.</p>")
+        elif V4["verdict"] == "above":
+            w(f"<p>The distinct-code class is at <b>{d4:.3f}&times;</b>: {d1:.3f} before the fixes, "
+              f"{d3:.3f} under the tiled pool, still {pc(d4)} faster than the snapshot and outside "
+              f"the &plusmn;{V4['band']*100:.0f}% band. {V4['categories_closer']} of 16 categories "
+              f"moved toward parity and {V4['inband_rows']} of {V4['measurement']} workloads are "
+              f"inside the band, the rows spanning {V4['row_min']:.3f} to {V4['row_max']:.3f}&times;. "
+              f"The budget gradient runs {V4['gradient']['dark'][0]:.3f} to "
+              f"{V4['gradient']['dark'][-1]:.3f}. The store now compresses like mainnet and still "
+              f"reads faster, so what is left is not compressibility; it is unattributed.</p>")
+        elif V4["verdict"] == "below":
+            w(f"<p>The distinct-code class is at <b>{d4:.3f}&times;</b>: {d1:.3f} before the fixes, "
+              f"{d3:.3f} under the tiled pool, now {pc(d4)} slower than the snapshot again and outside "
+              f"the &plusmn;{V4['band']*100:.0f}% band on the original side. "
+              f"{V4['categories_closer']} of 16 categories moved toward parity and {V4['inband_rows']} "
+              f"of {V4['measurement']} workloads are inside the band, the rows spanning "
+              f"{V4['row_min']:.3f} to {V4['row_max']:.3f}&times;. The budget gradient runs "
+              f"{V4['gradient']['dark'][0]:.3f} to {V4['gradient']['dark'][-1]:.3f}. Two pools "
+              f"bracket parity from either side; the class is sensitive to code content beyond what "
+              f"the compressibility ratios capture, and that sensitivity is the open thread.</p>")
+        else:
+            w(f"<p>The distinct-code class measured <b>{d4:.3f}&times;</b> against {d3:.3f} under the "
+              f"tiled pool, but the control canary on this arm sat at {V4['control_ratio']:.4f}&times; "
+              f"against the archived {V4['control_archived']:.3f}, outside the {0.013} tolerance, so "
+              f"the archived arm cannot carry a band claim for it. The direction is safe to state; "
+              f"the magnitude waits for a rebuilt snapshot arm.</p>")
+        w(f"<p>The control canary on this arm: {V4['control_ratio']:.4f}&times; against "
+          f"{V4['control_archived']:.3f}&times; on the original, per-budget medians within "
+          f"{V4['control_drift']:.3f}.</p>")
 
 
 
@@ -1455,9 +1566,14 @@ def main():
       f"{g06s['block_bytes']/g06j['block_bytes']:.2f}&times; predicted against "
       f"{sa_bytes['leaf-only']:.2f}&times; measured, but the remainder has no mechanism "
       f"named.</li>")
-    w(f"<li>What a bytecode pool shaped like mainnet's would measure. The one that merged is a "
-      f"single runtime tiled, which is why these classes overshot to "
-      f"{V3['classes']['dark']['v3']:.3f}&times; instead of closing.</li>")
+    if not V4:
+        w(f"<li>What a bytecode pool shaped like mainnet's would measure. The one that merged is a "
+          f"single runtime tiled, which is why these classes overshot to "
+          f"{V3['classes']['dark']['v3']:.3f}&times; instead of closing.</li>")
+    elif V4["verdict"] != "in_band":
+        w(f"<li>Why the distinct-code class sits at {V4['classes']['dark']['v4']:.3f}&times; on a "
+          f"store whose code compresses like mainnet's. The co-tenancy model explained the "
+          f"direction of both pools and the magnitude of neither.</li>")
     w(f"<li>Why the control sits at {pc(ctrl_vs_comp)} and {pc(V3['control_ratio'])} rather "
       f"than at parity on either arm. Close enough to keep the comparison, never "
       f"attributed.</li>")
