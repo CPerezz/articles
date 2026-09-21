@@ -3587,3 +3587,76 @@ live.
 
 The logs section was kept whole: its "an account lookup is one key, so its cost is the cost of
 locating it" paragraph is the premise every mechanism in the article rests on.
+
+## Round 56 - two corpus PRs, one kept, and the v4 campaign armed on the dark class only
+
+### The PR review
+
+Two PRs fixed #138's tiled pool on the same branch base. #140 (mine, `a41b117`): 64 contracts
+sampled from jochemnet's cf07, prefix-sliced with a spill into the next member, aggregate deflate
+test. It failed CI on the goldens I never ran (`generator/`, `entitygen`). #141 (`9b23eea`, on top
+of `a41b117`): one uniformly random window inside one real contract per entry, never spliced, the
+trailing 8 bytes stamped with keccak(domain, j) so hashes are unique by construction, a 128-contract
+corpus (union of two samples, zero keccak overlap), goldens rotated, `MainnetAccountsPerDistinctBytecode`
+32 to 28, unit gate at 5% of mainnet's 0.443. CI green. **#140 closed in favour of #141.**
+
+Its live remeasurement of mainnet agrees with mine from the same day: the pre-registered packed
+0.329 and cf07 0.371 do not reproduce (0.415-0.439 and 0.531 fixture-corrected); 0.443 does.
+
+### Store-level, same probe on three stores
+
+`LiveGeom 24576 3000`, 4 GB specless stores. Mainnet probed the same way (read-only mount, unmounted):
+
+| | mainnet | `main` 47beaad (tiled) | #140 corpus | #141 |
+|---|---|---|---|---|
+| record deflate, >= 1 KiB | 0.4428 | 0.2147 | 0.4672 | **0.4381** |
+| packed co-tenant payload | 0.4387 | 0.1116 | 0.4439 | **0.4156** |
+| cf07 phys/log, CF-wide | 0.369 | 0.055 | 0.520 | **0.495** |
+| cf06 phys/log | 0.449 | 0.429 | 0.429 | 0.429 |
+| cf07 entries | | 2,882 | 2,882 | 3,256 |
+
+Mainnet's CF-wide cf07 carries jochemnet's fixtures: 9.8% of records are 24,576 B (31% of bytes) at
+deflate 0.0107; real code alone is ~0.53. cf06 moved 0.447 to 0.429 between the #138 smoke and every
+store built after #139: #139's close-time compaction, not the pool (`main` and both corpus branches
+read identical cf06 bytes; `main`'s root is round 46's `0xe600513f...`).
+
+Two of three pre-registered bands were set against the wrong reference (derived packed 0.329;
+fixture-diluted cf07). Record deflate 0.39-0.50 held.
+
+### The plan (plan-debate, 2 rounds, adopted with two trims)
+
+Test #141 on the dark class only: regenerate the 350 GB spec store from `9b23eea`, fill only the
+selected tests with the Besu filler, bind with schelk, run dark at 100/200/300M plus a light/absent
+spot check (arm A, publish), then dark at the other 8 budgets (arm B, gradient only). Trimmed: the
+target-identity investigation (the article's own data already says the dark categories read the
+spec's 24,576-byte fixtures on both stores; the pool matters as block co-tenants) and the fill-time
+gas oracle (the arm's gas-identity gate covers it).
+
+### Retired before the store existed
+
+- **E1**, 4 GB specless smoke from `9b23eea`: cf07 0.495, record 0.4381, packed 0.4156, cf06 0.429,
+  3,256 cf07 entries (83,886 / 28 = 2,996 pool entries). All bands pass.
+- **E2a**, Besu filler + pytest `-k` on the old v3 spec store: `tests:` entries reach
+  `fill-stateful` verbatim, `collected 344 items / 264 deselected / 80 selected` (40 per budget, 20
+  measurement + 20 paired controls), 80 passed in 18:42, one anchor (v3's `0xb645fc09...`), the
+  1-test gate id present. The builder **copies** the datadir to `/tmp/benchmarkoor-datadir-eest-fill-*`
+  on md2 (489 GiB, ~8 min) and removes it after: source never written, no hardlink tree, but 490 GB
+  of transient disk. So the campaign fills **before** provisioning schelk (store + copy = 980 GB, then
+  images + store = 1,470 GB, against 1,999 GB free after teardown); the other order overflows.
+- `MissCost` has not opened a state-actor store since the OPTIONS file gained
+  `max_manifest_space_amp_pct`; the v3 gates log's section 3 was empty too. Dropped; filter bytes
+  cover #133.
+- `analyse-v4.py` self-test on v3-full reproduces 1.461 / 1.364-1.512 / light 0.985 / absent 1.002.
+  With only the dark rows' own 20 controls per budget, v3's own data drifts 0.0257 per budget, so the
+  per-budget tolerance is 0.03 (class-level 0.013 unchanged). Verdict band +/-10% on the dark median.
+- Generator patched: `status.v4` optional, third dot on the dark rows of the closing figure, a
+  fourth table column, an h3 keyed on the verdict (in_band / above / below / canary_fail), V4
+  oracles. Without data the page is byte-identical to `5aa2571`. Every verdict path rendered.
+
+### State at hand-off to the box
+
+`run-v4-campaign.sh` detached (setsid, PPID 1) at 14:10 +02:00: waits for `sa-gen-besu-v4`
+(image `a1221388ee7d`, launched 13:39 with `--spec`), then gates, fill, schelk `besu-sa4-*`, 1-test
+gate, arm A, arm B, each phase marked in `v4-campaign.state`, resumable. v3 pair and every smoke
+store removed by name; loop0 read-only, only loop device left. Expected: store 00:05, arm A verdict
+~05:10, arm B ~10:15. Article update = `inject_v4.py` + regenerate + publish, staged and dry-run.
