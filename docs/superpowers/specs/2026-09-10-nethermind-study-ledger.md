@@ -2313,3 +2313,61 @@ tree including #141. Its genesis state root differs from the current store's, so
 fixture bundle must be regenerated against it before it can be benchmarked; the recipe on the
 box is `build-flat-image.sh` + `gen-sa-nm-flat.sh` (`--target-size=350GB --seed=42
 --fork=osaka`), with the `WANT_GENESIS`/`WANT_ROOT` assertions updated to the new values.
+
+## Round 66 - the ether-transfer residual is StateTopNodes packing, not the trie
+
+**Brief.** Re-open the ether-transfer asymmetry (state-actor ~1.08x faster on transfers while
+reading 17% more bytes; R62: +216k `Flat/StateTopNodes` preads on jochemnet for the same 18
+blocks). The prior explanation ("a migrated mainnet trie against a generated one") was a guess
+and is wrong: both tries are the same shape.
+
+**Trie shape, measured** (`probe-flat -mode shape`, full scan of StateTopNodes, 2,048 whole
+level-6 subtrees sampled from StateNodes):
+
+| | jochemnet | state-actor v1 |
+|---|---|---|
+| top nodes (path length 0-5) | 1,118,481 (=1+16+...+16^5, all 532 B branches) | 1,118,481 (identical) |
+| accounts (Flat/Account entries; leaves x 16^6) | 354.8M (358.6M) | 430.7M (431.3M) |
+| leaves per level-6 subtree | 21.4 | 25.7 |
+| mean leaf path length | 7.82 | 7.90 |
+| nodes on a cold root-to-leaf walk | 8.82 | 8.90 |
+
+The generated trie is marginally *deeper* (21% more accounts). Shape cannot produce fewer node
+reads on state-actor.
+
+**Physical packing, measured** (`rocksdb.aggregated-table-properties` per column family):
+
+| Flat/StateTopNodes | jochemnet | state-actor v1 | client option (DbConfig.cs, #9854) |
+|---|---|---|---|
+| entries | 1,118,481 | 1,118,481 | |
+| data blocks | 159,791 | 38,577 | |
+| on-disk bytes per block | 3,830 | 15,877 | block_size=16000 |
+| entries per block | 7.0 | 29.0 | |
+| filter block | none | 1.0 MB ribbon | filter_policy=ribbonfilter:10:3 |
+| files / level | 10 / L6 | 10 / L6 | |
+
+Every other flat column (Account 4 KB, Storage 8 KB, StateNodes/StorageNodes 16 KB) matches the
+client's options on both stores. Only the top-of-trie column differs: the jochemnet snapshot's
+top-node files were written before Nethermind #9854 (2026-02-25, the commit that gave the flat
+columns explicit options; before it they took RocksDB's 4096-byte default and no filter) and,
+being at L6 and never recompacted, kept that layout. State-actor mirrors the current options.
+
+Why it matters here: top nodes are keyed by path, so a level-4 node and its 16 level-5 children
+are 17 consecutive keys (9 KB). A 16 KB block holds a parent with all its children; a 4 KB block
+holds 7 nodes. Per touched account, R62 measured 1.00 top-node preads on jochemnet against 0.69
+on state-actor (Account preads identical, 32.1k per test), uniformly across all 18 transfer
+variants (ratio 1.43-1.60). At ~10 ms mean pread latency under the client's parallel prefetch,
+the extra preads are the transfer-test gap.
+
+**Intervention (both directions, R66).** `probe-flat -mode rebuild -cf StateTopNodes -level 6`:
+state-actor v1 rewritten with `-rbblock 4096 -rbnofilter` (159,791 blocks, 3,841 B, no filter -
+jochemnet's layout), jochemnet rewritten with the client's options (38,577 blocks, 15,877 B,
+ribbon) - each in ~2 s, entry counts unchanged, both promoted. All 36 ether-transfer tests
+(160M/240M) then run on each arm with per-column pread accounting. Prediction: top preads per
+account swap (sa -> ~1.0, joc -> ~0.69) and the sa/joc transfer ratio collapses toward 1.0 from
+both sides. Results: `/bench/logs/dive/verdict-topnodes.txt` (pending at time of writing).
+
+**Consequence for the comparison.** jochemnet's baseline now carries the client's packing for
+its top nodes (promoted); every later jochemnet run is layout-fair with a generated store. The
+transfer rows in the article (1.076 cell median, "a property of the arms") must be rewritten
+around this once the verdict is in.
