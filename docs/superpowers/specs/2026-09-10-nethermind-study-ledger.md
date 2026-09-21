@@ -2214,3 +2214,68 @@ residual pair below 0.97, every other cell in band), mutation-tested.
 
 Live at `355675a`, byte-identical, zero sibling folders touched; `main` had moved again (Besu
 re-cut) and the shared files and cross-client block were checked for drift before publishing.
+
+## Rounds 59-63 - root cause of the code residual, confirmed by intervention
+
+Brief: close the gap; find what is going on with the >1 s tests still outside parity (distinct-
+contract code execution slower, ether transfers faster). Syscall-level instrumentation this time
+(bpftrace on `sys_enter/exit_pread64`, fds resolved through `/proc/<pid>/fd` dumps, files mapped
+to column families), one test per arm, same test.
+
+**R59/R60 - what a code fetch is.** During EXTCODESIZE DIFF_MAX 160M, inside the measured step:
+
+| CF | jochemnet | state-actor |
+|---|---|---|
+| flat/Account | 49,490 preads, 201 MB, **4,068 B** each | 49,523 preads, 201 MB, **4,060 B** each |
+| code | 49,790 preads, 79.8 MB, **1,603 B** each | 49,720 preads, 107.6 MB, **2,165 B** each |
+
+One pread per fetch on both arms, one data block each; the account row is byte-identical; every
+code block is 562 B larger on the generated store. Also visible: both arms do a ~2.5 GB sequential
+scan of Storage/StorageNodes/StateNodes at *boot* (RocksDB opening ~1,800 files with
+max_open_files=-1), before any step runs - and neither arm uses mmap (`allow_mmap_reads=false`
+everywhere; an earlier reading of R59 that suggested otherwise was a failed fd dump on the
+jochemnet arm). Per-test re-cut of the R56 page-cache traces: code CF bytes scale with gas
+(310 MB at 160M, 465-573 at 240M), so the cost is per fetch, not a per-process index load - that
+alternative is dead. The "1.69x" I had quoted came from jochemnet's coarse datadir bucket and is
+retracted; the code CF alone is **1.13x** per test.
+
+**R61 - latency, not bytes.** Same test, same window. Account preads: 11.44 vs 11.59 ms (deeply
+queued, ~60 pre-warmer threads; identical). Code preads: **1,978 vs 2,127 us** mean, +7.5%, and
+the histogram shows how: jochemnet 30% in [0.5,1) ms and 14% in [1,2); state-actor **17% and
+28%** - a quarter of the fetches moved up a bucket, i.e. needed a second physical page. The
+page-cache tracer agrees: 1.35 vs 1.5 pages per fetch. On the harness's own clock this test runs
+13.24-13.48 s on jochemnet and 14.10-14.49 s on state-actor across five runs (R43 x2, R54, R60,
+R61): +0.8-1.0 s, stable.
+
+**R63 - the intervention.** Rewrote state-actor's code DB with `block_size=64` (probe-flat
+`-mode compactdb -blocksize 64`, 233 s, 44 -> 47 GB, 134,442,675 blocks for 134,442,676 entries:
+every contract alone in its block), promoted, same test three times: **13.18, 13.12, 13.26 s**.
+Same keys, same values, same state root, same fixtures; only the packing changed. The gap closed
+to zero (slightly past it), in the direction tenancy predicts and opposite to what any
+index/file-count mechanism would have produced (the index grew ~100x and the test got faster).
+
+**Root cause, each link measured:** the generator's autofill accounts carry distinct 23-byte
+bytecode stubs (code population p50 = p90 = 23 B; 134M entries at 358 B mean against mainnet's
+2.4M at 7.6 KB). Code is keyed by hash, so those stubs are the random neighbours of every fixture
+contract inside RocksDB's 4 KB data blocks. They do not compress, so each fixture contract's block
+is ~35% larger (2,165 vs 1,603 B), which pushes about a quarter of the ~50k fetches per test across
+a 4 KB page boundary (+0.15 physical pages, +150 us per fetch), which costs ~1 s per 14 s test.
+Independent corroboration: state-actor#141's body reports that #138's change to the pool's
+*content* flipped the same cell on Besu from 17% slower to 46-51% faster than mainnet. The fix is
+the pool's content, not the client and not the table options: #141 slices real mainnet bytecode
+at +/-5% of mainnet compressibility. A #141 store has a different genesis state root, so the
+stateful fixtures must be regenerated with it - the block-size rewrite is the intervention
+available without new fixtures, and it is a diagnostic, not a configuration.
+
+Also corrected: EXTCODESIZE is *not* served from a cache - it is the worst opcode under DIFF_MAX
+(0.626, below CALL 0.775); Nethermind fetches the bytecode to measure it.
+
+**R62 - ether transfers (state-actor faster).** 18 tests at 240M, both arms, same instrument.
+Inside the measured steps: Account 458.6k vs 458.4k preads and code 101.6k vs 101.2k -
+identical - while jochemnet reads **630k `StateTopNodes` blocks against state-actor's 414k**,
++187k trie-node reads for the same 18 blocks of state-root work. In this run the arms differed by
+1.4% (211 vs 208 s); the cell median is 1.076. A property of the arms (a migrated mainnet trie
+against a generated one), small, and not a store defect; not pursued further. One trap on the way:
+a wider window showed 1.24M "other" preads on jochemnet that resolved exactly to RocksDB opening
+its history files at each of 18 boots (660,079 receipt preads = 18 x 6,069 files x ~6), all before
+the measured step.
