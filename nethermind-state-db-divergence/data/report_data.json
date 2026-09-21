@@ -5519,6 +5519,106 @@
    }
   }
  },
+ "intervention_blocks": {
+  "cells": {
+   "DIFF_MAX code-exec": {
+    "after": 1.008,
+    "before": 0.938,
+    "n": 16
+   },
+   "JUMPDEST code-exec": {
+    "after": 1.015,
+    "before": 0.943,
+    "n": 16
+   },
+   "SAME_MAX code-exec": {
+    "after": 0.996,
+    "before": 1.0,
+    "n": 16
+   }
+  },
+  "hist_code_ms": {
+   "joc": {
+    "0.5-1": 30,
+    "1-2": 14
+   },
+   "sa": {
+    "0.5-1": 17,
+    "1-2": 28
+   }
+  },
+  "pages_per_fetch": {
+   "joc": 1.35,
+   "sa": 1.5
+  },
+  "pr": 141,
+  "pread": {
+   "joc": {
+    "account_mean_b": 4068,
+    "account_mean_us": 11444,
+    "account_n": 49490,
+    "code_mean_b": 1603,
+    "code_mean_us": 1978,
+    "code_n": 49790
+   },
+   "sa": {
+    "account_mean_b": 4060,
+    "account_mean_us": 11592,
+    "account_n": 49523,
+    "code_mean_b": 2165,
+    "code_mean_us": 2127,
+    "code_n": 49720
+   }
+  },
+  "repack": {
+   "block_size": 64,
+   "blocks": 134442675,
+   "entries": 134442676,
+   "gb_after": 47,
+   "gb_before": 44,
+   "secs": 232.9
+  },
+  "secs": {
+   "joc": [
+    13.28,
+    13.24,
+    13.48,
+    13.34,
+    13.25
+   ],
+   "sa_4k": [
+    14.1,
+    14.19,
+    14.49,
+    14.19,
+    14.28
+   ],
+   "sa_64b": [
+    13.18,
+    13.12,
+    13.26
+   ]
+  },
+  "src": "R59-R64: bpftrace sys_enter/exit_pread64 on the client, fds resolved via /proc/<pid>/fd, files mapped to column families; probe-flat -mode compactdb -blocksize 64 on the code DB; cells against nm-joc-t1",
+  "test": "EXTCODESIZE DIFF_MAX 160M",
+  "transfers": {
+   "joc": {
+    "account_n": 458601,
+    "code_n": 101589,
+    "secs": 211,
+    "statenodes_n": 379463,
+    "statetop_n": 630531
+   },
+   "sa": {
+    "account_n": 458442,
+    "code_n": 101217,
+    "secs": 208,
+    "statenodes_n": 409281,
+    "statetop_n": 413964
+   },
+   "src": "R62, 18 ether-transfer tests at 240M, inside the measured steps"
+  }
+ },
  "jit_experiment": {
   "ab": {
    "baseline": {

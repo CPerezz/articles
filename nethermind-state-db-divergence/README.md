@@ -133,7 +133,10 @@ moving the boundary to 0.5 s and 2 s, that the four noise categories stay wholly
 the storage category keeps straddling the line, and that the account-row/code-loading split still
 localises the residual), the block-tenancy cross-check (that the sibling study's simulation
 and its DIFF_MAX cell point the same way) and the closing figure (that the residual pair are the
-only cells below 0.97 and every other cell is inside the band), and the bottommost-compaction result (that the idle client read the store, that
+only cells below 0.97 and every other cell is inside the band), the intervention (that the 4 KB
+store runs the traced test slower than every jochemnet run, that repacking brings it onto
+jochemnet's time, that code blocks are larger per fetch, that both residual cells close to within
+3% and the SAME_MAX control does not move), and the bottommost-compaction result (that the idle client read the store, that
 settling it silenced the client, that the reason field still says `BottommostFiles`, that
 the flat read path stays byte-identical across the arms, and that settling did *not* move
 DIFF_MAX or JUMPDEST - the section is written around that null result, so a future run in
@@ -162,6 +165,20 @@ sentence the data no longer supports.
   see it. Decisive test: rebuild the generated code CF with large values isolated in their own
   blocks and re-run the cell. Folded into `data/report_data.json` under
   `measured.besu_cross_check`, derived from the sibling study's data at collect time.
+- **Root cause of the code residual, confirmed by intervention** (`intervention_blocks`, rounds
+  59-64). Syscall-level trace of one EXTCODESIZE DIFF_MAX 160M test per arm: the account row is
+  byte-identical (49.5k preads of 4,068 / 4,060 B); every code fetch is one block, and every block
+  is 562 B larger on the generated store (2,165 vs 1,603 B) because the autofill accounts' distinct
+  23-byte stubs are its random neighbours and do not compress. Larger blocks cross a 4 KB page
+  boundary more often (1.50 vs 1.35 physical pages per fetch; 28% vs 14% of code reads in the 1-2 ms
+  bucket; +149 us per fetch), which over ~50k fetches is the second by which the test runs slower
+  (13.24-13.48 s vs 14.10-14.49 s, five runs each). Rewriting the code DB with a 64-byte block so
+  every contract sits alone (`probe-flat -mode compactdb -blocksize 64`; same keys, values, state
+  root and fixtures) ran the test in 13.12-13.26 s, and at cell level DIFF_MAX code-exec 0.938 ->
+  1.008, JUMPDEST 0.943 -> 1.015, SAME_MAX control 1.000 -> 0.996. The 64-byte block is a
+  diagnostic; the fix is the pool's content, state-actor#141, which needs regenerated fixtures.
+  Ether transfers (the faster cell) traced the same way: account and code reads identical, the
+  snapshot reading 630k top-of-trie blocks for the state root against 414k - an arm property.
 - **Where it stands.** Every long-class cell after all four findings, `classes.final_cells`:
   12 of 12 inside +/-10%; DIFF_MAX code-exec 0.938 and JUMPDEST code-exec 0.943 reproduce to
   within 0.01 across three runs of the same configuration.
