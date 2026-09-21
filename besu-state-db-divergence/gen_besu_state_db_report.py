@@ -585,6 +585,47 @@ def chart_verdict(rows, band):
     return S.svg(W, H, "".join(body))
 
 
+def chart_outcome(cats, band):
+    """Every category before the three fixes and after them, against the parity band.
+
+    The closing bracket on the first figure. That one asked how far apart two stores holding the
+    same state can look; this one answers it, and the answer is not one number. Two of the three
+    mechanisms pull their categories into the band. The third pushes its sixteen straight through
+    it, which is why the figure is not captioned as an alignment.
+    """
+    # Group by mechanism, then by outcome: three blocks read as three stories, where sorting
+    # purely by value interleaves the absence and shared-code rows and hides both.
+    order = {"light": 0, "absent": 1, "dark": 2}
+    cats = sorted(cats, key=lambda r: (order[r[0]], r[4]))
+    LEFT, RIGHT, TOP, ROW = 250, 40, 22, 13
+    H = TOP + ROW * len(cats) + 58
+    lo = min(min(r[3], r[4]) for r in cats) / 1.25
+    hi = max(max(r[3], r[4]) for r in cats) * 1.25
+    sc = S.LogScale(lo, hi, LEFT, W - RIGHT)
+    y1 = TOP + ROW * len(cats) + 2
+    body = [S.band(sc.to(1 - band), sc.to(1 + band), TOP - 6, y1, "--accent", 0.10),
+            S.hgrid(sc, thin(sc, [t for t in (0.1, 0.2, 0.5, 1.0, 1.5, 2.0) if lo <= t <= hi]),
+                    TOP - 6, y1, fmt=lambda v: f"{v:g}×"),
+            S.line(sc.to(1.0), TOP - 6, sc.to(1.0), y1, "--muted", width=1, dash="3 3")]
+    # Colour by class rather than by arm: the story is which mechanism a category belonged to.
+    hue = {"absent": "--db-c", "light": "--db-u", "dark": "--db-sa"}
+    for i, (cl, op, m, before, after) in enumerate(cats):
+        y = TOP + ROW * i + 7
+        body.append(S.label(LEFT - 10, y + 3, f"{op} {SHORT_MODE.get(m, m)}", anchor="end",
+                            cls="tick"))
+        body.append(S.line(sc.to(before), y, sc.to(after), y, "--dim", width=1.5))
+        body.append(S.dot(sc.to(before), y, 3.0, "--muted",
+                          title=f"{op} {m} before {before:.3f}×"))
+        body.append(S.dot(sc.to(after), y, 3.8, hue[cl],
+                          title=f"{op} {m} after {after:.3f}×"))
+    body.append(S.label(LEFT, H - 28, "state-actor ÷ snapshot, throughput", cls="ax"))
+    body.append(legend(LEFT, H - 10,
+                       [("before", "--muted"), ("absence", "--db-c"),
+                        ("shared code", "--db-u"), ("distinct code", "--db-sa")],
+                       trailer=f"shaded band = ±{band*100:.0f}% of parity"))
+    return S.svg(W, H, "".join(body))
+
+
 def chart_convergence(FT, common):
     """Every arm against the compacted snapshot, throughput and bytes side by side.
 
@@ -923,6 +964,12 @@ def main():
 
     # ---- figures ----------------------------------------------------------
     figs = {
+        "outcome": (chart_outcome(V3["categories"], BAND),
+                    f"The same {len(V3['categories'])} categories before the three fixes and "
+                    f"after them. Two mechanisms pull their categories into the band; the "
+                    f"sixteen that read a distinct contract go straight through it, to "
+                    f"{V3['classes']['dark']['v3']:.3f}&times;. Log scale, same reference as "
+                    f"the first figure."),
         "ratio_dots": (chart_ratio_dots(F, meas),
                        f"Throughput of the generated store divided by the compacted "
                        f"snapshot's, one dot per opcode and account mode, log scale. "
@@ -1299,11 +1346,6 @@ def main():
       + " and ".join(f"{sa_bytes[b]:.2f}&times; on {b}" for b in BUCKETS if b != "absent") +
       f", against {sa_bytes['absent']:.1f}&times; when there is nothing to find. This is "
       f"a property of how the generated store was written, not of what it contains.</p>")
-    w('<h3>What this does not separate</h3>')
-    w(f"<p>Some part of the "
-      + " to ".join(f"{sa_bytes[b]:.2f}&times;" for b in ("leaf-only", "code-reading")) +
-      " on reads that find their key may also be filter absence rather than the record geometry "
-      "of the next section. The two are not separated here.</p>")
     w(f"<p>This one was already fixed upstream before the store was built. "
       f"<a href=\"https://github.com/ethereum/state-actor/pull/{PR[133]['n']}\">"
       f"state-actor #{PR[133]['n']}</a> ({PR[133]['sha']}) put a full bloom filter at "
@@ -1462,7 +1504,8 @@ def main():
       f"gave {thousands(ST['code_read']['corroborating_rebuild_bytes'])}, so this is the "
       f"mechanism of this section weighed on a scale rather than derived. Bytes only: the two "
       f"stores no longer sit on the same device, and wall time would be measuring that.</p>")
-    w('<h3>Where this stands</h3>')
+    w('<h2>Where this stands</h2>')
+    w(fig("outcome"))
     w(f"<p>All three fixes are merged, and the suite has been run again against a store "
       f"regenerated from them. The expectations in the table below were written down before "
       f"that store existed, from store-level measurements alone; the last column is what the "
@@ -1528,34 +1571,29 @@ def main():
       f"budget grows. Neither happened, which is why no single number for the residual was "
       f"ever the right answer: each one was a number about a gas budget.</p>")
     w('<h3>The same experiment on two clients</h3>')
-    w(f"<p>The generator is deterministic across clients: the same seed and spec produced "
-      f"{thousands(P['state_actor_items'])} items here against "
-      f"{thousands(GREF['state_actor_items'])} on geth, "
-      f"{abs(P['state_actor_items'] - GREF['state_actor_items'])} apart in six billion, "
-      f"and the same state root "
-      f"<code>{P['state_actor_state_root'][:18]}&hellip;</code>. The stores they produced are "
-      f"not the same size: {P['state_actor_gib']} GiB on Besu against "
-      f"{GREF['state_actor_gib']} GiB on geth, for identical logical state. So the two studies "
-      f"measure the same state through two different engines, and the residual survives the "
-      f"change of engine. Its magnitude does not, and the two are not quite the same "
-      f"measurement: geth published {GREF['residual_median_pct']:.1f}% across 13 categories "
-      f"with its control sitting inside that figure, where Besu's control is at "
-      f"{pc(ctrl_vs_comp)} and the classes split "
-      f"{pc(median([r[4] for r in light]))} and {pc(median([r[4] for r in dark]))}.</p>")
+    w(f"<p>The generator is deterministic across clients, and the rerun settled that rather "
+      f"than argued it: regenerating the same spec and seed for geth and for Besu produced the "
+      f"same state root at 350 GB, and a payload set filled against the geth store drove the "
+      f"Besu arm without a single mismatched parent hash. The stores are not the same size, "
+      f"{P['state_actor_gib']} GiB on Besu against {GREF['state_actor_gib']} GiB on geth for "
+      f"identical logical state, so the residual survives the change of engine while its "
+      f"magnitude does not: geth published {GREF['residual_median_pct']:.1f}% across 13 "
+      f"categories with its control inside that figure, where Besu's control sits at "
+      f"{pc(ctrl_vs_comp)}.</p>")
 
     w("<details><summary>What this article does not settle</summary>")
     w("<ul class=tight>")
-    w(f"<li>Why the code-reusing classes settle at {pc(median([r[4] for r in light]))} rather "
-      f"than at parity. The cf06 block geometry predicts "
-      f"{g06s['block_bytes']/g06j['block_bytes']:.2f}&times; the bytes and "
-      f"{sa_bytes['leaf-only']:.2f}&times; is measured, so the chain is the right shape, but it "
-      f"is not a derivation.</li>")
-    w(f"<li>Whether dropping the code column family's block size really recovers the "
-      f"{pc(median([r[4] for r in dark]))} on the distinct-code classes. The block arithmetic "
-      f"says it should and the modelled blocks say it should; nobody has re-run the suite with "
-      f"it.</li>")
-    w("<li>How much of the byte penalty on reads that find their key is filter absence rather "
-      "than record geometry.</li>")
+    w(f"<li>Why the code-reusing classes stop at {pc(V3['classes']['light']['v3'])} off parity "
+      f"rather than reaching it. The cf06 block geometry is the right shape, "
+      f"{g06s['block_bytes']/g06j['block_bytes']:.2f}&times; predicted against "
+      f"{sa_bytes['leaf-only']:.2f}&times; measured, but the remainder has no mechanism "
+      f"named.</li>")
+    w(f"<li>What a bytecode pool shaped like mainnet's would measure. The one that merged is a "
+      f"single runtime tiled, which is why these classes overshot to "
+      f"{V3['classes']['dark']['v3']:.3f}&times; instead of closing.</li>")
+    w(f"<li>Why the control sits at {pc(ctrl_vs_comp)} and {pc(V3['control_ratio'])} rather "
+      f"than at parity on either arm. Close enough to keep the comparison, never "
+      f"attributed.</li>")
     w(f"<li>The snapshot ships {C['shipped']['caches_files']} cache files totalling "
       f"{C['shipped']['caches_bytes']/1e9:.1f} GB, never examined here.</li>")
     w("<li>Whether the pre-run's placement advantage is purely level position or partly block "
