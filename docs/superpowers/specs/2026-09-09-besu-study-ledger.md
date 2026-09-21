@@ -3484,3 +3484,53 @@ Both articles published and verified byte-identical live at `1c64ca7`.
 - The control offset's cause is still unattributed. v3 is the first arm whose payloads were
   filled at the same eest ref as its comparison, and the offset moved toward 1.000. That is a
   hypothesis for a rebuilt snapshot arm, not a finding.
+
+---
+
+## Round 54 - the closing figure, and the payoff moved to where a reader finds it
+
+Plan written to `docs/superpowers/plans/2026-09-20-besu-article-outcome-pass.md`, gated in
+Plannotator, approved, applied. Published `abf23c0`, page and new SVG both verified byte-identical
+live.
+
+### The figure
+
+`chart_outcome`: the same 48 categories before the three fixes and after them, log scale, parity
+band, the same grammar as the opening `ratio_dots` so it reads as the closing bracket on figure 1.
+
+The decision that made it work was grouping rows **by mechanism** rather than by value. Sorted
+purely by outcome, the absence and shared-code rows interleave and both arguments disappear.
+Grouped, it is three blocks and the whole result is legible without the caption:
+
+- 24 shared-code rows barely move, inside the band at about 0.98
+- 8 absence rows sweep the full width of the chart, in from 0.1x
+- 16 distinct-code rows start at 0.83 and go **straight through** the band, out to 1.5x
+
+Deliberately not captioned as an alignment. Two fixes landing and one overcorrecting is what the
+data shows, and it is the more interesting picture.
+
+### Structure
+
+`Where this stands` was an h3 under `The residual`, reached after roughly 4,900 words: the payoff
+as a subsection of a subsection. Now an h2 that opens with the figure.
+
+Deleted `What this does not separate`, whose hedge the rerun answers. Halved
+`The same experiment on two clients`, because cross-client determinism stopped being an argument
+the moment the rerun produced the same state root for both writers at 350 GB and a geth-filled
+payload set drove the Besu arm. Pruned two answered items from `What this article does not settle`
+and replaced them with the two that are genuinely open.
+
+The h1 keeps its 8x, per Anon. It is the question the article answers, and `build_site.py` guards
+the landing card's factor against it.
+
+### An estimate I got wrong, worth recording
+
+The plan promised about 350 words cut. Delivered **57** (prose 4,520 to 4,463). The error was in
+the plan, not the execution: my section-measuring script attributes everything between a heading
+and the next heading of the same-or-higher level to that heading, so the 189w it reported for
+`What this does not separate` included the #133 and #137 paragraphs that follow it and belong to
+the bloom-filter section. The actual hedge was about 50 words. I also bloated the
+`does not settle` list while rewriting it and had to tighten it back.
+
+The structural changes were the real win and they cost nothing in words. Next time, measure a
+section by its own paragraphs rather than by heading spans before promising a cut.
