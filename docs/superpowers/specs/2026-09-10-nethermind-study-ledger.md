@@ -2279,3 +2279,37 @@ against a generated one), small, and not a store defect; not pursued further. On
 a wider window showed 1.24M "other" preads on jochemnet that resolved exactly to RocksDB opening
 its history files at each of 18 boots (660,079 receipt preads = 18 x 6,069 files x ~6), all before
 the measured step.
+
+## Round 64-65 - cell-level confirmation, published; image restore pending
+
+**R64.** All three code-exec cells (48 tests, 160M/240M, zero failures) on the repacked store
+against jochemnet's settled run `nm-joc-t1`:
+
+| cell | n | 4 KB blocks (R54) | 64 B blocks (R64) |
+|---|---|---|---|
+| DIFF_MAX code-exec | 16 | 0.938 | **1.008** |
+| JUMPDEST code-exec | 16 | 0.943 | **1.015** |
+| SAME_MAX code-exec (control) | 16 | 1.000 | 0.996 |
+
+Both residual cells at parity; the control, which reuses one contract and never paid for its
+neighbours, unmoved. Root cause closed by intervention at cell level.
+
+**Article** updated and live at `ebdf71e` (byte-identical, zero sibling folders touched, shared
+files and the cross-client block checked for drift): Finding 4 now carries the syscall table
+(preads, block sizes, latency, pages per fetch), the five-run timings, the repack and its cell
+table, the Besu cross-check, the pool-content fix (#141, needs regenerated fixtures), and the
+ether-transfer trace; the closing figure marks the repacked cells; five new oracles,
+mutation-tested. Data under `intervention_blocks`.
+
+**Image state.** The promoted state-actor image currently carries the 64-byte-block code DB
+(the diagnostic layout). R65 (`probe-flat -mode compactdb` at the default 4096 + promote) was
+launched to restore the documented layout; the host went into its recurring PAM/logind stall
+immediately after, so the launch is unconfirmed. Either state is a valid store; the restore
+must be verified (`R65_DONE`, `data blocks=` back near 7.5M) before any further measurement
+that is meant to be compared with R54.
+
+**Standing note on regeneration.** Any new state-actor store is to be built from the latest
+tree including #141. Its genesis state root differs from the current store's, so the stateful
+fixture bundle must be regenerated against it before it can be benchmarked; the recipe on the
+box is `build-flat-image.sh` + `gen-sa-nm-flat.sh` (`--target-size=350GB --seed=42
+--fork=osaka`), with the `WANT_GENESIS`/`WANT_ROOT` assertions updated to the new values.
