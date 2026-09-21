@@ -1084,14 +1084,9 @@ def main():
     w(f"<p>That is the number in the title. It is also mostly an accident of how the two "
       f"stores were built, rather than anything about how Besu reads them. There are two "
       f"separate accidents, and each one shows up on a different kind of read.</p>")
-    w(f"<p>The chart below is the shape of the problem. Every dot is one test category, "
-      f"measured against the snapshot after compaction. They fall into two groups about ten "
-      f"times apart. The {n_absent} dots on the left are the categories that have to prove an "
-      f"account is absent; the generated store is {1/sa_vs_comp['absent']:.1f}&times; "
-      f"slower on all of them, and compacting the snapshot does not close the gap. The "
-      f"{len(ex_cat)} dots on the right read an account that exists, and they land between "
-      f"{pc(max(r[4] for r in verdict if r[0] != 'absent'))} and "
-      f"{pc(min(r[4] for r in verdict if r[0] != 'absent'))} of the snapshot. Two groups, two "
+    w(f"<p>Every dot below is one test category against the compacted snapshot, and they fall "
+      f"into two groups about ten times apart: the {n_absent} that must prove an account is "
+      f"absent, and the {len(ex_cat)} that read one which exists. Two groups, two "
       f"causes.</p>")
     w(fig("ratio_dots"))
     w("<table><tr><th>bucket</th><th>tests</th>"
@@ -1108,11 +1103,7 @@ def main():
       f"<td class=n>{ctrl_vs_comp:.3f}</td>"
       f"<td class=n>{median([F['plain'][c]['mgas_s'] / F['compacted'][c]['mgas_s'] for c in ctrls]):.3f}</td>"
       f"</tr>")
-    w(f"<caption>Median of the per-workload ratio. {esc(BUCKET_DOC['absent'])}; "
-      f"{esc(BUCKET_DOC['leaf-only'])}; {esc(BUCKET_DOC['code-reading'])}. The control row is "
-      f"the same tests with the account access removed: it sits at parity in every column, "
-      f"which is what says the columns above it are measuring state and not "
-      f"harness.</caption></table>")
+    w("</table>")
 
     w('<h3>Outside the absent class, the residual comes in two tiers</h3>')
     w(f"<p>Against the compacted snapshot, every one of the {len(ex_cat)} categories that "
@@ -1154,28 +1145,13 @@ def main():
 
     # ===================================================================== 3
     w('<h2>What we ruled out first</h2>')
-    w("<p>Before anything else, the two stores have to be shown to be the same kind of object "
-      "holding different data, rather than differently configured engines.</p>")
-    w('<h3>The databases themselves</h3>')
-    w(f"<p>Both stores run the same RocksDB settings on every state column family: "
+    w(f"<p>Both stores run byte-identical RocksDB settings on every state column family, "
       f"<code>compression={P['compression']}</code> and "
-      f"<code>block_size={thousands(P['block_size'])}</code>, byte-identical. Key-value "
-      f"separation is enabled on exactly two column families, neither of which holds state: the "
-      f"snapshot's {thousands(C['shipped']['blob_files'])} blob files and "
-      f"{C['shipped']['blob_bytes']/1e9:.0f} GB are block bodies and receipts. The generated "
-      f"store has {C['state_actor']['blob_files']} blob file of "
-      f"{C['state_actor']['blob_bytes']} bytes, because it has no chain history at all. "
-      f"Whole-store totals are therefore "
-      f"not comparable and are not compared anywhere in this article; the comparison is always "
-      f"per column family.</p>")
-    w(f"<p>The extraction is deterministic: three independent unpacks of the published tarball "
-      f"produced the same {thousands(C['shipped']['ssts'])} SST files and the same "
-      f"{thousands(C['shipped']['sst_bytes'])} bytes. Trie logs are not a factor either. Besu "
-      f"prints this on every boot:</p>")
-    w("<pre class=log>Forcing --bonsai-limit-trie-logs-enabled=false, since it cannot be "
-      "enabled with --sync-mode=FULL and --data-storage-format=BONSAI.</pre>")
-    w(f"<p>The snapshot's trie-log column family holds {trielog_bytes/1e6:.1f} MB, and the "
-      f"generated store's holds no files at all.</p>")
+      f"<code>block_size={thousands(P['block_size'])}</code>. The extraction is "
+      f"deterministic across three independent unpacks. Trie logs are disabled on both. "
+      f"Whole-store totals are not comparable, because the snapshot carries "
+      f"{C['shipped']['blob_bytes']/1e9:.0f} GB of chain history the generated store does "
+      f"not have, so every comparison in this article is per column family.</p>")
     w('<h3>What the fixtures actually touch</h3>')
     w(f"<p>The suite is {len(set((c[0], c[1]) for c in common))} opcode/account-mode categories "
       f"across {len(sorted({c[2] for c in common}))} gas budgets from "
@@ -1192,40 +1168,14 @@ def main():
     w('<h2>The file that looks like the cause: a '
       '1.2 GB write-ahead log</h2>')
     w(f"<p>The published snapshot ships a write-ahead log of "
-      f"{thousands(C['shipped']['wal_bytes'])} bytes across "
-      f"{C['shipped']['wal_files']} files, and the pre-run replay leaves it that size or "
-      f"larger. A write-ahead log is where a key-value store puts writes that have not yet "
-      f"been folded into its sorted files, so a gigabyte of it sitting inside a snapshot is "
-      f"exactly the shape of a benchmark artifact: state that lives in one place on disk and "
-      f"another in memory, restored on every boot.</p>")
-    w(f"<p>The first thing that argues against it is that the size is not even stable. Two "
-      f"pre-run replays of the same extraction left "
-      f"{C['after_prerun']['wal_bytes']/1e9:.2f} GB and "
-      f"{C['after_prerun_repeat']['wal_bytes']/1e9:.2f} GB behind. A cause that varies by "
+      f"{thousands(C['shipped']['wal_bytes'])} bytes, which is exactly the shape of a "
+      f"benchmark artifact: state that lives in one place on disk and another in memory, "
+      f"restored on every boot.</p>")
+    w(f"<p>It is inert. Its size varies "
       f"{abs(C['after_prerun']['wal_bytes'] / C['after_prerun_repeat']['wal_bytes'] - 1)*100:.0f}% "
-      f"between runs is a poor explanation for an effect that reproduces.</p>")
-    w(f"<p>The second is what happens when you drain it. The whole step takes "
-      f"{C['after_flush']['step_seconds']} seconds, leaves "
-      f"{C['after_flush']['wal_bytes']} bytes, and <b>adds no SST file</b>. The count "
-      f"stays at {thousands(C['after_flush']['ssts'])}. Had the log held writes that were not "
-      f"yet on disk, recovery would have written them out as new files. Promoting the result "
-      f"copies {C['after_flush']['promote_bytes']/1e6:.0f} MB in "
-      f"{C['after_flush']['promote_ms']} ms. Nothing in that gigabyte was unpersisted; it is a "
-      f"log that had not been garbage-collected yet.</p>")
-    w(f"<p>And the explicit flush inside that step reported "
-      f"{C['after_flush']['flush_seconds']:.1f} s, because by the time it ran there was nothing "
-      f"in memory to write: RocksDB's <em>open</em> path recovers the log and flushes it "
-      f"itself. On Besu, opening the store is the drain, which means every arm of every "
-      f"suite had already done it before a single test ran.</p>")
-    w(f"<p>Measured end to end, draining it changes nothing: "
-      + ", ".join(f"{drain_t[b]:.3f}&times; on {b}" for b in BUCKETS) +
-      f" for throughput and "
-      + ", ".join(f"{drain_b[b]:.3f}&times;" for b in BUCKETS) +
-      f" for bytes read. Throughput holds to within "
-      f"{max(abs(1-drain_t[b]) for b in BUCKETS)*100:.1f}% and bytes to within "
-      f"{max(abs(1-drain_b[b]) for b in BUCKETS)*100:.1f}%, against a same-state repeat that "
-      f"reproduces to {noise*100:.1f}%. The one thing in the snapshot that looks like the "
-      f"cause is inert.</p>")
+      f"between identical replays, a poor cause for an effect that reproduces. Draining it "
+      f"adds no SST file, because RocksDB's open path had already recovered and flushed it "
+      f"before any test ran. And measured end to end, draining changes nothing.</p>")
     w(fig("treatment_dumbbell"))
 
     # ===================================================================== 5
@@ -1295,17 +1245,10 @@ def main():
       f"published, and <b>{cat_after} of {len(verdict)}</b> clear it against the compacted "
       f"one. Per measurement workload rather than per category, "
       f"{100*wl_before/len(meas):.0f}% becomes {100*wl_after/len(meas):.0f}%.</p>")
-    w(f"<p>Read that bar carefully, because it flatters the generated store. Clearing a "
-      f"±{BAND*100:.0f}% band is not the same as agreeing. Not one of the {len(verdict)} "
-      f"categories reaches parity: the closest is {best_cat[1]}&nbsp;{SHORT_MODE[best_cat[2]]} at "
-      f"{best_cat[4]:.3f}&times;, and not one of the {len(meas)} measurement workloads is "
-      f"faster than the snapshot. The best single workload of the {len(meas)} manages "
-      f"{max_row:.3f}&times;. The control workloads, which run the same loop and touch no "
-      f"account state, sit at {ctrl_vs_comp:.3f}&times;, so the generated store is "
-      f"{pc(ctrl_vs_comp)} <em>faster</em> on work that reads nothing. Measured against that as "
-      f"the true zero, every category that reads account state is at least "
-      f"{pc(best_cat[4]/ctrl_vs_comp)} slow. The band hides a floor; it does not mean half the "
-      f"suite is clean.</p>")
+    w(f"<p>Clearing a ±{BAND*100:.0f}% band is not agreeing. Not one of the {len(verdict)} "
+      f"categories reaches parity, the closest being {best_cat[1]}&nbsp;"
+      f"{SHORT_MODE[best_cat[2]]} at {best_cat[4]:.3f}&times;, and not one of the "
+      f"{len(meas)} measurement workloads is faster than the snapshot.</p>")
     w(fig("verdict"))
     w(f"<p>The {cat_after} that converge are the categories whose contract code is shared "
       f"or absent, and they land at a median of {pc(median([r[4] for r in light]))} off "
@@ -1355,16 +1298,7 @@ def main():
       f"(<code>{D['provenance']['state_actor_source']}</code>) that predated it by "
       f"{DAYS_STALE} days. So the 50&times; is real, reproducible from the archived store, and "
       f"our own doing: we measured a build that had already been superseded.</p>")
-    w(f"<p>The mechanism is fixed rather than argued. Probing each store directly for the cost "
-      f"of one absent-account lookup: the unfiltered store reads "
-      f"{ST['filters']['unfiltered_blocks']:.3f} data blocks per lookup and its filter is "
-      f"consulted never; a filtered store built from the same generator reads "
-      f"{ST['filters']['filtered_blocks']:.3f} blocks and rejects "
-      f"{ST['filters']['filter_useful']:.3f} lookups per lookup at the filter, which is a "
-      f"{ST['filters']['unfiltered_blocks'] / ST['filters']['filtered_blocks']:.0f}&times; "
-      f"reduction in exactly the operation this section is about. The snapshot reads "
-      f"{ST['filters']['snapshot_blocks']:.3f}. Whatever remains in the absence class after "
-      f"that is not filter absence.</p>")
+
 
     # ===================================================================== 8
     w('<h2>The residual</h2>')
@@ -1387,58 +1321,37 @@ def main():
     w("<caption>The chain: generated records are larger and compress worse, so a data block "
       "holds fewer of them and every read moves more bytes.</caption></table>")
     w(fig("geometry"))
-    w(f"<p>Two ratios carry the argument: compression {comp_ratio:.3f}&times; and block size "
-      f"{blk_ratio:.3f}&times;. The same two ratios measured on geth were "
-      f"{GREF['compression_ratio']:.3f}&times; and {GREF['block_size_ratio']:.3f}&times;, "
-      f"within {abs(comp_ratio/GREF['compression_ratio']-1)*100:.1f}% of these, on a different "
-      f"storage engine, with a different compression algorithm and an eight times larger "
-      f"block. Whatever this is, it is not an artifact of one engine.</p>")
-    w(f"<p>Both tiers come out of one property of the generated state, and it takes a sentence "
-      f"to measure. Sampling each store's account keyspace, {AM['jochemnet']['eoa_pct']:.1f}% "
-      f"of the snapshot's records are plain externally-owned accounts carrying the two empty "
-      f"constants, against {AM['state_actor']['eoa_pct']:.1f}% of the generated store's, which "
-      f"puts {thousands(round(reuse['jochemnet']['contracts']))} contract accounts in the "
-      f"snapshot against {thousands(round(reuse['state_actor']['contracts']))} in the generated "
-      f"store. The snapshot resolves those to {thousands(reuse['jochemnet']['codes'])} distinct "
-      f"bytecodes and the generated store to {thousands(reuse['state_actor']['codes'])}: "
-      f"mainnet reuses each bytecode about "
-      f"{reuse['jochemnet']['per_code']:.0f} times, and the generated store reuses none "
-      f"({reuse['state_actor']['per_code']:.2f}). That is why the account records compress "
-      f"worse, because a shared code hash becomes a unique one, and it is why a code read pays "
-      f"for block padding.</p>")
-    w(f"<p>That property is now fixed upstream, in the two places it came from. "
-      f"<a href=\"https://github.com/ethereum/state-actor/pull/{PR[137]['n']}\">"
-      f"state-actor #{PR[137]['n']}</a> ({PR[137]['sha']}) draws each delegation designator "
-      f"from a fixed pool of 256 authorities instead of minting a unique one per account, so "
-      f"designators repeat the way real ones do, at a delegation rate still matched to "
-      f"mainnet. <a href=\"https://github.com/ethereum/state-actor/pull/{PR[138]['n']}\">"
-      f"#{PR[138]['n']}</a> ({PR[138]['sha']}) gives contracts a shared bytecode pool sized to "
-      f"mainnet's reuse. Measured on a small store built from the result: account records go "
-      f"from {props['state_actor']['06']['phys_over_logical']:.3f} to "
+    w(f"<p>Compression {comp_ratio:.3f}&times; and block size {blk_ratio:.3f}&times;; geth "
+      f"measured {GREF['compression_ratio']:.3f}&times; and "
+      f"{GREF['block_size_ratio']:.3f}&times; on a different engine, so this is not an "
+      f"artifact of one. The cause is a single property: mainnet reuses each bytecode about "
+      f"{reuse['jochemnet']['per_code']:.0f} times, and the generated store reused none, "
+      f"{thousands(round(reuse['jochemnet']['contracts']))} contract accounts resolving to "
+      f"{thousands(reuse['jochemnet']['codes'])} distinct bytecodes against "
+      f"{thousands(round(reuse['state_actor']['contracts']))} resolving to "
+      f"{thousands(reuse['state_actor']['codes'])}. A shared code hash compresses and a "
+      f"unique one does not, and a code read pays block padding for its neighbours. "
+      f"<a href=\"https://github.com/ethereum/state-actor/pull/{PR[137]['n']}\">#{PR[137]['n']}</a> "
+      f"and <a href=\"https://github.com/ethereum/state-actor/pull/{PR[138]['n']}\">#{PR[138]['n']}</a> "
+      f"fix both: designators from a fixed pool of 256, bytecode from a shared pool sized to "
+      f"mainnet's reuse. On a store built from them, account records go from "
+      f"{props['state_actor']['06']['phys_over_logical']:.3f} to "
       f"{ST['after']['cf06_phys']:.3f} physical over logical against the snapshot's "
-      f"{ST['target']['cf06_phys']:.3f}, and reuse lands at "
-      f"{ST['after']['per_bytecode']:.1f} accounts per distinct bytecode against mainnet's "
-      f"{ST['target']['per_bytecode']:.1f}. The record geometry this section measures is "
-      f"therefore gone as a mechanism; whether the throughput follows is a rerun, not an "
-      f"inference, and it has not been done.</p>")
+      f"{ST['target']['cf06_phys']:.3f}.</p>")
     w('<h3>The code half is not the code being read</h3>')
-    w(f"<p>The same chain does not explain the {len(dark)} distinct-code categories, and it is "
-      f"worth saying why rather than stretching it. Isolate what the code read itself costs by "
-      f"subtracting the account-only classes: a distinct-contract access moves "
+    w(f"<p>The same chain does not explain the {len(dark)} distinct-code categories. "
+      f"Subtracting the account-only classes isolates the code read: "
       f"{code_bpg['compacted']:.1f} extra bytes per gas on the snapshot against "
       f"{code_bpg['state_actor']:.1f} on the generated store, a factor of "
-      f"<b>{code_bpg['ratio']:.2f}</b>. The obvious reading is that the generated store's "
-      f"contract code is less compressible. It is not. Sampling the "
-      f"{thousands(CB['fixture_bytes'])}-byte fixture contracts out of each store's code "
-      f"column family, both compress to about one percent of their size: "
-      f"{CB['jochemnet']['fixture_deflate']:.4f} on the snapshot, "
-      f"{CB['state_actor']['fixture_deflate']:.4f} on the generated store. The contract being "
-      f"read is nearly free to store in both.</p>")
-    w(f"<p>What a lookup pays for is the block the record sits in. RocksDB closes a data block "
-      f"once it passes {thousands(CB['block_size'])} bytes, so a "
-      f"{thousands(CB['fixture_bytes'])}-byte contract leaves room for whatever comes next in "
-      f"code-hash order, and that is a sample of each store's contract population. The two "
-      f"populations are nothing alike.</p>")
+      f"<b>{code_bpg['ratio']:.2f}</b>. The obvious reading, less compressible code, is "
+      f"wrong: the {thousands(CB['fixture_bytes'])}-byte fixture contracts deflate to "
+      f"{CB['jochemnet']['fixture_deflate']:.4f} and "
+      f"{CB['state_actor']['fixture_deflate']:.4f} of their size, near-free to store in "
+      f"both.</p>")
+    w(f"<p>What a lookup pays for is the block. RocksDB closes a data block past "
+      f"{thousands(CB['block_size'])} bytes, so a {thousands(CB['fixture_bytes'])}-byte "
+      f"contract shares it with whatever follows in code-hash order, a sample of each "
+      f"store's contract population.</p>")
     w("<table><tr><th>per data block holding one fixture contract</th>"
       "<th class=n>snapshot</th><th class=n>state-actor</th></tr>")
     for lbl, k, fmt in (("the contract itself, compressed", "fixture_deflate", "{:.4f} of raw"),
@@ -1454,56 +1367,30 @@ def main():
       f"do not. That is "
       f"{CB['state_actor']['block_comp']/CB['jochemnet']['block_comp']:.2f}&times; on the "
       f"block against {code_bpg['ratio']:.2f}&times; measured on the read.</caption></table>")
-    w(f"<p>So the generated store's code reads are dearer because of the company its contracts "
-      f"keep. It holds {thousands(props['state_actor']['07']['entries'])} contracts averaging "
+    w(f"<p>The generated store held "
+      f"{thousands(props['state_actor']['07']['entries'])} contracts averaging "
       f"{props['state_actor']['07']['mean_record']:,.0f} bytes against the snapshot's "
       f"{thousands(props['jochemnet']['07']['entries'])} averaging "
-      f"{props['jochemnet']['07']['mean_record']:,.0f}, so "
-      f"{props['state_actor']['07']['entries']/props['jochemnet']['07']['entries']:.0f}&times; "
-      f"as many contracts each a fraction of the size, and "
-      f"{100*CB['code_population']['state_actor']['records_23b']/CB['code_population']['state_actor']['scanned']:.0f}% "
-      f"of the sampled records are 23 bytes long. The generator reached its size target by "
-      f"contract count rather than by matching mainnet's code-size distribution, and a code "
-      f"read pays for that as block padding.</p>")
-    w(f"<p>Which means it is fixable, in two independent places. Drop the code column family's "
-      f"block size to {thousands(CB['small_block']['block_size'])} bytes and a "
-      f"{thousands(CB['fixture_bytes'])}-byte contract no longer fits alongside anything: "
-      f"co-tenants go to {CB['small_block']['tenants']}, the block costs "
-      f"{CB['small_block']['jochemnet_comp']} bytes on the snapshot against "
-      f"{CB['small_block']['state_actor_comp']} on the generated store, and the penalty "
-      f"inverts. Or give the generator a contract population shaped like mainnet's, including "
-      f"its duplication, since mainnet reuses each bytecode about "
-      f"{reuse['jochemnet']['per_code']:.0f} times and the generated store reuses none. "
-      f"Neither is "
-      f"a change to Besu. It is also why the geth study never met this: pebble defaults to "
-      f"4 KiB blocks, a quarter of what both of these stores use.</p>")
-    w(f"<p>The second of those was taken, and it went too far. "
-      f"<a href=\"https://github.com/ethereum/state-actor/pull/{PR[138]['n']}\">"
-      f"#{PR[138]['n']}</a>'s pool is one real ERC20 runtime of about 1.7 KB, tiled to reach "
-      f"the sampled code size and rotated per pool entry, so entries are self-similar inside "
-      f"themselves and to each other. It gets reuse and size right and content wrong: on a "
-      f"store built from it, the code column family compresses to "
-      f"{ST['after']['cf07_phys']:.3f} physical over logical against mainnet's "
-      f"{ST['target']['cf07_phys']:.3f}, individual records deflate to "
-      f"{ST['after']['record_deflate']:.3f} against mainnet's "
-      f"{ST['target']['record_deflate']:.3f}, and a packed block to "
-      f"{ST['after']['block_deflate']:.3f} against "
-      f"{ST['target']['block_deflate']:.3f}. That is "
-      f"{ST['target']['cf07_phys'] / ST['after']['cf07_phys']:.1f}&times; too compressible, so "
-      f"the expected effect on this class is that it changes sign rather than closes. Real "
-      f"mainnet code compresses because many <em>different</em> contracts repeat across "
-      f"accounts, not because one contract repeats inside itself, and the fix is a corpus. "
-      f"The PR's own comment predicted this failure mode.</p>")
-    w(f"<p>Independent of the generator, the cost itself is measurable rather than modelled. "
-      f"One cold read of a {thousands(CB['fixture_bytes'])}-byte contract, page cache dropped, "
-      f"counting the bytes the block layer actually served: "
-      f"{thousands(ST['code_read']['sa_bytes'])} bytes on the generated store against "
-      f"{thousands(ST['code_read']['snap_bytes'])} on the snapshot, a factor of "
-      f"{ST['code_read']['sa_bytes'] / ST['code_read']['snap_bytes']:.0f}. The population is "
-      f"the same contracts in both stores, and a later rebuild of the same generator lineage "
-      f"gave {thousands(ST['code_read']['corroborating_rebuild_bytes'])}, so this is the "
-      f"mechanism of this section weighed on a scale rather than derived. Bytes only: the two "
-      f"stores no longer sit on the same device, and wall time would be measuring that.</p>")
+      f"{props['jochemnet']['07']['mean_record']:,.0f}: many times as many, each a "
+      f"fraction of the size, every one unique. A code read pays for its neighbours. That "
+      f"is fixable by shrinking the block or by giving the generator a mainnet-shaped "
+      f"population, and the second was taken.</p>")
+    w(f"<p><a href=\"https://github.com/ethereum/state-actor/pull/{PR[138]['n']}\">"
+      f"#{PR[138]['n']}</a> went too far. Its pool is one real ERC20 runtime of about "
+      f"1.7 KB, tiled to the sampled size and rotated per entry, so entries are self-similar "
+      f"inside themselves and to each other. On a store built from it the code column "
+      f"family compresses to {ST['after']['cf07_phys']:.3f} physical over logical against "
+      f"mainnet's {ST['target']['cf07_phys']:.3f}, "
+      f"{ST['target']['cf07_phys'] / ST['after']['cf07_phys']:.1f}&times; too "
+      f"compressible. Mainnet code compresses because many <em>different</em> contracts "
+      f"repeat across accounts, not because one repeats inside itself. The fix is a "
+      f"corpus.</p>")
+    w(f"<p>Measured rather than modelled: one cold read of a "
+      f"{thousands(CB['fixture_bytes'])}-byte contract, page cache dropped, moves "
+      f"{thousands(ST['code_read']['sa_bytes'])} bytes from disk on the generated store "
+      f"against {thousands(ST['code_read']['snap_bytes'])} on the snapshot, a factor of "
+      f"{ST['code_read']['sa_bytes'] / ST['code_read']['snap_bytes']:.0f}, for the same "
+      f"contracts in both.</p>")
     w('<h2>Where this stands</h2>')
     w(fig("outcome"))
     w(f"<p>All three fixes are merged, and the suite has been run again against a store "
@@ -1551,35 +1438,15 @@ def main():
       f"smaller one. The distinct-code class does the opposite and climbs monotonically from "
       f"{V3['gradient']['dark'][0]:.3f} to {V3['gradient']['dark'][-1]:.3f}: the more reads a "
       f"block does, the further ahead the over-compressed store gets.</p>")
-    w(f"<p>One caveat the rerun cannot remove. An EEST stateful fixture is anchored to the "
-      f"genesis of the store it was filled against, so a regenerated store needs refilled "
-      f"payloads and the two arms cannot share a bundle. The control workloads, which run the "
-      f"same loop and touch no account state, are what says the comparison survived that: they "
-      f"read {V3['control_ratio']:.4f}&times; against {V3['control_archived']:.4f}&times; on "
-      f"the original arm, a difference of "
-      f"{abs(V3['control_ratio'] - V3['control_archived']):.4f}, and hold within "
-      f"{max(V3['gradient']['control']) - min(V3['gradient']['control']):.3f} across every "
-      f"budget. Had they moved, the numbers above would be measuring the harness.</p>")
-    w(f"<p>One property of the original store the fixes did not have to explain away, because "
-      f"it was a property of the residual rather than of any one mechanism. On that store the "
-      f"gap grew with the gas budget in every measurement class, absence "
-      f"{grad['absent'][0]:.3f} to {grad['absent'][-1]:.3f}, distinct code "
-      f"{grad['dark'][0]:.3f} to {grad['dark'][-1]:.3f}, shared code "
-      f"{grad['light'][0]:.3f} to {grad['light'][-1]:.3f}, while the control held flat at "
-      f"{grad['ctrl'][0]:.3f} to {grad['ctrl'][-1]:.3f}. A constant per-read penalty predicts "
-      f"a flat ratio and a constant per-block overhead predicts the ratio improving as the "
-      f"budget grows. Neither happened, which is why no single number for the residual was "
-      f"ever the right answer: each one was a number about a gas budget.</p>")
-    w('<h3>The same experiment on two clients</h3>')
-    w(f"<p>The generator is deterministic across clients, and the rerun settled that rather "
-      f"than argued it: regenerating the same spec and seed for geth and for Besu produced the "
-      f"same state root at 350 GB, and a payload set filled against the geth store drove the "
-      f"Besu arm without a single mismatched parent hash. The stores are not the same size, "
-      f"{P['state_actor_gib']} GiB on Besu against {GREF['state_actor_gib']} GiB on geth for "
-      f"identical logical state, so the residual survives the change of engine while its "
-      f"magnitude does not: geth published {GREF['residual_median_pct']:.1f}% across 13 "
-      f"categories with its control inside that figure, where Besu's control sits at "
-      f"{pc(ctrl_vs_comp)}.</p>")
+    w(f"<p>One caveat. A stateful fixture is anchored to the genesis of the store it was "
+      f"filled against, so the rerun needed refilled payloads and the two arms cannot share "
+      f"a bundle. The control workloads, which touch no account state, say the comparison "
+      f"survived that: {V3['control_ratio']:.4f}&times; against "
+      f"{V3['control_archived']:.4f}&times; on the original arm, flat within "
+      f"{max(V3['gradient']['control']) - min(V3['gradient']['control']):.3f} across "
+      f"every budget.</p>")
+
+
 
     w("<details><summary>What this article does not settle</summary>")
     w("<ul class=tight>")
