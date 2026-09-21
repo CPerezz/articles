@@ -201,7 +201,37 @@ for name in ("replica", "treated"):
         b[bucket(MEMBER.get(t, s))].append(r)
     buckets[name] = {k: summarise(v) for k, v in b.items()}
 
+# Where it stands: every cell of the long class after all four findings are applied (settled
+# store, warm-up equalised), with the two replicas of the same configuration beside it.
+def cell_name(t):
+    c = category(t)
+    if c not in ("existing contract", "existing EOA", "absent account"):
+        return c
+    op, md = opcode(t), mode(t)
+    if not op or not md:
+        return c
+    short = md.replace("EXISTING_CONTRACT_", "").replace("NON_EXISTING_ACCOUNT", "absent")
+    return "%s %s" % (short, "code-exec" if op in LOADS_CODE else "BAL/HASH")
+
+
+def by_cell(rows):
+    out = defaultdict(list)
+    for r, s, _, _, t in rows:
+        if MEMBER.get(t, 0) >= BOUNDARY:
+            out[cell_name(t)].append(r)
+    return {k: {"n": len(v), "median": round(median(v), 4)} for k, v in out.items()}
+
+
+settled_cells = by_cell(data["settled"])
+rep = {name: by_cell(rows_for(p)) for name, p in (("r1", ("nm-joc-c1", "nm-sa-c1")),
+                                                    ("r2", ("nm-joc-c2", "nm-sa-c2")))}
+final_cells = {k: {"n": v["n"], "settled": v["median"],
+                   "r1": rep["r1"].get(k, {}).get("median"),
+                   "r2": rep["r2"].get(k, {}).get("median")}
+               for k, v in settled_cells.items()}
+
 json.dump({"boundary_s": BOUNDARY,
+           "final_cells": final_cells,
            "classes": classes,
            "by_category": by_category,
            "class2_families": class2_families,
