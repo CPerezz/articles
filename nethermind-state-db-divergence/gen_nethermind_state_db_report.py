@@ -464,13 +464,15 @@ def chart_class2_families(cl):
     return S.svg(W, H, "".join(o))
 
 
-def chart_final_cells(cl):
+def chart_final_cells(cl, repacked=None):
     """Where it stands: every cell of the long class after all four findings are applied, with
     the two earlier replicas of the same configuration as faint marks so the reader can see
-    what run-to-run movement looks like beside the value being quoted."""
+    what run-to-run movement looks like beside the value being quoted. `repacked` adds, for
+    the cells it names, the value measured after the code database was repacked."""
     fc = cl["final_cells"]
+    repacked = repacked or {}
     rows = sorted(fc.items(), key=lambda kv: kv[1]["settled"])
-    W, L, R, T = 760, 190, 118, 26
+    W, L, R, T = 760, 190, 150, 26
     rh = 26
     H = T + rh * len(rows) + 62
     sx = S.Scale(0.85, 1.15, L, W - R)
@@ -486,13 +488,24 @@ def chart_final_cells(cl):
                                f"earlier replica {v[rep]:.3f}"))
         o.append(S.dot(sx.to(max(0.85, min(1.15, v["settled"]))), y, 4.5, "--accent",
                        f"{name}: {v['settled']:.3f}"))
-        o.append(S.label(W - R + 10, y + 4, f"{v['settled']:.3f}  n={v['n']}", "start", "tick"))
+        if name in repacked:
+            a = repacked[name]
+            o.append(S.line(sx.to(v["settled"]), y, sx.to(a), y, "--db-u", 1.5, dash="3 3"))
+            o.append(S.dot(sx.to(max(0.85, min(1.15, a))), y, 4.5, "--db-u",
+                           f"{name}, code database repacked: {a:.3f}"))
+            o.append(S.label(W - R + 10, y + 4, f"{v['settled']:.3f} \u2192 {a:.3f}  n={v['n']}",
+                             "start", "tick"))
+        else:
+            o.append(S.label(W - R + 10, y + 4, f"{v['settled']:.3f}  n={v['n']}", "start", "tick"))
     for t in (0.85, 0.9, 0.95, 1.0, 1.05, 1.1, 1.15):
         o.append(S.label(sx.to(t), bot + 22, f"{t:.2f}", "middle", "tick"))
     o.append(S.dot(L + 6, H - 14, 4.5, "--accent"))
     o.append(S.label(L + 16, H - 10, "after all four findings", "start", "tick"))
     o.append(S.dot(L + 186, H - 14, 3, "--green-muted"))
-    o.append(S.label(L + 196, H - 10, "the same configuration, two earlier runs", "start", "tick"))
+    o.append(S.label(L + 196, H - 10, "two earlier runs, same config", "start", "tick"))
+    if repacked:
+        o.append(S.dot(L + 400, H - 14, 4.5, "--db-u"))
+        o.append(S.label(L + 410, H - 10, "code database repacked", "start", "tick"))
     o.append(S.label(L, T - 14, "throughput, state-actor / jochemnet, tests over 1 s  (band = \u00b110%)",
                      "start", "big"))
     return S.svg(W, H, "".join(o))
@@ -747,6 +760,21 @@ def main():
             assert v["settled"] < 0.97, "%s closed; the closing section still calls it open" % c
         else:
             assert 0.9 <= v["settled"] <= 1.1, "%s left the band after all fixes: %.3f" % (c, v["settled"])
+    # The intervention. Finding 4 now says the residual closes when the code database is
+    # repacked; that has to hold on the harness's clock and at cell level, with the control
+    # unmoved, or the section overclaims.
+    IB_ = D["intervention_blocks"]
+    _joc = sorted(IB_["secs"]["joc"]); _sa4 = sorted(IB_["secs"]["sa_4k"]); _sa64 = sorted(IB_["secs"]["sa_64b"])
+    assert _sa4[0] > _joc[-1], "the 4 KB store no longer runs the traced test slower than every jochemnet run"
+    assert _sa64[len(_sa64)//2] <= _joc[len(_joc)//2] + 0.1, \
+        "repacking no longer brings the traced test onto jochemnet's time: %r vs %r" % (_sa64, _joc)
+    assert IB_["pread"]["sa"]["code_mean_b"] > IB_["pread"]["joc"]["code_mean_b"] * 1.2, \
+        "the generated store's code blocks are no longer larger per fetch"
+    for c in ("DIFF_MAX code-exec", "JUMPDEST code-exec"):
+        assert abs(IB_["cells"][c]["after"] - 1) < 0.03 < 1 - IB_["cells"][c]["before"], \
+            "%s did not close under repacking: %r" % (c, IB_["cells"][c])
+    assert abs(IB_["cells"]["SAME_MAX code-exec"]["after"] - IB_["cells"]["SAME_MAX code-exec"]["before"]) < 0.02, \
+        "the SAME_MAX control moved under repacking; the tenancy argument loses its control"
     # Reproducibility. The page now claims dispersion in the short categories is measurement,
     # not store behaviour, which only holds while the replica pair says so: the same store under
     # the same configuration, twice.
@@ -951,8 +979,8 @@ def main():
     hw = M["harness"]
     J0 = D["jit_experiment"]
     w("<p>Four findings, in the order they matter. Each was established by changing one thing "
-      "and re-measuring. Only the first moved the headline; the other three were plausible "
-      "causes that had to be eliminated by intervention.</p>")
+      "and re-measuring. The first moved the headline; the second and third were plausible "
+      "causes eliminated by intervention; the fourth is the residual, and it closes.</p>")
     w("<ol>")
     w("<li><b>The pre-run is promoted into the baseline.</b> One arm replays a pre-run and the "
       "harness promotes the result into the image every test restores from, leaving the "
@@ -1329,7 +1357,8 @@ def main():
              f"marginal cost per additional distinct contract."))
 
     # ------------------------------------------------- finding 4
-    w("<h2>Finding 4: what is left is the reading of bytecode, and nothing else</h2>")
+    w("<h2>Finding 4: what is left is the reading of bytecode, and it is the generator's "
+      "filler code packed around it</h2>")
     gdm = {op: row["EXISTING_CONTRACT_DIFF_MAX"]["thr"] for op, row in AFT["grid"].items()
            if "EXISTING_CONTRACT_DIFF_MAX" in row}
     worst_op = min(gdm, key=gdm.get)
@@ -1383,32 +1412,77 @@ def main():
 
     w("<h3>The mechanism: block tenancy</h3>")
     bx = M["besu_cross_check"]
-    sim_j, sim_s = bx["code_block_sim"]["jochemnet"], bx["code_block_sim"]["state_actor"]
+    IB = D["intervention_blocks"]
+    pj, ps = IB["pread"]["joc"], IB["pread"]["sa"]
     w(f"<p>Both stores key code by its hash, so a contract's neighbours in a data block are "
-      f"random. What differs is who those neighbours are. The snapshot's code database holds "
+      f"random, and what differs is who they are. The snapshot's code database holds "
       f"{cpop['joc']['pct']:.0f}% of accounts with code at a median of {cpop['joc']['p50']} bytes "
       f"and a wide spread; the generated store holds {cpop['sa']['pct']:.0f}% with code, almost "
-      f"all of it a {cpop['sa']['p50']}-byte stub. A maximum-size fixture contract on the "
-      f"snapshot shares its block with about {sim_j['tenants']:.1f} other contracts averaging "
-      f"{sim_j['tenant_bytes']:,} bytes; on the generated store, with about "
-      f"{sim_s['tenants']:.0f} stubs averaging {sim_s['tenant_bytes']} bytes. The fixture "
-      f"bytecode itself compresses to about 1% on both. The stubs do not compress at all, so "
-      f"the block that must be read to fetch one fixture contract is "
-      f"<b>{sim_s['block_comp']:,} bytes</b> on the generated store against "
-      f"<b>{sim_j['block_comp']:,}</b> on the snapshot: {sim_s['block_comp']/sim_j['block_comp']:.2f}&times; "
-      f"per fetch, for a pattern that fetches a new contract on every access.</p>")
-    w(f"<p>Three things support this over the alternatives. The figure was measured by the Besu "
-      f"study with an independent method, packing each store's own records the way RocksDB "
-      f"does, and it brackets the {sa_w/joc_w:.2f}&times; marginal measured here. The same "
-      f"cell shows the same shape on Besu, where state-actor reads "
+      f"all of it a distinct {cpop['sa']['p50']}-byte stub that does not compress. Tracing the "
+      f"client's <code>pread</code> calls through one {esc(IB['test'])} test shows what that does "
+      f"to a fetch:</p>")
+    w("<table><tr><th>inside the measured step</th><th class=n>jochemnet</th>"
+      "<th class=n>state-actor</th></tr>")
+    w(f"<tr><td>account-row reads</td><td class=n>{pj['account_n']:,} &times; {pj['account_mean_b']:,} B</td>"
+      f"<td class=n>{ps['account_n']:,} &times; {ps['account_mean_b']:,} B</td></tr>")
+    w(f"<tr><td>code reads: one block per fetch</td><td class=n>{pj['code_n']:,} &times; "
+      f"<b>{pj['code_mean_b']:,} B</b></td><td class=n>{ps['code_n']:,} &times; "
+      f"<b>{ps['code_mean_b']:,} B</b></td></tr>")
+    w(f"<tr><td>mean latency of a code read</td><td class=n>{pj['code_mean_us']:,} &micro;s</td>"
+      f"<td class=n><b>{ps['code_mean_us']:,} &micro;s</b></td></tr>")
+    w(f"<tr><td>code reads taking 1&ndash;2 ms</td><td class=n>{IB['hist_code_ms']['joc']['1-2']}%</td>"
+      f"<td class=n><b>{IB['hist_code_ms']['sa']['1-2']}%</b></td></tr>")
+    w(f"<tr><td>physical pages per fetch</td><td class=n>{IB['pages_per_fetch']['joc']:.2f}</td>"
+      f"<td class=n><b>{IB['pages_per_fetch']['sa']:.2f}</b></td></tr>")
+    w(f"<caption>Same test, same window. The account row is byte-identical. Every code fetch is "
+      f"one block, and every block is {ps['code_mean_b'] - pj['code_mean_b']} bytes larger on "
+      f"the generated store: the stubs packed around the contract. A larger compressed block "
+      f"crosses a 4 KB page boundary more often, so a quarter of the fetches need a second "
+      f"physical read, which is the {ps['code_mean_us'] - pj['code_mean_us']} &micro;s. Over "
+      f"{ps['code_n']:,} fetches that is the second by which this test runs slower "
+      f"({min(IB['secs']['joc']):.2f}&ndash;{max(IB['secs']['joc']):.2f} s against "
+      f"{min(IB['secs']['sa_4k']):.2f}&ndash;{max(IB['secs']['sa_4k']):.2f} s, five runs each)."
+      f"</caption></table>")
+    rp = IB["repack"]
+    w(f"<p><b>Confirmed by intervention.</b> The generated code database was rewritten with a "
+      f"{rp['block_size']}-byte data block, so every contract sits in a block of its own "
+      f"({rp['blocks']:,} blocks for {rp['entries']:,} entries), and the image promoted. Every key "
+      f"and value is byte-identical, the state root is unchanged, the fixtures are the same. The "
+      f"same test then ran in "
+      f"{', '.join(f'{s:.2f}' for s in IB['secs']['sa_64b'])} s, on the snapshot's side of its "
+      f"own five runs. At cell level, against the same jochemnet run:</p>")
+    w("<table><tr><th>cell</th><th class=n>n</th><th class=n>4 KB blocks</th>"
+      "<th class=n>contract alone in its block</th></tr>")
+    for c in ("DIFF_MAX code-exec", "JUMPDEST code-exec", "SAME_MAX code-exec"):
+        v = IB["cells"][c]
+        cls = " bad" if v["before"] < 0.97 else ""
+        w(f"<tr><td>{esc(c)}</td><td class=n>{v['n']}</td><td class=\"n{cls}\">{v['before']:.3f}</td>"
+          f"<td class=n>{v['after']:.3f}</td></tr>")
+    w("<caption>The two residual cells close to parity; the control, which reuses one contract "
+      "and therefore never paid for its neighbours, does not move. An index or file-count "
+      "mechanism would have predicted the opposite: the index grew a hundredfold and the test "
+      "got faster.</caption></table>")
+    w(f"<p>The same effect has been seen from the other side. state-actor#138 changed the "
+      f"autofill pool's <em>content</em> to tiled bytecode that over-compresses, and the Besu "
+      f"benchmark's distinct-code categories went from 17% slower than mainnet to 46&ndash;51% "
+      f"faster; the same cell on the Besu study's store reads "
       f"{bx['families']['loads_code']['EXISTING_CONTRACT_DIFF_MAX']['median']:.3f} against "
-      f"{bx['families']['loads_code']['EXISTING_CONTRACT_SAME_MAX']['median']:.3f} for the "
-      f"reused contract, so the effect follows the artifact across engines. And it explains why "
-      f"the isolated probe missed it: a single cold lookup measures one block, while the "
-      f"benchmark fetches tens of thousands of fixture contracts per test, each dragging its "
-      f"tenants with it. This is a property of how the generated store's values are packed, "
-      f"not of synthetic state. The decisive test is a rebuild of the generated code column "
-      f"family that isolates large values in their own blocks, then the same cell again.</p>")
+      f"{bx['families']['loads_code']['EXISTING_CONTRACT_SAME_MAX']['median']:.3f} reused. The "
+      f"64-byte block is a diagnostic, not a configuration; the fix is the pool's content, and "
+      f"<a href=\"https://github.com/ethereum/state-actor/pull/{IB['pr']}\">state-actor#{IB['pr']}</a> "
+      f"slices it from real mainnet bytecode at &plusmn;5% of mainnet compressibility. A store "
+      f"built that way has a different genesis state root, so the stateful fixtures must be "
+      f"regenerated with it; that is the remaining step.</p>")
+    tr = IB["transfers"]
+    w(f"<p><b>The other direction: ether transfers.</b> The one cell where the generated store is "
+      f"reproducibly faster was traced the same way, {tr['joc']['secs']} against "
+      f"{tr['sa']['secs']} seconds for 18 blocks of transfers. Account-row and code reads are "
+      f"identical ({tr['joc']['account_n']:,} against {tr['sa']['account_n']:,}; "
+      f"{tr['joc']['code_n']:,} against {tr['sa']['code_n']:,}). The snapshot reads "
+      f"<b>{tr['joc']['statetop_n']:,}</b> top-of-trie node blocks for the state root against the "
+      f"generated store's {tr['sa']['statetop_n']:,}: a migrated mainnet trie costs more to "
+      f"update than a generated one. That is a property of the arms, small, and not a "
+      f"defect.</p>")
     st_ = J["settle"]
     w(f"<p class=note>Two smaller store defects turned up on the way and moved no ratio: the "
       f"generated store's account family was left <code>{esc(st_['sa_account']['before'])}</code> "
@@ -1421,22 +1495,24 @@ def main():
     w("<h2>Where it stands</h2>")
     fc = CL["final_cells"]
     n_par = sum(1 for v in fc.values() if 0.9 <= v["settled"] <= 1.1)
-    w(figure(chart_final_cells(CL),
+    _rep = {c: v["after"] for c, v in D["intervention_blocks"]["cells"].items()}
+    w(figure(chart_final_cells(CL, _rep),
              f"Every cell of the long class after all four findings are applied. "
              f"{n_par} of {len(fc)} sit inside &plusmn;10%; the two that carry the residual, "
              f"distinct-contract code execution at {fc['DIFF_MAX code-exec']['settled']:.3f} and "
              f"jump-destination scanning at {fc['JUMPDEST code-exec']['settled']:.3f}, reproduce "
              f"to within {max(abs(fc[c]['settled']-fc[c]['r1']) for c in ('DIFF_MAX code-exec','JUMPDEST code-exec')):.3f} "
-             f"across three runs of the same configuration."))
+             f"across three runs of the same configuration. The amber marks are the same cells with the "
+             f"code database repacked so no contract shares a block with the filler."))
+    IBc = D["intervention_blocks"]["cells"]
     w(f"<p>The generated state was never {factor:.0f}&times; slower. With placement equalised, "
       f"the store no longer compacting itself under the measurement, and both arms on "
-      f"steady-state code, the tests that can support a claim agree to within a few per cent: "
-      f"account reads within "
-      f"{max((1 - fc['EXISTING_EOA code-exec']['settled'])*100, (1 - fc['EXISTING_EOA BAL/HASH']['settled'])*100):.0f}%, "
-      f"storage and ether transfers with the generated store ahead. What remains is one "
-      f"operation on one access pattern, worth {(1/fc['DIFF_MAX code-exec']['settled'] - 1)*100:.0f}% "
-      f"when every access fetches a contract the store has never served, and it has a named "
-      f"mechanism and a named test.</p>")
+      f"steady-state code, the tests that can support a claim agree to within a few per cent, "
+      f"with the generated store ahead on storage and ether transfers. The one operation that "
+      f"remained slower, fetching a contract the store has never served, is the generator's "
+      f"filler bytecode packed around the fixture contracts; repack the code database so it is "
+      f"not, and that cell reads {IBc['DIFF_MAX code-exec']['after']:.3f}. Four defects, four "
+      f"interventions, no residual that a store property has to carry.</p>")
 
     fl = M["filters"]
 
@@ -1463,8 +1539,8 @@ def main():
       "attributed to the generated store's larger code database. Three direct measurements say "
       "the opposite: reading code is cheaper on that store per lookup, cheaper on a sweep of "
       "distinct maximum-size contracts, and the two stores hold the same number of them. The "
-      "section above now reports the cell with the mechanism that survived and the test that "
-      "would confirm it.</li>")
+      "section above now reports the cell with the mechanism that survived and the intervention "
+      "that confirmed it.</li>")
     ce_e = D["cache_experiment"]
     w(f"<li><b>We had a fourth explanation and it failed too.</b> The control gap looked like "
       f"cross-step cache carry-over, and we pre-registered the prediction that starving the "
@@ -1546,7 +1622,7 @@ def main():
         "fig_seqno_paths": chart_seqno_paths(BM),
         "fig_idle_reads": chart_idle_reads(BM),
         "fig_marginal_cf": chart_marginal_cf(BM),
-        "fig_final_cells": chart_final_cells(CL),
+        "fig_final_cells": chart_final_cells(CL, {c: v["after"] for c, v in D["intervention_blocks"]["cells"].items()}),
     }
     for name, svg in figs.items():
         with open(os.path.join(FIGDIR, name + ".svg"), "w") as fh:
