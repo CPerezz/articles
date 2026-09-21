@@ -2123,3 +2123,50 @@ the residual section is rebuilt on the settled-store attribution; the recommenda
 figures: `fig_seqno_paths` (the move-vs-rewrite diagram), `fig_idle_reads`, `fig_marginal_cf`.
 Five new oracles, including one that fails the build if settling the store ever *does* move
 DIFF_MAX - the section is written around that null result, so it must not be able to rot silently.
+
+## Round 57 - the article is reported by duration class (published)
+
+Plan gated through Plannotator (one revision: the class-mixing errata item was cut on request,
+then approved). No new benchmark runs; everything below is recomputation from result trees on
+disk, via a new `collect_classes.py`.
+
+**The split, measured rather than asserted.** Membership is fixed once from the reference arm of
+the treated pair and applied to every column, so rows do not change population between tables:
+
+| pair | < 1 s | >= 1 s |
+|---|---|---|
+| published | n=676, median 0.805 | n=785, median **0.164** |
+| treated | n=676, median 0.767, 18% within 10% | n=785, median **0.978**, 83% |
+| replica floor (same store twice) | 49% within 10% | **97%** |
+
+Every category still far from parity after treatment is wholly sub-second: CONTROL (440 tests,
+0.12 s median, 0.708), sload_same_key (0.812), warm query (0.896), absent account (0.904). The
+storage category straddles the boundary and reads **1.468 below a second against 1.007 above it**
+- same category, same pair of stores - which is the cheapest evidence the line is real. The
+boundary is not load-bearing either: the long class reads 0.979 / 0.978 / 0.977 at 0.5 / 1 / 2 s.
+
+**Inside the long class the residual is one square**, and this is the taxonomy the article now
+leads with. Account-row opcodes (BALANCE, EXTCODEHASH) sit at 0.971-0.977 under *every* access
+mode, reading at most 1.06x the bytes. Code-loading opcodes match them at 0.980 while the contract
+is reused, fall to 0.926 when the code is only scanned for jump destinations, and to 0.642 when
+every access touches a distinct maximum-size contract - where they read 1.48x the bytes.
+Throughput tracks bytes down the row.
+
+**Structure.** New: "How to read a number on this page" (earns the split from the replica floor
+before using it), "Class 2 in detail", "Class 1: why the sub-second tests are not evidence".
+Defects renamed Findings 1-4. Cut: the mixed-class subset table and the "bracket the truth"
+framing it forced, the 2x2 the family matrix supersedes, the additive two-term model and its
+figure (never embedded since the JIT rewrite, and its bytes predate Finding 3), and the grid's
+absent column (all 110 of its tests are sub-second). Two new figures; `fig_ratio_dots` now marks
+class membership per row. Seven new oracles, each mutation-tested to confirm it refuses
+generation when contradicted.
+
+**One near-miss worth recording.** `main` had moved while this was in progress: the Besu study
+rewrote `collect_nethermind.py` to derive its reference ratios with the `overhead_baseline`
+controls excluded, having previously pooled them (0.962x/2.92x published against 0.908x/10.06x
+measured). A plain rsync of this folder would have silently reverted both their collector and
+their corrected numbers. Caught by diffing the publish checkout against `main` before committing;
+their version was adopted instead, and the cross-client table now reads 6.5x untreated / 0.908x
+treated for Besu. Publishing by folder rsync needs that diff every time.
+
+Live at `5ffec1f`, byte-identical to the local build, zero sibling folders touched.
