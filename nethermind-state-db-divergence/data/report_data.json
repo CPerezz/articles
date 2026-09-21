@@ -1,57 +1,5 @@
 {
  "after": {
-  "additive": {
-   "buckets": [
-    {
-     "excess": 107.626496,
-     "hi": 10,
-     "jocMB": 1.744896,
-     "lo": 0,
-     "n": 543,
-     "saMB": 109.469696,
-     "thr": 0.7341515439918942
-    },
-    {
-     "excess": 179.37203200000002,
-     "hi": 100,
-     "jocMB": 38.2976,
-     "lo": 10,
-     "n": 95,
-     "saMB": 217.088,
-     "thr": 0.8675321248381366
-    },
-    {
-     "excess": 84.979712,
-     "hi": 1000,
-     "jocMB": 518.422528,
-     "lo": 100,
-     "n": 68,
-     "saMB": 702.631936,
-     "thr": 1.0739636351112858
-    },
-    {
-     "excess": 198.9017600000002,
-     "hi": 4000,
-     "jocMB": 2820.251648,
-     "lo": 1000,
-     "n": 280,
-     "saMB": 3109.543936,
-     "thr": 0.979185388407936
-    },
-    {
-     "excess": 936.6650879999997,
-     "hi": null,
-     "jocMB": 5612.806144,
-     "lo": 4000,
-     "n": 475,
-     "saMB": 6845.775872,
-     "thr": 0.9740443150048032
-    }
-   ],
-   "median_excess": 188.12928,
-   "p10": 34.340863999999996,
-   "p90": 1251.344383999999
-  },
   "agreement": {
    "agree": 774,
    "agree_pct": 52.977412731006154,
@@ -4341,153 +4289,7 @@
     "p75": 1.0765095025960347,
     "within10": 57
    }
-  },
-  "worst": [
-   {
-    "category": "ACCOUNT cold existing EOA",
-    "control": false,
-    "cpuX": 5.659472277996357,
-    "family": "test_account_access",
-    "gas": 260,
-    "jocMB": 235.35616,
-    "mode": "EXISTING_EOA",
-    "opcode": "STATICCALL",
-    "saMB": 5062.893568,
-    "thr": 0.03176515610920169
-   },
-   {
-    "category": "ACCOUNT cold existing EOA",
-    "control": false,
-    "cpuX": 5.763208074304608,
-    "family": "test_account_access",
-    "gas": 260,
-    "jocMB": 235.634688,
-    "mode": "EXISTING_EOA",
-    "opcode": "EXTCODEHASH",
-    "saMB": 5116.223488,
-    "thr": 0.034116316113497816
-   },
-   {
-    "category": "ACCOUNT cold existing EOA",
-    "control": false,
-    "cpuX": 5.533256440054008,
-    "family": "test_account_access",
-    "gas": 220,
-    "jocMB": 232.415232,
-    "mode": "EXISTING_EOA",
-    "opcode": "STATICCALL",
-    "saMB": 4295.073792,
-    "thr": 0.03602708152586766
-   },
-   {
-    "category": "ACCOUNT cold existing EOA",
-    "control": false,
-    "cpuX": 3.668965665763528,
-    "family": "test_account_access",
-    "gas": 300,
-    "jocMB": 237.93664,
-    "mode": "EXISTING_EOA",
-    "opcode": "DELEGATECALL",
-    "saMB": 5815.222272,
-    "thr": 0.037516332630013534
-   },
-   {
-    "category": "ACCOUNT cold existing EOA",
-    "control": false,
-    "cpuX": 4.940530281597926,
-    "family": "test_account_access",
-    "gas": 260,
-    "jocMB": 234.856448,
-    "mode": "EXISTING_EOA",
-    "opcode": "CALL",
-    "saMB": 5049.442304,
-    "thr": 0.03802351918027723
-   },
-   {
-    "category": "ACCOUNT cold existing EOA",
-    "control": false,
-    "cpuX": 4.6428928102475675,
-    "family": "test_account_access",
-    "gas": 300,
-    "jocMB": 238.452736,
-    "mode": "EXISTING_EOA",
-    "opcode": "EXTCODEHASH",
-    "saMB": 5859.008512,
-    "thr": 0.0383648076076756
-   },
-   {
-    "category": "ACCOUNT cold existing EOA",
-    "control": false,
-    "cpuX": 3.4610362025778887,
-    "family": "test_account_access",
-    "gas": 300,
-    "jocMB": 238.010368,
-    "mode": "EXISTING_EOA",
-    "opcode": "CALLCODE",
-    "saMB": 5821.825024,
-    "thr": 0.03887897638345797
-   },
-   {
-    "category": "ACCOUNT cold existing EOA",
-    "control": false,
-    "cpuX": 3.0752775572053994,
-    "family": "test_account_access",
-    "gas": 280,
-    "jocMB": 237.068288,
-    "mode": "EXISTING_EOA",
-    "opcode": "STATICCALL",
-    "saMB": 5453.316096,
-    "thr": 0.03903617978830859
-   },
-   {
-    "category": "ACCOUNT cold existing contract",
-    "control": false,
-    "cpuX": 3.944652171291515,
-    "family": "test_account_access",
-    "gas": 300,
-    "jocMB": 229.49888,
-    "mode": "EXISTING_CONTRACT_MINIMAL",
-    "opcode": "EXTCODEHASH",
-    "saMB": 5806.481408,
-    "thr": 0.040151913485887196
-   },
-   {
-    "category": "ACCOUNT cold existing contract",
-    "control": false,
-    "cpuX": 6.632846497401744,
-    "family": "test_account_access",
-    "gas": 300,
-    "jocMB": 231.809024,
-    "mode": "EXISTING_CONTRACT_SAME_MAX",
-    "opcode": "BALANCE",
-    "saMB": 5773.508608,
-    "thr": 0.04064560532797384
-   },
-   {
-    "category": "ACCOUNT cold existing EOA",
-    "control": false,
-    "cpuX": 4.796276900146757,
-    "family": "test_account_access",
-    "gas": 240,
-    "jocMB": 233.709568,
-    "mode": "EXISTING_EOA",
-    "opcode": "EXTCODEHASH",
-    "saMB": 4710.105088,
-    "thr": 0.0407963654006857
-   },
-   {
-    "category": "ACCOUNT cold existing EOA",
-    "control": false,
-    "cpuX": 4.246181221591778,
-    "family": "test_account_access",
-    "gas": 240,
-    "jocMB": 233.955328,
-    "mode": "EXISTING_EOA",
-    "opcode": "EXTCODESIZE",
-    "saMB": 4554.358784,
-    "thr": 0.04112234008927506
-   }
-  ]
+  }
  },
  "bottommost": {
   "attribution": {
@@ -5201,6 +5003,445 @@
     "absent account": 0.9311,
     "existing EOA": 0.9784,
     "existing contract": 0.9697
+   }
+  }
+ },
+ "classes": {
+  "boundary_s": 1.0,
+  "boundary_sensitivity": {
+   "0.5": {
+    "ge": {
+     "max": 2.094,
+     "median": 0.9785,
+     "min": 0.557,
+     "n": 843,
+     "p25": 0.94,
+     "p75": 1.008,
+     "within10": 669
+    },
+    "lt": {
+     "max": 1.74,
+     "median": 0.7451,
+     "min": 0.321,
+     "n": 618,
+     "p25": 0.644,
+     "p75": 0.926,
+     "within10": 105
+    },
+    "n_lt": 618
+   },
+   "1.0": {
+    "ge": {
+     "max": 1.581,
+     "median": 0.9778,
+     "min": 0.557,
+     "n": 785,
+     "p25": 0.94,
+     "p75": 1.002,
+     "within10": 649
+    },
+    "lt": {
+     "max": 2.094,
+     "median": 0.7667,
+     "min": 0.321,
+     "n": 676,
+     "p25": 0.652,
+     "p75": 0.965,
+     "within10": 125
+    },
+    "n_lt": 676
+   },
+   "2.0": {
+    "ge": {
+     "max": 1.514,
+     "median": 0.9765,
+     "min": 0.557,
+     "n": 759,
+     "p25": 0.939,
+     "p75": 0.999,
+     "within10": 635
+    },
+    "lt": {
+     "max": 2.094,
+     "median": 0.7769,
+     "min": 0.321,
+     "n": 702,
+     "p25": 0.66,
+     "p75": 0.997,
+     "within10": 139
+    },
+    "n_lt": 702
+   }
+  },
+  "buckets": {
+   "replica": {
+    "0.2to1s": {
+     "max": 1.285,
+     "median": 0.9742,
+     "min": 0.655,
+     "n": 21,
+     "p25": 0.929,
+     "p75": 0.992,
+     "within10": 14
+    },
+    "1to5s": {
+     "max": 1.042,
+     "median": 1.0181,
+     "min": 0.991,
+     "n": 7,
+     "p25": 0.991,
+     "p75": 1.032,
+     "within10": 7
+    },
+    "ge5s": {
+     "max": 1.105,
+     "median": 0.9974,
+     "min": 0.865,
+     "n": 65,
+     "p25": 0.989,
+     "p75": 1.009,
+     "within10": 63
+    },
+    "lt0.2s": {
+     "max": 1.77,
+     "median": 1.0184,
+     "min": 0.618,
+     "n": 40,
+     "p25": 0.917,
+     "p75": 1.155,
+     "within10": 16
+    }
+   },
+   "treated": {
+    "0.2to1s": {
+     "max": 2.094,
+     "median": 0.8906,
+     "min": 0.53,
+     "n": 281,
+     "p25": 0.764,
+     "p75": 1.059,
+     "within10": 81
+    },
+    "1to5s": {
+     "max": 1.581,
+     "median": 1.0071,
+     "min": 0.715,
+     "n": 82,
+     "p25": 0.975,
+     "p75": 1.068,
+     "within10": 57
+    },
+    "ge5s": {
+     "max": 1.187,
+     "median": 0.9759,
+     "min": 0.557,
+     "n": 703,
+     "p25": 0.938,
+     "p75": 0.997,
+     "within10": 592
+    },
+    "lt0.2s": {
+     "max": 1.482,
+     "median": 0.7005,
+     "min": 0.321,
+     "n": 395,
+     "p25": 0.603,
+     "p75": 0.821,
+     "within10": 44
+    }
+   }
+  },
+  "by_category": {
+   "CONTROL": {
+    "ge1s": null,
+    "lt1s": {
+     "max": 1.394,
+     "median": 0.7079,
+     "min": 0.321,
+     "n": 440,
+     "p25": 0.622,
+     "p75": 0.821,
+     "within10": 49
+    },
+    "median_secs": 0.12,
+    "n": 440,
+    "pct_lt1s": 100.0
+   },
+   "absent account": {
+    "ge1s": null,
+    "lt1s": {
+     "max": 1.482,
+     "median": 0.9037,
+     "min": 0.386,
+     "n": 110,
+     "p25": 0.764,
+     "p75": 1.052,
+     "within10": 34
+    },
+    "median_secs": 0.39,
+    "n": 110,
+    "pct_lt1s": 100.0
+   },
+   "ether transfer": {
+    "ge1s": {
+     "max": 1.581,
+     "median": 1.0131,
+     "min": 0.681,
+     "n": 194,
+     "p25": 0.98,
+     "p75": 1.048,
+     "within10": 160
+    },
+    "lt1s": {
+     "max": 1.244,
+     "median": 1.212,
+     "min": 1.18,
+     "n": 2,
+     "p25": 1.18,
+     "p75": 1.244,
+     "within10": 0
+    },
+    "median_secs": 8.8,
+    "n": 196,
+    "pct_lt1s": 1.0
+   },
+   "existing EOA": {
+    "ge1s": {
+     "max": 1.144,
+     "median": 0.9793,
+     "min": 0.883,
+     "n": 110,
+     "p25": 0.97,
+     "p75": 0.991,
+     "within10": 108
+    },
+    "lt1s": null,
+    "median_secs": 9.44,
+    "n": 110,
+    "pct_lt1s": 0.0
+   },
+   "existing contract": {
+    "ge1s": {
+     "max": 1.138,
+     "median": 0.9682,
+     "min": 0.557,
+     "n": 440,
+     "p25": 0.916,
+     "p75": 0.984,
+     "within10": 343
+    },
+    "lt1s": null,
+    "median_secs": 10.21,
+    "n": 440,
+    "pct_lt1s": 0.0
+   },
+   "sload_same_key": {
+    "ge1s": null,
+    "lt1s": {
+     "max": 1.131,
+     "median": 0.8124,
+     "min": 0.549,
+     "n": 22,
+     "p25": 0.675,
+     "p75": 0.955,
+     "within10": 5
+    },
+    "median_secs": 0.35,
+    "n": 22,
+    "pct_lt1s": 100.0
+   },
+   "storage slot": {
+    "ge1s": {
+     "max": 1.134,
+     "median": 1.0072,
+     "min": 0.939,
+     "n": 41,
+     "p25": 0.977,
+     "p75": 1.078,
+     "within10": 38
+    },
+    "lt1s": {
+     "max": 2.094,
+     "median": 1.4684,
+     "min": 1.029,
+     "n": 25,
+     "p25": 1.198,
+     "p75": 1.691,
+     "within10": 4
+    },
+    "median_secs": 3.53,
+    "n": 66,
+    "pct_lt1s": 37.9
+   },
+   "warm query": {
+    "ge1s": null,
+    "lt1s": {
+     "max": 1.317,
+     "median": 0.8957,
+     "min": 0.552,
+     "n": 77,
+     "p25": 0.839,
+     "p75": 0.971,
+     "within10": 33
+    },
+    "median_secs": 0.42,
+    "n": 77,
+    "pct_lt1s": 100.0
+   }
+  },
+  "class2_families": {
+   "account_row": {
+    "EXISTING_CONTRACT_DIFF_MAX": {
+     "jocMB": 3663.7,
+     "median": 0.971,
+     "n": 22,
+     "saMB": 3896.4
+    },
+    "EXISTING_CONTRACT_JUMPDEST": {
+     "jocMB": 3672.1,
+     "median": 0.9728,
+     "n": 22,
+     "saMB": 3879.4
+    },
+    "EXISTING_CONTRACT_MINIMAL": {
+     "jocMB": 3665.4,
+     "median": 0.9755,
+     "n": 22,
+     "saMB": 3887.4
+    },
+    "EXISTING_CONTRACT_SAME_MAX": {
+     "jocMB": 3663.9,
+     "median": 0.9767,
+     "n": 22,
+     "saMB": 3901.3
+    },
+    "EXISTING_EOA": {
+     "jocMB": 3725.3,
+     "median": 0.9764,
+     "n": 22,
+     "saMB": 3889.1
+    }
+   },
+   "loads_code": {
+    "EXISTING_CONTRACT_DIFF_MAX": {
+     "jocMB": 4289.7,
+     "median": 0.6423,
+     "n": 88,
+     "saMB": 6351.0
+    },
+    "EXISTING_CONTRACT_JUMPDEST": {
+     "jocMB": 5294.4,
+     "median": 0.926,
+     "n": 88,
+     "saMB": 6356.8
+    },
+    "EXISTING_CONTRACT_MINIMAL": {
+     "jocMB": 3597.7,
+     "median": 0.9801,
+     "n": 88,
+     "saMB": 3860.6
+    },
+    "EXISTING_CONTRACT_SAME_MAX": {
+     "jocMB": 3601.0,
+     "median": 0.9803,
+     "n": 88,
+     "saMB": 3847.2
+    },
+    "EXISTING_EOA": {
+     "jocMB": 3654.0,
+     "median": 0.9803,
+     "n": 88,
+     "saMB": 3906.5
+    }
+   }
+  },
+  "class2_modes_dropped": [
+   "NON_EXISTING_ACCOUNT"
+  ],
+  "classes": {
+   "published": {
+    "ge1s": {
+     "max": 1.465,
+     "median": 0.164,
+     "min": 0.032,
+     "n": 785,
+     "p25": 0.067,
+     "p75": 0.387,
+     "within10": 46
+    },
+    "lt1s": {
+     "max": 1.87,
+     "median": 0.8049,
+     "min": 0.344,
+     "n": 676,
+     "p25": 0.675,
+     "p75": 1.013,
+     "within10": 141
+    },
+    "unclassified": 0
+   },
+   "replica": {
+    "ge1s": {
+     "max": 1.105,
+     "median": 0.9979,
+     "min": 0.865,
+     "n": 72,
+     "p25": 0.99,
+     "p75": 1.011,
+     "within10": 70
+    },
+    "lt1s": {
+     "max": 1.77,
+     "median": 0.9817,
+     "min": 0.618,
+     "n": 61,
+     "p25": 0.924,
+     "p75": 1.134,
+     "within10": 30
+    },
+    "unclassified": 0
+   },
+   "settled": {
+    "ge1s": {
+     "max": 1.439,
+     "median": 0.9986,
+     "min": 0.844,
+     "n": 144,
+     "p25": 0.98,
+     "p75": 1.052,
+     "within10": 123
+    },
+    "lt1s": {
+     "max": 2.13,
+     "median": 1.1751,
+     "min": 0.612,
+     "n": 122,
+     "p25": 1.105,
+     "p75": 1.371,
+     "within10": 19
+    },
+    "unclassified": 0
+   },
+   "treated": {
+    "ge1s": {
+     "max": 1.581,
+     "median": 0.9778,
+     "min": 0.557,
+     "n": 785,
+     "p25": 0.94,
+     "p75": 1.002,
+     "within10": 649
+    },
+    "lt1s": {
+     "max": 2.094,
+     "median": 0.7667,
+     "min": 0.321,
+     "n": 676,
+     "p25": 0.652,
+     "p75": 0.965,
+     "within10": 125
+    },
+    "unclassified": 0
    }
   }
  },
