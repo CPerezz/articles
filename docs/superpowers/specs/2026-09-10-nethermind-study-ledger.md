@@ -2170,3 +2170,47 @@ their version was adopted instead, and the cross-client table now reads 6.5x unt
 treated for Besu. Publishing by folder rsync needs that diff every time.
 
 Live at `5ffec1f`, byte-identical to the local build, zero sibling folders touched.
+
+## Round 58 - the article cut to its findings, with the residual's mechanism (published)
+
+Editorial round on request: remove the floor-figure caption, the class-table caption and storage
+note, and the Class 1, Three clients and What to do about it sections; condense the root cause,
+the JIT test and Findings 1-3; make Finding 4 direct; add a closing figure with the results after
+all fixes. Prose ~7,000 -> ~6,100 words, every table and figure kept, errata untouched.
+
+**Correction to the premise as stated.** The request assumed EXTCODESIZE "might be cached".
+It is not: under DIFF_MAX it is the *worst* opcode at 0.626, below CALL at 0.775. The parity
+opcodes are exactly the two that read only the account row, BALANCE 0.969 and EXTCODEHASH 0.972.
+The article says so.
+
+**Correction to my own earlier claim.** "state-actor embeds the address in the code key, so
+nothing dedups" was wrong: both the Nethermind and Besu writers key code by hash
+(`codeSink.put(acc.CodeHash[:], ...)`, `PutCode(codeHash, ...)`). The 134M-vs-2.4M entry count
+is fixture composition - almost every generated account carries a distinct 23-byte stub - not
+keying. Removed from the article.
+
+**The residual's mechanism, cross-checked against the Besu study.** Its `code_block_sim`
+(BlockSim.java, packing each store's own records the way RocksDB does) puts the block that must
+be read to fetch one 24,576-byte fixture contract at **10,718 B on state-actor vs 5,912 B on
+jochemnet** - 1.81x per fetch. The generated store's block is *smaller raw* (36 KB vs 42 KB)
+but *larger compressed*, because its ~32 tenants are 352-byte stubs that do not compress while
+jochemnet's ~2.4 tenants are real bytecode that compresses ~3x. This brackets the 1.69x marginal
+measured here (R56), reconciles the cold single-lookup probe (which measures one block and sees
+the generated store as cheaper), and matches the same cell's shape on Besu: **0.831 DIFF_MAX vs
+0.944 SAME_MAX** for code-loading opcodes. So the effect follows the artifact across two engines.
+(The "faster on Besu" recollection was geth, treated 1.031-1.117x.) Decisive test, not yet run:
+rebuild the generated code CF with large values isolated in their own blocks and re-run the
+cell. Folded into `measured.besu_cross_check`, derived from the sibling data at collect time.
+
+**Ether transfers (state-actor 7.6% faster, reproducibly, while reading 17% more bytes)** are
+the mirror image: trie-node lookups on each store's own keys cost 3.44 blocks / 208 us on
+state-actor against 10.26 / 434 us on jochemnet, and transfers do the most state-root work per
+unit gas. Not written into the article; the per-CF trace on a transfer window is the test.
+
+**Closing figure** `fig_final_cells`: every long-class cell after all four findings, from
+`classes.final_cells`: 12 of 12 inside +/-10%, DIFF_MAX code-exec 0.938 and JUMPDEST code-exec
+0.943 with the two R43 replicas beside them. Four new oracles (simulation direction, Besu split,
+residual pair below 0.97, every other cell in band), mutation-tested.
+
+Live at `355675a`, byte-identical, zero sibling folders touched; `main` had moved again (Besu
+re-cut) and the shared files and cross-client block were checked for drift before publishing.
