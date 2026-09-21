@@ -3534,3 +3534,56 @@ the bloom-filter section. The actual hedge was about 50 words. I also bloated th
 
 The structural changes were the real win and they cost nothing in words. Next time, measure a
 section by its own paragraphs rather than by heading spans before promising a cut.
+
+---
+
+## Round 55 - the article cut to its findings
+
+Anon's direction: strip anything not tied to a finding that was fixed and pushed the two stores
+to equality, stop restating what the figures already show, be direct. Pulled first (one new
+nethermind commit, merged clean, my besu-reference fix intact), then two patch passes, each edit a
+regex span from a unique anchor asserted to match exactly once.
+
+**Prose 4,463 to 3,073 words, 31% shorter.** Every number, figure and oracle intact; the thirteen
+key results (8.1x, 0.117, 0.828, 0.947, 1.002, 0.985, 1.461, 314 of 660, the 1.364 to 1.512
+gradient, 17,597, 0.056, 0.371) asserted present after the cut. Published `5aa2571`, byte-identical
+live.
+
+### Removed outright
+
+- the headline table's caption, which restated the bucket definitions and the control row
+- the write-ahead log play-by-play, drain numbers included, because the treatment figure plots
+  them; the section is now the hypothesis and the three reasons it is dead, 394w to 81w
+- the paragraph deriving a 5.7% floor from the control offset
+- the filter-probe paragraph, superseded by the rerun measuring that mechanism at the throughput
+  level
+- `The same experiment on two clients`, proven by the rerun and stated in one line in the outcome
+- the v1 gas-gradient paragraph, duplicated by the before/after gradient beside it
+
+### Condensed
+
+- `What we ruled out first` to one paragraph plus the bucket list the whole article uses
+- the three-paragraph cf06 argument to one: ratios, the single property behind them, the two
+  PRs, the measured result. Also killed its stale closing line, "whether the throughput follows
+  is a rerun ... and it has not been done".
+- the code-half section from six paragraphs to five shorter ones around the co-tenancy table,
+  dropping the untaken block-size option and two of three redundant compressibility ratios,
+  676w to 357w
+- the intro's chart description to the reasoning it signals rather than the values it plots
+
+### Sections after
+
+| section | words |
+|---|---|
+| The behaviour | 240 |
+| What Besu's own logs and counters say | 214 |
+| What we ruled out first | 59 + 82 |
+| The write-ahead log | 81 |
+| The root cause | 305 |
+| The fix, and the proof | 279 |
+| Why absence proofs cost 50x | 250 |
+| The residual | 253 + 357 |
+| Where this stands | 560 |
+
+The logs section was kept whole: its "an account lookup is one key, so its cost is the cost of
+locating it" paragraph is the premise every mechanism in the article rests on.
