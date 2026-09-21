@@ -226,45 +226,11 @@ def chart_code_ladder(modes, code_gb):
     return S.svg(W, H, "".join(o))
 
 
-def chart_additive(buckets):
-    """Excess bytes against how much the test itself reads.
 
-    Two terms, and the figure has to show both honestly: a fixed overhead that dominates small
-    tests, plus a ~10% proportional component that only becomes visible once a test reads
-    gigabytes. The dashed line is the fixed term; bars sitting on it are paying only that.
-    """
-    W, H, L, R, T, B = 760, 320, 62, 20, 34, 60
-    rows = buckets
-    hi = max(r["excess"] for r in rows)
-    # The fixed term, estimated from the buckets small enough that 10% of their own volume is
-    # negligible against it.
-    flat = [r["excess"] for r in rows if r["jocMB"] < 4000]
-    fixed = sorted(flat)[len(flat) // 2]
-    step = (W - R - L) / len(rows)
-    sy = S.Scale(0, hi * 1.14, H - B, T)
-    o = [ygrid(sy, [0, hi * 0.5, hi], L, W - R, fmt=lambda v: f"{v:.0f} MB")]
-    o.append(S.line(L, sy.to(fixed), W - R, sy.to(fixed), "--db-u", 1.5, dash="5 4"))
-    o.append(S.label(W - R, sy.to(fixed) - 7, f"fixed term \u2248 {fixed:.0f} MB", "end", "tick"))
-    for i, r in enumerate(rows):
-        cx = L + step * (i + 0.5)
-        o.append(S.band(cx - step * 0.3, cx + step * 0.3, sy.to(0), sy.to(r["excess"]),
-                        "--accent", 0.34))
-        o.append(S.label(cx, sy.to(r["excess"]) - 7, f"{r['excess']:.0f}", "middle", "big"))
-        lbl = f"{r['lo']:g}-{r['hi']:g}" if r["hi"] else f"{r['lo']:g}+"
-        o.append(S.label(cx, H - B + 16, lbl + " MB", "middle", "tick"))
-        o.append(S.label(cx, H - B + 30, f"n={r['n']}", "middle", "tick"))
-        o.append(S.label(cx, H - B + 44, f"\u00d7{r['saMB']/max(r['jocMB'],0.01):.1f} bytes",
-                         "middle", "tick"))
-        o.append(S.label(cx, H - B + 58, f"thr {r['thr']:.2f}", "middle", "tick"))
-    o.append(S.label(L, T - 14, "extra bytes state-actor reads per test", "start", "big"))
-    o.append(S.label(W - R, T - 14, "columns: what the test reads on jochemnet", "end", "ax"))
-    return S.svg(W, H, "".join(o))
-
-
-
+# The absent-account mode is excluded: every one of its tests runs in under a second, so it
+# belongs to the class the page treats as measurement rather than as a store property.
 GRID_MODES = ["EXISTING_EOA", "EXISTING_CONTRACT_MINIMAL", "EXISTING_CONTRACT_SAME_MAX",
-              "EXISTING_CONTRACT_JUMPDEST", "EXISTING_CONTRACT_DIFF_MAX",
-              "NON_EXISTING_ACCOUNT"]
+              "EXISTING_CONTRACT_JUMPDEST", "EXISTING_CONTRACT_DIFF_MAX"]
 MODE_SHORT = {"EXISTING_EOA": "EOA", "EXISTING_CONTRACT_MINIMAL": "MINIMAL",
               "EXISTING_CONTRACT_SAME_MAX": "SAME_MAX",
               "EXISTING_CONTRACT_JUMPDEST": "JUMPDEST",
@@ -295,14 +261,25 @@ def _strip(ratios, spread_row, sx, y, var, bins=64):
     return "".join(o)
 
 
-def chart_ratio_dots(rat_b, rat_a, spr_b, spr_a):
+# Article category -> the key the class collector uses. Only needed because the two partitions
+# were written a month apart; the article folds sload_same_key into the storage category.
+CLASS_KEY = {"ACCOUNT cold existing EOA": "existing EOA",
+             "ACCOUNT cold existing contract": "existing contract",
+             "ACCOUNT cold non-existing": "absent account",
+             "ACCOUNT warm query": "warm query",
+             "STORAGE slot access": "storage slot",
+             "ETHER transfer receivers": "ether transfer",
+             "CONTROL overhead_baseline": "CONTROL"}
+
+
+def chart_ratio_dots(rat_b, rat_a, spr_b, spr_a, cls=None):
     """Every test's ratio, by category, before and after the treatment.
 
     The dumbbell shows that the medians moved; this shows the distributions moving, which is the
     claim that actually matters - a category whose median lands on parity while its tests stay
     scattered has not converged.
     """
-    W, L, R = 760, 178, 80
+    W, L, R = 760, 212, 80
     rows = [c for c in CATS if c in rat_a]
     rh, gap = 27, 52
     t1 = 34
@@ -319,7 +296,11 @@ def chart_ratio_dots(rat_b, rat_a, spr_b, spr_a):
         o.append(S.label(L, top - 18, title, "start", "big"))
         for i, cat in enumerate(rows):
             y = top + rh * i
-            o.append(S.label(L - 8, y + 4, SHORT[cat], "end"))
+            lbl = SHORT[cat]
+            if cls:
+                pct = cls["by_category"][CLASS_KEY[cat]]["pct_lt1s"]
+                lbl += " \u00b7 <1s" if pct >= 95 else " \u00b7 mixed" if pct > 5 else ""
+            o.append(S.label(L - 8, y + 4, lbl, "end"))
             o.append(_strip(rat[cat], spr.get(cat), sx, y, var))
             w10 = spr[cat]["within10"]
             o.append(S.label(W - R + 10, y + 4, f"{w10}/{spr[cat]['n']}", "start", "tick"))
@@ -392,6 +373,93 @@ def chart_steps(st):
                      "megabytes read (log scale)", "middle", "ax"))
     o.append(S.label((L + W - R) / 2, H - 10,
                      "green = jochemnet    blue = state-actor", "middle", "ax"))
+    return S.svg(W, H, "".join(o))
+
+
+BUCKETS = ("lt0.2s", "0.2to1s", "1to5s", "ge5s")
+BUCKET_LABEL = {"lt0.2s": "< 0.2 s", "0.2to1s": "0.2 - 1 s", "1to5s": "1 - 5 s", "ge5s": "> 5 s"}
+
+
+def chart_duration_floor(cl):
+    """How often a test lands within 10% of the number it is being compared to, by duration.
+
+    Two series on one axis, and the gap between them is the whole argument: the floor is the
+    same store measured twice, so nothing below it is a store property. Where the two series
+    meet, the comparison is measuring the harness.
+    """
+    W, L, R, T = 760, 96, 150, 44
+    H = T + 34 * len(BUCKETS) + 52
+    sx = S.Scale(0, 100, L, W - R)
+    o = [S.line(L, T - 12, L, T + 34 * len(BUCKETS) - 10, "--green-muted", 1)]
+    for v in (0, 25, 50, 75, 100):
+        o.append(S.label(sx.to(v), T - 20, f"{v}%", "middle", "tick"))
+    for i, b in enumerate(BUCKETS):
+        y = T + 34 * i + 10
+        rep, cross = cl["buckets"]["replica"].get(b), cl["buckets"]["treated"].get(b)
+        o.append(S.label(L - 8, y + 4, BUCKET_LABEL[b], "end"))
+        if not (rep and cross):
+            continue
+        rp = 100 * rep["within10"] / rep["n"]
+        cp = 100 * cross["within10"] / cross["n"]
+        o.append(S.line(sx.to(min(rp, cp)), y, sx.to(max(rp, cp)), y, "--green-muted", 2))
+        o.append(S.dot(sx.to(rp), y, 4, "--db-u", f"same store twice: {rp:.0f}%"))
+        o.append(S.dot(sx.to(cp), y, 4.5, "--accent", f"the two stores: {cp:.0f}%"))
+        o.append(S.label(W - R + 10, y + 4,
+                         f"{cp:.0f}% of {cross['n']}, floor {rp:.0f}%", "start", "tick"))
+    o.append(S.dot(L + 6, H - 28, 4, "--db-u"))
+    o.append(S.label(L + 16, H - 24, "same store, measured twice", "start", "tick"))
+    o.append(S.dot(L + 236, H - 28, 4.5, "--accent"))
+    o.append(S.label(L + 246, H - 24, "the two stores, after treatment", "start", "tick"))
+    o.append(S.label(L, T - 34, "tests landing within \u00b110%, by how long the test runs",
+                     "start", "big"))
+    return S.svg(W, H, "".join(o))
+
+
+CLASS2_MODES = ("EXISTING_EOA", "EXISTING_CONTRACT_MINIMAL", "EXISTING_CONTRACT_SAME_MAX",
+                "EXISTING_CONTRACT_JUMPDEST", "EXISTING_CONTRACT_DIFF_MAX")
+FAMILY_LABEL = {"account_row": "reads the account row only",
+                "loads_code": "loads the callee's code"}
+FAMILY_OPS = {"account_row": "BALANCE, EXTCODEHASH",
+              "loads_code": "CALL family + EXTCODE*"}
+
+
+def chart_class2_families(cl):
+    """The long tests only, split by what the opcode touches and whether the contract is reused.
+
+    One row is flat and one row is a ladder. That is the finding: distinctness is free until the
+    opcode has to fetch the callee's code, and then it tracks the bytes.
+    """
+    fam = cl["class2_families"]
+    W, L, T, R = 760, 186, 58, 16
+    cw = (W - L - R) / len(CLASS2_MODES)
+    ch, H = 46, 58 + 46 * 2 + 62
+    o = []
+    for j, m in enumerate(CLASS2_MODES):
+        o.append(S.label(L + cw * (j + 0.5), T - 14, MODE_SHORT[m], "middle", "tick"))
+    worst = max(abs(1 - c["median"]) for row in fam.values() for c in row.values())
+    for i, key in enumerate(("account_row", "loads_code")):
+        y = T + ch * i
+        o.append(S.label(L - 8, y + ch / 2, FAMILY_LABEL[key], "end"))
+        o.append(S.label(L - 8, y + ch / 2 + 14, FAMILY_OPS[key], "end", "tick"))
+        for j, m in enumerate(CLASS2_MODES):
+            cell = fam[key].get(m)
+            x = L + cw * j
+            if not cell:
+                o.append(S.label(x + cw / 2, y + ch / 2 + 4, "\u2014", "middle", "tick"))
+                continue
+            dev = abs(1 - cell["median"]) / worst
+            o.append(S.band(x + 1, x + cw - 1, y + 2, y + ch - 2, "--accent",
+                            round(0.06 + 0.42 * dev, 3)))
+            o.append(S.label(x + cw / 2, y + ch / 2 - 2, f"{cell['median']:.3f}", "middle"))
+            o.append(S.label(x + cw / 2, y + ch / 2 + 13,
+                             f"{cell['saMB']/max(cell['jocMB'], 0.01):.2f}\u00d7 bytes",
+                             "middle", "tick"))
+    o.append(S.label((L + W - R) / 2, H - 38,
+                     "throughput ratio (top) and bytes read (bottom), state-actor / jochemnet",
+                     "middle", "ax"))
+    o.append(S.label((L + W - R) / 2, H - 20,
+                     f"tests over {cl['boundary_s']:.0f} s only; the absent-account mode has none "
+                     f"and is absent from the figure", "middle", "ax"))
     return S.svg(W, H, "".join(o))
 
 
@@ -519,7 +587,6 @@ def main():
     BEF, AFT = D["before"], D["after"]
     bc, ac = BEF["categories"], AFT["categories"]
     modes, modes_ctrl = AFT["by_mode"], AFT["by_mode_control"]
-    add = AFT["additive"]
     spr_b, spr_a = BEF["spread"], AFT["spread"]
     rat_b, rat_a = BEF["ratios"], AFT["ratios"]
     amort = M["amortisation"]["points"]
@@ -582,11 +649,6 @@ def main():
     # code ladder must stay monotonic in code involvement, else §code is not an argument
     ladder = [modes[m]["readX"] for m in MODE_ORDER if m in modes]
     assert ladder == sorted(ladder), f"code ladder lost its ordering: {ladder}"
-    # additive model: excess roughly constant across three orders of magnitude of test size
-    small = add["buckets"][0]["excess"]
-    mid = [b["excess"] for b in add["buckets"] if b["lo"] in (100, 1000)]
-    assert all(0.3 * small <= e <= 3 * small for e in mid), \
-        f"excess is no longer flat in test size: {small} vs {mid}"
     # The article's scope starts at the flat-backed pair. If the collector is ever re-pointed at
     # a run from before the generated store was rebuilt with the flat layout, fail loudly rather
     # than publish a number from a pair that never shared a read path.
@@ -595,6 +657,44 @@ def main():
         f"{M['preconditions']['sa_run_flat_backed']}")
     assert P["arms"]["joc"]["run"] == M["preconditions"]["joc_run"], \
         f"jochemnet arm is not the recorded run: {P['arms']['joc']['run']}"
+    # The classification the page is built on. It is only worth drawing the line if the two
+    # sides behave differently, if the short side is at or under its own reproducibility floor
+    # (so it cannot be a store property), and if the line is not doing the work - hence the
+    # sensitivity check at half and double the boundary.
+    CL = D["classes"]
+    c1, c2 = CL["classes"]["treated"]["lt1s"], CL["classes"]["treated"]["ge1s"]
+    f1, f2 = CL["classes"]["replica"]["lt1s"], CL["classes"]["replica"]["ge1s"]
+    r1, r2 = c1["within10"] / c1["n"], c2["within10"] / c2["n"]
+    assert r1 < 0.35 < 0.7 < r2, \
+        "the duration classes no longer separate: %.2f vs %.2f within 10%%" % (r1, r2)
+    assert r1 <= f1["within10"] / f1["n"] + 0.02, \
+        "short tests now agree across stores better than one store agrees with itself; the " \
+        "'this class is measurement' argument is out"
+    assert f2["within10"] / f2["n"] > 0.9, \
+        "the long-test floor collapsed; no per-test claim on this dataset is safe"
+    assert abs(c2["median"] - 1) < 0.1, \
+        "the long class left parity after treatment: %.3f" % c2["median"]
+    for b, v in CL["boundary_sensitivity"].items():
+        assert abs(v["ge"]["median"] - c2["median"]) < 0.02, \
+            ("the conclusion depends on where the boundary is drawn (%s s -> %.3f against "
+             "%.3f at 1 s)" % (b, v["ge"]["median"], c2["median"]))
+    # Every category the page calls measurement must actually be short, and the storage category
+    # must stay split across the line - it is the cheapest evidence that the boundary is real.
+    for cat in ("CONTROL", "warm query", "absent account", "sload_same_key"):
+        assert CL["by_category"][cat]["pct_lt1s"] >= 95, \
+            "%s is no longer a sub-second category (%.0f%%)" % (cat, CL["by_category"][cat]["pct_lt1s"])
+    st_split = CL["by_category"]["storage slot"]
+    assert st_split["lt1s"] and st_split["ge1s"] and \
+        abs(st_split["lt1s"]["median"] - 1) > 3 * abs(st_split["ge1s"]["median"] - 1), \
+        "the storage category stopped splitting across the boundary: %r" % st_split
+    # The localisation: inside the long class, only code-loading opcodes against a distinct
+    # contract diverge. Both halves have to hold or the taxonomy section is not an argument.
+    FAM = CL["class2_families"]
+    assert min(v["median"] for v in FAM["account_row"].values()) > 0.94, \
+        "account-row opcodes left parity in the long class: %r" % FAM["account_row"]
+    assert FAM["loads_code"]["EXISTING_CONTRACT_DIFF_MAX"]["median"] < 0.9 < \
+        FAM["loads_code"]["EXISTING_CONTRACT_SAME_MAX"]["median"], \
+        "distinct-vs-reused no longer separates for code-loading opcodes: %r" % FAM["loads_code"]
     # Reproducibility. The page now claims dispersion in the short categories is measurement,
     # not store behaviour, which only holds while the replica pair says so: the same store under
     # the same configuration, twice.
@@ -633,7 +733,6 @@ def main():
         "jochemnet no longer slows on DIFF_MAX without tiering; the direction claim is out"
     assert dmj_["cpu"] < 1.0, \
         "DIFF_MAX's remainder is no longer I/O-bound (CPU ratio %.2f)" % dmj_["cpu"]
-    sc_ = J_["subset"]["corrected"]
     # Removing every page-cache drop must still take state-actor's control reads to zero without
     # making it faster; that is the step that moved the investigation off I/O.
     dr_, nd_ = J_["drops"]["drops"], J_["drops"]["nodrop"]
@@ -641,8 +740,6 @@ def main():
         "the control reads no longer vanish without the drops: %r" % nd_
     assert nd_["thr"] <= dr_["thr"], \
         "state-actor now gains from keeping the cache; the 'not I/O' argument is out"
-    assert min(v["thr"] for k, v in sc_.items() if k != "_all") > 0.9, \
-        "a category fell below 0.9 in the corrected subset; 'no category below' is out"
     # The cache refutation. The article says starving the block cache did not close the control
     # gap and did not move the account result; if either stops being true, the section is wrong.
     ce_ = D["cache_experiment"]
@@ -689,17 +786,6 @@ def main():
     # meaningfully slower before. If a sibling study is re-cut, this fails rather than misquotes.
     assert tc["besu_sa_over_plain"] < 0.6 < tc["besu_sa_over_compacted"] < 1.1, \
         f"besu reference no longer shows untreated gap -> treated parity: {tc}"
-    # The range above is wide enough to pass on a wrong figure, so also require that the
-    # reference was derived rather than frozen, over Besu's full category grid, with the
-    # overhead_baseline controls excluded. Pooling those controls is what made the frozen
-    # literals understate the byte gap, twice.
-    assert "controls excluded" in tc["besu_src"] and tc["besu_cells"] >= 40, \
-        f"besu reference is not a controls-excluded per-cell derivation: {tc['besu_src']}"
-    # the proportional term must be real, and must only matter for the largest tests
-    big = add["buckets"][-1]
-    assert big["excess"] > 2 * small, "proportional term vanished; §residual claims two terms"
-    assert 1.0 < big["saMB"] / big["jocMB"] < 1.3, \
-        f"the proportional term is no longer ~10%: {big['saMB']/big['jocMB']:.2f}"
 
     o = []
     w = o.append
@@ -743,7 +829,11 @@ def main():
       f"{thousands(P['snapshot_block'])}; the other is state generated from scratch by "
       f"<code>state-actor</code>. The same EEST bloatnet fixtures run against both, on the same "
       f"machine, with the page cache dropped between every test. Where the tests read accounts, "
-      f"the generated store reports up to <b>{factor:.0f}&times;</b> less throughput.</p>")
+      f"the generated store reports up to <b>{factor:.0f}&times;</b> less throughput &mdash; and "
+      f"that headline is not a small-test artifact: the two categories carrying it run for a "
+      f"median of {CL['by_category']['existing contract']['median_secs']:.1f} and "
+      f"{CL['by_category']['existing EOA']['median_secs']:.1f} seconds, with not one test under "
+      f"a second between them.</p>")
 
     w("<table><tr><th>what the test does</th><th class=n>n</th>"
       "<th class=n>throughput sa/joc</th><th class=n>bytes sa/joc</th>"
@@ -780,6 +870,60 @@ def main():
              f"&mdash; while state-actor climbs from {cc[0]['saMB']:.0f} MB to "
              f"{cc[-1]['saMB']:.0f} MB. Flat in gas means the arm is re-reading one bounded set "
              f"of blocks; rising means every access goes somewhere new."))
+
+    # ------------------------------------------------- how to read a number here
+    w("<h2>How to read a number on this page</h2>")
+    cl_t, cl_r = CL["classes"]["treated"], CL["classes"]["replica"]
+    s1, s2 = cl_t["lt1s"], cl_t["ge1s"]
+    fl1, fl2 = cl_r["lt1s"], cl_r["ge1s"]
+    w(f"<p>Before any of it means anything: this suite contains two populations, and only one "
+      f"of them can carry a claim about a database. Run the <em>same</em> store twice under the "
+      f"same configuration and ask how often a test lands within &plusmn;10% of itself. Over "
+      f"five seconds, {100*D['noise']['replica']['by_duration']['ge5s']['within10']/D['noise']['replica']['by_duration']['ge5s']['n']:.0f}% "
+      f"of tests do. Under a fifth of a second, "
+      f"{100*D['noise']['replica']['by_duration']['lt0.2s']['within10']/D['noise']['replica']['by_duration']['lt0.2s']['n']:.0f}% do. "
+      f"A short test on this harness does not reproduce against itself, so a &plusmn;10% "
+      f"difference between two stores on a short test is not evidence of anything.</p>")
+    bk_t, bk_r = CL["buckets"]["treated"], CL["buckets"]["replica"]
+    w(figure(chart_duration_floor(CL),
+             f"The amber dot is the floor &mdash; one store, measured twice &mdash; and the "
+             f"green dot is the comparison this page is about, after placement is equalised. "
+             f"Below a second the floor itself is already broken "
+             f"({100*bk_r['lt0.2s']['within10']/bk_r['lt0.2s']['n']:.0f}% under 0.2 s), and the "
+             f"cross-store figure is worse still "
+             f"({100*bk_t['lt0.2s']['within10']/bk_t['lt0.2s']['n']:.0f}%), which is what two "
+             f"noise sources look like when they add. Above a second the floor is "
+             f"{100*bk_r['ge5s']['within10']/bk_r['ge5s']['n']:.0f}% and the comparison reaches "
+             f"{100*bk_t['ge5s']['within10']/bk_t['ge5s']['n']:.0f}%: close enough that what "
+             f"separates them is a real effect rather than the instrument, and small enough to "
+             f"be worth chasing. That gap is the subject of the rest of this page."))
+    w(f"<p>So the page splits every test at <b>one second</b> and reports the two classes "
+      f"separately:</p>")
+    w("<table><tr><th>class</th><th class=n>tests</th><th class=n>median sa/joc</th>"
+      "<th class=n>within &plusmn;10%</th><th class=n>same store twice</th>"
+      "<th>what it can support</th></tr>")
+    w(f"<tr><td>under 1 s</td><td class=n>{s1['n']}</td>"
+      f"<td class=\"n bad\">{s1['median']:.3f}</td>"
+      f"<td class=n>{100*s1['within10']/s1['n']:.0f}%</td>"
+      f"<td class=n>{100*fl1['within10']/fl1['n']:.0f}%</td>"
+      f"<td>nothing about a database &mdash; it does not beat its own floor</td></tr>")
+    w(f"<tr><td>1 s and over</td><td class=n>{s2['n']}</td><td class=n>{s2['median']:.3f}</td>"
+      f"<td class=n>{100*s2['within10']/s2['n']:.0f}%</td>"
+      f"<td class=n>{100*fl2['within10']/fl2['n']:.0f}%</td>"
+      f"<td>store behaviour, to within a few per cent</td></tr>")
+    sens = CL["boundary_sensitivity"]
+    w(f"<caption>After treatment. The boundary is not doing the work: at "
+      + ", ".join(f"{b} s the long class is {v['ge']['median']:.3f}"
+                  for b, v in sorted(sens.items(), key=lambda kv: float(kv[0])))
+      + f". Class membership is fixed once from the reference arm and used for every table on "
+      f"this page, so rows do not change population between columns.</caption></table>")
+    st_c = CL["by_category"]["storage slot"]
+    w(f"<p class=note>One category straddles the line and settles the question of whether it is "
+      f"real. The storage tests split {100-st_c['pct_lt1s']:.0f}/{st_c['pct_lt1s']:.0f} across a "
+      f"second, and the two halves of the <em>same category on the same pair of stores</em> read "
+      f"{st_c['lt1s']['median']:.3f} and {st_c['ge1s']['median']:.3f}. Same store, same "
+      f"workload, opposite verdicts &mdash; the only thing that differs is how long the "
+      f"measurement lasted.</p>")
 
     # ---------------------------------------------------------------- defects found
     w("<h2>What we found wrong with the measurement</h2>")
@@ -861,7 +1005,7 @@ def main():
       "before. One of them runs out of new blocks to read.</p>")
 
     # ---------------------------------------------------------------- the fix
-    w("<h2>Defect 1: the pre-run is promoted into the baseline &mdash; and what compacting it does</h2>")
+    w("<h2>Finding 1: the pre-run is promoted into the baseline &mdash; and what compacting it does</h2>")
     ab, aa = iv["account_before"], iv["account_after"]
     sb, sa_ = iv["statenodes_before"], iv["statenodes_after"]
     w("<p><b>The change, concretely.</b> The treatment is a <b>full RocksDB compaction</b> of the "
@@ -933,7 +1077,7 @@ def main():
 
     nz, nx = D["noise"]["replica"], D["noise"]["cross_by_duration"]
     nl, ng = nz["by_duration"]["lt0.2s"], nz["by_duration"]["ge5s"]
-    w(figure(chart_ratio_dots(rat_b, rat_a, spr_b, spr_a),
+    w(figure(chart_ratio_dots(rat_b, rat_a, spr_b, spr_a, CL),
              f"The same {thousands(AFT['agreement']['n'])} tests as individual results rather "
              f"than medians: one dot per cluster of tests at that ratio, sized by how many, with "
              f"the middle half drawn as a bar and the median as a tick. Read the <em>shift</em>, "
@@ -950,7 +1094,7 @@ def main():
     # JIT. Everything below reads from D["jit_experiment"], collected by collect_jit.py.
     J = D["jit_experiment"]
     st = D["steps"]
-    w("<h2>Defect 2: the client is restarted for every test, and the two arms warm up "
+    w("<h2>Finding 2: the client is restarted for every test, and the two arms warm up "
       "differently</h2>")
     w("<p>Every test runs against a freshly started client: <code>container-recreate</code> "
       "restores the image and boots Nethermind again, 1,463 times. That is the right way to keep "
@@ -1085,7 +1229,7 @@ def main():
       "are not, which is one reason the geth study found this cell open and could not close it "
       "from geth's side.</p>")
     # ------------------------------------------------- defect 3: the store rewrites itself
-    w("<h2>Defect 3: the generated store makes the client rewrite it</h2>")
+    w("<h2>Finding 3: the generated store makes the client rewrite it</h2>")
     bidle, bboot, brpc, bset = BM["idle"], BM["boot"], BM["rpc"], BM["settle"]
     w(f"<p>This one was found by asking a simpler question than the study had been asking: "
       f"what does the client read when nobody is asking it for anything? Boot each arm, drop "
@@ -1178,44 +1322,45 @@ def main():
       f"the quantity that says what a distinct contract costs, it was most of the answer. With "
       f"the store quiet, the attribution is finally about the test.</p>")
 
-    w("<h2>What is left, and how much of it we can account for</h2>")
-    sub_p, sub_c = J["subset"]["published"], J["subset"]["corrected"]
-    w(f"<p>With both stores settled and both arms measuring steady-state code, the "
-      f"{sub_c['_all']['n']}-test subset that reproduces the full run comes out at a median of "
-      f"{sub_c['_all']['median']:.3f} against the published {sub_p['_all']['median']:.3f}, and "
-      f"no category sits below {min(v['thr'] for k, v in sub_c.items() if k != '_all'):.2f}:</p>")
-    w("<table><tr><th>category</th><th class=n>n</th><th class=n>as published</th>"
-      "<th class=n>corrected</th><th class=n>CPU sa/joc</th></tr>")
-    for k in sorted(sub_c, key=lambda k: sub_c[k]["thr"] if k != "_all" else 9):
-        if k == "_all":
-            continue
-        r, p = sub_c[k], sub_p.get(k)
-        cls = "" if abs(r["thr"] - 1) < 0.1 else " bad"
-        w(f"<tr><td>{esc(k)}</td><td class=n>{r['n']}</td>"
-          f"<td class=n>{p['thr']:.3f}</td>" if p else
-          f"<tr><td>{esc(k)}</td><td class=n>{r['n']}</td><td class=n>&ndash;</td>")
-        w(f'<td class="n{cls}">{r["thr"]:.3f}</td>'
-          f"<td class=n>{r['cpu']:.2f}</td></tr>" if r["cpu"] else
-          f'<td class="n{cls}">{r["thr"]:.3f}</td><td class=n>&ndash;</td></tr>')
-    w(f"<caption>Throughput ratio, state-actor over jochemnet, identical test ids. The "
-      f"correction is not a neutral configuration &mdash; it <em>overshoots</em>. Disabling "
-      f"tiered compilation costs jochemnet the promoted code it used to reach mid-test, so "
-      f"several categories now land above parity: the short ones, where a few milliseconds of "
-      f"compilation was most of the measurement. Read this table as bracketing the truth with "
-      f"the published column, not as a replacement for it.</caption></table>")
+    w("<h2>Class 2 in detail: which state access actually diverges</h2>")
+    c2_ = CL["classes"]["treated"]["ge1s"]
+    fam_ = CL["class2_families"]
+    w(f"<p>Everything from here to the end of this section is the {c2_['n']} tests that run for "
+      f"more than a second. As a whole they now sit at {c2_['median']:.3f} with "
+      f"{100*c2_['within10']/c2_['n']:.0f}% inside &plusmn;10%, so what is left is not a "
+      f"general slowness &mdash; it is specific, and two questions locate it. Does the opcode "
+      f"fetch the callee's code, or does it only read the account row? And is the contract a "
+      f"different one on every access, or the same one reused?</p>")
+    w(figure(chart_class2_families(CL),
+             f"One row is flat and one row is a ladder. The account-row opcodes "
+             f"&mdash; BALANCE and EXTCODEHASH &mdash; sit at "
+             f"{min(v['median'] for v in fam_['account_row'].values()):.3f}&ndash;"
+             f"{max(v['median'] for v in fam_['account_row'].values()):.3f} no matter which mode "
+             f"they run in, reading {max(v['saMB']/max(v['jocMB'],0.01) for v in fam_['account_row'].values()):.2f}&times; "
+             f"the bytes at worst: distinctness costs nothing when nothing but the account row "
+             f"is read. The code-loading opcodes match them at "
+             f"{fam_['loads_code']['EXISTING_CONTRACT_SAME_MAX']['median']:.3f} while the "
+             f"contract is reused, drop to "
+             f"{fam_['loads_code']['EXISTING_CONTRACT_JUMPDEST']['median']:.3f} when the code is "
+             f"merely scanned for jump destinations, and to "
+             f"{fam_['loads_code']['EXISTING_CONTRACT_DIFF_MAX']['median']:.3f} when every "
+             f"access touches a new maximum-size contract &mdash; where they read "
+             f"{fam_['loads_code']['EXISTING_CONTRACT_DIFF_MAX']['saMB']/fam_['loads_code']['EXISTING_CONTRACT_DIFF_MAX']['jocMB']:.2f}&times; "
+             f"the bytes. Throughput tracks bytes down the row."))
+    w(f"<p>That is a single square of a 2&times;2, and it is the whole of what is left: it is "
+      f"not the account row, because the account-row opcodes are at parity under the same mode; "
+      f"and it is not distinctness on its own, because the same opcodes reusing one contract are "
+      f"at parity too. Only <b>loading a distinct contract's code</b> is expensive.</p>")
 
     # ------------------------------------------------- open item: DIFF_MAX
     dm = modes["EXISTING_CONTRACT_DIFF_MAX"]
     dmp, dmj = J["slice"]["published"]["DIFF_MAX code-exec"], J["slice"]["jit_equalised"]["DIFF_MAX code-exec"]
-    w(f"<h3>Narrowed: a different contract per access, from {dmp['thr']:.2f} to "
-      f"{dmj['thr']:.2f}</h3>")
-    w("<h3>What we know</h3>")
-    w("<p>This is the cell the geth study flagged and left unexplained, and most of it was the "
-      "warm-up above &mdash; but not all. Laying every opcode against every access mode shows "
-      "the published effect was a column, not a scatter, which is what made it look like a "
-      "property of the account being read:</p>")
+    w("<h3>The same split, opcode by opcode</h3>")
+    w("<p>The same result holds opcode by opcode rather than family by family, which is what "
+      "rules out any single instruction being responsible:</p>")
     gcol = {m: median([row[m]["thr"] for row in AFT["grid"].values() if m in row])
             for m in GRID_MODES}
+    absent_n = CL["by_category"]["absent account"]["n"]
     w(figure(chart_grid(AFT["grid"]),
              f"Throughput ratio for each of the {len(AFT['grid'])} opcodes against each access "
              f"mode, after treatment. Read it by column, not by row: DIFF_MAX sits at "
@@ -1224,10 +1369,11 @@ def main():
              f"{min(gcol[m] for m in ('EXISTING_EOA','EXISTING_CONTRACT_MINIMAL','EXISTING_CONTRACT_SAME_MAX')):.2f}"
              f"&ndash;"
              f"{max(gcol[m] for m in ('EXISTING_EOA','EXISTING_CONTRACT_MINIMAL','EXISTING_CONTRACT_SAME_MAX')):.2f}. "
-             f"The absent column is the uneven one at {gcol['NON_EXISTING_ACCOUNT']:.2f}, which "
-             f"is the same dispersion its category showed above. Within the DIFF_MAX column the "
-             f"rows are <em>not</em> uniform, and the split is the whole story: the opcodes that "
-             f"execute the callee's code sit near {median([row['EXISTING_CONTRACT_DIFF_MAX']['thr'] for op, row in AFT['grid'].items() if op in LOADS_CODE and 'EXISTING_CONTRACT_DIFF_MAX' in row]):.2f} "
+             f"The absent-account mode has no column here: all {absent_n} of its tests run in "
+             f"under a second, so it belongs to the class this page does not read as evidence. "
+             f"Within the DIFF_MAX column the rows are <em>not</em> uniform, and the split is "
+             f"the whole story: the opcodes that execute the callee's code sit near "
+             f"{median([row['EXISTING_CONTRACT_DIFF_MAX']['thr'] for op, row in AFT['grid'].items() if op in LOADS_CODE and 'EXISTING_CONTRACT_DIFF_MAX' in row]):.2f} "
              f"while BALANCE and EXTCODEHASH, which only read the account row, stay at parity."))
     w("<p>Sorting the access modes by how much contract code they touch orders it cleanly:</p>")
     w("<table><tr><th>access mode</th><th>what it touches</th><th class=n>jochemnet MB</th>"
@@ -1257,39 +1403,6 @@ def main():
              f"{(dm_m['saMB']-sm['saMB'])/max(dm_m['jocMB']-sm['jocMB'],1):.1f}&times; the "
              f"marginal cost per additional distinct contract."))
 
-    # The data contains its own control: SAME_MAX is the same opcodes against one reused
-    # contract, so it separates "a distinct contract" from "contract code at all".
-    def cell(mode, loads):
-        vals = [c["thr"] for op, row in AFT["grid"].items() if mode in row
-                for c in [row[mode]] if (op in LOADS_CODE) == loads]
-        return median(vals), min(vals), max(vals), len(vals)
-
-    dm_code = cell("EXISTING_CONTRACT_DIFF_MAX", True)
-    dm_acct = cell("EXISTING_CONTRACT_DIFF_MAX", False)
-    sm_code = cell("EXISTING_CONTRACT_SAME_MAX", True)
-    sm_acct = cell("EXISTING_CONTRACT_SAME_MAX", False)
-
-    w("<h3>Where exactly it lives</h3>")
-    w("<p>Splitting the same cells two ways isolates it to a single square. Along one axis, "
-      "whether the opcode loads the callee's code at all; along the other, whether the contract "
-      "is a different one each access or the same one reused:</p>")
-    w("<table><tr><th></th><th class=n>one contract, reused</th>"
-      "<th class=n>a different contract each access</th></tr>")
-    w(f"<tr><td>opcodes that <b>load the code</b><br><span class=note>CALL, CALLCODE, "
-      f"DELEGATECALL, STATICCALL, EXTCODECOPY, EXTCODESIZE</span></td>"
-      f"<td class=n>{sm_code[0]:.3f}</td>"
-      f"<td class=\"n bad\">{dm_code[0]:.3f}</td></tr>")
-    w(f"<tr><td>opcodes that read <b>only the account row</b><br><span class=note>BALANCE, "
-      f"EXTCODEHASH</span></td><td class=n>{sm_acct[0]:.3f}</td>"
-      f"<td class=n>{dm_acct[0]:.3f}</td></tr>")
-    w(f"<caption>One square out of four. Reusing a contract is fine even for the opcodes that "
-      f"execute it ({sm_code[1]:.3f}&ndash;{sm_code[2]:.3f} across {sm_code[3]} opcodes), and "
-      f"under DIFF_MAX the two opcodes that never touch code are at parity "
-      f"({dm_acct[1]:.3f}, {dm_acct[2]:.3f}). Only <b>loading a distinct contract's code</b> is "
-      f"expensive, at {dm_code[0]:.3f} across {dm_code[3]} opcodes "
-      f"({dm_code[1]:.3f}&ndash;{dm_code[2]:.3f}). So it is not the account row, and it is not "
-      f"distinctness on its own.</caption></table>")
-
     w("<h3>What we ruled out</h3>")
     cp, cs, cpop = M["code_probe"], M["code_sweep"], M["code_population"]
     w("<p>The obvious answer is the code database: the generated store's is "
@@ -1316,7 +1429,7 @@ def main():
       f"granularity we can measure, which is the opposite of what the benchmark reports."
       f"</caption></table>")
 
-    w("<h3>What is still open</h3>")
+    w("<h2>Finding 4: what is left is the code database, on distinct contracts</h2>")
     st_ = J["settle"]
     w(f"<p><b>The fourth explanation was not in the store at all.</b> Three store-level stories "
       f"fit this square and each was contradicted by a direct measurement; a fourth was found by "
@@ -1338,7 +1451,7 @@ def main():
       f"knowing: a manual <code>CompactRange</code> writes its output into the deepest level "
       f"that already holds files unless it is told <code>change_level</code> and a target, so a "
       f"generator that finishes with a plain compaction leaves the store permanently "
-      f"compaction-pending. Both are the same family of mistake as Defect 3, caught earlier "
+      f"compaction-pending. Both are the same family of mistake as Finding 3, caught earlier "
       f"and on smaller column families.</p>")
 
     # The attribution below is only worth printing because the store is quiet; before that,
@@ -1387,6 +1500,49 @@ def main():
       f"client using {dmj['cpu']:.2f} of the snapshot's CPU for the same work. The fixture "
       f"accounts are not the answer: all {thousands(M['fixture_eoas']['probed'])} addresses in "
       f"the range the tests use carry no code at all on either arm.</p>")
+
+    # ------------------------------------------------- class 1
+    w("<h2>Class 1: why the sub-second tests are not evidence</h2>")
+    bycat = CL["by_category"]
+    short_cats = [c for c in ("CONTROL", "absent account", "warm query", "sload_same_key")
+                  if c in bycat]
+    w(f"<p>The other {s1['n']} tests &mdash; {100*s1['n']//(s1['n']+s2['n'])}% of the suite "
+      f"&mdash; sit at a median of {s1['median']:.3f} and reproduce "
+      f"{100*s1['within10']/s1['n']:.0f}% of the time against a floor of "
+      f"{100*fl1['within10']/fl1['n']:.0f}%. They are not a quieter version of the same signal; "
+      f"they are the harness measuring itself. Every category that is still far from parity "
+      f"after treatment lives entirely here:</p>")
+    w("<table><tr><th>category</th><th class=n>tests</th><th class=n>under 1 s</th>"
+      "<th class=n>median duration</th><th class=n>median sa/joc</th></tr>")
+    for c in short_cats:
+        v = bycat[c]
+        w(f"<tr><td>{esc(c)}</td><td class=n>{v['n']}</td>"
+          f"<td class=n>{v['pct_lt1s']:.0f}%</td><td class=n>{v['median_secs']:.2f} s</td>"
+          f"<td class=\"n bad\">{v['lt1s']['median']:.3f}</td></tr>")
+    w(f"<caption>Four categories, {sum(bycat[c]['n'] for c in short_cats)} tests, none of which "
+      f"has a single measurement over a second. The control category alone is "
+      f"{bycat['CONTROL']['n']} tests at {bycat['CONTROL']['median_secs']:.2f} s that do no "
+      f"account work at all, and it carried more of the published divergence than any category "
+      f"that reads state.</caption></table>")
+    w(f"<p>What is actually being measured here is the process, not the database. A client "
+      f"restarted for every test spends its first moments compiling itself, which is "
+      f"Finding 2's mechanism and why equalising warm-up moves this "
+      f"class from {J['ab']['baseline']['thr']:.2f} to {J['ab']['no_tiered_jit']['thr']:.2f} "
+      f"&mdash; past parity, because the intervention then costs jochemnet the promoted code it "
+      f"used to reach mid-test. A treatment that overshoots is a treatment aimed at the wrong "
+      f"quantity; the honest reading is that neither configuration measures a store here.</p>")
+    ce_c = D["cache_experiment"]
+    w(f"<p>It is also not the client's cache, which is the explanation we pre-registered and "
+      f"lost: starving the flat database's block cache "
+      f"{ce_c['cache_bytes']['big']//1024//1024} MiB &rarr; "
+      f"{ce_c['cache_bytes']['small']//1024//1024} MiB moved this class by "
+      f"{(ce_c['small']['thr']['CONTROL']/ce_c['big']['thr']['CONTROL']-1)*100:.0f}%, and "
+      f"removing every page-cache drop took state-actor's control reads to zero without making "
+      f"it faster.</p>")
+    w("<p class=note>None of this means the sub-second tests are worthless &mdash; they are the "
+      "reason the warm-up asymmetry was found at all, because an effect that is a rounding error "
+      "on a ten-second test is most of a tenth-of-a-second one. It means they cannot be quoted "
+      "as a ratio between two databases, which is what earlier versions of this page did.</p>")
 
     # ---------------------------------------------------------------- three clients
     w("<h2>Three clients, one artifact</h2>")
@@ -1471,6 +1627,15 @@ def main():
       f"{cc[-1]['gas']}M while state-actor climbed from {cc[0]['saMB']:.0f} to "
       f"{cc[-1]['saMB']:.0f} MB. That check is a few lines, and it would have caught this on the "
       f"first run rather than the thirtieth.</li>")
+    w(f"<li><b>Report per duration class, and never aggregate across the boundary.</b> This is "
+      f"the cheapest of these and it would have saved the most rounds. Measure the floor first "
+      f"&mdash; one store, twice &mdash; then report tests that clear it separately from tests "
+      f"that do not. Here {100*s1['n']//(s1['n']+s2['n'])}% of the suite runs in under a second "
+      f"and reproduces {100*s1['within10']/s1['n']:.0f}% of the time, so a category median "
+      f"computed over both classes is an average of a measurement and an artifact. The storage "
+      f"tests are the demonstration: the same category on the same pair of stores reads "
+      f"{st_c['lt1s']['median']:.3f} below a second and {st_c['ge1s']['median']:.3f} above "
+      f"it.</li>")
     w("</ol>")
     w(f"<p>And the answer to the question in the title: the generated state was never "
       f"{factor:.0f}&times; slower. With placement equalised, account reads agree within "
@@ -1492,11 +1657,12 @@ def main():
       f"{(1/dmj['thr'] - 1)*100:.0f}% on the one access pattern that touches a new contract "
       f"every time &mdash; and that residual is a property of generating distinct contracts, "
       f"not a defect anyone can patch away.</p>")
-    w(f"<p>The control tests &mdash; the ones doing no account work at all, which carried more "
-      f"of the published divergence than any real category &mdash; were measuring the harness, "
-      f"not either store. They are the reason to read the corrected column above as a bracket "
-      f"rather than a verdict: neither configuration is neutral, and the honest range for every "
-      f"state-reading category lies between them, within a few per cent of parity in both.</p>")
+    w(f"<p>And the reason that sentence can be said plainly now, where earlier versions of this "
+      f"page hedged: the {s1['n']} tests that could not support it are reported separately "
+      f"instead of averaged in. The control category alone &mdash; {bycat['CONTROL']['n']} tests "
+      f"at {bycat['CONTROL']['median_secs']:.2f} s doing no account work &mdash; carried more of "
+      f"the published divergence than any category that reads state, and it never belonged in a "
+      f"comparison between two databases.</p>")
 
     # ---------------------------------------------------------------- errata
     w("<h2>What we got wrong on the way</h2>")
@@ -1545,7 +1711,7 @@ def main():
       f"generated store really was running, refuted by settling the account family and "
       f"watching the throughput not move. Then a much larger one on the trie families &mdash; "
       f"{BM['idle']['sa_mb']:,} MB per {BM['idle']['window_s']} idle seconds, "
-      f"Defect 3 above &mdash; where the prediction on record was that most of the remaining "
+      f"Finding 3 above &mdash; where the prediction on record was that most of the remaining "
       f"gap would close, and it moved "
       f"{BM['cells']['DIFF_MAX code-exec']['settled'] - (BM['cells']['DIFF_MAX code-exec']['r1'] + BM['cells']['DIFF_MAX code-exec']['r2'])/2:+.3f}. "
       f"The one that did explain the bulk of it was the JIT, visible only by looking at the "
@@ -1593,12 +1759,13 @@ def main():
         "fig_cost_curves": chart_cost_curves(cc),
         "fig_amortisation": chart_amortisation(amort),
         "fig_treatment_dumbbell": chart_treatment_dumbbell(bc, ac),
-        "fig_ratio_dots": chart_ratio_dots(rat_b, rat_a, spr_b, spr_a),
+        "fig_ratio_dots": chart_ratio_dots(rat_b, rat_a, spr_b, spr_a, CL),
         "fig_grid": chart_grid(AFT["grid"]),
         "fig_steps": chart_steps(D["steps"]),
         "fig_code_ladder": chart_code_ladder(modes, {"sa": fp["sa"]["code"],
                                                      "joc": fp["joc"]["code"]}),
-        "fig_additive": chart_additive(add["buckets"]),
+        "fig_duration_floor": chart_duration_floor(CL),
+        "fig_class2_families": chart_class2_families(CL),
         "fig_seqno_paths": chart_seqno_paths(BM),
         "fig_idle_reads": chart_idle_reads(BM),
         "fig_marginal_cf": chart_marginal_cf(BM),

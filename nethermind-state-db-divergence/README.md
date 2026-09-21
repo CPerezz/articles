@@ -38,11 +38,12 @@ hash mismatch. Use the `existing-snapshot` family's 14-EIP set, which adds
 | `nethermind-state-db-report.html` | The deliverable. Zero JS, single file. Only external fetches are the site's Google-Font stylesheets (degrades to system monospace offline). |
 | `gen_nethermind_state_db_report.py` | Prose, computations, and HTML/SVG emission. Python 3 stdlib only. |
 | `collect_nethermind.py` | Runs on the benchmark host: reduces four benchmarkoor result trees to `data/report_data.json`. |
+| `collect_classes.py` | Runs on the benchmark host: splits every test at one second and emits the class summaries, per-category membership, the family x mode taxonomy inside the long class, and the same summary at 0.5/1/2 s. |
 | `collect_bottommost.py` | Runs on the benchmark host: folds the bottommost-compaction rounds (idle I/O, boot compaction reasons, the settled-store re-measurement and the per-CF attribution) into `data/report_data.json` under `bottommost`. |
 | `report_svg.py` | Inline-SVG primitives (scales, axes, dots, lines, bands). Has its own self-check. |
 | `crt_theme.py` | The site stylesheet, byte-identical to the sibling reports, kept in one place so the three cannot drift apart. |
 | `data/report_data.json` | Every value the report renders. The only input to the generator. |
-| `figures/fig_*.svg` | The eleven charts as standalone files, site palette derived from `crt_theme.CSS` so a figure cannot disagree with how it renders in the page. |
+| `figures/fig_*.svg` | The twelve charts as standalone files, site palette derived from `crt_theme.CSS` so a figure cannot disagree with how it renders in the page. |
 
 - The carry-over ceiling: `container-recreate` restarts the client per test, so setup starts
   fully cold and anything the measured step gets free must have been put in the client's memory
@@ -105,7 +106,7 @@ hash mismatch. Use the `existing-snapshot` family's 14-EIP set, which adds
 ## Regenerate
 
 ```
-python3 gen_nethermind_state_db_report.py   # writes the html and the eleven svgs
+python3 gen_nethermind_state_db_report.py   # writes the html and the twelve svgs
 python3 report_svg.py                       # primitive self-check, prints "report_svg selfcheck ok"
 ```
 
@@ -126,7 +127,11 @@ saturation at high N), per-category dispersion (that `EXISTING_EOA` stays tight 
 storage category stays wide), that the worst individual tests are still dominated by controls,
 that DIFF_MAX remains the outlying column of the opcode grid, the monotonicity of the code
 ladder, the two-term residual model, the Besu reference figures quoted in the cross-client
-table, and the bottommost-compaction result (that the idle client read the store, that
+table, the duration classification (that the two classes separate, that the short class does
+not beat its own replica floor, that the long class is at parity, that the conclusion survives
+moving the boundary to 0.5 s and 2 s, that the four noise categories stay wholly sub-second, that
+the storage category keeps straddling the line, and that the account-row/code-loading split still
+localises the residual), and the bottommost-compaction result (that the idle client read the store, that
 settling it silenced the client, that the reason field still says `BottommostFiles`, that
 the flat read path stays byte-identical across the arms, and that settling did *not* move
 DIFF_MAX or JUMPDEST - the section is written around that null result, so a future run in
@@ -134,6 +139,21 @@ which it does move must fail the build rather than keep the prose). Mutating any
 sentence the data no longer supports.
 
 ## Findings
+
+- **Two populations, and only one of them can carry a claim.** Split every test at one second
+  (membership fixed once from the reference arm, so rows do not change population between
+  columns): 676 tests under, 785 over. After treatment the short class sits at 0.767 with 18%
+  inside +/-10%, against a floor of 49% when the *same* store is measured twice - it does not
+  beat its own noise. The long class sits at 0.978 with 83% inside, floor 97%. Every
+  category still far from parity is wholly short: CONTROL (440 tests, 0.12 s, 0.708), sload_same_key
+  (0.812), warm query (0.896), absent account (0.904). The boundary is not doing the work - the long
+  class reads 0.979/0.978/0.977 at 0.5/1/2 s - and the storage category, which straddles it, reads 1.468 below a
+  second and 1.007 above it on the same pair of stores.
+- **Inside the long class the residual is one square.** Opcodes that only read the account row
+  (BALANCE, EXTCODEHASH) are at 0.971-0.977 under every access mode, reading at most 1.06x the
+  bytes. Opcodes that load the callee's code match them while the contract is reused (0.980), fall
+  to 0.926 when the code is scanned for jump destinations, and to 0.642 when every access touches a
+  distinct maximum-size contract - where they read 1.48x the bytes. Throughput tracks bytes.
 
 - The 17× gap is **where the rows sit**, not what they contain. Only one arm runs a pre-run, and
   `promote_post_pre_runs: true` freezes the post-pre-run layout into the image every test is
