@@ -43,7 +43,7 @@ hash mismatch. Use the `existing-snapshot` family's 14-EIP set, which adds
 | `report_svg.py` | Inline-SVG primitives (scales, axes, dots, lines, bands). Has its own self-check. |
 | `crt_theme.py` | The site stylesheet, byte-identical to the sibling reports, kept in one place so the three cannot drift apart. |
 | `data/report_data.json` | Every value the report renders. The only input to the generator. |
-| `figures/fig_*.svg` | The twelve charts as standalone files, site palette derived from `crt_theme.CSS` so a figure cannot disagree with how it renders in the page. |
+| `figures/fig_*.svg` | The thirteen charts as standalone files, site palette derived from `crt_theme.CSS` so a figure cannot disagree with how it renders in the page. |
 
 - The carry-over ceiling: `container-recreate` restarts the client per test, so setup starts
   fully cold and anything the measured step gets free must have been put in the client's memory
@@ -106,7 +106,7 @@ hash mismatch. Use the `existing-snapshot` family's 14-EIP set, which adds
 ## Regenerate
 
 ```
-python3 gen_nethermind_state_db_report.py   # writes the html and the twelve svgs
+python3 gen_nethermind_state_db_report.py   # writes the html and the thirteen svgs
 python3 report_svg.py                       # primitive self-check, prints "report_svg selfcheck ok"
 ```
 
@@ -131,7 +131,9 @@ table, the duration classification (that the two classes separate, that the shor
 not beat its own replica floor, that the long class is at parity, that the conclusion survives
 moving the boundary to 0.5 s and 2 s, that the four noise categories stay wholly sub-second, that
 the storage category keeps straddling the line, and that the account-row/code-loading split still
-localises the residual), and the bottommost-compaction result (that the idle client read the store, that
+localises the residual), the block-tenancy cross-check (that the sibling study's simulation
+and its DIFF_MAX cell point the same way) and the closing figure (that the residual pair are the
+only cells below 0.97 and every other cell is inside the band), and the bottommost-compaction result (that the idle client read the store, that
 settling it silenced the client, that the reason field still says `BottommostFiles`, that
 the flat read path stays byte-identical across the arms, and that settling did *not* move
 DIFF_MAX or JUMPDEST - the section is written around that null result, so a future run in
@@ -149,6 +151,20 @@ sentence the data no longer supports.
   (0.812), warm query (0.896), absent account (0.904). The boundary is not doing the work - the long
   class reads 0.979/0.978/0.977 at 0.5/1/2 s - and the storage category, which straddles it, reads 1.468 below a
   second and 1.007 above it on the same pair of stores.
+- **The residual has a mechanism: block tenancy.** Both writers key code by hash (verified in
+  the generator), so a contract's neighbours in a data block are random, and what differs is
+  who they are: the snapshot holds 2.4M code entries averaging 7.6 KB, the generated store 134M
+  averaging 358 B, almost all 23-byte stubs. The Besu study's block-packing simulation on each
+  store's own records puts the block that must be read to fetch one fixture contract at
+  10,718 bytes on the generated store against 5,912 on the snapshot (1.81x per fetch, the stubs do not
+  compress), bracketing the 1.69x marginal measured here; the same cell on Besu reads 0.831
+  against 0.944 for the reused contract. The isolated cold probe measures one block and cannot
+  see it. Decisive test: rebuild the generated code CF with large values isolated in their own
+  blocks and re-run the cell. Folded into `data/report_data.json` under
+  `measured.besu_cross_check`, derived from the sibling study's data at collect time.
+- **Where it stands.** Every long-class cell after all four findings, `classes.final_cells`:
+  12 of 12 inside +/-10%; DIFF_MAX code-exec 0.938 and JUMPDEST code-exec 0.943 reproduce to
+  within 0.01 across three runs of the same configuration.
 - **Inside the long class the residual is one square.** Opcodes that only read the account row
   (BALANCE, EXTCODEHASH) are at 0.971-0.977 under every access mode, reading at most 1.06x the
   bytes. Opcodes that load the callee's code match them while the contract is reused (0.980), fall

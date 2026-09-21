@@ -5443,6 +5443,80 @@
     },
     "unclassified": 0
    }
+  },
+  "final_cells": {
+   "DIFF_MAX BAL/HASH": {
+    "n": 4,
+    "r1": 1.0128,
+    "r2": 1.0008,
+    "settled": 0.9866
+   },
+   "DIFF_MAX code-exec": {
+    "n": 16,
+    "r1": 0.9278,
+    "r2": 0.9332,
+    "settled": 0.9377
+   },
+   "EXISTING_EOA BAL/HASH": {
+    "n": 4,
+    "r1": 1.0046,
+    "r2": 0.9956,
+    "settled": 0.9947
+   },
+   "EXISTING_EOA code-exec": {
+    "n": 16,
+    "r1": 0.9867,
+    "r2": 0.9941,
+    "settled": 0.9973
+   },
+   "JUMPDEST BAL/HASH": {
+    "n": 4,
+    "r1": 0.991,
+    "r2": 0.9972,
+    "settled": 0.9739
+   },
+   "JUMPDEST code-exec": {
+    "n": 16,
+    "r1": 0.9378,
+    "r2": 0.9374,
+    "settled": 0.9425
+   },
+   "MINIMAL BAL/HASH": {
+    "n": 4,
+    "r1": 0.9858,
+    "r2": 0.9887,
+    "settled": 0.9982
+   },
+   "MINIMAL code-exec": {
+    "n": 16,
+    "r1": 0.9968,
+    "r2": 0.9912,
+    "settled": 0.9948
+   },
+   "SAME_MAX BAL/HASH": {
+    "n": 4,
+    "r1": 0.9769,
+    "r2": 0.9745,
+    "settled": 0.9976
+   },
+   "SAME_MAX code-exec": {
+    "n": 16,
+    "r1": 0.9928,
+    "r2": 0.9876,
+    "settled": 0.9995
+   },
+   "ether transfer": {
+    "n": 36,
+    "r1": 1.0495,
+    "r2": 1.0729,
+    "settled": 1.076
+   },
+   "storage slot": {
+    "n": 8,
+    "r1": 1.0173,
+    "r2": 0.9938,
+    "settled": 1.0564
+   }
   }
  },
  "jit_experiment": {
@@ -6106,6 +6180,81 @@
     }
    ],
    "src": "probe-flat -mode seq, Account CF, cold caches + fresh process per point, fill_cache=false, 100% hits, the EEST fixtures' own key population"
+  },
+  "besu_cross_check": {
+   "code_block_sim": {
+    "block_size": 32768,
+    "fixture_bytes": 24576,
+    "jochemnet": {
+     "block_comp": 5912,
+     "block_raw": 41726,
+     "fixture_deflate": 0.0109,
+     "tenant_bytes": 7298,
+     "tenants": 2.4
+    },
+    "state_actor": {
+     "block_comp": 10718,
+     "block_raw": 36024,
+     "fixture_deflate": 0.007,
+     "tenant_bytes": 352,
+     "tenants": 32.5
+    }
+   },
+   "families": {
+    "account_row": {
+     "EXISTING_CONTRACT_DIFF_MAX": {
+      "median": 0.8125,
+      "n": 22
+     },
+     "EXISTING_CONTRACT_JUMPDEST": {
+      "median": 0.8155,
+      "n": 22
+     },
+     "EXISTING_CONTRACT_MINIMAL": {
+      "median": 0.9506,
+      "n": 22
+     },
+     "EXISTING_CONTRACT_SAME_MAX": {
+      "median": 0.9438,
+      "n": 22
+     },
+     "EXISTING_EOA": {
+      "median": 0.9485,
+      "n": 22
+     },
+     "NON_EXISTING_ACCOUNT": {
+      "median": 0.1037,
+      "n": 22
+     }
+    },
+    "loads_code": {
+     "EXISTING_CONTRACT_DIFF_MAX": {
+      "median": 0.8312,
+      "n": 88
+     },
+     "EXISTING_CONTRACT_JUMPDEST": {
+      "median": 0.8344,
+      "n": 88
+     },
+     "EXISTING_CONTRACT_MINIMAL": {
+      "median": 0.9452,
+      "n": 88
+     },
+     "EXISTING_CONTRACT_SAME_MAX": {
+      "median": 0.9443,
+      "n": 88
+     },
+     "EXISTING_EOA": {
+      "median": 0.9515,
+      "n": 88
+     },
+     "NON_EXISTING_ACCOUNT": {
+      "median": 0.1235,
+      "n": 88
+     }
+    }
+   },
+   "src": "derived at collect time from besu-state-db-divergence/data/report_data.json: state_actor / compacted per cell, measurement rows only, median per family x mode; code_block_sim copied verbatim from that study (BlockSim.java)"
   },
   "code_population": {
    "joc": {
