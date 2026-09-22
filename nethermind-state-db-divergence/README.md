@@ -42,6 +42,7 @@ hash mismatch. Use the `existing-snapshot` family's 14-EIP set, which adds
 | `collect_bottommost.py` | Runs on the benchmark host: folds the bottommost-compaction rounds (idle I/O, boot compaction reasons, the settled-store re-measurement and the per-CF attribution) into `data/report_data.json` under `bottommost`. |
 | `collect_v2.py` | Runs on the benchmark host: folds round 66 (the top-of-trie packing finding, its two-direction intervention and the file-number provenance) and round 67 (the store regenerated with the fixed generator, its fixtures and the long-class re-measurement) into `data/report_data.json` under `topnodes` and `v2`. |
 | `sstprops.py` | Reads every SST's table properties straight from the file footer (no RocksDB needed): column family, entries, data blocks, bytes per block, filter size, compression, creation time, writing host. The audit that dated the 4 KB top-node files to this study's own round 13. |
+| `collect_r68.py` | Runs on the benchmark host: re-measures the tests still outside +-10% as a fresh same-session pair with per-column pread accounting, and folds them into `data/report_data.json` under `outliers` (per test: throughput on all five runs, per-column reads/bytes/latency, and the storage columns' level spread). |
 | `report_svg.py` | Inline-SVG primitives (scales, axes, dots, lines, bands). Has its own self-check. |
 | `crt_theme.py` | The site stylesheet, byte-identical to the sibling reports, kept in one place so the three cannot drift apart. |
 | `data/report_data.json` | Every value the report renders. The only input to the generator. |
@@ -143,6 +144,24 @@ hash mismatch. Use the `existing-snapshot` family's 14-EIP set, which adds
   97% for tests over 5 s (`collect_noise.py` -> `noise`). An earlier version of the page
   ranked the twelve most divergent tests; all twelve ran under 0.2 s, so that table ranked
   noise and is gone.
+
+- **What is still outside +-10%, and the denominator trap.** 27 of 142 long-class tests leave
+  the band in v2 run 1 and 23 in run 2, but both runs divide by the *same* jochemnet run, so one
+  slow jochemnet measurement makes a test "reproduce" in both. Re-running 20 of them as a fresh
+  pair (R68, `collect_r68.py` -> `outliers`) moves jochemnet by up to 29% on a single test
+  against 14% for state-actor, and the largest excursions collapse: transfer-to-self 1.353 ->
+  1.086, to an existing account 1.184 -> 1.050. Two runs of one arm are one measurement of the
+  ratio. What survives, with every read traced:
+  - **store to an absent slot, 2.03-2.14x**: I/O, and the same mechanism as the root cause one
+    column over. jochemnet's storage column is spread over L0/L2/L3/L4/L5/L6 (807 files) against
+    the generated store's single L4 (331 files); an absent key must be refused by every level,
+    so the snapshot pays 3,770 storage reads against 900 for the same test. The pre-run left it
+    as a stack of levels and nothing in this study ever compacted it.
+  - **transfer to an absent account, 1.32-1.49**: *not* I/O. 918 against 920 account-row reads,
+    identical bytes and mean latency, 144 against 99 MGas/s. Open.
+  - the remaining transfer and sstore rows sit at 1.05-1.12 with read-identical traces, so the
+    residual there is client work per unit of gas rather than reads - which retires the
+    "mainnet-shaped trie is dearer per node" wording this page carried for one morning.
 
 ## Regenerate
 
