@@ -464,17 +464,19 @@ def chart_class2_families(cl):
     return S.svg(W, H, "".join(o))
 
 
-def chart_final_cells(cl, repacked=None):
+def chart_final_cells(cl, repacked=None, regenerated=None):
     """Where it stands: every cell of the long class after all four findings are applied, with
     the two earlier replicas of the same configuration as faint marks so the reader can see
     what run-to-run movement looks like beside the value being quoted. `repacked` adds, for
-    the cells it names, the value measured after the code database was repacked."""
+    the cells it names, the value measured after the code database was repacked;
+    `regenerated` the value measured on the store rebuilt with the fixed generator."""
     fc = cl["final_cells"]
     repacked = repacked or {}
+    regenerated = regenerated or {}
     rows = sorted(fc.items(), key=lambda kv: kv[1]["settled"])
     W, L, R, T = 760, 190, 150, 26
     rh = 26
-    H = T + rh * len(rows) + 62
+    H = T + rh * len(rows) + (78 if regenerated else 62)
     sx = S.Scale(0.85, 1.15, L, W - R)
     bot = T + rh * len(rows) - 8
     o = [S.band(sx.to(0.9), sx.to(1.1), T - 8, bot + 4, "--accent", 0.10),
@@ -497,6 +499,10 @@ def chart_final_cells(cl, repacked=None):
                              "start", "tick"))
         else:
             o.append(S.label(W - R + 10, y + 4, f"{v['settled']:.3f}  n={v['n']}", "start", "tick"))
+        if name in regenerated:
+            g = regenerated[name]
+            o.append(S.dot(sx.to(max(0.85, min(1.15, g))), y, 4.5, "--db-sa",
+                           f"{name}, regenerated store: {g:.3f}"))
     for t in (0.85, 0.9, 0.95, 1.0, 1.05, 1.1, 1.15):
         o.append(S.label(sx.to(t), bot + 22, f"{t:.2f}", "middle", "tick"))
     o.append(S.dot(L + 6, H - 14, 4.5, "--accent"))
@@ -506,6 +512,9 @@ def chart_final_cells(cl, repacked=None):
     if repacked:
         o.append(S.dot(L + 400, H - 14, 4.5, "--db-u"))
         o.append(S.label(L + 410, H - 10, "code database repacked", "start", "tick"))
+    if regenerated:
+        o.append(S.dot(L + 6, H - 30, 4.5, "--db-sa"))
+        o.append(S.label(L + 16, H - 26, "regenerated store (generator fix), run 1", "start", "tick"))
     o.append(S.label(L, T - 14, "throughput, state-actor / jochemnet, tests over 1 s  (band = \u00b110%)",
                      "start", "big"))
     return S.svg(W, H, "".join(o))
@@ -775,6 +784,56 @@ def main():
             "%s did not close under repacking: %r" % (c, IB_["cells"][c])
     assert abs(IB_["cells"]["SAME_MAX code-exec"]["after"] - IB_["cells"]["SAME_MAX code-exec"]["before"]) < 0.02, \
         "the SAME_MAX control moved under repacking; the tenancy argument loses its control"
+
+    # The transfer cell. The section is only worth printing if the tries really are the same
+    # shape (so shape cannot be the explanation), the packing really differed on exactly the
+    # column the trace named, the swap moved both arms toward each other and closed the cell
+    # to within the replica spread, and the read counts swapped with it.
+    TN_ = D["topnodes"]
+    assert TN_["shape"]["joc"]["top_nodes"] == TN_["shape"]["sa_v1"]["top_nodes"] == 1118481, \
+        "the two account tries no longer share a complete top: %r" % TN_["shape"]
+    assert TN_["shape"]["sa_v1"]["walk_nodes"] >= TN_["shape"]["joc"]["walk_nodes"] - 0.05, \
+        "the generated trie is now shallower; shape could explain fewer reads"
+    _pk = TN_["packing"]
+    assert _pk["joc_before"]["bytes_per_block"] < 5000 < 12000 < _pk["sa_before"]["bytes_per_block"], \
+        "top-of-trie packing no longer differs the way the section says: %r" % _pk
+    assert _pk["joc_after"]["bytes_per_block"] > 12000 > 5000 > _pk["sa_after"]["bytes_per_block"], \
+        "the swap did not swap the packing: %r" % _pk
+    _sw = TN_["swap"]
+    assert _sw["ratio_settled"] > 1.05 and abs(_sw["ratio_swapped"] - 1) < 0.03, \
+        "the swap no longer closes the transfer cell: %r" % _sw
+    assert _sw["sa_change"] < 1 < _sw["joc_change"], "the arms did not move toward each other: %r" % _sw
+    assert _sw["joc"]["top_per_account_before"] > _sw["sa"]["top_per_account_before"] and \
+        _sw["joc"]["top_per_account_after_240M"] < _sw["sa"]["top_per_account_after_240M"], \
+        "top-node reads per account did not swap with the layout: %r" % _sw
+    _pv = TN_["provenance"]
+    assert _pv["Storage"]["min"] < 1000 < _pv["StateTopNodes"]["min"] < _pv["Account"]["min"], \
+        "file numbers no longer date the 4 KB top-node files to this study's rebuild: %r" % _pv
+
+    # The regenerated store. The section claims the code-pool fix overshoots, which is only
+    # worth printing if: the store really is a different one (new genesis), it was written with
+    # the client's packing (so the transfer comparison is layout-fair), the two code cells moved
+    # above parity and both runs agree, the reused-contract control did not move, the same-arm
+    # drift is smaller than the movement, the fill covered the class it claims to, and the
+    # transfer cell did *not* fully close - the prose is written around that.
+    V2_ = D["v2"]
+    _vc = V2_["cells"]
+    assert V2_["genesis"] != V2_["v1_genesis"], "the regenerated store has the old genesis root"
+    assert V2_["fixtures"]["class2_covered"][0] == V2_["fixtures"]["class2_covered"][1], \
+        "the v2 fill no longer covers the whole long class: %r" % V2_["fixtures"]
+    assert V2_["topnodes_packing"]["bytes_per_block"] > 12000, \
+        "the regenerated store no longer packs top nodes the way the client does: %r" % V2_["topnodes_packing"]
+    for _c in ("DIFF_MAX code-exec", "JUMPDEST code-exec"):
+        assert _vc[_c]["v1_t1"] < 0.96 < 1.04 < min(_vc[_c]["v2r1"], _vc[_c]["v2r2"]), \
+            "%s no longer overshoots parity on the regenerated store: %r" % (_c, _vc[_c])
+    assert abs(_vc["SAME_MAX code-exec"]["v2r1"] - 1) < 0.02, \
+        "the reused-contract control moved with the pool fix: %r" % _vc["SAME_MAX code-exec"]
+    assert max(abs(v["v2r2_v2r1"] - 1) for v in _vc.values() if v["v2r2_v2r1"]) < 0.02, \
+        "the two runs of the regenerated store no longer agree cell by cell"
+    assert _vc["ether transfer"]["joc_joc_t1"] > 1.02, \
+        "the snapshot no longer gains from the top-node repack: %r" % _vc["ether transfer"]
+    assert _vc["ether transfer"]["v2r1"] > 1.03, \
+        "the transfer cell closed; the open-residual paragraph must be rewritten: %r" % _vc["ether transfer"]
     # Reproducibility. The page now claims dispersion in the short categories is measurement,
     # not store behaviour, which only holds while the replica pair says so: the same store under
     # the same configuration, twice.
@@ -980,7 +1039,10 @@ def main():
     J0 = D["jit_experiment"]
     w("<p>Four findings, in the order they matter. Each was established by changing one thing "
       "and re-measuring. The first moved the headline; the second and third were plausible "
-      "causes eliminated by intervention; the fourth is the residual, and it closes.</p>")
+      "causes eliminated by intervention; the fourth is the residual, and it closes. The one "
+      "cell that ran the other way, ether transfers, turned out to be this study's own tooling "
+      "having repacked a column of the snapshot; it is traced at the end of Finding 4 and "
+      "listed with the errata.</p>")
     w("<ol>")
     w("<li><b>The pre-run is promoted into the baseline.</b> One arm replays a pre-run and the "
       "harness promotes the result into the image every test restores from, leaving the "
@@ -1413,6 +1475,7 @@ def main():
     w("<h3>The mechanism: block tenancy</h3>")
     bx = M["besu_cross_check"]
     IB = D["intervention_blocks"]
+    fc_tr = CL["final_cells"]["ether transfer"]["settled"]
     pj, ps = IB["pread"]["joc"], IB["pread"]["sa"]
     w(f"<p>Both stores key code by its hash, so a contract's neighbours in a data block are "
       f"random, and what differs is who they are. The snapshot's code database holds "
@@ -1473,16 +1536,94 @@ def main():
       f"slices it from real mainnet bytecode at &plusmn;5% of mainnet compressibility. A store "
       f"built that way has a different genesis state root, so the stateful fixtures must be "
       f"regenerated with it; that is the remaining step.</p>")
+    # ---- the other direction: ether transfers (round 66)
+    TN = D["topnodes"]
     tr = IB["transfers"]
-    w(f"<p><b>The other direction: ether transfers.</b> The one cell where the generated store is "
-      f"reproducibly faster was traced the same way, {tr['joc']['secs']} against "
+    sh_j, sh_s = TN["shape"]["joc"], TN["shape"]["sa_v1"]
+    pk = TN["packing"]
+    sw = TN["swap"]
+    w("<h3>The other direction: ether transfers</h3>")
+    w(f"<p>The one cell where the generated store was reproducibly <em>faster</em> "
+      f"({fc_tr:.3f} on the settled runs) was traced the same way, {tr['joc']['secs']} against "
       f"{tr['sa']['secs']} seconds for 18 blocks of transfers. Account-row and code reads are "
       f"identical ({tr['joc']['account_n']:,} against {tr['sa']['account_n']:,}; "
       f"{tr['joc']['code_n']:,} against {tr['sa']['code_n']:,}). The snapshot reads "
-      f"<b>{tr['joc']['statetop_n']:,}</b> top-of-trie node blocks for the state root against the "
-      f"generated store's {tr['sa']['statetop_n']:,}: a migrated mainnet trie costs more to "
-      f"update than a generated one. That is a property of the arms, small, and not a "
-      f"defect.</p>")
+      f"<b>{tr['joc']['statetop_n']:,}</b> top-of-trie node blocks against the generated store's "
+      f"{tr['sa']['statetop_n']:,}. An earlier version of this page called that a property of "
+      f"the arms &mdash; a migrated mainnet trie costing more to update than a generated one. "
+      f"It is not. A flat store does not skip the trie on a write: a transfer changes two "
+      f"accounts and the state root needs every branch node on both paths re-hashed, so the "
+      f"question is why one trie needs more node reads than the other for the same work.</p>")
+    w("<p><b>The tries are the same shape.</b> Nethermind keeps the top of the account trie "
+      "(paths of up to five nibbles) in its own column, keyed by path, and the rest in a second "
+      "one. A full scan of the first and a sample of whole level-6 subtrees from the second, on "
+      "both stores:</p>")
+    w("<table><tr><th></th><th class=n>jochemnet</th><th class=n>state-actor</th></tr>")
+    for label, key, fmt in (("top-of-trie nodes (paths 0&ndash;5)", "top_nodes", "{:,}"),
+                            ("accounts, from the sample", "accounts_est_M", "{:.1f}M"),
+                            ("leaves per level-6 subtree", "leaves_per_subtree", "{:.1f}"),
+                            ("mean leaf path length, nibbles", "mean_leaf_len", "{:.2f}"),
+                            ("nodes on a cold root-to-leaf walk", "walk_nodes", "{:.2f}")):
+        w(f"<tr><td>{label}</td><td class=n>{fmt.format(sh_j[key])}</td>"
+          f"<td class=n>{fmt.format(sh_s[key])}</td></tr>")
+    w(f"<caption>Both tops are the complete 16-ary tree of depth five "
+      f"({sh_j['top_nodes']:,} nodes, every one a 532-byte branch). The generated trie holds "
+      f"{100*(sh_s['accounts_est_M']/sh_j['accounts_est_M']-1):.0f}% more accounts and is "
+      f"marginally deeper. Shape cannot make it read fewer nodes.</caption></table>")
+    w("<p><b>The column is packed differently.</b> RocksDB's own table properties for the "
+      "top-of-trie column, same entries on both stores:</p>")
+    w("<table><tr><th>Flat/StateTopNodes</th><th class=n>jochemnet</th><th class=n>state-actor</th>"
+      "<th class=n>client option</th></tr>")
+    w(f"<tr><td>entries</td><td class=n>{pk['joc_before']['entries']:,}</td>"
+      f"<td class=n>{pk['sa_before']['entries']:,}</td><td></td></tr>")
+    w(f"<tr><td>data blocks</td><td class=n>{pk['joc_before']['blocks']:,}</td>"
+      f"<td class=n>{pk['sa_before']['blocks']:,}</td><td></td></tr>")
+    w(f"<tr><td>bytes per block on disk</td><td class=\"n bad\">{pk['joc_before']['bytes_per_block']:,}</td>"
+      f"<td class=n>{pk['sa_before']['bytes_per_block']:,}</td>"
+      f"<td class=n>block_size={TN['client_option']['block_size']:,}</td></tr>")
+    w(f"<tr><td>nodes per block</td><td class=\"n bad\">{pk['joc_before']['entries_per_block']:.0f}</td>"
+      f"<td class=n>{pk['sa_before']['entries_per_block']:.0f}</td><td></td></tr>")
+    w(f"<caption>Every other flat column matches the client's options on both stores. Top "
+      f"nodes are keyed by path in pre-order, so a level-4 node and its sixteen children are "
+      f"seventeen consecutive keys, about 9 KB: a 16 KB block holds the family, a 4 KB block "
+      f"holds seven nodes, and the walk to a touched leaf pays a separate physical read for the "
+      f"parent. Measured per touched account: <b>{sw['joc']['top_per_account_before']:.2f}</b> "
+      f"top-node reads on the snapshot against {sw['sa']['top_per_account_before']:.2f} on the "
+      f"generated store, uniformly across all eighteen transfer variants.</caption></table>")
+    w(f"<p><b>Confirmed by intervention, in both directions.</b> The generated store's "
+      f"top-of-trie column was rewritten with the snapshot's packing "
+      f"({pk['sa_after']['blocks']:,} blocks of {pk['sa_after']['bytes_per_block']:,} bytes) and "
+      f"the snapshot's with the client's ({pk['joc_after']['blocks']:,} blocks of "
+      f"{pk['joc_after']['bytes_per_block']:,}), two seconds each, every entry unchanged, both "
+      f"promoted. Every ether-transfer test then ran on both arms with the same per-column "
+      f"read accounting:</p>")
+    w("<table><tr><th></th><th class=n>settled layouts</th><th class=n>layouts swapped</th></tr>")
+    w(f"<tr><td>median throughput ratio on transfers, state-actor / jochemnet</td>"
+      f"<td class=n>{sw['ratio_settled']:.3f}</td><td class=n>{sw['ratio_swapped']:.3f}</td></tr>")
+    w(f"<tr><td>top-node reads per touched account, jochemnet</td>"
+      f"<td class=n>{sw['joc']['top_per_account_before']:.2f}</td>"
+      f"<td class=n>{sw['joc']['top_per_account_after_240M']:.2f}</td></tr>")
+    w(f"<tr><td>top-node reads per touched account, state-actor</td>"
+      f"<td class=n>{sw['sa']['top_per_account_before']:.2f}</td>"
+      f"<td class=n>{sw['sa']['top_per_account_after_240M']:.2f}</td></tr>")
+    w(f"<tr><td>change from the swap alone</td><td></td>"
+      f"<td class=n>jochemnet &times;{sw['joc_change']:.3f}, state-actor &times;{sw['sa_change']:.3f}</td></tr>")
+    w(f"<caption>{sw['n_pairs']} test pairs across every gas value. The read counts swap, each "
+      f"arm moves by about half the gap in the predicted direction, and the "
+      f"{100*(sw['ratio_settled']-1):.1f}% asymmetry becomes "
+      f"{100*(sw['ratio_swapped']-1):.1f}%, inside the replica spread.</caption></table>")
+    pv = TN["provenance"]
+    w(f"<p><b>Whose layout was it?</b> Not the snapshot's. RocksDB numbers files monotonically, "
+      f"and the snapshot's own files run from "
+      f"{min(pv['StorageNodes']['min'], pv['Storage']['min']):06d}; the ten 4 KB top-of-trie "
+      f"files were {pv['StateTopNodes']['min']:06d}&ndash;{pv['StateTopNodes']['max']:06d}, written "
+      f"on this host just before the account column was rebuilt in the first errata item below "
+      f"({pv['Account']['min']:06d}+). The read-write open that rebuilt that column transcribed "
+      f"the client's options for it and left every other column on RocksDB's defaults &mdash; "
+      f"4,096-byte blocks, no filter &mdash; and the top-of-trie column, compaction-pending "
+      f"since the pre-run, was compacted in the background under those defaults. The audit that "
+      f"followed checked two columns and missed the third. The snapshot now carries the client's "
+      f"packing, and every jochemnet number in the next section is measured against it.</p>")
     st_ = J["settle"]
     w(f"<p class=note>Two smaller store defects turned up on the way and moved no ratio: the "
       f"generated store's account family was left <code>{esc(st_['sa_account']['before'])}</code> "
@@ -1491,28 +1632,121 @@ def main():
       f"given a target level. Same family of mistake as Finding 3, on smaller column "
       f"families.</p>")
 
+    # ------------------------------------------------- the regenerated store (round 67)
+    V2 = D["v2"]
+    vc = V2["cells"]
+    vt = V2["per_test"]
+    w("<h2>The regenerated store: the generator fix, measured</h2>")
+    w(f"<p>The remaining step was taken. state-actor at "
+      f"<a href=\"https://github.com/ethereum/state-actor/commit/{V2['revision']}\">"
+      f"{V2['revision'][:7]}</a> &mdash; the tree with "
+      f"<a href=\"https://github.com/ethereum/state-actor/pull/{IB['pr']}\">#{IB['pr']}</a>'s "
+      f"mainnet-sliced code pool and "
+      f"<a href=\"https://github.com/ethereum/state-actor/pull/139\">#139</a>'s forced "
+      f"bottommost compaction &mdash; regenerated the Nethermind store from the same spec, seed "
+      f"and size budget: {V2['size']} in {V2['gen_minutes']//60} h {V2['gen_minutes']%60} min, "
+      f"genesis <code>{V2['genesis'][:10]}&hellip;{V2['genesis'][-6:]}</code> against the old "
+      f"<code>{V2['v1_genesis'][:10]}&hellip;{V2['v1_genesis'][-6:]}</code>, "
+      f"{TN['shape']['sa_v2']['accounts_est_M']:.0f}M accounts, top-of-trie nodes packed "
+      f"{V2['topnodes_packing']['entries_per_block']:.0f} to a {V2['topnodes_packing']['bytes_per_block']:,}-byte "
+      f"block as written, no compaction pending. A store with a new genesis root needs new "
+      f"stateful fixtures, so the {V2['fixtures']['filled']} tests of the long class "
+      f"(every category over a second, at 160M and 240M) were filled against it with the "
+      f"Nethermind filler at execution-specs <code>{V2['fixtures']['eest_commit'][:7]}</code>, "
+      f"covering {V2['fixtures']['class2_covered'][0]} of the {V2['fixtures']['class2_covered'][1]} "
+      f"long-class tests measured above, and run twice; jochemnet ran the same tests once more "
+      f"on the same day, on its repacked baseline.</p>")
+    order = sorted(vc, key=lambda c: (c.split()[-1] != "code-exec", c))
+    w("<table><tr><th>cell</th><th class=n>n</th><th class=n>old store, settled</th>"
+      "<th class=n>new store, run 1</th><th class=n>new store, run 2</th>"
+      "<th class=n>jochemnet, day / settled</th></tr>")
+    for c in order:
+        v = vc[c]
+        def cls_(x):
+            return "" if x is None else (" bad" if x < 0.9 else (" good" if x > 1.1 else ""))
+        def cell_(x):
+            return f"<td class=\"n{cls_(x)}\">{x:.3f}</td>" if x is not None else "<td class=n>&ndash;</td>"
+        w(f"<tr><td>{esc(c)}</td><td class=n>{v['n']}</td>{cell_(v['v1_t1'])}{cell_(v['v2r1'])}"
+          f"{cell_(v['v2r2'])}{cell_(v['joc_joc_t1'])}</tr>")
+    w(f"<caption>Median throughput ratio per cell, state-actor over jochemnet; the new-store "
+      f"columns are against the same-day jochemnet run, the old-store column is the settled "
+      f"pair quoted above. The last column is jochemnet against itself, day run over settled "
+      f"run, the drift a same-store comparison carries.</caption></table>")
+    def band(x):
+        return f"{x['within10']} of {x['n']} ({100*x['within10']/x['n']:.0f}%)"
+    w(f"<p>Per test, over a second on both arms: {band(vt['v1_t1'])} inside &plusmn;10% on the "
+      f"old store against {band(vt['v2r1'])} and {band(vt['v2r2'])} on the new one, medians "
+      f"{vt['v2r1']['median']:.3f} and {vt['v2r2']['median']:.3f}. The two runs of the new store "
+      f"agree with each other cell by cell to within "
+      f"{max(abs(v['v2r2_v2r1'] - 1) for v in vc.values() if v['v2r2_v2r1']):.3f}, and the "
+      f"jochemnet day run reproduces its own settled run to within "
+      f"{max(abs(v['joc_joc_t1'] - 1) for v in vc.values() if v['joc_joc_t1'] and 'transfer' not in v):.3f} "
+      f"on every cell, so the movements below are larger than the drift.</p>")
+    dm2, jd2 = vc["DIFF_MAX code-exec"], vc["JUMPDEST code-exec"]
+    w(f"<p><b>The code-pool fix works, and it overshoots.</b> Distinct-contract code execution, "
+      f"the cell this page spent four findings on, was {dm2['v1_t1']:.3f} on the old store; on "
+      f"the regenerated one it is <b>{dm2['v2r1']:.3f}</b> and {dm2['v2r2']:.3f}, and "
+      f"jump-destination scanning {jd2['v2r1']:.3f} and {jd2['v2r2']:.3f} against "
+      f"{jd2['v1_t1']:.3f} before. The generated store is now the <em>faster</em> of the two on "
+      f"the operation it used to lose, by 5&ndash;10%. Both cells moved by "
+      f"{dm2['v2r1']/dm2['v1_t1'] - 1:+.0%} and {jd2['v2r1']/jd2['v1_t1'] - 1:+.0%} while the "
+      f"reused-contract control stayed at {vc['SAME_MAX code-exec']['v2r1']:.3f} and every "
+      f"account-row cell inside {max(abs(v['v2r1'] - 1) for k, v in vc.items() if 'BAL/HASH' in k or 'EOA' in k or 'MINIMAL' in k):.3f} "
+      f"of parity, so the lever is the pool and nothing else moved with it. A pool sampled from "
+      f"mainnet bytecode at mainnet compressibility still does not reproduce mainnet's "
+      f"<em>block tenancy</em> on this client: the pool's 1 KiB floor keeps small records out, "
+      f"and on a 4,096-byte code block a fixture contract then starts a block of its own more "
+      f"often than it does on mainnet, where the median contract is 45 bytes. Cheaper than "
+      f"mainnet is as wrong as dearer, and the mechanism is the same one Finding 4 measured.</p>")
+    tr2 = vc["ether transfer"]
+    _sw2 = TN["swap"]
+    w(f"<p><b>Ether transfers: the layout was about half of it.</b> With both stores packing "
+      f"their top-of-trie column the way the client does, transfers read "
+      f"{tr2['v2r1']:.3f} and {tr2['v2r2']:.3f} against {tr2['v1_t1']:.3f} before &mdash; the "
+      f"snapshot gained {tr2['joc_joc_t1'] - 1:+.1%} from the repack alone, which is the swap's "
+      f"per-arm figure ({_sw2['joc_change']:.3f}) reproduced on a different day against a "
+      f"different store. What is left does not come from reading more nodes: at equal packing "
+      f"the snapshot reads <em>fewer</em> top-of-trie blocks per touched account than the "
+      f"generated store ({_sw2['joc']['top_per_account_after_240M']:.2f} against "
+      f"{_sw2['sa']['top_per_account_before']:.2f}) and fewer second-level ones, and is still "
+      f"the slower arm. So the remaining {100*(tr2['v2r1']-1):.0f}% is per-read cost on a "
+      f"mainnet-shaped trie rather than read count, it is the same size as the storage cell's "
+      f"{100*(vc['storage slot']['v2r1']-1):.0f}% (unmoved by any intervention here, "
+      f"{vc['storage slot']['v1_t1']:.3f} before), and it is open.</p>")
+
     # ------------------------------------------------- where it stands
     w("<h2>Where it stands</h2>")
     fc = CL["final_cells"]
     n_par = sum(1 for v in fc.values() if 0.9 <= v["settled"] <= 1.1)
     _rep = {c: v["after"] for c, v in D["intervention_blocks"]["cells"].items()}
-    w(figure(chart_final_cells(CL, _rep),
+    _v2 = {c: v["v2r1"] for c, v in vc.items() if v["v2r1"] is not None and c in fc}
+    n_v2 = sum(1 for x in _v2.values() if 0.9 <= x <= 1.1)
+    w(figure(chart_final_cells(CL, _rep, _v2),
              f"Every cell of the long class after all four findings are applied. "
              f"{n_par} of {len(fc)} sit inside &plusmn;10%; the two that carry the residual, "
              f"distinct-contract code execution at {fc['DIFF_MAX code-exec']['settled']:.3f} and "
              f"jump-destination scanning at {fc['JUMPDEST code-exec']['settled']:.3f}, reproduce "
              f"to within {max(abs(fc[c]['settled']-fc[c]['r1']) for c in ('DIFF_MAX code-exec','JUMPDEST code-exec')):.3f} "
              f"across three runs of the same configuration. The amber marks are the same cells with the "
-             f"code database repacked so no contract shares a block with the filler."))
+             f"code database repacked so no contract shares a block with the filler; the violet "
+             f"marks are the regenerated store, {n_v2} of {len(_v2)} cells inside the band."))
     IBc = D["intervention_blocks"]["cells"]
     w(f"<p>The generated state was never {factor:.0f}&times; slower. With placement equalised, "
       f"the store no longer compacting itself under the measurement, and both arms on "
-      f"steady-state code, the tests that can support a claim agree to within a few per cent, "
-      f"with the generated store ahead on storage and ether transfers. The one operation that "
-      f"remained slower, fetching a contract the store has never served, is the generator's "
-      f"filler bytecode packed around the fixture contracts; repack the code database so it is "
-      f"not, and that cell reads {IBc['DIFF_MAX code-exec']['after']:.3f}. Four defects, four "
-      f"interventions, no residual that a store property has to carry.</p>")
+      f"steady-state code, the tests that can support a claim agree to within a few per cent. "
+      f"The one operation that remained slower, fetching a contract the store has never served, "
+      f"was the generator's filler bytecode packed around the fixture contracts: repacked as a "
+      f"diagnostic that cell reads {IBc['DIFF_MAX code-exec']['after']:.3f}, and on a store "
+      f"regenerated with the pool fixed at the source it reads "
+      f"{vc['DIFF_MAX code-exec']['v2r1']:.3f} &mdash; past parity, the same mechanism with the "
+      f"sign reversed. Of the cell that ran the other way, ether transfers, about half was this "
+      f"study's own tooling having repacked one column of the snapshot; with that undone the "
+      f"cell reads {vc['ether transfer']['v2r1']:.3f} and what is left is not a read-count "
+      f"difference. Four defects in the pipeline, one in the study, five interventions; what "
+      f"remains is a generated store that is a few per cent <em>cheaper</em> than a "
+      f"mainnet-shaped one on the two operations that touch bytecode and a few per cent cheaper "
+      f"on storage and transfers, in the direction that flatters the synthetic state rather "
+      f"than the one this page opened with.</p>")
 
     fl = M["filters"]
 
@@ -1592,6 +1826,19 @@ def main():
       f"{BM['attribution']['noncode']['after']['sa']['cf'].get('flat/StateNodes', {}).get('marg', 0.0):.0f}. "
       f"An I/O measurement taken while the store is doing its own I/O measures the store, not "
       f"the test.</li>")
+    _sw = D["topnodes"]["swap"]
+    w(f"<li><b>We attributed the transfer asymmetry to the arms; it was ours.</b> The snapshot "
+      f"read {100*(_sw['joc']['top_per_account_before']/_sw['sa']['top_per_account_before']-1):.0f}% "
+      f"more top-of-trie blocks per touched account than the generated store and we called it a "
+      f"migrated trie costing more to update. The tries are the same shape. The snapshot's "
+      f"top-of-trie column had been rewritten in 4 KB blocks by the same read-write open that "
+      f"repaired the first item in this list, which transcribed the client's options for the "
+      f"column it meant to rewrite and left the rest on RocksDB's defaults; the audit after it "
+      f"checked two columns and missed the third. Swapping the two layouts moved the transfer "
+      f"cell from {_sw['ratio_settled']:.3f} to {_sw['ratio_swapped']:.3f} and swapped the read "
+      f"counts with it. A read-write open of a store by tooling has to transcribe every "
+      f"column's options, not just the one being rewritten: an idle column with a compaction "
+      f"pending is rewritten under whatever the open carries.</li>")
     w("</ul>")
     w("<p class=note>The numbers in this page are computed from the collected run data at build "
       "time; the generator refuses to emit the page if the data stops supporting the sentences "
@@ -1622,7 +1869,7 @@ def main():
         "fig_seqno_paths": chart_seqno_paths(BM),
         "fig_idle_reads": chart_idle_reads(BM),
         "fig_marginal_cf": chart_marginal_cf(BM),
-        "fig_final_cells": chart_final_cells(CL, {c: v["after"] for c, v in D["intervention_blocks"]["cells"].items()}),
+        "fig_final_cells": chart_final_cells(CL, {c: v["after"] for c, v in D["intervention_blocks"]["cells"].items()}, _v2),
     }
     for name, svg in figs.items():
         with open(os.path.join(FIGDIR, name + ".svg"), "w") as fh:
