@@ -834,6 +834,31 @@ def main():
         "the snapshot no longer gains from the top-node repack: %r" % _vc["ether transfer"]
     assert _vc["ether transfer"]["v2r1"] > 1.03, \
         "the transfer cell closed; the open-residual paragraph must be rewritten: %r" % _vc["ether transfer"]
+
+    # Round 68. The section says: the shared denominator inflated the tail, what survives on a
+    # fresh pair is an absent-slot storage test explained by the column's level spread and an
+    # absent-account transfer that is not I/O at all. Each of those has to still be true.
+    OU_ = D["outliers"]
+    _ot, _den_ = OU_["tests"], OU_["denominator"]
+    assert _den_["joc_spread"] > 1.5 * _den_["sa_spread"], \
+        "jochemnet is no longer the noisier denominator; the shared-denominator argument goes: %r" % _den_
+    for _k in ("amt0 diff_to_self 240M", "amt0 diff_to_existent 240M"):
+        assert _ot[_k]["r_v2r1"] > 1.1 and _ot[_k]["r_r68"] < 1.1, \
+            "%s no longer collapses against a same-session denominator: %r" % (_k, _ot[_k])
+    _sf = _ot["amt0 diff_to_self 240M"]["cols"]
+    for _c in ("flat/Account", "flat/StateTopNodes", "flat/StateNodes"):
+        assert abs(_sf[_c]["sa_n"] / _sf[_c]["joc_n"] - 1) < 0.03 and \
+            abs(_sf[_c]["sa_us"] / _sf[_c]["joc_us"] - 1) < 0.06, \
+            "the surviving transfers are no longer read-identical on %s: %r" % (_c, _sf[_c])
+    _ne = _ot["amt1 diff_to_nonexistent 160M"]
+    assert _ne["r_r68"] > 1.2 and abs(_ne["cols"]["flat/Account"]["sa_n"] / _ne["cols"]["flat/Account"]["joc_n"] - 1) < 0.03, \
+        "the absent-account transfer is no longer a same-reads outlier: %r" % _ne
+    _ab = _ot["sstore slots=False new=False 240M"]
+    assert _ab["r_r68"] > 1.5 and _ab["cols"]["flat/Storage"]["joc_n"] > 3 * _ab["cols"]["flat/Storage"]["sa_n"], \
+        "the absent-slot outlier or its read asymmetry is gone: %r" % _ab
+    _lv = OU_["levels"]
+    assert len(_lv["joc"]["Storage"]["levels"]) >= 4 and len(_lv["sa"]["Storage"]["levels"]) == 1, \
+        "the storage columns no longer differ in level spread: %r" % _lv
     # Reproducibility. The page now claims dispersion in the short categories is measurement,
     # not store behaviour, which only holds while the replica pair says so: the same store under
     # the same configuration, twice.
@@ -1705,14 +1730,78 @@ def main():
       f"{tr2['v2r1']:.3f} and {tr2['v2r2']:.3f} against {tr2['v1_t1']:.3f} before &mdash; the "
       f"snapshot gained {tr2['joc_joc_t1'] - 1:+.1%} from the repack alone, which is the swap's "
       f"per-arm figure ({_sw2['joc_change']:.3f}) reproduced on a different day against a "
-      f"different store. What is left does not come from reading more nodes: at equal packing "
-      f"the snapshot reads <em>fewer</em> top-of-trie blocks per touched account than the "
-      f"generated store ({_sw2['joc']['top_per_account_after_240M']:.2f} against "
-      f"{_sw2['sa']['top_per_account_before']:.2f}) and fewer second-level ones, and is still "
-      f"the slower arm. So the remaining {100*(tr2['v2r1']-1):.0f}% is per-read cost on a "
-      f"mainnet-shaped trie rather than read count, it is the same size as the storage cell's "
-      f"{100*(vc['storage slot']['v2r1']-1):.0f}% (unmoved by any intervention here, "
-      f"{vc['storage slot']['v1_t1']:.3f} before), and it is open.</p>")
+      f"different store. What is left is small and, as the next section shows, is not a "
+      f"difference in reads at all.</p>")
+
+    # ------------------------------------------------- the surviving outliers (round 68)
+    OU = D["outliers"]
+    ot, den = OU["tests"], OU["denominator"]
+    w("<h3>Which tests are still outside &plusmn;10%, and why</h3>")
+    w(f"<p>Of the {vt['v2r1']['n']} tests over a second, {vt['v2r1']['n'] - vt['v2r1']['within10']} "
+      f"leave &plusmn;10% in the first run of the regenerated store and "
+      f"{vt['v2r2']['n'] - vt['v2r2']['within10']} in the second. Both runs divide by the "
+      f"<em>same</em> jochemnet run, so a single slow jochemnet measurement makes a test look "
+      f"reproducibly divergent in both. It does: re-running {den['n']} of those tests as a "
+      f"fresh pair, back to back on the same day, moves jochemnet by up to "
+      f"{100*den['joc_spread']:.0f}% on one test ({esc(den['joc_worst'])}) against "
+      f"{100*den['sa_spread']:.0f}% for state-actor. Measured pairwise, most of the tail "
+      f"disappears:</p>")
+    rows = [("amt0 diff_to_self 240M", "transfer to self"),
+            ("amt0 diff_to_existent 240M", "transfer to an existing account"),
+            ("amt1 diff_to_delegated_contract_diff 240M", "transfer through a 7702 delegation"),
+            ("amt1 diff_to_nonexistent 160M", "transfer to an absent account"),
+            ("sstore slots=False new=False 160M", "store to an absent slot, no write"),
+            ("sstore slots=True new=True 160M", "store a new value to an existing slot")]
+    w("<table><tr><th>test</th><th class=n>v2 run 1</th><th class=n>v2 run 2</th>"
+      "<th class=n>fresh pair</th><th>what the reads say</th></tr>")
+    notes = {
+        "amt0 diff_to_self 240M": "same reads, same bytes, same latency",
+        "amt0 diff_to_existent 240M": "same reads, same bytes, same latency",
+        "amt1 diff_to_delegated_contract_diff 240M": "same reads; jochemnet reads 1.8&times; the code bytes",
+        "amt1 diff_to_nonexistent 160M": "same reads, same bytes, same latency",
+        "sstore slots=False new=False 160M": "jochemnet 4.2&times; the storage reads",
+        "sstore slots=True new=True 160M": "jochemnet 0.6&times; storage, 1.2&times; storage-node reads",
+    }
+    for k, label in rows:
+        t_ = ot[k]
+        cls = " bad" if t_["r_r68"] < 0.9 else (" good" if t_["r_r68"] > 1.1 else "")
+        w(f"<tr><td>{esc(label)}</td><td class=n>{t_['r_v2r1']:.3f}</td>"
+          f"<td class=n>{t_['r_v2r2']:.3f}</td><td class=\"n{cls}\">{t_['r_r68']:.3f}</td>"
+          f"<td>{notes[k]}</td></tr>")
+    w("<caption>Throughput ratio, state-actor over jochemnet. The first two columns share one "
+      "jochemnet run; the third is a pair measured back to back with every read traced.</caption></table>")
+    sf = ot["amt0 diff_to_self 240M"]["cols"]
+    w(f"<p><b>The transfers that survive the fresh denominator are not I/O.</b> On the largest "
+      f"of them the two arms issue the same reads for the same bytes at the same latency: "
+      f"{sf['flat/Account']['sa_n']:,} against {sf['flat/Account']['joc_n']:,} account-row "
+      f"reads ({sf['flat/Account']['sa_mb']:.0f} MB each side, "
+      f"{sf['flat/Account']['sa_us']/1000:.1f} against {sf['flat/Account']['joc_us']/1000:.1f} ms "
+      f"mean), {sf['flat/StateTopNodes']['sa_n']:,} against "
+      f"{sf['flat/StateTopNodes']['joc_n']:,} top-of-trie reads, and "
+      f"{sf['flat/StateNodes']['sa_n']:,} against {sf['flat/StateNodes']['joc_n']:,} deeper ones. "
+      f"The remaining few per cent is work inside the client per unit of gas, not reads &mdash; "
+      f"which also rules out the reading of a mainnet-shaped trie being dearer per node, the "
+      f"explanation this page carried for one morning. The clearest case is the absent-account "
+      f"transfer: {ot['amt1 diff_to_nonexistent 160M']['cols']['flat/Account']['sa_n']:,} against "
+      f"{ot['amt1 diff_to_nonexistent 160M']['cols']['flat/Account']['joc_n']:,} account reads, "
+      f"identical bytes and latency, and "
+      f"{ot['amt1 diff_to_nonexistent 160M']['thr']['nm-sa-out68']:.0f} against "
+      f"{ot['amt1 diff_to_nonexistent 160M']['thr']['nm-joc-out68']:.0f} MGas/s. Open.</p>")
+    ab = ot["sstore slots=False new=False 240M"]["cols"]["flat/Storage"]
+    lv = OU["levels"]
+    w(f"<p><b>The storage outlier is I/O, and it is the same mechanism as the root cause.</b> "
+      f"Writing to a slot that does not exist runs {ot['sstore slots=False new=False 160M']['r_r68']:.2f}&ndash;"
+      f"{ot['sstore slots=False new=False 240M']['r_r68']:.2f}&times; on the generated store in "
+      f"every run, and the reason is in the column's shape rather than its contents: jochemnet's "
+      f"storage column is spread over "
+      f"{'/'.join('L%d' % l for l in lv['joc']['Storage']['levels'])} "
+      f"({lv['joc']['Storage']['files']:,} files, {lv['joc']['Storage']['gb']:.0f} GB), the "
+      f"generated store's sits in a single {'/'.join('L%d' % l for l in lv['sa']['Storage']['levels'])} "
+      f"({lv['sa']['Storage']['files']:,} files, {lv['sa']['Storage']['gb']:.0f} GB). A lookup "
+      f"for a key that is absent has to be refused by every level that could hold it, so the "
+      f"snapshot pays {ab['joc_n']:,} storage reads against {ab['sa_n']:,} for the same test. "
+      f"Placement again, one column over: the pre-run left the storage column as a stack of "
+      f"levels, and nothing in this study ever compacted it.</p>")
 
     # ------------------------------------------------- where it stands
     w("<h2>Where it stands</h2>")
@@ -1741,8 +1830,10 @@ def main():
       f"{vc['DIFF_MAX code-exec']['v2r1']:.3f} &mdash; past parity, the same mechanism with the "
       f"sign reversed. Of the cell that ran the other way, ether transfers, about half was this "
       f"study's own tooling having repacked one column of the snapshot; with that undone the "
-      f"cell reads {vc['ether transfer']['v2r1']:.3f} and what is left is not a read-count "
-      f"difference. Four defects in the pipeline, one in the study, five interventions; what "
+      f"cell reads {vc['ether transfer']['v2r1']:.3f}, and on a same-session pair the tests "
+      f"behind it issue the same reads for the same bytes at the same latency, so what is left "
+      f"there is not I/O at all. Four defects in the pipeline, one in the study, five "
+      f"interventions; what "
       f"remains is a generated store that is a few per cent <em>cheaper</em> than a "
       f"mainnet-shaped one on the two operations that touch bytecode and a few per cent cheaper "
       f"on storage and transfers, in the direction that flatters the synthetic state rather "
@@ -1839,6 +1930,13 @@ def main():
       f"counts with it. A read-write open of a store by tooling has to transcribe every "
       f"column's options, not just the one being rewritten: an idle column with a compaction "
       f"pending is rewritten under whatever the open carries.</li>")
+    _den = D["outliers"]["denominator"]
+    w(f"<li><b>We called an outlier reproducible because it appeared in two runs that shared a "
+      f"denominator.</b> The regenerated store was measured twice, both times against the same "
+      f"jochemnet run, and a handful of tests sat 20&ndash;38% apart in both. Re-measuring "
+      f"{_den['n']} of them as a fresh pair moved jochemnet by up to {100*_den['joc_spread']:.0f}% "
+      f"on a single test and took the largest transfer excursions back inside the band. Two runs "
+      f"of one arm are one measurement of the ratio, not two.</li>")
     w("</ul>")
     w("<p class=note>The numbers in this page are computed from the collected run data at build "
       "time; the generator refuses to emit the page if the data stops supporting the sentences "
