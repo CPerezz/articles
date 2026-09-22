@@ -969,6 +969,19 @@ def main():
             assert all(abs(t * b - 1) <= 0.10 for t, b in zip(V4["gradient"]["dark"], DK["v4_over_mainnet"])), \
                 "throughput does not follow bytes per read"
             assert DK["gas"] == V4["gradient"]["gas"], "disk budgets do not match the gradient"
+        if V4.get("arm_b"):
+            AB = V4["arm_b"]
+            assert not AB["canary_ok"] and abs(AB["control_ratio"] - V4["control_archived"]) > 0.013, \
+                "arm B's canary passed; it should be merged, not shown aside"
+            assert AB["gas_identity_bad"] == 0 and AB["fail"] == 0, "arm B is not a clean run"
+            assert not set(AB["budgets"]) & set(V4["budgets"]), "arm B overlaps arm A's budgets"
+            allg = sorted(V4["budgets"] + AB["budgets"])
+            alld = dict(zip(V4["budgets"], V4["gradient"]["dark"])) | dict(zip(AB["budgets"], AB["gradient"]["dark"]))
+            seq = [alld[g] for g in allg]
+            assert all(b >= a for a, b in zip(seq, seq[1:])), "the eleven-budget gradient is not monotone"
+            allb = dict(zip(V4["budgets"], DK["v4_over_mainnet"])) | dict(zip(AB["budgets"], AB["disk"]["v4_over_mainnet"]))
+            seqb = [allb[g] for g in allg]
+            assert all(b <= a for a, b in zip(seqb, seqb[1:])), "the byte ratio does not fall monotonically with the budget"
     # The code-block argument: the contract itself is near-free on both stores, the block is
     # not, and shrinking the block removes the co-tenants entirely.
     assert CB["jochemnet"]["fixture_deflate"] < 0.05 and CB["state_actor"]["fixture_deflate"] < 0.05, \
@@ -1554,6 +1567,17 @@ def main():
               f"budget. The pool no longer explains the gap. What a fixture read carries alongside "
               f"its record, on a code column family a fraction of mainnet's size, is the next thing "
               f"to measure.</p>")
+            if V4.get("arm_b"):
+                AB = V4["arm_b"]
+                w(f"<p>The other {len(AB['budgets'])} budgets, run afterwards as a second arm of "
+                  f"{AB['tests']} tests, fill the gradient in monotonically, "
+                  f"{AB['gradient']['dark'][0]:.3f} at {AB['budgets'][0]}M to "
+                  f"{AB['gradient']['dark'][-1]:.3f} at {AB['budgets'][-1]}M, and the byte ratio "
+                  f"with it, {AB['disk']['v4_over_mainnet'][0]:.3f} to "
+                  f"{AB['disk']['v4_over_mainnet'][-1]:.3f}. That arm's controls sat at "
+                  f"{AB['control_ratio']:.3f}&times; against the archived {V4['control_archived']:.3f}, "
+                  f"outside the tolerance this comparison is held to, so its points are shown and "
+                  f"not counted.</p>")
         elif V4["verdict"] == "below":
             w(f"<p>The distinct-code class is at <b>{d4:.3f}&times;</b>: {d1:.3f} before the fixes, "
               f"{d3:.3f} under the tiled pool, now {pc(d4)} slower than the snapshot again and outside "
