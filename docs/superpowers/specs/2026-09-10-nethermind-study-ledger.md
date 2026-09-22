@@ -2333,41 +2333,88 @@ level-6 subtrees sampled from StateNodes):
 | nodes on a cold root-to-leaf walk | 8.82 | 8.90 |
 
 The generated trie is marginally *deeper* (21% more accounts). Shape cannot produce fewer node
-reads on state-actor.
+reads on state-actor. Flat state does not remove the walk either: a transfer *writes* two
+accounts, and the state root needs every branch node on both paths re-hashed - that is where
+the top-node reads come from, and why the read-only account categories never showed this.
 
 **Physical packing, measured** (`rocksdb.aggregated-table-properties` per column family):
 
-| Flat/StateTopNodes | jochemnet | state-actor v1 | client option (DbConfig.cs, #9854) |
+| Flat/StateTopNodes | jochemnet | state-actor v1 | client option (DbConfig.cs) |
 |---|---|---|---|
 | entries | 1,118,481 | 1,118,481 | |
 | data blocks | 159,791 | 38,577 | |
 | on-disk bytes per block | 3,830 | 15,877 | block_size=16000 |
 | entries per block | 7.0 | 29.0 | |
-| filter block | none | 1.0 MB ribbon | filter_policy=ribbonfilter:10:3 |
+| filter block | none | 1.0 MB ribbon | (ribbon policy, no bottommost filter: optimize_filters_for_hits=true) |
 | files / level | 10 / L6 | 10 / L6 | |
 
 Every other flat column (Account 4 KB, Storage 8 KB, StateNodes/StorageNodes 16 KB) matches the
-client's options on both stores. Only the top-of-trie column differs: the jochemnet snapshot's
-top-node files were written before Nethermind #9854 (2026-02-25, the commit that gave the flat
-columns explicit options; before it they took RocksDB's 4096-byte default and no filter) and,
-being at L6 and never recompacted, kept that layout. State-actor mirrors the current options.
+client's options on both stores. Only the top-of-trie column differed.
 
-Why it matters here: top nodes are keyed by path, so a level-4 node and its 16 level-5 children
-are 17 consecutive keys (9 KB). A 16 KB block holds a parent with all its children; a 4 KB block
-holds 7 nodes. Per touched account, R62 measured 1.00 top-node preads on jochemnet against 0.69
-on state-actor (Account preads identical, 32.1k per test), uniformly across all 18 transfer
-variants (ratio 1.43-1.60). At ~10 ms mean pread latency under the client's parallel prefetch,
-the extra preads are the transfer-test gap.
+**Provenance of the 4 KB layout - my own round 13, not the snapshot.** The SST file numbers date
+it: jochemnet's original files run from `000092` (StorageNodes/Storage, written by the syncing
+nodes `9b11672af1ef`/`de2799db0b36`), while the ten 4 KB top-node files were `045338-045524` -
+after the `045271` Metadata file and just before the round-14 Account rebuild (`045615+`).
+Round 13's `-mode compact -cf Account` opened the whole flat DB read-write through `openRW`,
+which gives **every** column `grocksdb.NewDefaultOptions()` (block_size 4096, no filter policy,
+auto-compactions on). The pre-run replay had left StateTopNodes compaction-pending ("1/3 of the
+writes"), so RocksDB ran that compaction in the background under the defaults while Account was
+being rewritten on purpose. Round 14's damage audit checked Account and StateNodes and missed
+it. (The footer-level audit that establishes this - `sstprops.py`, per-file properties incl.
+`creating.host.identity` - is now in the toolbox; it also shows the client itself writes no
+bottommost filters on the trie columns, `optimize_filters_for_hits=true` from the base options,
+which is what state-actor v2 does and what my `specOptions` rebuilds on Account/StateNodes/
+StateTopNodes of jochemnet do not. Hit-only lookups pay a hash for that, no I/O.)
 
-**Intervention (both directions, R66).** `probe-flat -mode rebuild -cf StateTopNodes -level 6`:
-state-actor v1 rewritten with `-rbblock 4096 -rbnofilter` (159,791 blocks, 3,841 B, no filter -
-jochemnet's layout), jochemnet rewritten with the client's options (38,577 blocks, 15,877 B,
-ribbon) - each in ~2 s, entry counts unchanged, both promoted. All 36 ether-transfer tests
-(160M/240M) then run on each arm with per-column pread accounting. Prediction: top preads per
-account swap (sa -> ~1.0, joc -> ~0.69) and the sa/joc transfer ratio collapses toward 1.0 from
-both sides. Results: `/bench/logs/dive/verdict-topnodes.txt` (pending at time of writing).
+Why 4 KB costs a read per account: top nodes are keyed by path in pre-order, so a level-4 node
+and its 16 level-5 children are 17 consecutive keys (9 KB). A 16 KB block holds the family; a 4
+KB block holds 7 nodes, so the parent of a touched leaf usually sits in a different block. R62
+measured 1.07 top-node preads per touched account on jochemnet against 0.73 on state-actor,
+Account preads identical, uniformly across all 18 transfer variants (ratio 1.43-1.60).
 
-**Consequence for the comparison.** jochemnet's baseline now carries the client's packing for
-its top nodes (promoted); every later jochemnet run is layout-fair with a generated store. The
-transfer rows in the article (1.076 cell median, "a property of the arms") must be rewritten
-around this once the verdict is in.
+**Intervention, both directions (R66, 2026-09-21 20:08-22:10 UTC).** `probe-flat -mode rebuild
+-cf StateTopNodes -level 6`: state-actor v1 rewritten with `-rbblock 4096 -rbnofilter` (159,791
+blocks, 3,841 B, no filter - the contaminated layout), jochemnet rewritten with the client's
+options (38,577 blocks, 15,877 B) - 2 s each, entry counts unchanged, both promoted. Every
+ether-transfer test (all 11 gas values; 105 sa / 95 joc completed inside the 1 h budget, 94
+pairs) with per-column pread accounting:
+
+| | settled layouts (t1) | swapped layouts |
+|---|---|---|
+| median sa/joc throughput, transfers | **1.074** | **1.014** (n=94) |
+| per-arm change from the swap alone | | sa x0.975, joc x1.034 |
+| top-node preads per touched account, joc | 1.071 | 0.681 (0.644 on the 240M half) |
+| top-node preads per touched account, sa | 0.728 | 1.016 (0.985 on the 240M half) |
+| Account preads per test | identical | identical |
+
+The read counts swap exactly, each arm moves in the predicted direction by about half the gap,
+and the 7.4% asymmetry becomes 1.4% - inside the replica spread. Cause closed by intervention.
+`/bench/logs/dive/verdict-topnodes.txt`.
+
+**Consequences.** (1) The jochemnet baseline now carries the client's packing for its top
+nodes (promoted), so every later jochemnet run is layout-fair with a generated store. (2) The
+article's transfer paragraph ("a property of the arms") is wrong and is rewritten with the v2
+results. (3) Process rule, again: any read-write open of a store by tooling must transcribe
+every column's options, not just the one being rewritten - an idle column with pending
+compaction is rewritten under whatever options the open carries.
+
+## Round 67 - v2 store (state-actor main 005a19c6 incl. #141), class-2 re-measurement
+
+Pipeline on the box (`/home/ubuntu/v2-pipeline.sh`, logs `/bench/logs/v2/`): generate with
+`ghcr.io/ethereum/state-actor-nethermind:main-005a19c` (same spec, seed 42, osaka, 1 TGas,
+350GB) -> 472 GB in 4h20m, genesis `0x0cb03528...a68623`, state root `0x48d611bb...d51b8`;
+top nodes packed 29/16 KB block as generated (state-actor #139 leaves the store settled, no
+manual compaction pass); shape 433.1M accounts, mean leaf path 7.90. Installed as the nm-sa
+schelk baseline (`/schelk-sa/state-actor/v2/nethermind`, promoted; v1 kept only as the staging
+copy under `/bench/nm-store/v1`). Fixtures: the 148 class-2 tests (every >=1 s category at
+160M/240M) filled against v2 with the nethermind filler, `eest_ref: benchmarks/amsterdam`
+(`13b79138`), `pytest -k "(test_account_access and overhead_baseline_False and not
+NON_EXISTING) or test_sload_bloated or test_sstore_bloated or
+test_ether_transfers_onchain_receivers"`. Runs: `nm-sa-v2r1`, `nm-joc-v2r1` (fresh jochemnet on
+the repacked baseline), `nm-sa-v2r2`; verdict `v2-verdict.py`.
+
+One harness defect found on the way: under podman, `benchmarkoor build` builds the embedded
+fill image as `localhost/benchmarkoor-eest-fill:local` and then creates the container as
+`docker.io/benchmarkoor-eest-fill:local` (unqualified name normalised to docker.io) - "no such
+image". Worked around by tagging the built image with the docker.io name and pinning
+`fill_image` to it. Worth an upstream fix in `pkg/builder/eest_payloads.go`.
