@@ -3827,3 +3827,52 @@ lookup, and that compaction still swings the reference by more than 3x.
   why a bottom-level-only snapshot would still need 1.28 block reads per account lookup. Probing
   that needs a compacted snapshot copy (1.1 TB, ~1 day) and would measure RocksDB, not state-actor.
 - #141 merged upstream 2026-09-21T19:25Z, 18/18 checks. v4 store built from exactly that sha.
+
+## Round 58 - the attribution was my probe's bug, corrected in public
+
+Anon asked what measurement or state-actor change could bring the generated store closer to
+jochemnet. Answering it meant checking round 57's mechanism, and round 57's mechanism was wrong.
+
+### The bug
+
+`CfReadCost` opened each store with its own `BlockBasedTableConfig().setBlockCache(cache)` and no
+filter policy. RocksDB will not use the bloom filters present in the files unless a policy is
+configured, so every level check cost a data block. That is what produced "1.28 block reads per
+lookup on the snapshot against 1.00 on the generated store", which round 57 published as the whole
+of the residual. The tell was in the probe's own output and I read past it: `bloom useful 0,
+full_positive 0` on **both** stores, while LiveGeom reports 461 MB and 538 MB of filters in their
+cf06. A store with filters does not have zero filter activity.
+
+Second error in the same probe: keys were stride-sampled over the first 4M records, a key-range
+prefix. For cf06 and cf07 the keys are hashes, so that is uniform. For cf09 it is the top of the
+trie, which is shallow and heavily shared, and it made the generated store's trie reads look 29%
+cheaper than they are.
+
+### Corrected, filters on, 30,000 keys drawn uniformly across the keyspace, cold
+
+| cold lookup | snapshot | v4 | ratio |
+|---|---|---|---|
+| cf06 accounts | 18,807 B, 1.026 blocks | 17,207 B, 0.990 blocks | 0.915 |
+| cf09 trie branches | 27,945 B, 0.989 blocks | 36,574 B, 0.995 blocks | **1.309** |
+| bloom false positives per read | 0.060 (cf06), 0.031 (cf09) | 0.000 | |
+
+Both stores answer a lookup with almost exactly one data block. The two per-lookup ratios point
+opposite ways and neither is the workload's 0.748, so **cost per lookup is not the mechanism**. The
+generated store's trie nodes are dearer, not cheaper: 94 B per node on disk against mainnet's 73 B.
+
+### What survives from round 57
+
+Everything measured from the arms, none of it from the broken probe: the arms prefetch the same
+accounts within 1.2%; cost per prefetched account 220 KiB (reference) against 163 (v4) and 147
+(v3); the code column family is 0.16% of the generated store's bytes; and the reference's own 5.5x
+to 13.9x compaction swing on this class and no other. The residual is now stated as the number of
+lookups per prefetched account, explicitly unmeasured, inside a factor the reference swings by
+itself. Published `4eae3ee`, live byte-identical, prefix before "Where this stands" unchanged.
+
+### Lesson worth keeping
+
+A probe that reconfigures the store it measures is measuring its own configuration. Both stores
+were read with the same wrong options, which made the comparison feel safe; it was not, because
+the two stores differ in exactly the property the wrong option exposed (level count). Any future
+`rockscompact` probe must mirror Besu's table config (`internal/besu/keys`, `client/besu/dbs_cgo.go`:
+10 bits/key full filter, 32 KiB blocks, LZ4) and print its filter counters so a zero is visible.
