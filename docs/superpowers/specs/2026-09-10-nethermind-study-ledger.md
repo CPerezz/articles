@@ -2479,3 +2479,61 @@ unqualified name, which podman normalises to `docker.io/benchmarkoor-eest-fill:l
 image", after a successful 30 s build. Worked around by tagging the built image with the
 docker.io name and pinning `fill_image`; the fix belongs in `pkg/builder/eest_payloads.go`
 (qualify the locally built tag, or pass the image id).
+
+## Round 68 - the surviving outliers, and a denominator trap of my own making
+
+**Brief.** Anon asked for the tests over a second still outside +-10%, categorised, with a
+verdict on whether the cause is known. Counting them exposed a methodological hole first.
+
+**The hole.** 27 of 142 long-class tests leave the band in `nm-sa-v2r1` and 23 in `nm-sa-v2r2`,
+19 in both and in the same direction - but both divide by the *same* `nm-joc-v2r1`. A single
+slow jochemnet measurement therefore "reproduces". R68 re-ran twenty of them as a fresh pair,
+back to back, both arms traced per column family. jochemnet moves by up to **28.6%** on one test
+against 14.5% for state-actor, and the big excursions collapse:
+
+| test | v2r1 | v2r2 | fresh pair |
+|---|---|---|---|
+| amt0 diff_to_self 240M | 1.353 | 1.380 | **1.086** |
+| amt0 diff_to_self 160M | 1.264 | 1.280 | 1.094 |
+| amt0 diff_to_existent 240M | 1.184 | 1.184 | 1.050 |
+| amt1 diff_to_delegated 160M | 1.205 | 1.216 | 1.082 |
+| sstore slots=True new=True 160M | 1.274 | 1.263 | 1.117 |
+| sstore slots=True new=False 160M | 1.114 | 1.131 | 0.995 |
+| amt1 diff_to_nonexistent 160M | 1.485 | 1.480 | **1.454** |
+| sstore slots=False new=False 160M | 2.541 | 2.407 | **2.027** |
+
+state-actor's absolutes are stable across all three runs (diff_to_self 240M: 27.9 / 28.5 / 28.2
+MGas/s); jochemnet's move (20.6 -> 25.9 on the same test). Rule recorded: **two runs of one arm
+are one measurement of the ratio.** Pairs, or nothing.
+
+**What survives, with every read traced.**
+
+1. *Store to an absent slot* (`existing_slots=False, write_new_value=False`), 2.03-2.14x in every
+   run: **I/O, and the study's own root cause one column over.** jochemnet's `Flat/Storage` is
+   spread over L0/L2/L3/L4/L5/L6 (807 files, 89 GB); the generated store's sits in a single L4
+   (331 files, 157 GB). An absent key must be refused by every level that could hold it, so the
+   snapshot pays 3,770 storage reads against 900 for the same test (21.8 vs 4.8 MB), at 7.8 vs
+   6.3 ms mean. The pre-run left the storage column as a stack of levels; rounds 13/34/53 settled
+   Account, StateNodes, StorageNodes and the code DBs and never touched `Storage`.
+2. *Transfer to an absent account* (`amt1 diff_to_nonexistent`), 1.32-1.49 in every run: **not
+   I/O.** 918 vs 920 account reads, 3.7 MB each side, 13.8 vs 13.8 ms mean; 3,358 vs 3,385
+   top-of-trie, 1,914 vs 1,829 deeper. 144 vs 99 MGas/s in a 2-3 s test. Open, but bounded: it is
+   client work per unit of gas, not reads.
+3. Everything else (transfers to self/existing/delegated, `sstore slots=True new=True`) sits at
+   1.05-1.12 with read-identical traces: same preads, same bytes (within 2%), same mean latency
+   (within 5%), on every column.
+
+**Correction to the page published this morning.** It said the transfer residual was "per-read
+cost on a mainnet-shaped trie rather than read count". R68 refutes the second half too: per-read
+latency is equal. The wording is retired; the page now says the surviving transfer difference is
+not I/O at all, and the storage outlier is explained by level spread.
+
+**Published** `bf5227e` on `main` (clean `origin/main` checkout, zero sibling folders touched,
+HTTP 200, byte-identical). Finding 4's transfer subsection gained "Which tests are still outside
++-10%, and why" with the pairwise table and the two mechanisms; a fifth errata item records the
+shared denominator; `collect_r68.py` added; seven new oracles, all mutation-tested.
+
+**Next, if this is pursued:** settle `Flat/Storage` on jochemnet the way rounds 34/53 settled the
+other columns (`probe-flat -mode rebuild -cf Storage -level 6` + promote) and re-run the four
+sstore tests - the absent-slot cell should collapse the way DIFF_MAX did. The absent-account
+transfer needs a CPU profile, not an I/O trace.
