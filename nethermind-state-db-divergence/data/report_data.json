@@ -6919,5 +6919,704 @@
     "test": 4234.0352
    }
   }
+ },
+ "topnodes": {
+  "client_option": {
+   "block_size": 16000,
+   "filter": "ribbonfilter:10:3 policy; no bottommost filter (optimize_filters_for_hits=true)"
+  },
+  "packing": {
+   "joc_after": {
+    "blocks": 38577,
+    "bytes_per_block": 15877,
+    "entries": 1118481,
+    "entries_per_block": 29.0,
+    "filter_mb": 1.0
+   },
+   "joc_before": {
+    "blocks": 159791,
+    "bytes_per_block": 3830,
+    "entries": 1118481,
+    "entries_per_block": 7.0,
+    "filter_mb": 0.0
+   },
+   "sa_after": {
+    "blocks": 159791,
+    "bytes_per_block": 3841,
+    "entries": 1118481,
+    "entries_per_block": 7.0,
+    "filter_mb": 0.0
+   },
+   "sa_before": {
+    "blocks": 38577,
+    "bytes_per_block": 15877,
+    "entries": 1118481,
+    "entries_per_block": 29.0,
+    "filter_mb": 1.0
+   }
+  },
+  "provenance": {
+   "Account": {
+    "max": 45651,
+    "min": 45615,
+    "n": 37
+   },
+   "FallbackNodes": {
+    "max": 24162,
+    "min": 24162,
+    "n": 1
+   },
+   "Metadata": {
+    "max": 45271,
+    "min": 45271,
+    "n": 1
+   },
+   "StateNodes": {
+    "max": 46077,
+    "min": 45920,
+    "n": 158
+   },
+   "StateTopNodes": {
+    "max": 45524,
+    "min": 45338,
+    "n": 10
+   },
+   "Storage": {
+    "max": 45242,
+    "min": 118,
+    "n": 807
+   },
+   "StorageNodes": {
+    "max": 45595,
+    "min": 92,
+    "n": 1961
+   }
+  },
+  "shape": {
+   "joc": {
+    "accounts_est_M": 358.6,
+    "deepest_len": 12,
+    "leaves_per_subtree": 21.37,
+    "mean_leaf_len": 7.824,
+    "nodes_per_subtree": 29.43,
+    "subtrees_sampled": 2048,
+    "top_nodes": 1118481,
+    "walk_nodes": 8.824
+   },
+   "sa_v1": {
+    "accounts_est_M": 431.3,
+    "deepest_len": 11,
+    "leaves_per_subtree": 25.71,
+    "mean_leaf_len": 7.901,
+    "nodes_per_subtree": 35.64,
+    "subtrees_sampled": 2048,
+    "top_nodes": 1118481,
+    "walk_nodes": 8.901
+   },
+   "sa_v2": {
+    "accounts_est_M": 433.1,
+    "deepest_len": 12,
+    "leaves_per_subtree": 25.81,
+    "mean_leaf_len": 7.901,
+    "nodes_per_subtree": 35.76,
+    "subtrees_sampled": 2048,
+    "top_nodes": 1118481,
+    "walk_nodes": 8.901
+   }
+  },
+  "src": "R66: probe-flat -mode shape / -mode props / -mode rebuild; runs nm-sa-top4k, nm-joc-top16k with per-fd pread tracing",
+  "swap": {
+   "joc": {
+    "account_after_240M": 200270,
+    "account_before": 237044,
+    "statenodes_before": 148084,
+    "top_after_240M": 128927,
+    "top_before": 253969,
+    "top_bytes_per_pread_after": 15890,
+    "top_per_account_after_240M": 0.644,
+    "top_per_account_after_all": 0.681,
+    "top_per_account_before": 1.071
+   },
+   "joc_change": 1.034,
+   "n_pairs": 94,
+   "per_variant_240M": [
+    {
+     "joc_after": 0.68,
+     "joc_before": 0.98,
+     "sa_after": 0.97,
+     "sa_before": 0.66,
+     "variant": "amt0 diff_to_contract 240M"
+    },
+    {
+     "joc_after": 0.7,
+     "joc_before": 0.99,
+     "sa_after": 0.98,
+     "sa_before": 0.68,
+     "variant": "amt0 diff_to_contract_diff_max 240"
+    },
+    {
+     "joc_after": 0.68,
+     "joc_before": 0.97,
+     "sa_after": 0.97,
+     "sa_before": 0.66,
+     "variant": "amt0 diff_to_contract_minimal 240M"
+    },
+    {
+     "joc_after": 0.68,
+     "joc_before": 0.97,
+     "sa_after": 0.96,
+     "sa_before": 0.66,
+     "variant": "amt0 diff_to_contract_same_max 240"
+    },
+    {
+     "joc_after": 0.7,
+     "joc_before": 0.99,
+     "sa_after": 0.98,
+     "sa_before": 0.69,
+     "variant": "amt0 diff_to_existent 240M"
+    },
+    {
+     "joc_after": 0.0,
+     "joc_before": 1.92,
+     "sa_after": 1.91,
+     "sa_before": 1.31,
+     "variant": "amt0 diff_to_nonexistent 240M"
+    },
+    {
+     "joc_after": 0.0,
+     "joc_before": 1.92,
+     "sa_after": 0.0,
+     "sa_before": 1.25,
+     "variant": "amt0 diff_to_self 240M"
+    }
+   ],
+   "ratio_settled": 1.074,
+   "ratio_swapped": 1.014,
+   "sa": {
+    "account_after_240M": 216331,
+    "account_before": 237077,
+    "statenodes_before": 161736,
+    "top_after_240M": 213165,
+    "top_before": 172641,
+    "top_bytes_per_pread_after": 3845,
+    "top_per_account_after_240M": 0.985,
+    "top_per_account_after_all": 1.016,
+    "top_per_account_before": 0.728
+   },
+   "sa_change": 0.975,
+   "tests_completed": {
+    "joc": 95,
+    "sa": 105
+   }
+  }
+ },
+ "v2": {
+  "cells": {
+   "DIFF_MAX BAL/HASH": {
+    "joc_joc_t1": 0.9987,
+    "joc_joc_t1_n": 4,
+    "n": 4,
+    "v1_t1": 0.9866,
+    "v1_t1_n": 4,
+    "v2r1": 0.997,
+    "v2r1_joc_t1": 0.9957,
+    "v2r1_joc_t1_n": 4,
+    "v2r1_n": 4,
+    "v2r2": 0.9854,
+    "v2r2_n": 4,
+    "v2r2_v2r1": 0.9901,
+    "v2r2_v2r1_n": 4
+   },
+   "DIFF_MAX code-exec": {
+    "joc_joc_t1": 0.9985,
+    "joc_joc_t1_n": 16,
+    "n": 16,
+    "v1_t1": 0.9377,
+    "v1_t1_n": 16,
+    "v2r1": 1.0513,
+    "v2r1_joc_t1": 1.0721,
+    "v2r1_joc_t1_n": 16,
+    "v2r1_n": 16,
+    "v2r2": 1.0928,
+    "v2r2_n": 16,
+    "v2r2_v2r1": 1.0053,
+    "v2r2_v2r1_n": 16
+   },
+   "EXISTING_EOA BAL/HASH": {
+    "joc_joc_t1": 1.0072,
+    "joc_joc_t1_n": 4,
+    "n": 4,
+    "v1_t1": 0.9947,
+    "v1_t1_n": 4,
+    "v2r1": 0.996,
+    "v2r1_joc_t1": 1.0022,
+    "v2r1_joc_t1_n": 4,
+    "v2r1_n": 4,
+    "v2r2": 0.9894,
+    "v2r2_n": 4,
+    "v2r2_v2r1": 0.9934,
+    "v2r2_v2r1_n": 4
+   },
+   "EXISTING_EOA code-exec": {
+    "joc_joc_t1": 1.0029,
+    "joc_joc_t1_n": 16,
+    "n": 16,
+    "v1_t1": 0.9973,
+    "v1_t1_n": 16,
+    "v2r1": 0.9988,
+    "v2r1_joc_t1": 1.0006,
+    "v2r1_joc_t1_n": 16,
+    "v2r1_n": 16,
+    "v2r2": 0.9961,
+    "v2r2_n": 16,
+    "v2r2_v2r1": 1.0012,
+    "v2r2_v2r1_n": 16
+   },
+   "JUMPDEST BAL/HASH": {
+    "joc_joc_t1": 0.9988,
+    "joc_joc_t1_n": 4,
+    "n": 4,
+    "v1_t1": 0.9739,
+    "v1_t1_n": 4,
+    "v2r1": 0.9975,
+    "v2r1_joc_t1": 0.9961,
+    "v2r1_joc_t1_n": 4,
+    "v2r1_n": 4,
+    "v2r2": 1.0012,
+    "v2r2_n": 4,
+    "v2r2_v2r1": 0.9991,
+    "v2r2_v2r1_n": 4
+   },
+   "JUMPDEST code-exec": {
+    "joc_joc_t1": 1.0013,
+    "joc_joc_t1_n": 16,
+    "n": 16,
+    "v1_t1": 0.9425,
+    "v1_t1_n": 16,
+    "v2r1": 1.1026,
+    "v2r1_joc_t1": 1.0961,
+    "v2r1_joc_t1_n": 16,
+    "v2r1_n": 16,
+    "v2r2": 1.0749,
+    "v2r2_n": 16,
+    "v2r2_v2r1": 0.9909,
+    "v2r2_v2r1_n": 16
+   },
+   "MINIMAL BAL/HASH": {
+    "joc_joc_t1": 1.0039,
+    "joc_joc_t1_n": 4,
+    "n": 4,
+    "v1_t1": 0.9982,
+    "v1_t1_n": 4,
+    "v2r1": 1.004,
+    "v2r1_joc_t1": 1.0007,
+    "v2r1_joc_t1_n": 4,
+    "v2r1_n": 4,
+    "v2r2": 0.9983,
+    "v2r2_n": 4,
+    "v2r2_v2r1": 0.9941,
+    "v2r2_v2r1_n": 4
+   },
+   "MINIMAL code-exec": {
+    "joc_joc_t1": 1.0048,
+    "joc_joc_t1_n": 16,
+    "n": 16,
+    "v1_t1": 0.9948,
+    "v1_t1_n": 16,
+    "v2r1": 0.9957,
+    "v2r1_joc_t1": 1.0016,
+    "v2r1_joc_t1_n": 16,
+    "v2r1_n": 16,
+    "v2r2": 0.9971,
+    "v2r2_n": 16,
+    "v2r2_v2r1": 0.9937,
+    "v2r2_v2r1_n": 16
+   },
+   "SAME_MAX BAL/HASH": {
+    "joc_joc_t1": 0.9991,
+    "joc_joc_t1_n": 4,
+    "n": 4,
+    "v1_t1": 0.9976,
+    "v1_t1_n": 4,
+    "v2r1": 0.9961,
+    "v2r1_joc_t1": 0.9952,
+    "v2r1_joc_t1_n": 4,
+    "v2r1_n": 4,
+    "v2r2": 0.9988,
+    "v2r2_n": 4,
+    "v2r2_v2r1": 1.0007,
+    "v2r2_v2r1_n": 4
+   },
+   "SAME_MAX code-exec": {
+    "joc_joc_t1": 0.999,
+    "joc_joc_t1_n": 16,
+    "n": 16,
+    "v1_t1": 0.9995,
+    "v1_t1_n": 16,
+    "v2r1": 0.9997,
+    "v2r1_joc_t1": 0.9997,
+    "v2r1_joc_t1_n": 16,
+    "v2r1_n": 16,
+    "v2r2": 1.0031,
+    "v2r2_n": 16,
+    "v2r2_v2r1": 1.0047,
+    "v2r2_v2r1_n": 16
+   },
+   "ether transfer": {
+    "joc_joc_t1": 1.0425,
+    "joc_joc_t1_n": 36,
+    "n": 36,
+    "v1_t1": 1.076,
+    "v1_t1_n": 36,
+    "v2r1": 1.0608,
+    "v2r1_joc_t1": 1.1194,
+    "v2r1_joc_t1_n": 36,
+    "v2r1_n": 36,
+    "v2r2": 1.0566,
+    "v2r2_n": 36,
+    "v2r2_v2r1": 0.9988,
+    "v2r2_v2r1_n": 36
+   },
+   "storage slot": {
+    "joc_joc_t1": 0.9856,
+    "joc_joc_t1_n": 12,
+    "n": 12,
+    "v1_t1": 1.0935,
+    "v1_t1_n": 12,
+    "v2r1": 1.1119,
+    "v2r1_joc_t1": 1.0903,
+    "v2r1_joc_t1_n": 12,
+    "v2r1_n": 12,
+    "v2r2": 1.1229,
+    "v2r2_n": 12,
+    "v2r2_v2r1": 0.997,
+    "v2r2_v2r1_n": 12
+   }
+  },
+  "fixtures": {
+   "class2_covered": [
+    143,
+    143
+   ],
+   "eest_commit": "13b791382048f083f8243b0eb5071273775c6440",
+   "eest_ref": "benchmarks/amsterdam",
+   "filled": 158,
+   "filler": "nethermind",
+   "gas": [
+    160,
+    240
+   ]
+  },
+  "gen_minutes": 261,
+  "genesis": "0x0cb035288eb4e257f34f3d570ed4f43f9d2fc45c09f19db6c0392f60f4a68623",
+  "image": "ghcr.io/ethereum/state-actor-nethermind:main-005a19c",
+  "per_test": {
+   "v1_t1": {
+    "extremes": [
+     [
+      0.844,
+      "test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODECOPY-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST"
+     ],
+     [
+      0.849,
+      "test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_0-case_id_diff_to_delegated_contract_diff-benchm"
+     ],
+     [
+      0.859,
+      "test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_STATICCALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-"
+     ],
+     [
+      1.284,
+      "test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_0-case_id_diff_to_existent-benchmark-gas-value_2"
+     ],
+     [
+      1.303,
+      "test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_1-case_id_diff_to_nonexistent-benchmark-gas-valu"
+     ],
+     [
+      1.439,
+      "test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_1-case_id_diff_to_nonexistent-benchmark-gas-valu"
+     ]
+    ],
+    "faster": 18,
+    "max": 1.4392,
+    "median": 0.9985,
+    "min": 0.8438,
+    "n": 143,
+    "slower": 3,
+    "within10": 122
+   },
+   "v2r1": {
+    "extremes": [
+     [
+      0.864,
+      "test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODEHASH-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-"
+     ],
+     [
+      0.877,
+      "test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-ov"
+     ],
+     [
+      0.902,
+      "test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODEHASH-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX"
+     ],
+     [
+      1.274,
+      "test_sstore_bloated[10GB-fork_Amsterdam-blockchain_test_stateful_engine-cache_strategy_CacheStrategy.NO_CACHE-existing_slots_True-write_new_value_True"
+     ],
+     [
+      1.305,
+      "test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_1-case_id_diff_to_nonexistent-benchmark-gas-valu"
+     ],
+     [
+      1.353,
+      "test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_0-case_id_diff_to_self-benchmark-gas-value_240M]"
+     ]
+    ],
+    "faster": 25,
+    "max": 1.3535,
+    "median": 1.0127,
+    "min": 0.8643,
+    "n": 142,
+    "slower": 2,
+    "within10": 115
+   },
+   "v2r2": {
+    "extremes": [
+     [
+      0.815,
+      "test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_STATICCALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-o"
+     ],
+     [
+      0.918,
+      "test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_Fa"
+     ],
+     [
+      0.923,
+      "test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-ov"
+     ],
+     [
+      1.28,
+      "test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_0-case_id_diff_to_self-benchmark-gas-value_160M]"
+     ],
+     [
+      1.29,
+      "test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_1-case_id_diff_to_nonexistent-benchmark-gas-valu"
+     ],
+     [
+      1.38,
+      "test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_0-case_id_diff_to_self-benchmark-gas-value_240M]"
+     ]
+    ],
+    "faster": 22,
+    "max": 1.3798,
+    "median": 1.0086,
+    "min": 0.8152,
+    "n": 142,
+    "slower": 1,
+    "within10": 119
+   }
+  },
+  "revision": "005a19c67534b7383a352acd65b9b06b2f81d58e",
+  "runs": {
+   "nm-joc-t1": 266,
+   "nm-joc-v2r1": 148,
+   "nm-sa-t1": 266,
+   "nm-sa-v2r1": 152,
+   "nm-sa-v2r2": 152
+  },
+  "size": "472G",
+  "src": "R67: nm-sa-v2r1, nm-joc-v2r1, nm-sa-v2r2 on the 148 class-2 fixtures filled against v2; settled t1 runs for reference",
+  "state_root": "0x48d611bb839188317e983453705b31e1420b2c4416675f98d776ad8e130d51b8",
+  "topnodes_packing": {
+   "blocks": 38577,
+   "bytes_per_block": 15879,
+   "entries": 1118481,
+   "entries_per_block": 29.0,
+   "filter_mb": 0.0
+  },
+  "transfers": {
+   "amt0 diff_to_contract 160M": {
+    "v1_t1": 1.0902,
+    "v2r1": 1.0528,
+    "v2r2": 1.0573
+   },
+   "amt0 diff_to_contract 240M": {
+    "v1_t1": 1.0735,
+    "v2r1": 0.9902,
+    "v2r2": 1.043
+   },
+   "amt0 diff_to_contract_diff_max 160M": {
+    "v1_t1": 1.0725,
+    "v2r1": 1.0643,
+    "v2r2": 1.0537
+   },
+   "amt0 diff_to_contract_diff_max 240M": {
+    "v1_t1": 1.0137,
+    "v2r1": 1.0321,
+    "v2r2": 1.0573
+   },
+   "amt0 diff_to_contract_minimal 160M": {
+    "v1_t1": 1.1591,
+    "v2r1": 1.0264,
+    "v2r2": 1.0403
+   },
+   "amt0 diff_to_contract_minimal 240M": {
+    "v1_t1": 1.06,
+    "v2r1": 1.0552,
+    "v2r2": 1.1069
+   },
+   "amt0 diff_to_contract_same_max 160M": {
+    "v1_t1": 1.1361,
+    "v2r1": 1.0777,
+    "v2r2": 1.0918
+   },
+   "amt0 diff_to_contract_same_max 240M": {
+    "v1_t1": 1.0642,
+    "v2r1": 0.981,
+    "v2r2": 0.961
+   },
+   "amt0 diff_to_delegated_contract_diff 160M": {
+    "v1_t1": 1.0035,
+    "v2r1": 1.1274,
+    "v2r2": 1.1088
+   },
+   "amt0 diff_to_delegated_contract_diff 240M": {
+    "v1_t1": 0.849,
+    "v2r1": 1.1054,
+    "v2r2": 1.0229
+   },
+   "amt0 diff_to_existent 160M": {
+    "v1_t1": 1.1514,
+    "v2r1": 1.049,
+    "v2r2": 1.0525
+   },
+   "amt0 diff_to_existent 240M": {
+    "v1_t1": 1.2837,
+    "v2r1": 1.1839,
+    "v2r2": 1.1843
+   },
+   "amt0 diff_to_nonexistent 160M": {
+    "v1_t1": 1.2127,
+    "v2r1": 1.1668,
+    "v2r2": 1.056
+   },
+   "amt0 diff_to_nonexistent 240M": {
+    "v1_t1": 1.1262,
+    "v2r1": 1.0731,
+    "v2r2": 1.0494
+   },
+   "amt0 diff_to_self 160M": {
+    "v1_t1": 1.0813,
+    "v2r1": 1.2636,
+    "v2r2": 1.2797
+   },
+   "amt0 diff_to_self 240M": {
+    "v1_t1": 1.025,
+    "v2r1": 1.3535,
+    "v2r2": 1.3798
+   },
+   "amt0 diff_to_unique_code_jumpdest_contract 160M": {
+    "v1_t1": 1.0515,
+    "v2r1": 0.9915,
+    "v2r2": 1.0124
+   },
+   "amt0 diff_to_unique_code_jumpdest_contract 240M": {
+    "v1_t1": 1.0087,
+    "v2r1": 1.0705,
+    "v2r2": 1.0655
+   },
+   "amt1 diff_to_contract 160M": {
+    "v1_t1": 1.0151,
+    "v2r1": 1.0821,
+    "v2r2": 1.0712
+   },
+   "amt1 diff_to_contract 240M": {
+    "v1_t1": 1.0733,
+    "v2r1": 0.9862,
+    "v2r2": 0.9836
+   },
+   "amt1 diff_to_contract_diff_max 160M": {
+    "v1_t1": 1.0619,
+    "v2r1": 1.0673,
+    "v2r2": 1.0096
+   },
+   "amt1 diff_to_contract_diff_max 240M": {
+    "v1_t1": 1.0339,
+    "v2r1": 1.0204,
+    "v2r2": 0.9612
+   },
+   "amt1 diff_to_contract_minimal 160M": {
+    "v1_t1": 1.235,
+    "v2r1": 0.9691,
+    "v2r2": 1.0699
+   },
+   "amt1 diff_to_contract_minimal 240M": {
+    "v1_t1": 1.1077,
+    "v2r1": 0.9051,
+    "v2r2": 1.0453
+   },
+   "amt1 diff_to_contract_same_max 160M": {
+    "v1_t1": 1.0784,
+    "v2r1": 1.0573,
+    "v2r2": 0.9871
+   },
+   "amt1 diff_to_contract_same_max 240M": {
+    "v1_t1": 1.0072,
+    "v2r1": 0.9952,
+    "v2r2": 0.9781
+   },
+   "amt1 diff_to_delegated_contract_diff 160M": {
+    "v1_t1": 1.0179,
+    "v2r1": 1.2042,
+    "v2r2": 1.216
+   },
+   "amt1 diff_to_delegated_contract_diff 240M": {
+    "v1_t1": 1.0249,
+    "v2r1": 1.0823,
+    "v2r2": 1.0927
+   },
+   "amt1 diff_to_existent 160M": {
+    "v1_t1": 1.1426,
+    "v2r1": 1.0559,
+    "v2r2": 1.0641
+   },
+   "amt1 diff_to_existent 240M": {
+    "v1_t1": 1.1642,
+    "v2r1": 1.0362,
+    "v2r2": 0.9801
+   },
+   "amt1 diff_to_nonexistent 160M": {
+    "v1_t1": 1.3025,
+    "v2r1": 1.4852,
+    "v2r2": 1.4801
+   },
+   "amt1 diff_to_nonexistent 240M": {
+    "v1_t1": 1.4392,
+    "v2r1": 1.3052,
+    "v2r2": 1.2895
+   },
+   "amt1 diff_to_self 160M": {
+    "v1_t1": 1.1985,
+    "v2r1": 1.046,
+    "v2r2": 1.0726
+   },
+   "amt1 diff_to_self 240M": {
+    "v1_t1": 1.1978,
+    "v2r1": 1.0716,
+    "v2r2": 1.0608
+   },
+   "amt1 diff_to_unique_code_jumpdest_contract 160M": {
+    "v1_t1": 1.121,
+    "v2r1": 1.0882,
+    "v2r2": 1.045
+   },
+   "amt1 diff_to_unique_code_jumpdest_contract 240M": {
+    "v1_t1": 1.0346,
+    "v2r1": 1.0089,
+    "v2r2": 1.0181
+   }
+  },
+  "v1_genesis": "0xa9e61c12051aeda72581c40b1718fa76b80c0b5cc5f7b7ebe96e0b6d9669491b"
  }
 }

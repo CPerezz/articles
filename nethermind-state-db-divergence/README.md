@@ -40,6 +40,8 @@ hash mismatch. Use the `existing-snapshot` family's 14-EIP set, which adds
 | `collect_nethermind.py` | Runs on the benchmark host: reduces four benchmarkoor result trees to `data/report_data.json`. |
 | `collect_classes.py` | Runs on the benchmark host: splits every test at one second and emits the class summaries, per-category membership, the family x mode taxonomy inside the long class, and the same summary at 0.5/1/2 s. |
 | `collect_bottommost.py` | Runs on the benchmark host: folds the bottommost-compaction rounds (idle I/O, boot compaction reasons, the settled-store re-measurement and the per-CF attribution) into `data/report_data.json` under `bottommost`. |
+| `collect_v2.py` | Runs on the benchmark host: folds round 66 (the top-of-trie packing finding, its two-direction intervention and the file-number provenance) and round 67 (the store regenerated with the fixed generator, its fixtures and the long-class re-measurement) into `data/report_data.json` under `topnodes` and `v2`. |
+| `sstprops.py` | Reads every SST's table properties straight from the file footer (no RocksDB needed): column family, entries, data blocks, bytes per block, filter size, compression, creation time, writing host. The audit that dated the 4 KB top-node files to this study's own round 13. |
 | `report_svg.py` | Inline-SVG primitives (scales, axes, dots, lines, bands). Has its own self-check. |
 | `crt_theme.py` | The site stylesheet, byte-identical to the sibling reports, kept in one place so the three cannot drift apart. |
 | `data/report_data.json` | Every value the report renders. The only input to the generator. |
@@ -97,6 +99,45 @@ hash mismatch. Use the `existing-snapshot` family's 14-EIP set, which adds
   2,821 MB against 1,671 MB over six matched pairs per arm — 1.69× the bytes, essentially all
   of it the code database, with `flat/Account` flat (−1.0 MB) and the trie families still at
   zero (−0.1 MB).
+- **The transfer cell, the one that ran the other way, was this study's own tooling.** The
+  snapshot read 630,531 top-of-trie node blocks against the generated store's 413,964 for
+  the same 18 blocks of transfers (Account and code reads identical), and an earlier version
+  of the page called that a migrated trie costing more to update. `probe-flat -mode shape`
+  says both account tries have the identical complete top (1,118,481 nodes) and the generated
+  one is marginally *deeper* (7.90 vs 7.82 nibbles to a leaf, 21% more accounts), so shape
+  cannot make it read fewer nodes. RocksDB's table properties say the top-of-trie column was
+  packed 7 nodes to a 4 KB block on the snapshot against 29 to a 16 KB block on the generated
+  store - the client's option is 16000 - and since top nodes are keyed by path in pre-order, a
+  16 KB block holds a level-4 node with its sixteen children while a 4 KB block does not, so
+  the walk to a touched leaf pays an extra physical read for the parent: 1.07 top-node reads
+  per touched account against 0.73. Swapping the two layouts (2 s each, promoted) moved the
+  transfer cell 1.074 -> 1.014 over 94 test pairs and swapped the read counts with it
+  (jochemnet 1.07 -> 0.64, state-actor 0.73 -> 0.98 per account). Provenance: `sstprops.py`
+  and the file numbers date the ten 4 KB files to round 13's read-write open, which
+  transcribed the client's options for the column it rebuilt (Account) and left the rest on
+  RocksDB's defaults; the top-of-trie column, compaction-pending since the pre-run, was
+  compacted under those defaults, and the round-14 audit checked two columns and missed it.
+  The snapshot now carries the client's packing. `collect_v2.py` -> `topnodes`.
+- **The regenerated store, and the code-pool fix overshooting.** state-actor main at 005a19c6
+  (#141's mainnet-sliced code pool, #139's forced bottommost compaction) regenerated the store
+  from the same spec, seed and budget - 472 GB, 4 h 21 min, settled as written, top nodes packed
+  like the client's, 433M accounts, new genesis root - the long class was re-filled against it
+  with the Nethermind filler (execution-specs `benchmarks/amsterdam`, 143 of 143 covered) and
+  re-measured twice against a same-day jochemnet run on the repacked baseline. Distinct-contract
+  code execution went 0.938 -> **1.051 / 1.093** and jump-destination scanning 0.943 ->
+  **1.103 / 1.075**: the generated store is now the *faster* arm on the operation it used to
+  lose, by 5-10%, while the reused-contract control stayed at 1.000 and every account-row cell
+  inside 0.004 of parity. A pool sampled from mainnet bytecode at mainnet compressibility still
+  does not reproduce mainnet block tenancy on a 4 KB code block: the pool's 1 KiB floor keeps
+  small records out, so a fixture contract starts a block of its own more often than on mainnet
+  (median contract 45 B). Cheaper than mainnet is as wrong as dearer. Ether transfers went 1.076
+  -> 1.061 / 1.057 with both arms packing top nodes the client's way (the snapshot gained +4.2%
+  from the repack alone, reproducing the swap's per-arm 1.034), and the remaining ~6% is *not* a
+  read-count difference - at equal packing the snapshot reads fewer top-of-trie and second-level
+  blocks per touched account and is still slower. Open, alongside the storage cell's unmoved
+  ~11%. Two runs of the new store agree cell by cell to within 0.010 and the jochemnet day run
+  reproduces its settled run to within 0.042. `collect_v2.py` -> `v2`; the cell table and the
+  closing figure's violet marks come from it.
 - **Reproducibility floor, measured at last.** Same store, same config, twice:
   100/133 tests within +/-10% overall, 39% for tests under 0.2 s against
   97% for tests over 5 s (`collect_noise.py` -> `noise`). An earlier version of the page
@@ -140,7 +181,7 @@ jochemnet's time, that code blocks are larger per fetch, that both residual cell
 settling it silenced the client, that the reason field still says `BottommostFiles`, that
 the flat read path stays byte-identical across the arms, and that settling did *not* move
 DIFF_MAX or JUMPDEST - the section is written around that null result, so a future run in
-which it does move must fail the build rather than keep the prose). Mutating any of those inputs makes generation fail rather than quietly print a
+which it does move must fail the build rather than keep the prose), the transfer cell (that the two account tries share a complete top and the generated one is no shallower, that the top-of-trie packing differed on exactly that column and the swap swapped it, that the swap moved both arms toward each other and closed the cell to within 3%, that the top-node reads per account swapped with the layout, and that the file numbers still date the 4 KB files to this study's own rebuild), and the regenerated store (see the oracles in `main()` for the cell bands it is held to). Mutating any of those inputs makes generation fail rather than quietly print a
 sentence the data no longer supports.
 
 ## Findings
