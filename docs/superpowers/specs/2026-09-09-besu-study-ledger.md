@@ -3660,3 +3660,51 @@ gas oracle (the arm's gas-identity gate covers it).
 gate, arm A, arm B, each phase marked in `v4-campaign.state`, resumable. v3 pair and every smoke
 store removed by name; loop0 read-only, only loop device left. Expected: store 00:05, arm A verdict
 ~05:10, arm B ~10:15. Article update = `inject_v4.py` + regenerate + publish, staged and dry-run.
+
+### Round 56, part 2 - the campaign ran, and the class is at 1.309
+
+Timeline (box, +02:00): store launched 13:39, done 01:15 (11.6 h; #139's close-time compaction
+adds ~1.2 h over v3: cf08 25 min, cf09 ~50 min). Gates 01:30. Fill 01:30 to 03:28 (490 GB copy,
+then 484 items in 1:50:36, all passed). Schelk 03:29 to 04:12. 1-test gate 04:28 PASS. Arm A 04:28
+to 06:33, 124 tests. Published 07:15, `bea106a`, live byte-identical.
+
+Three stops, none a store defect, all mine:
+
+- Store gate cf07 CF-wide read 0.089 against a lower bound of 0.09 that was an estimate of a figure
+  I had already documented as not comparable (fixtures are ~74% of the spec store's code bytes at
+  deflate 0.0071; mainnet 31%). The comparable gates passed: record deflate 0.436 (mainnet 0.443),
+  packed co-tenant payload 0.428 (0.439 same probe). Bound relaxed to 2x tiled (0.06), rerun, PASS.
+  cf06 0.421 on the 350 GB store.
+- Fill oracle demanded measurement == control over every id; the spot categories have no
+  `overhead_baseline_True` rows in the archived grid (40 of 60 categories carry controls), so 264 vs
+  220 tripped it after a fill that was complete. Oracle corrected to pair the dark rows only (220 =
+  220), fixtures kept, resumed. Same assumption fixed in the generator's oracle.
+- Arm configs: `\.` inside a double-quoted YAML scalar is an invalid escape (v3's configs use a bare
+  dot). Both cost minutes; the design of marking every phase in the state file and resuming paid for
+  itself three times.
+
+**Arm A** (gas identity 0 of 124; control canary 1.0120 against 1.019, per-budget drift 0.0011):
+
+| | v1 | v3 (#138, tiled) | v4 (#141, corpus) |
+|---|---|---|---|
+| dark class median | 0.828 | 1.461 | **1.309** |
+| 100M / 200M / 300M | | 1.364 / 1.480 / 1.512 | 1.214 / 1.311 / 1.367 |
+| rows | | | 1.031 to 1.393 |
+| categories closer to parity than v3 | | | 16 of 16 |
+| disk bytes per test, over mainnet | 1.43 / 1.46 / 1.49 | | **0.768 / 0.750 / 0.730** |
+| spot: absent, light at 100M | | 1.018, 0.979 | 0.968, 0.970 (2 rows each) |
+
+Verdict `above`: outside the +/-10% band on the fast side, half the excess gone. The byte ratio is
+the attribution: throughput follows bytes at every budget (1.214 x 0.768 = 0.93, 1.311 x 0.750 =
+0.98, 1.367 x 0.730 = 1.00). The pool now compresses like mainnet's code at record and co-tenant
+level, and a fixture read on the generated store still moves a quarter fewer bytes than on the
+snapshot. What a read carries alongside its record on a code column family a ninth of mainnet's
+size (712k records, 780 MB on disk, against 2.4M and 6.9 GB) is the next measurement; the article
+says so and stops there.
+
+Article: closing figure with a third dot on the dark rows, fourth table column, an h3 keyed on the
+verdict, eleven new oracles including that throughput follows the byte ratio. Everything before
+"Where this stands" byte-identical; TOC gained one entry; no number left the closing section.
+Committed unsigned (`commit.gpgsign` blocked on an expired passphrase cache) after merging two
+concurrent nethermind pushes (`355675a`, `ebdf71e`), `besu_reference()` intact. Arm B (dark at the
+other eight budgets) running; a second commit extends the gradient to eleven points and nothing else.
