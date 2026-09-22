@@ -2418,3 +2418,64 @@ fill image as `localhost/benchmarkoor-eest-fill:local` and then creates the cont
 `docker.io/benchmarkoor-eest-fill:local` (unqualified name normalised to docker.io) - "no such
 image". Worked around by tagging the built image with the docker.io name and pinning
 `fill_image` to it. Worth an upstream fix in `pkg/builder/eest_payloads.go`.
+
+## Round 67 (result) - the code-pool fix overshoots; transfers only half explained. Published
+
+Pipeline completed 2026-09-22 11:08 UTC. Store: `ghcr.io/ethereum/state-actor-nethermind:main-005a19c`
+(rev `005a19c6`), 472 GB in 4 h 21 min, genesis `0x0cb03528...a68623`, root `0x48d611bb...d51b8`,
+433.1M accounts, mean leaf path 7.901, top nodes packed 29 per 15,879 B block **as written** (so
+#139 does leave a settled store; no manual pass). Fixtures: 152 filled, 143 of 143 class-2 ids
+covered (12 fills failed - `test_sload_bloated_multi_contract` / `_prefetch_miss` on
+`benchmarks/amsterdam` hit a BAL validation error; not in the class-2 set). Runs: `nm-sa-v2r1`
+152, `nm-joc-v2r1` 148, `nm-sa-v2r2` 152, zero response-validation failures.
+
+| cell | n | v1 settled | v2 r1 | v2 r2 | joc day / joc settled |
+|---|---|---|---|---|---|
+| DIFF_MAX code-exec | 16 | 0.938 | **1.051** | **1.093** | 0.999 |
+| JUMPDEST code-exec | 16 | 0.943 | **1.103** | **1.075** | 1.001 |
+| SAME_MAX code-exec (control) | 16 | 1.000 | 1.000 | 1.003 | 0.999 |
+| EOA / MINIMAL code-exec | 32 | 0.996 | 0.996-0.999 | 0.996-0.997 | 1.003-1.005 |
+| all BAL/HASH cells | 18 | 0.974-1.039 | 0.996-1.004 | 0.985-1.001 | 0.999-1.007 |
+| ether transfer | 36 | 1.076 | 1.061 | 1.057 | **1.042** |
+| storage slot | 12 | 1.093 | 1.112 | 1.123 | 0.986 |
+
+Per test >=1 s: 122/143 (85%) within +-10% on v1, 115/142 (81%) and 119/142 (84%) on v2, medians
+1.013 / 1.009. v2r2/v2r1 agrees within 0.010 on every cell.
+
+**#141 works and overshoots.** The two code cells move +12% and +17% while the reused-contract
+control does not move and every account-row cell stays inside 0.004 of parity - the lever is the
+pool and nothing else went with it. But the generated store is now the *faster* arm by 5-10% on
+the operation it used to lose. Predicted before the run (the note to Anon on #141): the pool's
+1 KiB floor keeps small records out, so on a 4,096-byte Nethermind code block a fixture contract
+starts a block of its own more often than on mainnet, whose median contract is 45 B. Cheaper than
+mainnet is as wrong as dearer; the remaining fix is per-record size distribution drawn from
+mainnet's CDF, not a floor. Same mechanism as Finding 4, sign reversed.
+
+**Transfers: the packing was about half.** With both arms on the client's packing the cell is
+1.061/1.057 against 1.076; the snapshot gained +4.2% from the repack alone, which reproduces the
+swap's per-arm 1.034 on a different day against a different store. The residual ~6% is **not**
+read count: at equal packing jochemnet reads *fewer* top-of-trie (0.64 vs 0.73 per touched
+account) and fewer second-level blocks and is still slower. So it is per-read cost on a
+mainnet-shaped trie - same size as the storage cell's unmoved ~11%. Left open in the article
+rather than explained.
+
+**Published** `3d1040e` on `main` from a clean `origin/main` checkout, zero sibling folders
+touched, HTTP 200 and byte-identical to the local build. Finding 4 gained the packing subsection
+(shape table, packing table, swap table, provenance paragraph), a new section for the regenerated
+store, a fifth errata item, the closing figure gained violet marks for v2 (10 of 12 cells inside
+the band), and the closing paragraph now says what remains: a generated store a few per cent
+*cheaper* than a mainnet-shaped one on bytecode, storage and transfers. Sixteen new oracles, all
+mutation-tested; `collect_v2.py` and `sstprops.py` added to the folder.
+
+**Host state.** `nm-sa` schelk baseline is now **v2** at `/schelk-sa/state-actor/v2/nethermind`
+(v1 deleted from the volume; the staging copy survives at `/bench/nm-store/v1`, and
+`/bench/nm-store/v2` is the staging copy of the new one). `nm-joc` baseline carries the client's
+top-node packing. Fixtures for v2 at `/bench/fixtures/sa-v2/nethermind`. Configs
+`/bench/cfg/nm-{sa,joc}-v2r*.yaml`, `/bench/cfg/v2-build.yaml`.
+
+**Harness defect worth upstreaming.** Under podman, `benchmarkoor build` builds the embedded fill
+image as `localhost/benchmarkoor-eest-fill:local` and then creates the container from the
+unqualified name, which podman normalises to `docker.io/benchmarkoor-eest-fill:local` - "no such
+image", after a successful 30 s build. Worked around by tagging the built image with the
+docker.io name and pinning `fill_image`; the fix belongs in `pkg/builder/eest_payloads.go`
+(qualify the locally built tag, or pass the image id).
