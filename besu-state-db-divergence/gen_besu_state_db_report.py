@@ -969,6 +969,19 @@ def main():
             assert all(abs(t * b - 1) <= 0.10 for t, b in zip(V4["gradient"]["dark"], DK["v4_over_mainnet"])), \
                 "throughput does not follow bytes per read"
             assert DK["gas"] == V4["gradient"]["gas"], "disk budgets do not match the gradient"
+            R = V4["residual"]
+            assert R["work_mismatch"] <= 0.02, \
+                "the arms do not prefetch the same accounts, so cost per lookup is not comparable"
+            assert R["code_share_kib"] < 5, "the code record is no longer a small share of a lookup"
+            assert 0.6 < R["ratio_v4_over_snapshot"] < 1.0, "cost per lookup left its measured range"
+            assert R["ratio_v4_over_snapshot"] > R["ratio_v3_over_snapshot"], \
+                "the corpus pool did not move cost per lookup toward the snapshot"
+            assert min(R["compaction_swing"]) > 3, \
+                "compaction no longer swings the reference, so the floor argument does not hold"
+            assert R["cf_lookup"]["cf06"]["v4_blocks"] == 1.0 < R["cf_lookup"]["cf06"]["snapshot_blocks"], \
+                "the block-touch asymmetry behind the residual is gone"
+            assert abs(1 - R["ratio_v4_over_snapshot"] - (V4["classes"]["dark"]["v4"] - 1) / V4["classes"]["dark"]["v4"]) < 0.10, \
+                "cost per lookup no longer accounts for the throughput residual"
         if V4.get("arm_b"):
             AB = V4["arm_b"]
             assert not AB["canary_ok"] and abs(AB["control_ratio"] - V4["control_archived"]) > 0.013, \
@@ -1557,16 +1570,50 @@ def main():
               f"moved toward parity, the rows spanning {V4['row_min']:.3f} to "
               f"{V4['row_max']:.3f}&times;, and the budget gradient still climbs, "
               f"{V4['gradient']['dark'][0]:.3f} to {V4['gradient']['dark'][-1]:.3f}.</p>")
-            w(f"<p>What is left is not compressibility. The benchmark counts bytes read from disk, "
-              f"and per workload the generated store now moves {DK['v4_over_mainnet'][0]:.2f} to "
-              f"{DK['v4_over_mainnet'][-1]:.2f} of what the snapshot moves for the same gas "
-              f"({DK['v4_gb'][0]:.1f} against {DK['mainnet_gb'][0]:.1f} GB at {DK['gas'][0]}M, "
-              f"{DK['v4_gb'][-1]:.1f} against {DK['mainnet_gb'][-1]:.1f} GB at {DK['gas'][-1]}M), "
-              f"where the original store moved {DK['v1_over_mainnet'][0]:.2f} to "
-              f"{DK['v1_over_mainnet'][-1]:.2f}. The throughput ratio follows the byte ratio at every "
-              f"budget. The pool no longer explains the gap. What a fixture read carries alongside "
-              f"its record, on a code column family a fraction of mainnet's size, is the next thing "
-              f"to measure.</p>")
+            R = V4["residual"]
+            PL, PF, CL = R["per_lookup_kib"], R["prefetched"], R["cf_lookup"]
+            w(f"<p>What is left is not compressibility, and it is not the pool. Per workload the "
+              f"generated store moves {DK['v4_over_mainnet'][0]:.2f} to "
+              f"{DK['v4_over_mainnet'][-1]:.2f} of what the snapshot moves for the same gas, where "
+              f"the original store moved {DK['v1_over_mainnet'][0]:.2f} to "
+              f"{DK['v1_over_mainnet'][-1]:.2f}, and throughput follows that byte ratio at every "
+              f"budget. Those bytes are not the opcode's own lookups: a "
+              f"{R['counted_reads_per_test']['gas']}M test counts "
+              f"{thousands(R['counted_reads_per_test']['reads'])} account reads and moves "
+              f"{R['counted_reads_per_test']['bytes_gb']:.1f} GB. Besu prefetches every account in "
+              f"the block access list, and the two arms prefetch the same ones, "
+              f"{thousands(PF['snapshot_compacted']['100'])} against {thousands(PF['v4']['100'])} at "
+              f"100M and within {R['work_mismatch']*100:.1f}% at every budget. Same work, different "
+              f"cost per lookup.</p>")
+            w("<table><tr><th>store</th><th class=n>100M</th><th class=n>200M</th>"
+              "<th class=n>300M</th></tr>")
+            for lbl, k in (("snapshot, as it ships", "snapshot_plain"),
+                           ("snapshot, compacted: the reference used here", "snapshot_compacted"),
+                           (f"generated, tiled pool (#{PR[138]['n']})", "v3"),
+                           (f"generated, corpus pool (#{V4['pr']})", "v4")):
+                w(f"<tr><td>{lbl}</td>" + "".join(f"<td class=n>{PL[k][g]:.0f}</td>"
+                                                  for g in ("100", "200", "300")) + "</tr>")
+            w(f"<caption>KiB read from disk per prefetched account, the workload's dominant cost. "
+              f"The code record is {R['code_share_kib']:.1f} KiB of that, which is why the pool "
+              f"cannot be the term. An account lookup costs "
+              f"{CL['cf06']['snapshot_plain_bytes']/1024:.0f} KiB on the snapshot volume against "
+              f"{CL['cf06']['v4_bytes']/1024:.0f} on the generated one, and a trie node "
+              f"{CL['cf09']['snapshot_plain_bytes']/1024:.0f} against "
+              f"{CL['cf09']['v4_bytes']/1024:.0f}, at the same bytes per data block: the snapshot "
+              f"answers one lookup with {CL['cf06']['snapshot_blocks']:.2f} block reads, the "
+              f"generated store with exactly {CL['cf06']['v4_blocks']:.2f}.</caption></table>")
+            w(f"<p>That is layout, and it puts a floor under the comparison. The same snapshot, "
+              f"same host, same harness, same gas, costs {PL['snapshot_plain']['100']:.0f} KiB per "
+              f"prefetched account as it ships and {PL['snapshot_compacted']['100']:.0f} KiB after "
+              f"nothing but a full compaction, a swing of {R['compaction_swing'][0]:.0f} to "
+              f"{R['compaction_swing'][-1]:.0f} times across the budgets, and only on the classes "
+              f"that read contract code. A store written once in hash order has no recently written "
+              f"region to cluster in, so it is in the scattered regime by construction, and the two "
+              f"scattered stores sit within {(1-R['ratio_v4_over_snapshot'])*100:.0f}% of each "
+              f"other. The corpus pool moved that from "
+              f"{(1-R['ratio_v3_over_snapshot'])*100:.0f}%. The remainder is smaller than the "
+              f"reference's own sensitivity to a housekeeping decision, which is where this "
+              f"measurement ends.</p>")
             if V4.get("arm_b"):
                 AB = V4["arm_b"]
                 w(f"<p>The other {len(AB['budgets'])} budgets, run afterwards as a second arm of "
@@ -1612,9 +1659,11 @@ def main():
           f"single runtime tiled, which is why these classes overshot to "
           f"{V3['classes']['dark']['v3']:.3f}&times; instead of closing.</li>")
     elif V4["verdict"] != "in_band":
-        w(f"<li>Why the distinct-code class sits at {V4['classes']['dark']['v4']:.3f}&times; on a "
-          f"store whose code compresses like mainnet's. The co-tenancy model explained the "
-          f"direction of both pools and the magnitude of neither.</li>")
+        w(f"<li>Why an account lookup takes "
+          f"{V4['residual']['cf_lookup']['cf06']['snapshot_blocks']:.2f} data-block reads on the "
+          f"snapshot volume and exactly {V4['residual']['cf_lookup']['cf06']['v4_blocks']:.2f} on a "
+          f"generated one. That asymmetry is the whole of the remaining "
+          f"{pc(V4['classes']['dark']['v4'])}, and it is measured here, not explained.</li>")
     w(f"<li>Why the control sits at {pc(ctrl_vs_comp)} and {pc(V3['control_ratio'])} rather "
       f"than at parity on either arm. Close enough to keep the comparison, never "
       f"attributed.</li>")
