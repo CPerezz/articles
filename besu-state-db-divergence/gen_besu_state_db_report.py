@@ -972,16 +972,22 @@ def main():
             R = V4["residual"]
             assert R["work_mismatch"] <= 0.02, \
                 "the arms do not prefetch the same accounts, so cost per lookup is not comparable"
-            assert R["code_share_kib"] < 5, "the code record is no longer a small share of a lookup"
-            assert 0.6 < R["ratio_v4_over_snapshot"] < 1.0, "cost per lookup left its measured range"
+            assert R["code_cf_share_of_store"] < 0.01, \
+                "the code column family is no longer a negligible share of the store"
+            assert 0.6 < R["ratio_v4_over_snapshot"] < 1.0, "cost per account left its measured range"
             assert R["ratio_v4_over_snapshot"] > R["ratio_v3_over_snapshot"], \
-                "the corpus pool did not move cost per lookup toward the snapshot"
+                "the corpus pool did not move cost per prefetched account toward the snapshot"
             assert min(R["compaction_swing"]) > 3, \
                 "compaction no longer swings the reference, so the floor argument does not hold"
-            assert R["cf_lookup"]["cf06"]["v4_blocks"] == 1.0 < R["cf_lookup"]["cf06"]["snapshot_blocks"], \
-                "the block-touch asymmetry behind the residual is gone"
-            assert abs(1 - R["ratio_v4_over_snapshot"] - (V4["classes"]["dark"]["v4"] - 1) / V4["classes"]["dark"]["v4"]) < 0.10, \
-                "cost per lookup no longer accounts for the throughput residual"
+            # The point of the paragraph: neither per-lookup ratio is the workload ratio, and they
+            # straddle it. If that stops being true, the prose claiming it must change with it.
+            lo, hi = sorted(R["cf_lookup_ratio"].values())
+            assert lo < 1 < hi, "the per-lookup ratios stopped pointing opposite ways"
+            assert all(abs(v - R["ratio_v4_over_snapshot"]) > 0.10 for v in (lo, hi)), \
+                "a per-lookup ratio now matches the workload ratio, so it may well be the mechanism"
+            assert all(0.95 <= v["v4_blocks"] <= 1.05 and 0.95 <= v["snapshot_blocks"] <= 1.05
+                       for v in (R["cf_lookup"]["cf06"], R["cf_lookup"]["cf09"])), \
+                "a lookup stopped costing one data block on one of the stores"
         if V4.get("arm_b"):
             AB = V4["arm_b"]
             assert not AB["canary_ok"] and abs(AB["control_ratio"] - V4["control_archived"]) > 0.013, \
@@ -1583,8 +1589,8 @@ def main():
               f"{R['counted_reads_per_test']['bytes_gb']:.1f} GB. Besu prefetches every account in "
               f"the block access list, and the two arms prefetch the same ones, "
               f"{thousands(PF['snapshot_compacted']['100'])} against {thousands(PF['v4']['100'])} at "
-              f"100M and within {R['work_mismatch']*100:.1f}% at every budget. Same work, different "
-              f"cost per lookup.</p>")
+              f"100M and within {R['work_mismatch']*100:.1f}% at every budget. Same work, and the "
+              f"generated store still reads a quarter less for it.</p>")
             w("<table><tr><th>store</th><th class=n>100M</th><th class=n>200M</th>"
               "<th class=n>300M</th></tr>")
             for lbl, k in (("snapshot, as it ships", "snapshot_plain"),
@@ -1594,26 +1600,29 @@ def main():
                 w(f"<tr><td>{lbl}</td>" + "".join(f"<td class=n>{PL[k][g]:.0f}</td>"
                                                   for g in ("100", "200", "300")) + "</tr>")
             w(f"<caption>KiB read from disk per prefetched account, the workload's dominant cost. "
-              f"The code record is {R['code_share_kib']:.1f} KiB of that, which is why the pool "
-              f"cannot be the term. An account lookup costs "
-              f"{CL['cf06']['snapshot_plain_bytes']/1024:.0f} KiB on the snapshot volume against "
-              f"{CL['cf06']['v4_bytes']/1024:.0f} on the generated one, and a trie node "
-              f"{CL['cf09']['snapshot_plain_bytes']/1024:.0f} against "
-              f"{CL['cf09']['v4_bytes']/1024:.0f}, at the same bytes per data block: the snapshot "
-              f"answers one lookup with {CL['cf06']['snapshot_blocks']:.2f} block reads, the "
-              f"generated store with exactly {CL['cf06']['v4_blocks']:.2f}.</caption></table>")
-            w(f"<p>That is layout, and it puts a floor under the comparison. The same snapshot, "
-              f"same host, same harness, same gas, costs {PL['snapshot_plain']['100']:.0f} KiB per "
-              f"prefetched account as it ships and {PL['snapshot_compacted']['100']:.0f} KiB after "
-              f"nothing but a full compaction, a swing of {R['compaction_swing'][0]:.0f} to "
-              f"{R['compaction_swing'][-1]:.0f} times across the budgets, and only on the classes "
-              f"that read contract code. A store written once in hash order has no recently written "
-              f"region to cluster in, so it is in the scattered regime by construction, and the two "
-              f"scattered stores sit within {(1-R['ratio_v4_over_snapshot'])*100:.0f}% of each "
-              f"other. The corpus pool moved that from "
-              f"{(1-R['ratio_v3_over_snapshot'])*100:.0f}%. The remainder is smaller than the "
-              f"reference's own sensitivity to a housekeeping decision, which is where this "
-              f"measurement ends.</p>")
+              f"The code column family is {R['code_cf_share_of_store']*100:.2f}% of the generated "
+              f"store's bytes, so whatever this is, the pool is not it.</caption></table>")
+            w(f"<p>It is also not the cost of a lookup. Drawing "
+              f"{thousands(30000)} keys uniformly across each store and reading them cold, with the "
+              f"bloom filters Besu configures, an account costs "
+              f"{CL['cf06']['snapshot_bytes']/1024:.1f} KiB on the snapshot against "
+              f"{CL['cf06']['v4_bytes']/1024:.1f} on the generated store, and a trie node "
+              f"{CL['cf09']['snapshot_bytes']/1024:.1f} against "
+              f"{CL['cf09']['v4_bytes']/1024:.1f}: {R['cf_lookup_ratio']['cf06']:.2f} and "
+              f"{R['cf_lookup_ratio']['cf09']:.2f}, pointing opposite ways, neither of them "
+              f"{R['ratio_v4_over_snapshot']:.2f}. Both stores answer a lookup with almost exactly "
+              f"one data block read. What is left is the number of lookups a workload makes per "
+              f"prefetched account, and this study has not measured that.</p>")
+            w(f"<p>What it has measured is how little of this belongs to the generator. The same "
+              f"snapshot, same host, same harness, same gas, costs "
+              f"{PL['snapshot_plain']['100']:.0f} KiB per prefetched account as it ships and "
+              f"{PL['snapshot_compacted']['100']:.0f} KiB after nothing but a full compaction, a "
+              f"swing of {R['compaction_swing'][0]:.0f} to {R['compaction_swing'][-1]:.0f} times "
+              f"across the budgets, on the classes that read contract code and on no others. The "
+              f"corpus pool moved cost per prefetched account from "
+              f"{(1-R['ratio_v3_over_snapshot'])*100:.0f}% below the reference to "
+              f"{(1-R['ratio_v4_over_snapshot'])*100:.0f}%. The rest sits inside a factor the "
+              f"reference swings by itself.</p>")
             if V4.get("arm_b"):
                 AB = V4["arm_b"]
                 w(f"<p>The other {len(AB['budgets'])} budgets, run afterwards as a second arm of "
@@ -1659,11 +1668,11 @@ def main():
           f"single runtime tiled, which is why these classes overshot to "
           f"{V3['classes']['dark']['v3']:.3f}&times; instead of closing.</li>")
     elif V4["verdict"] != "in_band":
-        w(f"<li>Why an account lookup takes "
-          f"{V4['residual']['cf_lookup']['cf06']['snapshot_blocks']:.2f} data-block reads on the "
-          f"snapshot volume and exactly {V4['residual']['cf_lookup']['cf06']['v4_blocks']:.2f} on a "
-          f"generated one. That asymmetry is the whole of the remaining "
-          f"{pc(V4['classes']['dark']['v4'])}, and it is measured here, not explained.</li>")
+        w(f"<li>How many lookups a workload makes per prefetched account, which is where the "
+          f"remaining {pc(V4['classes']['dark']['v4'])} lives. Cost per lookup is measured and "
+          f"does not explain it: accounts {V4['residual']['cf_lookup_ratio']['cf06']:.2f}, trie "
+          f"nodes {V4['residual']['cf_lookup_ratio']['cf09']:.2f}, against a workload ratio of "
+          f"{V4['residual']['ratio_v4_over_snapshot']:.2f}.</li>")
     w(f"<li>Why the control sits at {pc(ctrl_vs_comp)} and {pc(V3['control_ratio'])} rather "
       f"than at parity on either arm. Close enough to keep the comparison, never "
       f"attributed.</li>")
