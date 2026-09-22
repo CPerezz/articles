@@ -944,7 +944,8 @@ def main():
         assert V4["gas_identity_bad"] == 0, "v4 burned different gas from the archived arm"
         assert V4["measurement"] == V4["classes"]["dark"]["rows"] + sum(s["rows"] for s in V4["spot"].values()), \
             "v4 measurement count does not add up"
-        assert V4["measurement"] == V4["control"], "v4 rows are not paired with controls"
+        assert V4["control"] == V4["classes"]["dark"]["rows"], \
+            "the dark rows are not paired one to one with controls"
         assert len(V4["gradient"]["gas"]) == len(V4["gradient"]["dark"]) == len(V4["gradient"]["control"]) \
             == len(V4["budgets"]), "v4 gradient is ragged"
         assert V4["classes"]["dark"]["v3"] == V3["classes"]["dark"]["v3"], "v4 lost the v3 reference"
@@ -961,6 +962,13 @@ def main():
             "the v4 store's records do not deflate like mainnet's"
         assert all(abs(s["v4_ratio"] - s["v3_ratio"]) <= 0.10 for s in V4["spot"].values()), \
             "a class that does not read the pool moved on the v4 store"
+        if V4["verdict"] == "above":
+            DK = V4["disk"]
+            assert all(0.5 < v < 1.0 for v in DK["v4_over_mainnet"]) and all(v > 1.0 for v in DK["v1_over_mainnet"]), \
+                "the byte-ratio story does not hold"
+            assert all(abs(t * b - 1) <= 0.10 for t, b in zip(V4["gradient"]["dark"], DK["v4_over_mainnet"])), \
+                "throughput does not follow bytes per read"
+            assert DK["gas"] == V4["gradient"]["gas"], "disk budgets do not match the gradient"
     # The code-block argument: the contract itself is near-free on both stores, the block is
     # not, and shrinking the block removes the co-tenants entirely.
     assert CB["jochemnet"]["fixture_deflate"] < 0.05 and CB["state_actor"]["fixture_deflate"] < 0.05, \
@@ -1512,8 +1520,8 @@ def main():
           f"family, which the pool does not touch, reads {G['cf06']:.3f}.</p>")
         w(f"<p>Only the sixteen distinct-code categories were refilled and rerun, against a "
           f"{V4['store_gb']} GB store generated the same way as the previous rerun's, "
-          f"at {len(V4['budgets'])} gas budgets: {V4['measurement']} measurement workloads with "
-          f"their {V4['control']} controls, gas identical to six figures on every one. The other "
+          f"at {len(V4['budgets'])} gas budgets: {V4['measurement']} measurement workloads and "
+          f"{V4['control']} controls, gas identical to six figures on every one. The other "
           f"classes never read the pool, and a spot check of {V4['spot']['absent']['rows']} absent "
           f"and {V4['spot']['light']['rows']} shared-code workloads at {min(V4['budgets'])}M put them "
           f"at {V4['spot']['absent']['v4_ratio']:.3f} and {V4['spot']['light']['v4_ratio']:.3f}&times;, "
@@ -1529,14 +1537,23 @@ def main():
               f"{V4['gradient']['dark'][-1]:.3f}: the slope that grew with every extra read under "
               f"the tiled pool is gone. Three mechanisms, three closures.</p>")
         elif V4["verdict"] == "above":
+            DK = V4["disk"]
             w(f"<p>The distinct-code class is at <b>{d4:.3f}&times;</b>: {d1:.3f} before the fixes, "
               f"{d3:.3f} under the tiled pool, still {pc(d4)} faster than the snapshot and outside "
               f"the &plusmn;{V4['band']*100:.0f}% band. {V4['categories_closer']} of 16 categories "
-              f"moved toward parity and {V4['inband_rows']} of {V4['measurement']} workloads are "
-              f"inside the band, the rows spanning {V4['row_min']:.3f} to {V4['row_max']:.3f}&times;. "
-              f"The budget gradient runs {V4['gradient']['dark'][0]:.3f} to "
-              f"{V4['gradient']['dark'][-1]:.3f}. The store now compresses like mainnet and still "
-              f"reads faster, so what is left is not compressibility; it is unattributed.</p>")
+              f"moved toward parity, the rows spanning {V4['row_min']:.3f} to "
+              f"{V4['row_max']:.3f}&times;, and the budget gradient still climbs, "
+              f"{V4['gradient']['dark'][0]:.3f} to {V4['gradient']['dark'][-1]:.3f}.</p>")
+            w(f"<p>What is left is not compressibility. The benchmark counts bytes read from disk, "
+              f"and per workload the generated store now moves {DK['v4_over_mainnet'][0]:.2f} to "
+              f"{DK['v4_over_mainnet'][-1]:.2f} of what the snapshot moves for the same gas "
+              f"({DK['v4_gb'][0]:.1f} against {DK['mainnet_gb'][0]:.1f} GB at {DK['gas'][0]}M, "
+              f"{DK['v4_gb'][-1]:.1f} against {DK['mainnet_gb'][-1]:.1f} GB at {DK['gas'][-1]}M), "
+              f"where the original store moved {DK['v1_over_mainnet'][0]:.2f} to "
+              f"{DK['v1_over_mainnet'][-1]:.2f}. The throughput ratio follows the byte ratio at every "
+              f"budget. The pool no longer explains the gap. What a fixture read carries alongside "
+              f"its record, on a code column family a fraction of mainnet's size, is the next thing "
+              f"to measure.</p>")
         elif V4["verdict"] == "below":
             w(f"<p>The distinct-code class is at <b>{d4:.3f}&times;</b>: {d1:.3f} before the fixes, "
               f"{d3:.3f} under the tiled pool, now {pc(d4)} slower than the snapshot again and outside "
