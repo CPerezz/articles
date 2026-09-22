@@ -3708,3 +3708,42 @@ verdict, eleven new oracles including that throughput follows the byte ratio. Ev
 Committed unsigned (`commit.gpgsign` blocked on an expired passphrase cache) after merging two
 concurrent nethermind pushes (`355675a`, `ebdf71e`), `besu_reference()` intact. Arm B (dark at the
 other eight budgets) running; a second commit extends the gradient to eleven points and nothing else.
+
+### Round 56, part 3 - arm B: the gradient filled in, the canary did not hold
+
+Arm B, 06:33 to 11:53, 320 tests, all passed, gas identity 0 of 320. Dark medians at
+120/140/160/180/220/240/260/280M: 1.235, 1.256, 1.276, 1.294, 1.323, 1.337, 1.349, 1.357, which
+interpolate arm A's three points to within 0.2%; the byte ratio 0.765 to 0.733 continues arm A's
+0.768/0.750/0.730 the same way. Its controls: 0.9893 against the archived 1.019, per budget 1.007,
+0.976, 0.990, 0.995, 0.971, 1.003, 0.987, 0.996. Outside the 0.013 tolerance. Merged with arm A the
+class-level canary reads 0.9982 and fails too.
+
+The state-free control loop drifted 2 to 3% between the two arms; the I/O-bound dark rows did
+not. Whatever moved (nothing of mine ran alongside either arm; the host is shared), the
+pre-registered rule does not make exceptions for a plausible story, so: arm A's verdict stands as
+published (1.309, canary 1.012), arm B is in the article as one paragraph, "shown and not counted",
+with oracles that its canary is outside tolerance, its budgets are disjoint from arm A's, the
+eleven-point gradient is monotone and the byte ratio falls monotonically. Published `e03f31c`, live
+byte-identical. Everything before "Where this stands" is still byte-identical to `5aa2571`.
+
+### Where this leaves the study
+
+- Mechanism three is half closed: 1.461 to 1.309, sixteen of sixteen categories toward parity, the
+  pool compressing like mainnet's code at every level the probe can see. The remainder is bytes per
+  read, measured, not modelled: 0.73 to 0.77 of the snapshot's bytes for the same gas, throughput
+  following it at every budget.
+- Next measurement, not taken: what a fixture read carries alongside its record on a code column
+  family of 712k records and 780 MB against mainnet's 2.4M and 6.9 GB. Block-level, cheap, on the
+  bound v4 store.
+- #141 is open upstream, unmerged; the article cites it by number and sha. No comment was posted
+  from here.
+
+### Box state
+
+Bound in schelk: `besu-sa4-{virgin,scratch}.img` on loop1/loop2 (`besu_sa4_era`), the v4 store at
+`/schelk/state-actor/v1/besu`, root `0x48d611bb...`, anchor `0x0cb03528...`. Fixtures at
+`/data/fixtures/v4-9b23eea/besu` (484 ids, 11 budgets). Results at `/data/bench-results/v4-armA`
+and `v4-armB`; verdicts, status JSON and every script under `/root/bench/` (`run-v4-campaign.sh`,
+`gate-v4.sh`, `analyse-v4.py`, `v4-*.yaml`, `v4-campaign.state`). `/sa-besu/v4` and its spill
+removed after the copy. loop0 read-only, never mounted. md2 932 GB free. Image
+`state-actor-besu:autofill-9b23eea` (`a1221388ee7d`) kept.
