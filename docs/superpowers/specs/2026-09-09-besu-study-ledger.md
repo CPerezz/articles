@@ -3747,3 +3747,83 @@ and `v4-armB`; verdicts, status JSON and every script under `/root/bench/` (`run
 `gate-v4.sh`, `analyse-v4.py`, `v4-*.yaml`, `v4-campaign.state`). `/sa-besu/v4` and its spill
 removed after the copy. loop0 read-only, never mounted. md2 932 GB free. Image
 `state-actor-besu:autofill-9b23eea` (`a1221388ee7d`) kept.
+
+## Round 57 - the residual is layout, and the reference bounds it
+
+Anon: "did we clear the diff", then "we're worse now than before the fixes". Correct on the
+deviation: 0.828 was 17% off parity, 1.309 is 31% off. So the class got measured properly instead
+of updated again.
+
+### What the bytes actually are
+
+The dark workload's disk traffic is not the opcode's lookups. Besu's own counters: a 100M dark test
+performs **1,306 account reads** and moves **7.38 GB**. The load is `BalPrefetcher`, which reads
+every account in the block access list: 63 big prefetch events per arm, one per dark test.
+Attributing each prefetch line to the step running at that moment (`/root/bench/prefetch_attr.py`,
+timestamp windows over `benchmarkoor.log` steps and `container.log`) gives cost per lookup, and
+first proves the arms do the same work:
+
+| prefetched accounts per test | 100M | 200M | 300M |
+|---|---|---|---|
+| snapshot (compacted) | 31,514 | 63,010 | 94,506 |
+| v4 | 31,889 | 63,752 | 95,616 |
+
+Within 1.2% at every budget. Same work; only cost differs.
+
+| KiB read per prefetched account | 100M | 200M | 300M | median |
+|---|---|---|---|---|
+| snapshot, as it ships (drained, not compacted) | 40.7 | 22.2 | 14.9 | 25.9 |
+| snapshot, compacted: the article's reference | 224.9 | 215.8 | 207.5 | 216.1 |
+| v3, tiled pool | 156.6 | 145.7 | 138.6 | 147.0 |
+| v4, corpus pool | 172.2 | 161.7 | 151.3 | 161.7 |
+
+v4 is 0.748 of the reference, v3 was 0.680: the corpus pool moved cost per lookup 7 points toward
+mainnet, and 1 - 0.748 = 0.252 reproduces the throughput residual (1.309 implies 0.236). The code
+record is **2.4 KiB** of a 162 KiB lookup, so the pool was never going to carry the rest.
+
+### Where the 25% sits
+
+New probe `CfReadCost` (rockscompact, compiled in the temurin image), cold, caches dropped, same
+stride sampling on both stores:
+
+| cold point lookup | snapshot volume | v4 | blocks touched | bytes per block |
+|---|---|---|---|---|
+| cf06 accounts | 22,122 B | 17,385 B | 1.280 vs **1.000** | 17,283 vs 17,385 |
+| cf09 trie branches | 32,178 B | 22,973 B | 1.295 vs **1.000** | 24,848 vs 22,973 |
+| cf08 storage | 25,964 B | 36,770 B | 1.048 vs 1.000 | 24,775 vs 36,770 |
+| cf07 code | 901 B | 2,457 B | 0.532 vs 0.712 | (prefix-clustered sample) |
+
+Bytes per data block are the same on the classes that matter. The entire difference is block reads
+per lookup: the snapshot volume needs 1.28 to 1.30, a store written once in hash order needs
+exactly 1.00. Caveat recorded: this probe ran on the plain volume (loop0, read-only, unmounted
+after), because the compacted snapshot no longer exists; the compacted arm's 1.33x cost ratio to v4
+is consistent with the same factor but was not probed directly.
+
+### The floor under the whole comparison
+
+The same snapshot, same host, same harness, same gas: **41 KiB** per prefetched account as it
+ships, **225 KiB** after nothing but a full compaction. A 5.5x to 13.9x swing, and only on the
+classes that read contract code (plain/compacted throughput: controls 0.993, absence 0.943, dark
+7.520, light 5.582; bytes 0.108 and 0.118 on dark and light). Full compaction scatters the
+benchmark's own recently written accounts from a small region across the 17.9 GB bottom level; a
+generated store has no recently written region to cluster in, so it is in the scattered regime by
+construction. Both scattered stores land within 25% of each other.
+
+That swing is an order of magnitude larger than the 1.309 being chased. **No state-actor change can
+close this class against this reference**, and the closing claim now says so: layout, measured, with
+the reference's own compaction sensitivity as the stated floor. Published `df100f8` (merge
+`d350ae3`), live byte-identical, prefix before "Where this stands" still byte-identical to
+`5aa2571`. Four absolute GB figures were replaced by the per-lookup table; every ratio kept.
+
+Six new oracles, including that cost per lookup accounts for the throughput residual to within 10%,
+that the arms prefetch the same accounts within 2%, that the code record stays under 5 KiB of a
+lookup, and that compaction still swings the reference by more than 3x.
+
+### Closed, and what is not
+
+- Mechanism three (code content) is closed: pool compresses like mainnet at record and co-tenant
+  level, cost per lookup moved toward the reference, 16 of 16 categories toward parity.
+- The residual is attributed to block reads per lookup and bounded by the reference. Not explained:
+  why a bottom-level-only snapshot would still need 1.28 block reads per account lookup. Probing
+  that needs a compacted snapshot copy (1.1 TB, ~1 day) and would measure RocksDB, not state-actor.
+- #141 merged upstream 2026-09-21T19:25Z, 18/18 checks. v4 store built from exactly that sha.
