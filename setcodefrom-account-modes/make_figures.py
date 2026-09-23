@@ -276,30 +276,36 @@ def f2():
         b.append(text(x + 10, 134, bottom, 24, TEXT, bold=True, room=CW))
     rows = [
         ("EOA", "empty code", KEY, [("YES", KEY, ["the classic"]), ("YES", KEY, ["any time"]),
-                                   ("YES", KEY, ["empty code ok"]), ("YES", BLUE, ["default code"])]),
-        ("DELEGATED", "key on", PURPLE, [("YES", KEY, ["7702 lifts 3607"]), ("YES", KEY, ["switch wallets"]),
-                                        ("YES", KEY, ["8151 exempts", "0xef0100"]),
+                                   ("YES", KEY, ["as today"]), ("YES", BLUE, ["default code"])]),
+        ("DELEGATED", "key on", PURPLE, [("YES", KEY, ["3607 skips", "0xef0100 (7702)"]),
+                                        ("YES", KEY, ["switch wallets"]), ("YES", KEY, ["as today"]),
                                         ("YES", BLUE, ["your wallet", "decides"])]),
-        ("DELEGATED", "key off", PURPLE, [("NO", RED, ["7851"]), ("NO", RED, ["7851"]), ("NO", RED, ["8151"]),
-                                         ("YES *", BLUE, ["your wallet", "decides"])]),
+        ("DELEGATED", "key off, skip it", PURPLE, [("NO", RED, ["7851"]), ("NO", RED, ["7851"]),
+                                                  ("NO", RED, ["8151"]),
+                                                  ("YES *", BLUE, ["your wallet", "decides"])]),
         ("CODE", "fresh or migrated", GREEN, [("NO", RED, ["3607"]), ("NO", RED, ["7702 auth check"]),
                                               ("NO", RED, ["8151"]), ("YES", BLUE, ["your code", "decides"])]),
     ]
-    subc = {"empty code": MUTED, "key on": KEY, "key off": RED, "fresh or migrated": MUTED}
+    subc = {"empty code": MUTED, "key on": KEY, "key off, skip it": MUTED, "fresh or migrated": MUTED}
     RH, y0 = 135, 162
     for i, (name, sub, accent, cells) in enumerate(rows):
         y = y0 + i * RH
+        dim = "skip" in sub
+        if dim:
+            b.append('<g opacity="0.38">')
         b.append(rect(20, y + 6, 1160, RH - 12, stroke=LINE, fill=PANEL, rx=8))
-        b.append(f'<rect x="20" y="{y + 6}" width="7" height="{RH - 12}" fill="{accent}"/>')
+        b.append(f'<rect x="20" y="{y + 6}" width="7" height="{RH - 12}" fill="{MUTED if dim else accent}"/>')
         b.append(text(44, y + 58, name, 28, GREEN if name == "CODE" else TEXT, bold=True, room=240))
         b.append(text(44, y + 92, sub, 22, subc[sub], room=240))
         for (x, _, _), (verdict, c, note) in zip(cols, cells):
             b.append(chip(x + 10, y + 44, verdict, c, size=24, dash="3 5" if "*" in verdict else None, h=40))
             b.append(text(x + 12, y + 96, note, 22, MUTED, room=CW, lh=1.2))
+        if dim:
+            b.append("</g>")
     # the one way line sits between key on and key off, as on the map
     ly = y0 + 2 * RH
     b.append(line(20, ly, 1180, ly, RED, 2.5, "10 8"))
-    b.append(chip(1100, ly, "one way", RED, anchor="middle", h=34))
+    b.append(chip(1125, ly, "one way", RED, anchor="middle", h=34))
     b.append(text(30, 736, "* 7851 says 0xef0101 runs like 0xef0100. 8141 doesn't mention 7851 yet.", 22, MUTED,
                   room=1140))
     b.append(text(30, 768, "Drafts: 7851, 8141, 8151. Live: 3607, 7702.", 22, MUTED, room=1140))
@@ -347,9 +353,9 @@ def f3():
     b = [head("// want 1: keep the key")]
     b.append(text(30, 110, "A. STAY A DELEGATE, KEY ON", 24, PURPLE, bold=True))
     b.append(text(30, 140, "the cheap detour: you may not need to cross at all", 22, MUTED))
-    b += lanes(150, [("plain tx", "open", "7702 lifts 3607"),
+    b += lanes(150, [("plain tx", "open", "3607 skips 0xef0100"),
                      ("7702 auth", "open", "switch or clear"),
-                     ("permit via ecrecover", "open", "8151 exempts it"),
+                     ("permit via ecrecover", "open", "works as today"),
                      ("frame tx (8141 draft)", "rules", None)],
                ("your account", "0xef0100+wallet", PURPLE), None)
     b.append(chip(30, 470, "your rules are advice: the key walks around them", KEY))
