@@ -7,11 +7,11 @@
 What it opens up is bigger than the opcode. Once your account can pick up real code on demand, "what kind of account do I want to be" becomes an actual menu. So here's the menu, mostly in pictures:
 
 1. Move to a code account, but keep signing with my own ECDSA key
-2. Deploy a contract that never had a dangling key in the first place
+2. Cheaply deploy a contract whose bytecode is identical to one already deployed
 3. Retire the ECDSA key for good
 4. Come back to ECDSA from a code account
 
-A few of these lean on EIPs that are still drafts, and one leans on a PR that isn't merged yet. I'll flag those as they show up. 7702 and 3607 are already live.
+A few of these lean on EIPs that are still drafts. I'll flag those as they show up. 7702 and 3607 are already live.
 
 ## The shapes and the line
 
@@ -52,17 +52,15 @@ This doesn't undo SETCODEFROM. The key has no power of its own anymore: your cod
 
 What you give up: plain transactions, and contracts that only run `ecrecover` (8151). Contracts that ask your account through ERC 1271 still work, but there your code checks the signature itself and `ecrecover` won't return your own address. Use the [ECMUL trick](https://ethereum-magicians.org/t/eip-8151-account-code-restricted-ecrecover/27690) (one `ecrecover` plus a `MODEXP` or two) or a second owner key whose address has no code.
 
-## Want 2: a contract with no key at all
+## Want 2: a cheap way to deploy a contract whose bytecode is identical to one already deployed
 
-This is the other half of what SETCODEFROM is for: deploying a contract whose code is already on chain, without paying to store those bytes again. The new account just points at the existing code. And because that account never had a key, nothing is left dangling that someone has to remember to switch off.
+This is the other half of what SETCODEFROM is for. The new account just points at code that's already stored instead of paying to store it again, and since it never had a key, nothing is left dangling that someone has to remember to switch off.
 
-![Figure 5: a factory deploying a minimal shell with CREATE2, calling it to write per instance state, then SETCODEFROM adopting a shared template for a flat fee instead of paying code deposit per byte, contrasted with a 7702 wallet that always carries a live key by design.](figures/f4-no-key-contract.svg)
+![Figure 5: a new contract's initcode writes its per instance state and adopts an existing template's code with SETCODEFROM, for a flat fee instead of paying code deposit per byte, contrasted with a 7702 wallet that always carries a live key by design.](figures/f4-no-key-contract.svg)
 
-Under [EIP-8037](https://eips.ethereum.org/EIPS/eip-8037) (in review) every byte of new code costs 1530 gas, so a 32 KiB contract pays about 50.1M gas in code deposit, even when the exact same bytes are already on chain. With SETCODEFROM a factory deploys a tiny shell with `CREATE2`, calls it once to write per instance state, and the shell adopts the template's code for a flat 9300 gas warm or 12200 cold, whatever its size. You still pay for the new account itself, like any deployment, because that part really is new state.
+Under [EIP-8037](https://eips.ethereum.org/EIPS/eip-8037) (in review) every byte of new code costs 1530 gas, so a 32 KiB contract pays about 50.1M gas in code deposit, even when the exact same bytes are already on chain. With SETCODEFROM, the new contract's initcode writes its per instance state and adopts the template's code for a flat 9300 gas warm or 12200 cold, whatever its size. Nothing gets deposited. You still pay for the new account itself, like any deployment, because that part really is new state.
 
-The result is as keyless as any ordinary contract, and it costs nothing extra to get there. No key ever existed at that address, so a hypothetical `2^80` collision key gets nothing (3607, the 7702 authority check, and 8151 all shut it out the same way they shut out a real key). Compare that to a 7702 wallet, which by definition always carries a live key that can act outside the wallet's rules. There's no "remember to disable something" step for a clone, because there was never anything to disable.
-
-In the current draft text this is a one transaction deploy only when it goes through a factory; a plain nil `to` create transaction still needs a second call to run the initializer, since `SETCODEFROM` halts inside initcode today. [PR #12356](https://github.com/ethereum/EIPs/pull/12356) removes that halt with a small deposit step guard, making the whole thing one step everywhere, including a direct create transaction. Counterfactual smart wallets, where the address exists before any code does, follow the same shape through an 8141 deploy frame and the [EIP-7997](https://eips.ethereum.org/EIPS/eip-7997) deterministic factory (currently in Review).
+No key ever existed at that address, so even a `2^80` collision key gets nothing: 3607, the 7702 authority check and 8151 shut it out like any real key.
 
 ## Want 3: retire the key for good
 

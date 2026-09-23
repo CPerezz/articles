@@ -232,7 +232,7 @@ def f1(with_7851):
     # fresh contracts enter straight into CODE
     b.append(rect(700, 905, 470, 84, stroke=GREEN, sw=2, dash="7 6"))
     b.append(text(720, 940, "a fresh address, no key ever", 24, TEXT, room=430))
-    b.append(text(720, 970, "CREATE2 shell, then SETCODEFROM", 22, MUTED, room=430))
+    b.append(text(720, 970, "initcode runs SETCODEFROM", 22, MUTED, room=430))
     b.append(arrow(1112, 905, 1112, bot + 8, GREEN))
 
     # why nothing crosses back
@@ -392,11 +392,11 @@ def f3():
 # F4: a contract with no key, ever
 # --------------------------------------------------------------------------- #
 def f4():
-    W, H = 1200, 830
-    b = [head("// want 2: a contract, no key")]
-    steps = [("factory", "one call", MUTED), ("CREATE2", "tiny shell", MUTED), ("shell init", "SSTORE state", MUTED),
+    W, H = 1200, 760
+    b = [head("// want 2: a cheap copy of deployed code")]
+    steps = [("deploy", "tx or CREATE2", MUTED), ("initcode", "SSTORE state", MUTED),
              ("SETCODEFROM", "(template)", GREEN), ("your clone", "template code", GREEN)]
-    bw, gap, x0, y = 196, 40, 30, 96
+    bw, gap, x0, y = 255, 40, 30, 96
     for i, (t, s, c) in enumerate(steps):
         x = x0 + i * (bw + gap)
         b.append(rect(x, y, bw, 110, stroke=c if c != MUTED else LINE, sw=2.5))
@@ -405,11 +405,11 @@ def f4():
         if i:
             b.append(arrow(x - gap + 4, y + 55, x - 6, y + 55, GREEN, 3))
     # template and the pinned pointer
-    tx = x0 + 3 * (bw + gap)
+    tx = x0 + 2 * (bw + gap)
     b.append(rect(tx, 290, bw * 2 + gap, 100, stroke=GREEN, sw=2, dash="7 6"))
     b.append(text(tx + 20, 330, "template, deployed once", 24, TEXT, room=400))
     b.append(text(tx + 20, 362, "every clone points here", 22, MUTED, room=400))
-    cx = x0 + 4 * (bw + gap) + bw / 2
+    cx = x0 + 3 * (bw + gap) + bw / 2
     b.append(path(f"M{cx},{y + 110} L{cx},{286}", GREEN, 3, dash="3 6"))
     b.append(text(cx - 14, 256, "same codeHash", 22, MUTED, "end", room=300))
     b.append(text(30, 318, "pinned: if the template changes or dies,", 22, TEXT, room=660))
@@ -421,7 +421,7 @@ def f4():
     b.append(text(572, 428, "50.1M gas", 22, TEXT, bold=True, room=150))
     b.append(text(30, 462, "via SETCODEFROM", 22, GREEN, room=210))
     b.append(f'<rect x="250" y="446" width="4" height="20" rx="1" fill="{GREEN}"/>')
-    b.append(text(264, 462, "9.3k gas, plus a tiny shell", 22, GREEN, bold=True, room=390))
+    b.append(text(264, 462, "9.3k gas, any size", 22, GREEN, bold=True, room=390))
     # contrast: a delegate is a live key by design, a clone has none
     y2 = 500
     b.append(rect(30, y2, 555, 230, stroke=PURPLE, sw=2.5))
@@ -437,9 +437,7 @@ def f4():
     b.append(text(725, y2 + 128, "nothing to switch off later", 22, MUTED, room=420))
     b.append(text(639, y2 + 180, ["even a 2^80 collision key gets nothing:",
                                    "3607, the 7702 auth check, 8151"], 21, MUTED, room=510, lh=1.3))
-    # status of each path
-    b.append(chip(30, 780, "current draft: one tx through a factory, a plain create tx needs two", MUTED))
-    svg("f4-no-key-contract.svg", W, H, "Deploying a clone with SETCODEFROM: no key exists", b)
+    svg("f4-no-key-contract.svg", W, H, "A cheap copy of deployed code with SETCODEFROM, and no key", b)
 
 
 # --------------------------------------------------------------------------- #
@@ -558,8 +556,8 @@ def f7():
         (["smart wallet, the key", "stays the boss"], ["sign a 7702 auth"], ("key on", PURPLE), [("7702", False)]),
         (["code account, the key", "still signs"], ["SETCODEFROM a wallet", "that speaks 8141"], ("CODE", GREEN),
          [("8298", True), ("8141", True)]),
-        (["a contract with no", "key, ever"], ["factory: CREATE2 shell,", "init, SETCODEFROM"], ("CODE", GREEN),
-         [("8298", True), ("PR 12356", True)]),
+        (["cheap copy of a", "deployed contract"], ["deploy with initcode", "that runs SETCODEFROM"],
+         ("CODE", GREEN), [("8298", True)]),
         (["retire the key, go", "post quantum"], ["store the PQ key, then", "SETCODEFROM (or", "SETSELFDELEGATE)"],
          ("CODE", GREEN), [("8298", True), ("8151", True), ("7851", True)]),
         (["switch wallets later"], ["key on: new 7702 auth", "key off: SETSELFDELEGATE", "CODE: SETCODEFROM"],
@@ -584,7 +582,7 @@ def f7():
         for j, (eip, draft) in enumerate(needs):
             cy = y + (RH - 10) / 2 + (j - (len(needs) - 1) / 2) * 32
             b.append(chip(1010, cy, eip, MUTED if draft else TEXT, size=19, dash="4 4" if draft else None, h=28))
-    b.append(text(30, H - 26, "dashed = draft or open PR, solid = live", 22, MUTED))
+    b.append(text(30, H - 26, "dashed = draft, solid = live", 22, MUTED))
     svg("f7-cheat-sheet.svg", W, H, "Cheat sheet: what you want, what to do, where you end up", b)
 
 
