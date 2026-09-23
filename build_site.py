@@ -29,8 +29,8 @@ ARTICLES = [
         "date": "2026",
         "tags": "Ethereum · EIP-8298 · EIP-7702 · account abstraction",
         "blurb": "A diagram-first tour of every working mode SETCODEFROM opens up: keep your "
-                 "ECDSA key while going code, deploy a contract with no key at all, retire the "
-                 "key for good, or come back to ECDSA later, with the exact EIP behind each door.",
+                 "ECDSA key while going code, cheaply deploy a copy of an existing contract, "
+                 "retire the key for good, or come back to ECDSA later, with the exact EIP behind each door.",
         "repo": "setcodefrom-account-modes/",
     },
     {
