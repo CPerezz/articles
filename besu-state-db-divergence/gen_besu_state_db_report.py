@@ -994,18 +994,16 @@ def main():
             PD = V4["paired"]
             assert len(PD["categories"]) == PD["measurement"] == PD["control"], \
                 "the paired arms are not one control per measurement row"
-            assert PD["archived_over_clean_bytes"] > 2, \
-                "the old reference no longer differs from a clean rebuild, so the correction is moot"
-            assert PD["reference"]["clean_bytes_gb"] < PD["reference"]["archived_bytes_gb"], \
-                "the rebuilt reference is not cheaper than the archived one"
-            assert abs(PD["control_offset"] - 1) > 0.02, \
-                "the control offset vanished; the correction for it should be dropped"
+            assert PD["device_byte_factor"] > 2, \
+                "the two media no longer disagree on bytes, so the caveat can go"
+            assert PD["control_offset"] > PD["original_control_offset"] + 0.05, \
+                "the array arm's control offset stopped being the larger one"
             assert all(abs(c[4] - 1) <= PD["band"] for c in PD["categories"]) and PD["inband"] == PD["measurement"], \
-                "a paired category left the band, so the parity claim must change"
+                "a paired category left the band, so the parity sentence must change"
             assert all(c[3] > c[4] for c in PD["categories"]), \
                 "the control correction stopped reducing the raw ratios"
             assert PD["median"] < V4["classes"]["dark"]["v4"], \
-                "the paired result no longer contradicts the figure it corrects"
+                "the two media no longer disagree, so the unresolved framing must change"
         if V4.get("arm_b"):
             AB = V4["arm_b"]
             assert not AB["canary_ok"] and abs(AB["control_ratio"] - V4["control_archived"]) > 0.013, \
@@ -1632,39 +1630,38 @@ def main():
               f"one data block read.</p>")
             PD = V4["paired"]
             RF = PD["reference"]
-            w(f"<h3>The reference was the problem</h3>")
-            w(f"<p>Every ratio above divides by the compacted snapshot, and that store was prepared "
-              f"once, promoted across stages, and reused. Rebuilding it from scratch settles what it "
-              f"costs: the published snapshot copied off the read-only original "
-              f"({thousands(RF['bytes_gb'])} GB) and put through the same flush and compaction this "
-              f"study has always used ({RF['compaction_seconds']:,} s). The same tests against that "
-              f"store move <b>{RF['clean_bytes_gb']:.2f} GB</b>, against "
-              f"{RF['archived_bytes_gb']:.2f} GB for the reference used above and "
-              f"{RF['plain_bytes_gb']:.2f} GB for the snapshot as it ships. The reference reads "
-              f"{PD['archived_over_clean_bytes']:.1f} times what the same state costs when prepared "
-              f"cleanly, and the clean figure sits beside the untreated one, so it is the reference "
-              f"that is the outlier.</p>")
-            w(f"<p>So the class was re-run as a pair: both stores on the same array, same method, "
-              f"same host and image, {PD['tests_per_arm']} tests each at {PD['gas']}M gas, "
-              f"{PD['measurement']} distinct-code categories with their {PD['control']} controls. The "
-              f"controls, which touch no account state, sit {PD['control_offset']:.3f} apart and that "
-              f"offset is divided out.</p>")
+            w(f"<h3>The residual depends on the disk</h3>")
+            w(f"<p>The compacted snapshot every ratio here divides by was prepared once and reused, "
+              f"so it was rebuilt from scratch to check it: the published snapshot copied off the "
+              f"read-only original ({thousands(RF['bytes_gb'])} GB) and put through the same flush "
+              f"and compaction ({RF['compaction_seconds']:,} s). It comes out in the same shape, "
+              f"file for file. What it does not reproduce is the cost, and the reason turned out to "
+              f"be the disk: the <em>same</em> generated store, same method, same tests, moves "
+              f"{PD['same_store_bytes_nvme_gb']:.2f} GB per test on the NVMe path and "
+              f"{PD['same_store_bytes_hdd_gb']:.2f} GB on the HDD array, a factor of "
+              f"{PD['device_byte_factor']:.1f}. Byte counts here are not portable between media, "
+              f"and neither, it turns out, is the ratio.</p>")
+            w(f"<p>Re-run as a pair on the array, both stores on the same device and method, same "
+              f"host and image, {PD['tests_per_arm']} tests each at {PD['gas']}M gas, "
+              f"{PD['measurement']} categories with their {PD['control']} controls:</p>")
             w("<table><tr><th>opcode</th><th>mode</th>"
-              "<th class=n>against the old reference</th><th class=n>paired, corrected</th></tr>")
+              "<th class=n>NVMe arms</th><th class=n>array, corrected</th></tr>")
             for op, m, old, _raw, cor in PD["categories"]:
                 w(f"<tr><td>{op}</td><td>{SHORT_MODE.get(m, m)}</td>"
                   f"<td class=n>{old:.3f}&times;</td><td class=n><b>{cor:.3f}&times;</b></td></tr>")
-            w(f"<caption>The distinct-code categories against a reference built for this comparison. "
-              f"Median {PD['median']:.3f}, spanning {PD['min']:.3f} to {PD['max']:.3f}, "
-              f"{PD['inband']} of {PD['measurement']} inside &plusmn;{PD['band']*100:.0f}%. Bytes per "
-              f"test {PD['gen_bytes_gb']:.2f} GB against {PD['ref_bytes_gb']:.2f}.</caption></table>")
-            w(f"<p>The class is at parity. The inversion reported above, and the "
-              f"{V4['classes']['dark']['v4']:.3f}&times; that replaced it, were properties of the "
-              f"denominator, not of the generated store. What the fixes did is unchanged and still "
-              f"measured: filters, then unique code hashes, then a pool that compresses like "
-              f"mainnet's. What is now withdrawn is the claim that the generated store overshot "
-              f"them. The other classes in the table above divide by the same reference and inherit "
-              f"the same doubt; they have not been re-run.</p>")
+            w(f"<caption>The same categories on two media. On the array the median is "
+              f"{PD['median']:.3f}, spanning {PD['min']:.3f} to {PD['max']:.3f}, all "
+              f"{PD['inband']} inside &plusmn;{PD['band']*100:.0f}%. That arm's controls, which do "
+              f"no account-state work, sit {PD['control_offset']:.3f} apart against "
+              f"{PD['original_control_offset']:.3f} on the NVMe arms, and the correction for it is "
+              f"doing real work in that column.</caption></table>")
+            w(f"<p>So the class reads {V4['classes']['dark']['v4']:.3f} on NVMe and "
+              f"{PD['median']:.3f} on the array, and this study cannot currently say which is the "
+              f"property of the store rather than of the disk under it. The NVMe figure is the one "
+              f"measured on the medium a node actually runs on, and it stands. The array pair is the "
+              f"only comparison whose reference was built for it, and it says parity. Settling that "
+              f"needs both stores on NVMe at once, which needs {thousands(RF['bytes_gb'] + 489)} GB "
+              f"of it, and this host has {thousands(932)}.</p>")
             if V4.get("arm_b"):
                 AB = V4["arm_b"]
                 w(f"<p>The other {len(AB['budgets'])} budgets, run afterwards as a second arm of "
