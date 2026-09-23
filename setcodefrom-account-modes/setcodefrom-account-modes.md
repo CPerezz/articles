@@ -54,9 +54,9 @@ What you give up: plain transactions, and contracts that only run `ecrecover` (8
 
 ## Want 2: a contract with no key at all
 
-![Figure 5: a factory deploying a minimal shell with CREATE2, calling it to write per instance state, then SETCODEFROM adopting a shared template, contrasted with a 7702 wallet that always carries a live key by design.](figures/f4-no-key-contract.svg)
+![Figure 5: a factory deploying a minimal shell with CREATE2, calling it to write per instance state, then SETCODEFROM adopting a shared template for a flat fee instead of paying code deposit per byte, contrasted with a 7702 wallet that always carries a live key by design.](figures/f4-no-key-contract.svg)
 
-This is the other half of what the opcode is for: cheap clones. A factory deploys a tiny shell with `CREATE2`, calls it once to write whatever per instance state it needs, then the shell adopts a shared template's code with `SETCODEFROM`. The clone pays a flat adoption fee, 9300 gas warm or 12200 cold in the current draft's own numbers, no matter how big the template is, because it's a pointer update to code that's already stored, not a fresh deposit.
+This is the other half of what the opcode is for: cheap clones. Under [EIP-8037](https://eips.ethereum.org/EIPS/eip-8037) (in review) every byte of new code costs 1530 gas, so a 24 KiB contract pays about 37.6M gas in code deposit, even when the exact same bytes are already on chain. With SETCODEFROM a factory deploys a tiny shell with `CREATE2`, calls it once to write per instance state, and the shell adopts the template's code for a flat 9300 gas warm or 12200 cold, whatever its size. You still pay for the new account itself, like any deployment, because that part really is new state.
 
 The result is as keyless as any ordinary contract, and it costs nothing extra to get there. No key ever existed at that address, so a hypothetical `2^80` collision key gets nothing (3607, the 7702 authority check, and 8151 all shut it out the same way they shut out a real key). Compare that to a 7702 wallet, which by definition always carries a live key that can act outside the wallet's rules. There's no "remember to disable something" step for a clone, because there was never anything to disable.
 

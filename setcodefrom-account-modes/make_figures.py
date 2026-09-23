@@ -392,7 +392,7 @@ def f3():
 # F4: a contract with no key, ever
 # --------------------------------------------------------------------------- #
 def f4():
-    W, H = 1200, 900
+    W, H = 1200, 920
     b = [head("// want 2: a contract, no key")]
     steps = [("factory", "one call", MUTED), ("CREATE2", "tiny shell", MUTED), ("shell init", "SSTORE state", MUTED),
              ("SETCODEFROM", "(template)", GREEN), ("your clone", "template code", GREEN)]
@@ -414,10 +414,16 @@ def f4():
     b.append(text(cx - 14, 256, "same codeHash", 22, MUTED, "end", room=300))
     b.append(text(30, 318, "pinned: if the template changes or dies,", 22, TEXT, room=660))
     b.append(text(30, 346, "your clone keeps its code", 22, TEXT, room=660))
-    b.append(text(30, 386, "flat fee: 9300 warm or 12200 cold gas,", 22, MUTED, room=660))
-    b.append(text(30, 414, "whatever the size (8298 draft numbers)", 22, MUTED, room=660))
+    # what the clone saves: the code deposit, priced per byte under 8037
+    b.append(text(30, 392, "code cost, 24 KiB template (8037 prices)", 22, MUTED, room=660))
+    b.append(text(30, 428, "via CREATE", 22, TEXT, room=210))
+    b.append(f'<rect x="250" y="412" width="310" height="20" rx="3" fill="{MUTED}"/>')
+    b.append(text(572, 428, "37.6M gas", 22, TEXT, bold=True, room=150))
+    b.append(text(30, 462, "via SETCODEFROM", 22, GREEN, room=210))
+    b.append(f'<rect x="250" y="446" width="4" height="20" rx="1" fill="{GREEN}"/>')
+    b.append(text(264, 462, "9.3k gas, plus a tiny shell", 22, GREEN, bold=True, room=390))
     # contrast: a delegate is a live key by design, a clone has none
-    y2 = 470
+    y2 = 500
     b.append(rect(30, y2, 555, 230, stroke=PURPLE, sw=2.5))
     b.append(text(54, y2 + 44, "a 7702 wallet", 24, PURPLE, bold=True, room=500))
     b.append(key(54, y2 + 106, 64))
@@ -432,9 +438,9 @@ def f4():
     b.append(text(639, y2 + 180, ["even a 2^80 collision key gets nothing:",
                                    "3607, the 7702 auth check, 8151"], 21, MUTED, room=510, lh=1.3))
     # status of each path
-    b.append(chip(30, 760, "current draft: one tx through a factory, a plain create tx needs two", MUTED))
-    b.append(chip(30, 812, "PR 12356 (open): one step everywhere, initcode included", GREEN, dash="7 6"))
-    b.append(chip(30, 864, "wallets: 8141 deploy frame + 7997 factory (in review)", BLUE))
+    b.append(chip(30, 780, "current draft: one tx through a factory, a plain create tx needs two", MUTED))
+    b.append(chip(30, 832, "PR 12356 (open): one step everywhere, initcode included", GREEN, dash="7 6"))
+    b.append(chip(30, 884, "wallets: 8141 deploy frame + 7997 factory (in review)", BLUE))
     svg("f4-no-key-contract.svg", W, H, "Deploying a clone with SETCODEFROM: no key exists", b)
 
 
