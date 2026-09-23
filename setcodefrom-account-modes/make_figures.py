@@ -444,7 +444,7 @@ def f4():
 # F5: retire the key
 # --------------------------------------------------------------------------- #
 def f5():
-    W, H = 1200, 1060
+    W, H = 1200, 880
     b = [head("// want 3: retire the key")]
     b.append(text(30, 104, "one type 4 transaction", 22, MUTED))
     b.append(path("M30,118 L30,128 L1170,128 L1170,118", MUTED, 2, head=False))
@@ -482,20 +482,12 @@ def f5():
         b.append(mark(686, dy, False))
         b.append(text(716, dy + 8, what, 22, TEXT, room=260))
         b.append(text(1170, dy + 8, why, 22, RED, "end", room=230))
-    # the sibling door
-    y3 = 760
-    b.append(rect(20, y3, 1160, 150, stroke=PURPLE, fill=PANEL, sw=2, dash="7 6"))
-    b.append(text(44, y3 + 40, "the other door: 7851 (draft)", 24, PURPLE, bold=True, room=560))
-    b.append(text(44, y3 + 78, "wallet code calls SETSELFDELEGATE: DELEGATED, key off", 22, TEXT, room=1100))
-    b.append(text(44, y3 + 110, ["same three doors shut. Still a live pointer to a wallet you can switch,",
-                                 "and you can still cross to CODE later (not spelled out yet)"],
-                  22, MUTED, room=1100, lh=1.2))
-    b.append(text(30, 936, ["on this chain only: the key still signs on other chains,",
+    b.append(text(30, 760, ["on this chain only: the key still signs on other chains,",
                              "off chain, and in contracts that do ECDSA in their own code"],
                   22, MUTED, room=1140, lh=1.3))
-    b.append(text(30, 1010, "leaked key? the same move is a panic button, if your tx lands first", 22, MUTED,
+    b.append(text(30, 834, "leaked key? the same move is a panic button, if your tx lands first", 22, MUTED,
                   room=1140))
-    svg("f5-retire-the-key.svg", W, H, "Retiring the ECDSA key with SETCODEFROM, and the 7851 alternative", b)
+    svg("f5-retire-the-key.svg", W, H, "Retiring the ECDSA key with SETCODEFROM", b)
 
 
 # --------------------------------------------------------------------------- #
@@ -517,7 +509,7 @@ def f6():
     b.append(text(864, y + 82, "a true EOA again", 22, MUTED, room=280))
     b.append(key(1080, y + 76, 50))
     b.append(line(20, 330, 1180, 330, LINE, 2))
-    b.append(text(30, 384, "B. FROM CODE, OR DELEGATED WITH THE KEY OFF", 24, GREEN, bold=True))
+    b.append(text(30, 384, "B. FROM CODE", 24, GREEN, bold=True))
     y = 414
     b.append(rect(30, y, 300, 170, stroke=GREEN, sw=2.5))
     b.append(text(52, y + 48, "CODE", 26, GREEN, bold=True, room=260))
@@ -536,7 +528,7 @@ def f6():
                   20, TEXT, room=310, lh=1.3))
     b.append(text(614, y + 210, "owner: your old address, or a fresh key", 22, MUTED, room=540))
     b.append(text(30, 672, "stays shut, on purpose", 22, RED, bold=True))
-    shut = [("plain legacy tx", "3607, 7851"), ("old contracts trusting the key via ecrecover", "8151 (draft)")]
+    shut = [("plain legacy tx", "3607"), ("old contracts trusting the key via ecrecover", "8151 (draft)")]
     for i, (what, why) in enumerate(shut):
         dy = 716 + i * 54
         b.append(mark(48, dy, False))
@@ -558,10 +550,10 @@ def f7():
          [("8298", True), ("8141", True)]),
         (["cheap copy of a", "deployed contract"], ["deploy with initcode", "that runs SETCODEFROM"],
          ("CODE", GREEN), [("8298", True)]),
-        (["retire the key, go", "post quantum"], ["store the PQ key, then", "SETCODEFROM (or", "SETSELFDELEGATE)"],
-         ("CODE", GREEN), [("8298", True), ("8151", True), ("7851", True)]),
-        (["switch wallets later"], ["key on: new 7702 auth", "key off: SETSELFDELEGATE", "CODE: SETCODEFROM"],
-         ("same", MUTED), [("7702", False), ("7851", True), ("8298", True)]),
+        (["retire the key, go", "post quantum"], ["store the PQ key, then", "SETCODEFROM a PQ wallet"],
+         ("CODE", GREEN), [("8298", True), ("8151", True)]),
+        (["switch wallets later"], ["key on: new 7702 auth", "CODE: SETCODEFROM"],
+         ("same", MUTED), [("7702", False), ("8298", True)]),
         (["back to a plain EOA"], ["7702 auth to 0x0", "(only from key on)"], ("EOA", KEY), [("7702", False)]),
         (["an ECDSA owner again", "after going code"], ["SETCODEFROM an ECDSA", "owner template, sign", "via 8141"],
          ("CODE", GREEN), [("8298", True), ("8141", True)]),

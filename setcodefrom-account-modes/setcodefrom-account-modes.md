@@ -64,15 +64,13 @@ No key ever existed at that address, so even a `2^80` collision key gets nothing
 
 ## Want 3: retire the key for good
 
-![Figure 6: one type 4 transaction that delegates to a migrator, stores post quantum wallet state, and adopts a shared template, closing plain transactions, redelegation, and ecrecover all at once, plus the SETSELFDELEGATE alternative from EIP-7851.](figures/f5-retire-the-key.svg)
+![Figure 6: one type 4 transaction that delegates to a migrator, stores the post quantum wallet state and adopts a shared template, closing plain transactions, redelegation and ecrecover at once.](figures/f5-retire-the-key.svg)
 
-One transaction can do the whole migration. Sign a 7702 authorization to a migrator contract, call yourself so the migrator's code runs in your context, have it store your post quantum public key and recovery config, then call `SETCODEFROM` on a shared wallet template and revert if that call returns zero. All three doors close together: plain transactions (3607), redelegation (the 7702 authority check), and third party `ecrecover` (8151, draft).
+This is the migration 8298 was written for: moving an account off ECDSA, for example onto a post quantum key. An EOA has no code, so it can't run SETCODEFROM by itself. 7702 gets it there: one type 4 transaction delegates you to a migrator, calls yourself so the migrator runs in your account, stores your post quantum key and recovery config, and adopts a PQ wallet template. All three doors close at once, and the new code doesn't trust the old key.
 
-Gate that migrator carefully. A 7702 delegation write survives even if the rest of the transaction reverts, so if the migration call fails partway, you're left delegated to the migrator with your key still live, and anyone who can call it can install their own key instead of yours. Restrict it to a call from yourself, or a signature only you could produce, and if a call does fail, you can still sign a fresh authorization to leave.
+Gate the migrator. A 7702 delegation stays in place even if the rest of the transaction reverts, so after a failed migration you're left delegated to the migrator with your key still on. If anyone can call it, anyone can install their own key. Only let it run on a call from yourself or your own signature, and if it fails, sign a fresh authorization to leave.
 
-There's a sibling door for this that doesn't go through `SETCODEFROM` at all: [EIP-7851](https://eips.ethereum.org/EIPS/eip-7851) (draft) lets delegated wallet code call `SETSELFDELEGATE`, flipping the indicator from `0xef0100` to `0xef0101`. Same three doors close. The difference is you're still a live pointer, not regular code, so the wallet can still switch delegates later, and it can still cross into a real code account afterward, though that particular hop isn't spelled out in either spec yet.
-
-And keep the scope honest either way: this only closes doors on this chain. The same key still signs on chains where that address carries no code, still works off chain, and any contract doing its own ECDSA math in Solidity never asks the precompile at all. One more symmetry worth remembering: if you're racing to lock down a key you suspect leaked, this exact move is your panic button, but it's a race. Whoever's transaction lands first, you or whoever has the leaked key, wins.
+This retires the key on this chain only. It still signs on other chains where your address has no code, off chain, and in contracts that check ECDSA in their own code. And if you think the key leaked, the same move works as a panic button, as long as your transaction lands before the attacker's.
 
 ## Want 4: back to ECDSA
 
@@ -80,14 +78,14 @@ And keep the scope honest either way: this only closes doors on this chain. The 
 
 Two different starting points, two different answers. If you're still a plain 7702 delegate with the key on, a fresh authorization to `0x0` clears you straight back to a true EOA, no different from one that never delegated.
 
-If you're already a code account, or a delegate that locked its key off with `SETSELFDELEGATE`, there's no clearing your way out. What you can do is adopt an "ECDSA owner" template with `SETCODEFROM`, whose validator reads a signature through 8141 and checks it against an owner address, your original one or a fresh one. The key is back driving, just through the wallet's front door this time, with your rules still applying to it.
+If you're already a code account, there's no clearing your way out. What you can do is adopt an "ECDSA owner" template with `SETCODEFROM`, whose validator reads a signature through 8141 and checks it against an owner address, your original one or a fresh one. The key is back driving, just through the wallet's front door this time, with your rules still applying to it.
 
-What stays shut, deliberately: plain legacy transactions (3607, and 7851 if you came from a locked delegate) and any third party contract trusting that address through naive `ecrecover` (8151). Nothing about 3607 or 7851 was actually reversed, since what came back is your code choosing to trust a signature, exactly the way it could choose to trust a passkey or a post quantum scheme instead. If you'd rather have plain `ecrecover` work again too, park a fresh owner key at a brand new, empty address and check that one inside your wallet.
+What stays shut, deliberately: plain legacy transactions (3607) and any third party contract trusting that address through naive `ecrecover` (8151). Nothing about 3607 was actually reversed, since what came back is your code choosing to trust a signature, exactly the way it could choose to trust a passkey or a post quantum scheme instead. If you'd rather have plain `ecrecover` work again too, park a fresh owner key at a brand new, empty address and check that one inside your wallet.
 
 This same "adopt a new template, same address, same storage, no proxy" trick is also just how you upgrade in place at any point along the way: ECDSA today, a passkey tomorrow through 8141's `P256` scheme or the [secp256r1 precompile](https://eips.ethereum.org/EIPS/eip-7951) directly, a post quantum scheme after that through an `ARBITRARY` signature entry. Proxies can graduate into this too, since delegated execution is allowed to adopt code for its caller, but once you do, the proxy's old upgrade slot is dead weight: graduate only into code whose own upgrade path is `SETCODEFROM` from here on.
 
 ## Cheat sheet
 
-![Figure 8: a table mapping eight things you might want, EOA perks, a reversible smart wallet, a code account that still trusts your key, a keyless contract, retiring the key, switching wallets, going back to a plain EOA, and an ECDSA owner again after leaving ECDSA, to the exact move and the EIPs it needs.](figures/f7-cheat-sheet.svg)
+![Figure 8: a table mapping eight things you might want, EOA perks, a reversible smart wallet, a code account that still trusts your key, a cheap copy of a deployed contract, retiring the key, switching wallets, going back to a plain EOA, and an ECDSA owner again after leaving ECDSA, to the exact move and the EIPs it needs.](figures/f7-cheat-sheet.svg)
 
 **Verdict:** only two things are actually irreversible on this chain, protocol level ECDSA authority and blind `ecrecover` trust, and both are irreversible by design, not by accident. Everything else on this page, including coming back, is a move your own code or your own key can make, and every single one has an EIP number sitting right next to it.
