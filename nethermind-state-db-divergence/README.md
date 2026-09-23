@@ -47,7 +47,7 @@ hash mismatch. Use the `existing-snapshot` family's 14-EIP set, which adds
 | `report_svg.py` | Inline-SVG primitives (scales, axes, dots, lines, bands). Has its own self-check. |
 | `crt_theme.py` | The site stylesheet, byte-identical to the sibling reports, kept in one place so the three cannot drift apart. |
 | `data/report_data.json` | Every value the report renders. The only input to the generator. |
-| `figures/fig_*.svg` | The thirteen charts as standalone files, site palette derived from `crt_theme.CSS` so a figure cannot disagree with how it renders in the page. |
+| `figures/fig_*.svg` | The fifteen charts as standalone files, site palette derived from `crt_theme.CSS` so a figure cannot disagree with how it renders in the page. |
 
 - The carry-over ceiling: `container-recreate` restarts the client per test, so setup starts
   fully cold and anything the measured step gets free must have been put in the client's memory
@@ -164,7 +164,7 @@ hash mismatch. Use the `existing-snapshot` family's 14-EIP set, which adds
     residual there is client work per unit of gas rather than reads - which retires the
     "mainnet-shaped trie is dearer per node" wording this page carried for one morning.
 
-- **The storage class was placement too, and it closes (R69, R72).** Two flat columns had never
+- **Finding 5 - the storage class was placement too, and it closes (R69, R72).** Two flat columns had never
   been settled in 68 rounds: `Flat/Storage` (807 files over L0/L2/L3/L4/L5/L6) and
   `Flat/StorageNodes` (1,961 over L0/L3/L4/L5/L6), against the generated store's single level in
   each. Every earlier intervention targeted the columns the divergent categories read; storage
@@ -189,7 +189,7 @@ hash mismatch. Use the `existing-snapshot` family's 14-EIP set, which adds
 ## Regenerate
 
 ```
-python3 gen_nethermind_state_db_report.py   # writes the html and the thirteen svgs
+python3 gen_nethermind_state_db_report.py   # writes the html and the fifteen svgs
 python3 report_svg.py                       # primitive self-check, prints "report_svg selfcheck ok"
 ```
 
