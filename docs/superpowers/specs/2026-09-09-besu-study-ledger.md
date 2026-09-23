@@ -3876,3 +3876,89 @@ were read with the same wrong options, which made the comparison feel safe; it w
 the two stores differ in exactly the property the wrong option exposed (level count). Any future
 `rockscompact` probe must mirror Besu's table config (`internal/besu/keys`, `client/besu/dbs_cgo.go`:
 10 bits/key full filter, 32 KiB blocks, LZ4) and print its filter counters so a zero is visible.
+
+## Round 59 - the measurement set, and what it killed
+
+Anon asked for the full measurement plan, then for the state-actor changes it justified, a
+regenerated store and a re-bench. The measurements justified no state-actor change, and then
+found something larger.
+
+### M1, lookups per prefetched account
+
+The harness already scrapes Besu's counters per test (`scrape_besu.py`, one container per test
+under `rollback_strategy: container-recreate`). Extended it with the rocksdb keys (Besu does not
+expose that category, so they came back empty) and ran a 4-test probe on the bound v4 store.
+Bonsai cache misses: **32,215 (v4) against 32,205 (archived reference)**, account reads 1,493
+against 1,306. The lookup count is identical; only bytes per lookup differ, 174 KiB against 229.
+A flat account read is 17 KiB, so each miss pulls about ten blocks: the trie path.
+
+### M2, trie shape - no defect
+
+Key-length histograms over cf09 are near-identical (v4 slightly deeper: 1.08M len-8 keys against
+0.99M; node values 105-111 B against 101-105 B). The generated trie is the same shape as a real
+one. One candidate change (fragmenting or re-ordering trie writes) dropped on the evidence.
+
+### M3, recency - real, and the generator has none
+
+On the snapshot as it ships, the benchmark's own fixture contracts are answered from L0 **28.9%**
+of the time and cost **848 B** per read, against 7.5% and **20,327 B** for code keys drawn
+uniformly. A previous bloatnet run left them in tiny top-level SSTs. The generated store has 12
+files in cf07, all L6, and no recency structure at all. Also found: the reference carries 439M
+records / 31 GB in cf01 (BLOCKCHAIN) and 61k trie-log entries; the generated store has 5 records
+and no trie logs.
+
+### The probe bug that had to be fixed first (round 58's lesson, again)
+
+`CfReadCost` sampled cf09 from a key-range prefix, which is the top of the trie: shallow and
+shared. Uniform sampling with filters on inverts the result: a trie-node lookup costs 27.9 KiB on
+the snapshot against **36.6 KiB** on the generated store, while an account lookup is 18.8 against
+17.2. The two per-lookup ratios straddle 1.0 and neither is the workload's 0.75, so cost per
+lookup is not the mechanism. Published as a correction (`4eae3ee`).
+
+---
+
+## Round 60 - the reference is inflated, and two of my own claims were wrong
+
+The compacted snapshot the whole article divides by no longer existed (`besu-joc-scratch.img` is
+zeroed), so every remaining question was unanswerable. Rebuilt it: copied the published snapshot
+off the read-only virgin to the HDD array (1,071 GB, 50 min, virgin unmounted immediately) and ran
+the study's own `Compact.java` on it (8,176 s). Then ran the archived jochemnet fixtures against it.
+
+### Bytes per dark test at 100M gas
+
+| store | GB |
+|---|---|
+| archived reference, the article's denominator | 7.26 to 8.35 |
+| same snapshot, freshly flushed and compacted, same tool | **1.87** |
+| archived plain snapshot, never compacted | 1.38 |
+| generated store (#141), NVMe/schelk | 5.67 |
+
+The archived reference reads **3.96x** what a clean compaction of the same state reads, and the
+fresh compaction sits next to the archived *plain* number. The archived `s4-drained` -> `s5-compacted`
+lineage, promoted across stages, is the outlier; my rebuild is the consistent one.
+
+### Two errors of mine, both caught by controls
+
+1. I told Anon the generated store reads 3.03x the clean reference. That compared NVMe/schelk
+   against the HDD array. **Bytes are not device-independent**: md3 carries 2 MB readahead against
+   the schelk device's 128 KB, and the same store, same method reads 5.67 GB on one and ~1.9 GB on
+   the other. My path-invariance check had varied only the method. Retracted.
+2. The first like-for-like pair was asymmetric: the reference arm replayed pre-runs, the generated
+   arm did not, and its control rows sat 8.9% apart, which is most of the 16.9% measurement
+   difference it showed.
+
+### The first comparison with a verified denominator
+
+Both stores on the array, overlayfs, same host and image, 100M gas, n=3: throughput 1.169, controls
+1.089, bytes 0.80. Corrected for the control offset the state-work effect is about **+7%**, near or
+inside the band, against a published 1.309 that was measured on a denominator reading four times
+what the state costs when prepared cleanly.
+
+### Running
+
+`pair.sh`: two sequential arms, 16 tests each, sharing everything except the store - same array,
+same method, same filter (4 opcodes x 2 dark modes, measurement and control), each replaying its
+own pre-runs. That is the number worth publishing, and nothing should be changed in state-actor
+until it lands: trie shape matches, account lookups cost the same, lookup counts are identical, and
+the one asymmetry that is real (recency structure) makes reads *cheaper*, which is the wrong
+direction for a store that was supposed to be too fast.
