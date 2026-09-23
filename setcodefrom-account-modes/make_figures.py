@@ -415,10 +415,10 @@ def f4():
     b.append(text(30, 318, "pinned: if the template changes or dies,", 22, TEXT, room=660))
     b.append(text(30, 346, "your clone keeps its code", 22, TEXT, room=660))
     # what the clone saves: the code deposit, priced per byte under 8037
-    b.append(text(30, 392, "code cost, 24 KiB template (8037 prices)", 22, MUTED, room=660))
+    b.append(text(30, 392, "code cost, 32 KiB template (8037 prices)", 22, MUTED, room=660))
     b.append(text(30, 428, "via CREATE", 22, TEXT, room=210))
     b.append(f'<rect x="250" y="412" width="310" height="20" rx="3" fill="{MUTED}"/>')
-    b.append(text(572, 428, "37.6M gas", 22, TEXT, bold=True, room=150))
+    b.append(text(572, 428, "50.1M gas", 22, TEXT, bold=True, room=150))
     b.append(text(30, 462, "via SETCODEFROM", 22, GREEN, room=210))
     b.append(f'<rect x="250" y="446" width="4" height="20" rx="1" fill="{GREEN}"/>')
     b.append(text(264, 462, "9.3k gas, plus a tiny shell", 22, GREEN, bold=True, room=390))
