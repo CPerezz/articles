@@ -22,6 +22,18 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # --------------------------------------------------------------------------- #
 ARTICLES = [
     {
+        "folder": "setcodefrom-account-modes",
+        "source": "setcodefrom-account-modes.md",
+        "eyebrow": "EIPS · ACCOUNT ABSTRACTION",
+        "card_title": "What your account can become after SETCODEFROM",
+        "date": "2026",
+        "tags": "Ethereum · EIP-8298 · EIP-7702 · account abstraction",
+        "blurb": "A diagram-first tour of every working mode SETCODEFROM opens up: keep your "
+                 "ECDSA key while going code, deploy a contract with no key at all, retire the "
+                 "key for good, or come back to ECDSA later, with the exact EIP behind each door.",
+        "repo": "setcodefrom-account-modes/",
+    },
+    {
         "folder": "slot0-epoch-reorgs",
         "source": "is-slot-0-reorg-cost-fixable.md",
         "eyebrow": "CONSENSUS · REORGS",
@@ -63,6 +75,24 @@ ARTICLES = [
                  "the store was built — where the pre-run's rows land in the LSM tree, and a "
                  "generated store written with no bloom filters at all.",
         "repo": "besu-state-db-divergence/",
+    },
+    {
+        # Same series as the two entries above, same shape: prebuilt by
+        # nethermind-state-db-divergence/gen_nethermind_state_db_report.py.
+        # Restored: committed index.html already carried this card, but the
+        # manifest entry was missing on this branch, which build_site.py would
+        # otherwise silently drop on the next regeneration.
+        "folder": "nethermind-state-db-divergence",
+        "prebuilt": True,
+        "href": "nethermind-state-db-divergence/nethermind-state-db-report.html",
+        "eyebrow": "EXECUTION · STATE DB",
+        "card_title": "Why two identical Nethermind benchmarks disagree by 17×",
+        "date": "2026",
+        "tags": "Ethereum · Nethermind · flat DB · RocksDB · benchmarking",
+        "blurb": "The same experiment on Nethermind, and the first one taken all the way. The "
+                 "17× is where the rows sit, not what they contain: equalise placement and "
+                 "re-run the full suite, and every category that reads state comes back to parity.",
+        "repo": "nethermind-state-db-divergence/",
     },
 ]
 
