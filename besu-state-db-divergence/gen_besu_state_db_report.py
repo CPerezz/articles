@@ -988,6 +988,24 @@ def main():
             assert all(0.95 <= v["v4_blocks"] <= 1.05 and 0.95 <= v["snapshot_blocks"] <= 1.05
                        for v in (R["cf_lookup"]["cf06"], R["cf_lookup"]["cf09"])), \
                 "a lookup stopped costing one data block on one of the stores"
+        # The paired re-run is the only comparison here whose denominator was built and measured
+        # for it. If it ever agrees with the old reference, one of the two is being misread.
+        if V4.get("paired"):
+            PD = V4["paired"]
+            assert len(PD["categories"]) == PD["measurement"] == PD["control"], \
+                "the paired arms are not one control per measurement row"
+            assert PD["archived_over_clean_bytes"] > 2, \
+                "the old reference no longer differs from a clean rebuild, so the correction is moot"
+            assert PD["reference"]["clean_bytes_gb"] < PD["reference"]["archived_bytes_gb"], \
+                "the rebuilt reference is not cheaper than the archived one"
+            assert abs(PD["control_offset"] - 1) > 0.02, \
+                "the control offset vanished; the correction for it should be dropped"
+            assert all(abs(c[4] - 1) <= PD["band"] for c in PD["categories"]) and PD["inband"] == PD["measurement"], \
+                "a paired category left the band, so the parity claim must change"
+            assert all(c[3] > c[4] for c in PD["categories"]), \
+                "the control correction stopped reducing the raw ratios"
+            assert PD["median"] < V4["classes"]["dark"]["v4"], \
+                "the paired result no longer contradicts the figure it corrects"
         if V4.get("arm_b"):
             AB = V4["arm_b"]
             assert not AB["canary_ok"] and abs(AB["control_ratio"] - V4["control_archived"]) > 0.013, \
@@ -1611,18 +1629,42 @@ def main():
               f"{CL['cf09']['v4_bytes']/1024:.1f}: {R['cf_lookup_ratio']['cf06']:.2f} and "
               f"{R['cf_lookup_ratio']['cf09']:.2f}, pointing opposite ways, neither of them "
               f"{R['ratio_v4_over_snapshot']:.2f}. Both stores answer a lookup with almost exactly "
-              f"one data block read. What is left is the number of lookups a workload makes per "
-              f"prefetched account, and this study has not measured that.</p>")
-            w(f"<p>What it has measured is how little of this belongs to the generator. The same "
-              f"snapshot, same host, same harness, same gas, costs "
-              f"{PL['snapshot_plain']['100']:.0f} KiB per prefetched account as it ships and "
-              f"{PL['snapshot_compacted']['100']:.0f} KiB after nothing but a full compaction, a "
-              f"swing of {R['compaction_swing'][0]:.0f} to {R['compaction_swing'][-1]:.0f} times "
-              f"across the budgets, on the classes that read contract code and on no others. The "
-              f"corpus pool moved cost per prefetched account from "
-              f"{(1-R['ratio_v3_over_snapshot'])*100:.0f}% below the reference to "
-              f"{(1-R['ratio_v4_over_snapshot'])*100:.0f}%. The rest sits inside a factor the "
-              f"reference swings by itself.</p>")
+              f"one data block read.</p>")
+            PD = V4["paired"]
+            RF = PD["reference"]
+            w(f"<h3>The reference was the problem</h3>")
+            w(f"<p>Every ratio above divides by the compacted snapshot, and that store was prepared "
+              f"once, promoted across stages, and reused. Rebuilding it from scratch settles what it "
+              f"costs: the published snapshot copied off the read-only original "
+              f"({thousands(RF['bytes_gb'])} GB) and put through the same flush and compaction this "
+              f"study has always used ({RF['compaction_seconds']:,} s). The same tests against that "
+              f"store move <b>{RF['clean_bytes_gb']:.2f} GB</b>, against "
+              f"{RF['archived_bytes_gb']:.2f} GB for the reference used above and "
+              f"{RF['plain_bytes_gb']:.2f} GB for the snapshot as it ships. The reference reads "
+              f"{PD['archived_over_clean_bytes']:.1f} times what the same state costs when prepared "
+              f"cleanly, and the clean figure sits beside the untreated one, so it is the reference "
+              f"that is the outlier.</p>")
+            w(f"<p>So the class was re-run as a pair: both stores on the same array, same method, "
+              f"same host and image, {PD['tests_per_arm']} tests each at {PD['gas']}M gas, "
+              f"{PD['measurement']} distinct-code categories with their {PD['control']} controls. The "
+              f"controls, which touch no account state, sit {PD['control_offset']:.3f} apart and that "
+              f"offset is divided out.</p>")
+            w("<table><tr><th>opcode</th><th>mode</th>"
+              "<th class=n>against the old reference</th><th class=n>paired, corrected</th></tr>")
+            for op, m, old, _raw, cor in PD["categories"]:
+                w(f"<tr><td>{op}</td><td>{SHORT_MODE.get(m, m)}</td>"
+                  f"<td class=n>{old:.3f}&times;</td><td class=n><b>{cor:.3f}&times;</b></td></tr>")
+            w(f"<caption>The distinct-code categories against a reference built for this comparison. "
+              f"Median {PD['median']:.3f}, spanning {PD['min']:.3f} to {PD['max']:.3f}, "
+              f"{PD['inband']} of {PD['measurement']} inside &plusmn;{PD['band']*100:.0f}%. Bytes per "
+              f"test {PD['gen_bytes_gb']:.2f} GB against {PD['ref_bytes_gb']:.2f}.</caption></table>")
+            w(f"<p>The class is at parity. The inversion reported above, and the "
+              f"{V4['classes']['dark']['v4']:.3f}&times; that replaced it, were properties of the "
+              f"denominator, not of the generated store. What the fixes did is unchanged and still "
+              f"measured: filters, then unique code hashes, then a pool that compresses like "
+              f"mainnet's. What is now withdrawn is the claim that the generated store overshot "
+              f"them. The other classes in the table above divide by the same reference and inherit "
+              f"the same doubt; they have not been re-run.</p>")
             if V4.get("arm_b"):
                 AB = V4["arm_b"]
                 w(f"<p>The other {len(AB['budgets'])} budgets, run afterwards as a second arm of "
