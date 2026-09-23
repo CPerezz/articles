@@ -392,7 +392,7 @@ def f3():
 # F4: a contract with no key, ever
 # --------------------------------------------------------------------------- #
 def f4():
-    W, H = 1200, 920
+    W, H = 1200, 830
     b = [head("// want 2: a contract, no key")]
     steps = [("factory", "one call", MUTED), ("CREATE2", "tiny shell", MUTED), ("shell init", "SSTORE state", MUTED),
              ("SETCODEFROM", "(template)", GREEN), ("your clone", "template code", GREEN)]
@@ -439,8 +439,6 @@ def f4():
                                    "3607, the 7702 auth check, 8151"], 21, MUTED, room=510, lh=1.3))
     # status of each path
     b.append(chip(30, 780, "current draft: one tx through a factory, a plain create tx needs two", MUTED))
-    b.append(chip(30, 832, "PR 12356 (open): one step everywhere, initcode included", GREEN, dash="7 6"))
-    b.append(chip(30, 884, "wallets: 8141 deploy frame + 7997 factory (in review)", BLUE))
     svg("f4-no-key-contract.svg", W, H, "Deploying a clone with SETCODEFROM: no key exists", b)
 
 
