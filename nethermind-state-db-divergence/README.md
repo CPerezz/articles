@@ -43,6 +43,7 @@ hash mismatch. Use the `existing-snapshot` family's 14-EIP set, which adds
 | `collect_v2.py` | Runs on the benchmark host: folds round 66 (the top-of-trie packing finding, its two-direction intervention and the file-number provenance) and round 67 (the store regenerated with the fixed generator, its fixtures and the long-class re-measurement) into `data/report_data.json` under `topnodes` and `v2`. |
 | `sstprops.py` | Reads every SST's table properties straight from the file footer (no RocksDB needed): column family, entries, data blocks, bytes per block, filter size, compression, creation time, writing host. The audit that dated the 4 KB top-node files to this study's own round 13. |
 | `collect_r68.py` | Runs on the benchmark host: re-measures the tests still outside +-10% as a fresh same-session pair with per-column pread accounting, and folds them into `data/report_data.json` under `outliers` (per test: throughput on all five runs, per-column reads/bytes/latency, and the storage columns' level spread). |
+| `collect_storage.py` | Runs on the benchmark host: folds rounds 69-73 into `data/report_data.json` under `storage` - the two storage columns' level shapes before and after their compactions, the sstore cells at four stages with their per-column read counts, the per-thread CPU of the absent-account transfer, and the two warming ablations. |
 | `report_svg.py` | Inline-SVG primitives (scales, axes, dots, lines, bands). Has its own self-check. |
 | `crt_theme.py` | The site stylesheet, byte-identical to the sibling reports, kept in one place so the three cannot drift apart. |
 | `data/report_data.json` | Every value the report renders. The only input to the generator. |
@@ -162,6 +163,28 @@ hash mismatch. Use the `existing-snapshot` family's 14-EIP set, which adds
   - the remaining transfer and sstore rows sit at 1.05-1.12 with read-identical traces, so the
     residual there is client work per unit of gas rather than reads - which retires the
     "mainnet-shaped trie is dearer per node" wording this page carried for one morning.
+
+- **The storage class was placement too, and it closes (R69, R72).** Two flat columns had never
+  been settled in 68 rounds: `Flat/Storage` (807 files over L0/L2/L3/L4/L5/L6) and
+  `Flat/StorageNodes` (1,961 over L0/L3/L4/L5/L6), against the generated store's single level in
+  each. Every earlier intervention targeted the columns the divergent categories read; storage
+  was at parity from the start, so nobody looked. Compacting them one at a time, each with the
+  client's own table options and pre-registered predictions: storing to an absent slot
+  2.03-2.14x -> 1.15/1.22 (row reads 3,770 -> 643 against state-actor's 609) -> 0.94/1.12;
+  writing a new value to an existing slot 1.27/1.26 -> 1.11/1.11 -> 0.998/0.865 (storage-node
+  reads 49,870 -> 42,804 against 43,556); the overwrite control, which touches no trie node,
+  never moved (0.99-1.01 throughout). Nine of ten predictions held - the miss was the *size* of
+  the first step, told to land inside 1.15 and landing 1.151/1.217.
+- **One test is left, and it is CPU (R71, R73).** The absent-account transfer separates in every
+  pair ever run: 148/148/149 MGas/s on the generated store against 98/105/100 on the snapshot
+  over three repetitions. Reads are identical on every column, the fixtures are compositionally
+  identical (1 block, 782 transactions, 204,600 gas each), and per-thread sampling at 0.1 s puts
+  the difference in managed thread-pool threads: 2.14 against 1.23 CPU-seconds at 160M, 2.35
+  against 1.31 at 240M, plus 0.26 s of background GC only on the snapshot. Neither warming path
+  explains it - `--Blocks.PreWarming=None` and `--FlatDb.TrieWarmerWorkerCount=0` both leave the
+  gap at its baseline size. The test creates ~5,500 accounts per block and reads almost nothing,
+  so what is left is the insert-and-rehash path spending more managed CPU on one trie than the
+  other. Next instrument is a profiler, not a flag.
 
 ## Regenerate
 

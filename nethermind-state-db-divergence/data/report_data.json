@@ -7718,6 +7718,425 @@
    }
   }
  },
+ "storage": {
+  "ablation": {
+   "A baseline": {
+    "joc 160M": [
+     113.4,
+     99.5
+    ],
+    "joc 240M": [
+     140.0,
+     125.3
+    ],
+    "sa 160M": [
+     150.0,
+     150.7
+    ],
+    "sa 240M": [
+     160.3,
+     173.6
+    ]
+   },
+   "B prewarming off": {
+    "joc 160M": [
+     119.2,
+     119.0
+    ],
+    "joc 240M": [
+     102.7,
+     120.2
+    ],
+    "sa 160M": [
+     149.0,
+     144.4
+    ],
+    "sa 240M": [
+     172.0,
+     163.8
+    ]
+   },
+   "C trie warmer off": {
+    "joc 160M": [
+     93.6,
+     99.3
+    ],
+    "joc 240M": [
+     115.8,
+     126.5
+    ],
+    "sa 160M": [
+     150.9,
+     152.1
+    ],
+    "sa 240M": [
+     171.8,
+     172.7
+    ]
+   }
+  },
+  "absent_account": {
+   "cpu_seconds": {
+    "joc": {
+     "160M": {
+      ".net thread pool": 2.14
+     },
+     "240M": {
+      ".net gc": 0.26,
+      ".net thread pool": 2.35
+     }
+    },
+    "sa": {
+     "160M": {
+      ".net thread pool": 1.23
+     },
+     "240M": {
+      ".net thread pool": 1.31
+     }
+    }
+   },
+   "throughput": {
+    "160M": {
+     "joc": [
+      97.8,
+      105.4,
+      100.4
+     ],
+     "sa": [
+      147.5,
+      147.8,
+      149.4
+     ]
+    },
+    "240M": {
+     "joc": [
+      137.2,
+      117.2,
+      127.7
+     ],
+     "sa": [
+      169.5,
+      167.6,
+      169.2
+     ]
+    }
+   }
+  },
+  "cells": {
+   "slots=False new=False 160M": {
+    "r68": 2.027,
+    "r68_joc": 385.6,
+    "r68_sa": 781.7,
+    "r69": 1.151,
+    "r69_joc": 747.4,
+    "r69_sa": 860.2,
+    "r72": 0.938,
+    "r72_joc": 772.3,
+    "r72_sa": 724.0,
+    "v2": 2.541,
+    "v2_joc": 302.6,
+    "v2_sa": 769.0
+   },
+   "slots=False new=False 240M": {
+    "r68": 2.137,
+    "r68_joc": 398.9,
+    "r68_sa": 852.5,
+    "r69": 1.217,
+    "r69_joc": 709.4,
+    "r69_sa": 863.4,
+    "r72": 1.115,
+    "r72_joc": 737.9,
+    "r72_sa": 822.7,
+    "v2": 2.073,
+    "v2_joc": 393.2,
+    "v2_sa": 815.2
+   },
+   "slots=False new=True 160M": {
+    "r68": 1.088,
+    "r68_joc": 146.9,
+    "r68_sa": 159.9,
+    "r69": 1.048,
+    "r69_joc": 149.5,
+    "r69_sa": 156.6,
+    "r72": 1.002,
+    "r72_joc": 154.4,
+    "r72_sa": 154.8,
+    "v2": 1.052,
+    "v2_joc": 152.1,
+    "v2_sa": 160.0
+   },
+   "slots=False new=True 240M": {
+    "r68": 1.485,
+    "r68_joc": 115.2,
+    "r68_sa": 171.1,
+    "r69": 1.099,
+    "r69_joc": 161.4,
+    "r69_sa": 177.3,
+    "r72": 1.035,
+    "r72_joc": 167.8,
+    "r72_sa": 173.7,
+    "v2": 1.062,
+    "v2_joc": 161.4,
+    "v2_sa": 171.4
+   },
+   "slots=True new=False 160M": {
+    "r68": 0.995,
+    "r68_joc": 18.6,
+    "r68_sa": 18.5,
+    "r69": 0.984,
+    "r69_joc": 18.5,
+    "r69_sa": 18.2,
+    "r72": 0.999,
+    "r72_joc": 18.5,
+    "r72_sa": 18.5,
+    "v2": 1.114,
+    "v2_joc": 16.4,
+    "v2_sa": 18.3
+   },
+   "slots=True new=False 240M": {
+    "r68": 0.993,
+    "r68_joc": 19.4,
+    "r68_sa": 19.3,
+    "r69": 1.007,
+    "r69_joc": 19.1,
+    "r69_sa": 19.2,
+    "r72": 0.992,
+    "r72_joc": 19.3,
+    "r72_sa": 19.2,
+    "v2": 1.081,
+    "v2_joc": 17.8,
+    "v2_sa": 19.3
+   },
+   "slots=True new=True 160M": {
+    "r68": 1.117,
+    "r68_joc": 19.8,
+    "r68_sa": 22.1,
+    "r69": 1.11,
+    "r69_joc": 20.1,
+    "r69_sa": 22.3,
+    "r72": 0.998,
+    "r72_joc": 21.6,
+    "r72_sa": 21.6,
+    "v2": 1.274,
+    "v2_joc": 17.5,
+    "v2_sa": 22.3
+   },
+   "slots=True new=True 240M": {
+    "r68": 1.097,
+    "r68_joc": 21.4,
+    "r68_sa": 23.5,
+    "r69": 1.107,
+    "r69_joc": 20.3,
+    "r69_sa": 22.5,
+    "r72": 0.865,
+    "r72_joc": 23.3,
+    "r72_sa": 20.2,
+    "v2": 1.11,
+    "v2_joc": 21.3,
+    "v2_sa": 23.6
+   }
+  },
+  "columns": {
+   "joc_storage_after": {
+    "files": 108,
+    "gb": 87.8,
+    "levels": [
+     6
+    ],
+    "per_level": {
+     "6": 108
+    }
+   },
+   "joc_storage_before": {
+    "files": 807,
+    "gb": 88.9,
+    "levels": [
+     0,
+     2,
+     3,
+     4,
+     5,
+     6
+    ],
+    "per_level": {
+     "0": 2,
+     "2": 1,
+     "3": 15,
+     "4": 91,
+     "5": 614,
+     "6": 84
+    }
+   },
+   "joc_storagenodes_after": {
+    "files": 801,
+    "gb": 188.4,
+    "levels": [
+     6
+    ],
+    "per_level": {
+     "6": 801
+    }
+   },
+   "joc_storagenodes_before": {
+    "files": 1961,
+    "gb": 195.2,
+    "levels": [
+     0,
+     3,
+     4,
+     5,
+     6
+    ],
+    "per_level": {
+     "0": 2,
+     "3": 1,
+     "4": 48,
+     "5": 276,
+     "6": 1634
+    }
+   },
+   "sa_storage": {
+    "files": 331,
+    "gb": 157.4,
+    "levels": [
+     4
+    ],
+    "per_level": {
+     "4": 331
+    }
+   },
+   "sa_storagenodes": {
+    "files": 1136,
+    "gb": 278.9,
+    "levels": [
+     6
+    ],
+    "per_level": {
+     "6": 1136
+    }
+   },
+   "settled_earlier": {
+    "Account": "round 14",
+    "StateNodes": "round 14",
+    "StateTopNodes": "round 66"
+   }
+  },
+  "reads": {
+   "slots=False new=False 160M": {
+    "after_r69": {
+     "joc_nodes": 16,
+     "joc_rows": 643,
+     "sa_nodes": 6,
+     "sa_rows": 609
+    },
+    "after_r72": {
+     "joc_nodes": 15,
+     "joc_rows": 642,
+     "sa_nodes": 6,
+     "sa_rows": 657
+    }
+   },
+   "slots=False new=False 240M": {
+    "after_r69": {
+     "joc_nodes": 16,
+     "joc_rows": 850,
+     "sa_nodes": 6,
+     "sa_rows": 952
+    },
+    "after_r72": {
+     "joc_nodes": 15,
+     "joc_rows": 848,
+     "sa_nodes": 6,
+     "sa_rows": 896
+    }
+   },
+   "slots=False new=True 160M": {
+    "after_r69": {
+     "joc_nodes": 6764,
+     "joc_rows": 28,
+     "sa_nodes": 6119,
+     "sa_rows": 19
+    },
+    "after_r72": {
+     "joc_nodes": 6176,
+     "joc_rows": 23,
+     "sa_nodes": 6128,
+     "sa_rows": 19
+    }
+   },
+   "slots=False new=True 240M": {
+    "after_r69": {
+     "joc_nodes": 9891,
+     "joc_rows": 38,
+     "sa_nodes": 9120,
+     "sa_rows": 21
+    },
+    "after_r72": {
+     "joc_nodes": 9149,
+     "joc_rows": 41,
+     "sa_nodes": 9073,
+     "sa_rows": 24
+    }
+   },
+   "slots=True new=False 160M": {
+    "after_r69": {
+     "joc_nodes": 24,
+     "joc_rows": 97981,
+     "sa_nodes": 6,
+     "sa_rows": 97564
+    },
+    "after_r72": {
+     "joc_nodes": 15,
+     "joc_rows": 97883,
+     "sa_nodes": 6,
+     "sa_rows": 97291
+    }
+   },
+   "slots=True new=False 240M": {
+    "after_r69": {
+     "joc_nodes": 16,
+     "joc_rows": 142813,
+     "sa_nodes": 6,
+     "sa_rows": 142748
+    },
+    "after_r72": {
+     "joc_nodes": 15,
+     "joc_rows": 142326,
+     "sa_nodes": 6,
+     "sa_rows": 141716
+    }
+   },
+   "slots=True new=True 160M": {
+    "after_r69": {
+     "joc_nodes": 49870,
+     "joc_rows": 22975,
+     "sa_nodes": 43312,
+     "sa_rows": 22776
+    },
+    "after_r72": {
+     "joc_nodes": 42804,
+     "joc_rows": 23155,
+     "sa_nodes": 43556,
+     "sa_rows": 22886
+    }
+   },
+   "slots=True new=True 240M": {
+    "after_r69": {
+     "joc_nodes": 72078,
+     "joc_rows": 33927,
+     "sa_nodes": 62039,
+     "sa_rows": 33956
+    },
+    "after_r72": {
+     "joc_nodes": 61457,
+     "joc_rows": 33717,
+     "sa_nodes": 61739,
+     "sa_rows": 33708
+    }
+   }
+  },
+  "src": "R69 (Flat/Storage) and R72 (Flat/StorageNodes) compactions with pre-registered predictions; R71 per-thread CPU and R73 ablation on the absent-account transfer"
+ },
  "topnodes": {
   "client_option": {
    "block_size": 16000,
