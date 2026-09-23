@@ -520,6 +520,89 @@ def chart_final_cells(cl, repacked=None, regenerated=None):
     return S.svg(W, H, "".join(o))
 
 
+def chart_levels(st):
+    """Two columns of one store against two of the other, as level stacks.
+
+    A point lookup for a key that is absent has to be refused by every level that could hold it,
+    so what matters is not how many files a column has but over how many levels they sit."""
+    col = st["columns"]
+    lanes = [("jochemnet storage rows", col["joc_storage_before"], "--db-u"),
+             ("  after compaction", col["joc_storage_after"], "--accent"),
+             ("jochemnet storage trie", col["joc_storagenodes_before"], "--db-u"),
+             ("  after compaction", col["joc_storagenodes_after"], "--accent"),
+             ("state-actor storage rows", col["sa_storage"], "--accent"),
+             ("state-actor storage trie", col["sa_storagenodes"], "--accent")]
+    W, L, T = 760, 200, 30
+    rh, bw = 30, 44
+    H = T + rh * len(lanes) + 44
+    o = [S.label(L, T - 14, "files per level (L0 newest, L6 bottom)", "start", "big")]
+    for i, (name, shape, var) in enumerate(lanes):
+        y = T + rh * i
+        o.append(S.label(L - 10, y + 15, name, "end"))
+        for lv in range(7):
+            x = L + lv * (bw + 5)
+            n = shape["per_level"].get(str(lv), 0)
+            o.append(S.band(x, x + bw, y + 2, y + 24, "--line", 0.45))
+            if n:
+                o.append(S.band(x, x + bw, y + 2, y + 24, var, 0.30))
+                o.append(S.label(x + bw / 2, y + 17, "%d" % n, "middle", "tick"))
+        o.append(S.label(L + 7 * (bw + 5) + 6, y + 17, "%.0f GB" % shape["gb"], "start", "tick"))
+    for lv in range(7):
+        o.append(S.label(L + lv * (bw + 5) + bw / 2, T + rh * len(lanes) + 12, "L%d" % lv, "middle", "tick"))
+    o.append(S.dot(L, H - 10, 4, "--db-u"))
+    o.append(S.label(L + 10, H - 6, "as found", "start", "tick"))
+    o.append(S.dot(L + 110, H - 10, 4, "--accent"))
+    o.append(S.label(L + 120, H - 6, "settled: one level", "start", "tick"))
+    return S.svg(W, H, "".join(o))
+
+
+def chart_storage_close(st):
+    """The four storage tests through the two compactions, with the reads that moved under them."""
+    sc = st["cells"]
+    rows = [("absent slot, no write", "slots=False new=False"),
+            ("new value, existing slot", "slots=True new=True"),
+            ("new value, absent slot", "slots=False new=True"),
+            ("overwrite, existing slot", "slots=True new=False")]
+    stages = [("before", "v2"), ("fresh pair", "r68"), ("rows settled", "r69"), ("+ trie settled", "r72")]
+    W, L, R, T = 760, 200, 96, 34
+    rh = 46
+    H = T + rh * len(rows) + 54
+    sx = S.LogScale(0.83, 2.7, L, W - R)
+    bot = T + rh * len(rows) - 12
+    o = [S.band(sx.to(0.9), sx.to(1.1), T - 10, bot + 6, "--accent", 0.10),
+         S.line(sx.to(1.0), T - 10, sx.to(1.0), bot + 6, "--green-muted", 1),
+         S.label(L, T - 18, "throughput ratio, state-actor / jochemnet  (band = \u00b110%)", "start", "big")]
+    for i, (label, key) in enumerate(rows):
+        y = T + rh * i + 8
+        o.append(S.label(L - 10, y + 4, label, "end"))
+        pts = []
+        for gas in ("160M", "240M"):
+            k = "%s %s" % (key, gas)
+            prev = None
+            for j, (_, stage) in enumerate(stages):
+                v = sc[k][stage]
+                x = sx.to(max(0.83, min(2.7, v)))
+                yy = y - 6 + 12 * (1 if gas == "240M" else 0)
+                if prev is not None:
+                    o.append(S.line(prev[0], prev[1], x, yy, "--green-muted", 1, dash="2 3"))
+                var = "--db-u" if j == 0 else ("--accent" if j == len(stages) - 1 else "--green-dim")
+                o.append(S.dot(x, yy, 4.5 if j in (0, len(stages) - 1) else 3, var,
+                               "%s, %s: %.3f" % (gas, stages[j][0], v)))
+                prev = (x, yy)
+                pts.append(v)
+        o.append(S.label(W - R + 6, y + 4, "%.2f \u2192 %.2f" % (sc["%s 160M" % key]["v2"], sc["%s 160M" % key]["r72"]),
+                         "start", "tick"))
+    for t in (0.9, 1.0, 1.25, 1.5, 2.0, 2.5):
+        o.append(S.label(sx.to(t), bot + 26, ("%.2f" % t).rstrip("0").rstrip("."), "middle", "tick"))
+    o.append(S.dot(L, H - 12, 4.5, "--db-u"))
+    o.append(S.label(L + 10, H - 8, "before", "start", "tick"))
+    o.append(S.dot(L + 80, H - 12, 3, "--green-dim"))
+    o.append(S.label(L + 90, H - 8, "each step", "start", "tick"))
+    o.append(S.dot(L + 180, H - 12, 4.5, "--accent"))
+    o.append(S.label(L + 190, H - 8, "settled (two rows: 160M, 240M)", "start", "tick"))
+    return S.svg(W, H, "".join(o))
+
+
 def chart_seqno_paths(bm):
     """Why a store that looks settled still gets rewritten.
 
@@ -834,6 +917,69 @@ def main():
         "the snapshot no longer gains from the top-node repack: %r" % _vc["ether transfer"]
     assert _vc["ether transfer"]["v2r1"] > 1.03, \
         "the transfer cell closed; the open-residual paragraph must be rewritten: %r" % _vc["ether transfer"]
+
+    # Round 68. The section says: the shared denominator inflated the tail, what survives on a
+    # fresh pair is an absent-slot storage test explained by the column's level spread and an
+    # absent-account transfer that is not I/O at all. Each of those has to still be true.
+    OU_ = D["outliers"]
+    _ot, _den_ = OU_["tests"], OU_["denominator"]
+    assert _den_["joc_spread"] > 1.5 * _den_["sa_spread"], \
+        "jochemnet is no longer the noisier denominator; the shared-denominator argument goes: %r" % _den_
+    for _k in ("amt0 diff_to_self 240M", "amt0 diff_to_existent 240M"):
+        assert _ot[_k]["r_v2r1"] > 1.1 and _ot[_k]["r_r68"] < 1.1, \
+            "%s no longer collapses against a same-session denominator: %r" % (_k, _ot[_k])
+    _sf = _ot["amt0 diff_to_self 240M"]["cols"]
+    for _c in ("flat/Account", "flat/StateTopNodes", "flat/StateNodes"):
+        assert abs(_sf[_c]["sa_n"] / _sf[_c]["joc_n"] - 1) < 0.03 and \
+            abs(_sf[_c]["sa_us"] / _sf[_c]["joc_us"] - 1) < 0.06, \
+            "the surviving transfers are no longer read-identical on %s: %r" % (_c, _sf[_c])
+    _ne = _ot["amt1 diff_to_nonexistent 160M"]
+    assert _ne["r_r68"] > 1.2 and abs(_ne["cols"]["flat/Account"]["sa_n"] / _ne["cols"]["flat/Account"]["joc_n"] - 1) < 0.03, \
+        "the absent-account transfer is no longer a same-reads outlier: %r" % _ne
+    _ab = _ot["sstore slots=False new=False 240M"]
+    assert _ab["r_r68"] > 1.5 and _ab["cols"]["flat/Storage"]["joc_n"] > 3 * _ab["cols"]["flat/Storage"]["sa_n"], \
+        "the absent-slot outlier or its read asymmetry is gone: %r" % _ab
+    _lv = OU_["levels"]
+    assert len(_lv["joc"]["Storage"]["levels"]) >= 4 and len(_lv["sa"]["Storage"]["levels"]) == 1, \
+        "the storage columns no longer differ in level spread: %r" % _lv
+
+    # Rounds 69-73. The section claims: the two unsettled columns were the storage class's whole
+    # story, each step equalised the reads it was supposed to, the control never moved, and what
+    # is left is one test that is CPU rather than I/O and survives both warming ablations.
+    ST_ = D["storage"]
+    _col, _sc, _sr = ST_["columns"], ST_["cells"], ST_["reads"]
+    assert len(_col["joc_storage_before"]["levels"]) >= 5 and _col["joc_storage_after"]["levels"] == [6], \
+        "the storage-row compaction is no longer what it says: %r" % _col
+    assert len(_col["joc_storagenodes_before"]["levels"]) >= 4 and _col["joc_storagenodes_after"]["levels"] == [6], \
+        "the storage-trie compaction is no longer what it says: %r" % _col
+    # the level figure draws per_level; it has to agree with the level list and the file count
+    for _nm, _sh in _col.items():
+        if isinstance(_sh, dict) and "per_level" in _sh:
+            assert {int(k) for k in _sh["per_level"]} == set(_sh["levels"]) and \
+                sum(_sh["per_level"].values()) == _sh["files"], \
+                "per-level counts disagree with the column summary for %s: %r" % (_nm, _sh)
+    for _k in ("slots=False new=False 160M", "slots=False new=False 240M"):
+        assert _sc[_k]["r68"] > 1.9 and _sc[_k]["r72"] < 1.15, \
+            "the absent-slot cell no longer closes: %r" % _sc[_k]
+    for _k in ("slots=True new=True 160M", "slots=True new=True 240M"):
+        assert _sc[_k]["v2"] > 1.05 and abs(_sc[_k]["r72"] - 1) < 0.15, \
+            "the new-value cell no longer closes: %r" % _sc[_k]
+        assert _sr[_k]["after_r69"]["joc_nodes"] > 1.1 * _sr[_k]["after_r69"]["sa_nodes"] and \
+            abs(_sr[_k]["after_r72"]["joc_nodes"] / _sr[_k]["after_r72"]["sa_nodes"] - 1) < 0.1, \
+            "the storage-trie reads did not equalise with the compaction: %r" % _sr[_k]
+    for _k in ("slots=True new=False 160M", "slots=True new=False 240M"):
+        assert abs(_sc[_k]["r69"] - 1) < 0.05 and abs(_sc[_k]["r72"] - 1) < 0.05, \
+            "the overwrite control moved with a treatment aimed elsewhere: %r" % _sc[_k]
+    _aa = ST_["absent_account"]
+    assert min(_aa["throughput"]["160M"]["sa"]) > 1.2 * max(_aa["throughput"]["160M"]["joc"]), \
+        "the absent-account transfer is no longer separated across all three repetitions: %r" % _aa["throughput"]
+    assert _aa["cpu_seconds"]["joc"]["160M"][".net thread pool"] > \
+        1.5 * _aa["cpu_seconds"]["sa"]["160M"][".net thread pool"], \
+        "the managed-CPU asymmetry that localises it is gone: %r" % _aa["cpu_seconds"]
+    _ab = ST_["ablation"]
+    for _cfg in ("B prewarming off", "C trie warmer off"):
+        assert min(_ab[_cfg]["sa 160M"]) > 1.15 * max(_ab[_cfg]["joc 160M"]), \
+            "%s now closes the gap; the ablation paragraph must be rewritten: %r" % (_cfg, _ab[_cfg])
     # Reproducibility. The page now claims dispersion in the short categories is measurement,
     # not store behaviour, which only holds while the replica pair says so: the same store under
     # the same configuration, twice.
@@ -1705,14 +1851,130 @@ def main():
       f"{tr2['v2r1']:.3f} and {tr2['v2r2']:.3f} against {tr2['v1_t1']:.3f} before &mdash; the "
       f"snapshot gained {tr2['joc_joc_t1'] - 1:+.1%} from the repack alone, which is the swap's "
       f"per-arm figure ({_sw2['joc_change']:.3f}) reproduced on a different day against a "
-      f"different store. What is left does not come from reading more nodes: at equal packing "
-      f"the snapshot reads <em>fewer</em> top-of-trie blocks per touched account than the "
-      f"generated store ({_sw2['joc']['top_per_account_after_240M']:.2f} against "
-      f"{_sw2['sa']['top_per_account_before']:.2f}) and fewer second-level ones, and is still "
-      f"the slower arm. So the remaining {100*(tr2['v2r1']-1):.0f}% is per-read cost on a "
-      f"mainnet-shaped trie rather than read count, it is the same size as the storage cell's "
-      f"{100*(vc['storage slot']['v2r1']-1):.0f}% (unmoved by any intervention here, "
-      f"{vc['storage slot']['v1_t1']:.3f} before), and it is open.</p>")
+      f"different store. What is left is small and, as the next section shows, is not a "
+      f"difference in reads at all.</p>")
+
+    # ------------------------------------------------- the surviving outliers (round 68)
+    OU = D["outliers"]
+    ot, den = OU["tests"], OU["denominator"]
+    w("<h3>Which tests are still outside &plusmn;10%, and why</h3>")
+    w(f"<p>Of the {vt['v2r1']['n']} tests over a second, {vt['v2r1']['n'] - vt['v2r1']['within10']} "
+      f"leave &plusmn;10% in the first run of the regenerated store and "
+      f"{vt['v2r2']['n'] - vt['v2r2']['within10']} in the second. Both runs divide by the "
+      f"<em>same</em> jochemnet run, so a single slow jochemnet measurement makes a test look "
+      f"reproducibly divergent in both. It does: re-running {den['n']} of those tests as a "
+      f"fresh pair, back to back on the same day, moves jochemnet by up to "
+      f"{100*den['joc_spread']:.0f}% on one test ({esc(den['joc_worst'])}) against "
+      f"{100*den['sa_spread']:.0f}% for state-actor. Measured pairwise, most of the tail "
+      f"disappears:</p>")
+    rows = [("amt0 diff_to_self 240M", "transfer to self"),
+            ("amt0 diff_to_existent 240M", "transfer to an existing account"),
+            ("amt1 diff_to_delegated_contract_diff 240M", "transfer through a 7702 delegation"),
+            ("amt1 diff_to_nonexistent 160M", "transfer to an absent account"),
+            ("sstore slots=False new=False 160M", "store to an absent slot, no write"),
+            ("sstore slots=True new=True 160M", "store a new value to an existing slot")]
+    w("<table><tr><th>test</th><th class=n>v2 run 1</th><th class=n>v2 run 2</th>"
+      "<th class=n>fresh pair</th><th>what the reads say</th></tr>")
+    notes = {
+        "amt0 diff_to_self 240M": "same reads, same bytes, same latency",
+        "amt0 diff_to_existent 240M": "same reads, same bytes, same latency",
+        "amt1 diff_to_delegated_contract_diff 240M": "same reads; jochemnet reads 1.8&times; the code bytes",
+        "amt1 diff_to_nonexistent 160M": "same reads, same bytes, same latency",
+        "sstore slots=False new=False 160M": "jochemnet 4.2&times; the storage reads",
+        "sstore slots=True new=True 160M": "jochemnet 0.6&times; storage, 1.2&times; storage-node reads",
+    }
+    for k, label in rows:
+        t_ = ot[k]
+        cls = " bad" if t_["r_r68"] < 0.9 else (" good" if t_["r_r68"] > 1.1 else "")
+        w(f"<tr><td>{esc(label)}</td><td class=n>{t_['r_v2r1']:.3f}</td>"
+          f"<td class=n>{t_['r_v2r2']:.3f}</td><td class=\"n{cls}\">{t_['r_r68']:.3f}</td>"
+          f"<td>{notes[k]}</td></tr>")
+    w("<caption>Throughput ratio, state-actor over jochemnet. The first two columns share one "
+      "jochemnet run; the third is a pair measured back to back with every read traced.</caption></table>")
+    sf = ot["amt0 diff_to_self 240M"]["cols"]
+    w(f"<p><b>The transfers that survive the fresh denominator are not I/O.</b> On the largest "
+      f"of them the two arms issue the same reads for the same bytes at the same latency: "
+      f"{sf['flat/Account']['sa_n']:,} against {sf['flat/Account']['joc_n']:,} account-row "
+      f"reads ({sf['flat/Account']['sa_mb']:.0f} MB each side, "
+      f"{sf['flat/Account']['sa_us']/1000:.1f} against {sf['flat/Account']['joc_us']/1000:.1f} ms "
+      f"mean), {sf['flat/StateTopNodes']['sa_n']:,} against "
+      f"{sf['flat/StateTopNodes']['joc_n']:,} top-of-trie reads, and "
+      f"{sf['flat/StateNodes']['sa_n']:,} against {sf['flat/StateNodes']['joc_n']:,} deeper ones. "
+      f"The remaining few per cent is work inside the client per unit of gas, not reads &mdash; "
+      f"which also rules out the reading of a mainnet-shaped trie being dearer per node, the "
+      f"explanation this page carried for one morning. The clearest case is the absent-account "
+      f"transfer: {ot['amt1 diff_to_nonexistent 160M']['cols']['flat/Account']['sa_n']:,} against "
+      f"{ot['amt1 diff_to_nonexistent 160M']['cols']['flat/Account']['joc_n']:,} account reads, "
+      f"identical bytes and latency, and "
+      f"{ot['amt1 diff_to_nonexistent 160M']['thr']['nm-sa-out68']:.0f} against "
+      f"{ot['amt1 diff_to_nonexistent 160M']['thr']['nm-joc-out68']:.0f} MGas/s. Open.</p>")
+    ST = D["storage"]
+    col, sc, sr = ST["columns"], ST["cells"], ST["reads"]
+    w(f"<p><b>The storage outliers were placement as well</b>, in two columns no earlier round "
+      f"had settled, and they close: Finding 5 below.</p>")
+    aa = ST["absent_account"]
+    ab = ST["ablation"]
+    _cpu = lambda arm, g: aa["cpu_seconds"][arm][g].get(".net thread pool", 0)
+    w(f"<p><b>What is left is one test, and it is not I/O.</b> The absent-account transfer "
+      f"survives every treatment: {', '.join('%.0f' % x for x in aa['throughput']['160M']['sa'])} "
+      f"MGas/s on the generated store against "
+      f"{', '.join('%.0f' % x for x in aa['throughput']['160M']['joc'])} on the snapshot over three "
+      f"repetitions of the same configuration. Sampling every client thread at 0.1 s inside the "
+      f"measured step puts the difference in managed thread-pool threads &mdash; "
+      f"{_cpu('joc', '160M'):.2f} against {_cpu('sa', '160M'):.2f} CPU-seconds at 160M, "
+      f"{_cpu('joc', '240M'):.2f} against {_cpu('sa', '240M'):.2f} at 240M &mdash; on a test whose "
+      f"disk reads are identical on every column. Neither warming path explains it: turning off "
+      f"state pre-warming leaves the snapshot at "
+      f"{'/'.join('%.0f' % x for x in ab['B prewarming off']['joc 160M'])} against "
+      f"{'/'.join('%.0f' % x for x in ab['B prewarming off']['sa 160M'])}, and turning off the "
+      f"trie warmer leaves it at "
+      f"{'/'.join('%.0f' % x for x in ab['C trie warmer off']['joc 160M'])} against "
+      f"{'/'.join('%.0f' % x for x in ab['C trie warmer off']['sa 160M'])}, both of which are the "
+      f"baseline gap. The test creates about 5,500 accounts per block and reads almost nothing, so "
+      f"what is left is the insert-and-rehash path spending more managed CPU on one trie than the "
+      f"other. Open, and the next instrument is a profiler rather than a flag.</p>")
+
+    # ------------------------------------------------- finding 5: the storage columns
+    w("<h2>Finding 5: two columns nobody had compacted</h2>")
+    w(f"<p>The snapshot's storage rows sat in "
+      f"{col['joc_storage_before']['files']:,} files spread over "
+      f"{len(col['joc_storage_before']['levels'])} levels, its storage trie in "
+      f"{col['joc_storagenodes_before']['files']:,} over "
+      f"{len(col['joc_storagenodes_before']['levels'])}; the generated store keeps each in a "
+      f"single level. A lookup for a key that is not there has to be refused by every level that "
+      f"could hold it, so on one test the snapshot issued "
+      f"{D['outliers']['tests']['sstore slots=False new=False 240M']['cols']['flat/Storage']['joc_n']:,} "
+      f"storage reads where the generated store issued "
+      f"{D['outliers']['tests']['sstore slots=False new=False 240M']['cols']['flat/Storage']['sa_n']:,}, "
+      f"and where it now issues {sr['slots=False new=False 240M']['after_r72']['joc_rows']:,}. "
+      f"Every earlier intervention "
+      f"targeted the columns the divergent categories read; storage was at parity from the first "
+      f"run, so nobody looked at it for sixty-eight rounds.</p>")
+    w(figure(chart_levels(ST),
+             "Where the files sit. Amber is the snapshot as it was, green is the same column after "
+             "one <code>CompactRange</code> with the client's own table options &mdash; and the "
+             "generated store as it was written."))
+    w(figure(chart_storage_close(ST),
+             f"The four storage tests, through both compactions. Settling the rows took the "
+             f"absent-slot test from {sc['slots=False new=False 160M']['r68']:.2f}&times; to "
+             f"{sc['slots=False new=False 160M']['r69']:.2f}; settling the trie took the new-value "
+             f"tests from {sc['slots=True new=True 160M']['r69']:.2f} to "
+             f"{sc['slots=True new=True 160M']['r72']:.3f}. The overwrite test, which touches no "
+             f"trie node, never left the band &mdash; the control that says each treatment moved "
+             f"what it was aimed at."))
+    w(f"<p>Both steps were pre-registered on their reads, not their timings, and both read "
+      f"predictions held exactly: storage-row reads on the absent-slot test "
+      f"{sr['slots=False new=False 240M']['after_r69']['joc_rows']:,} against the generated "
+      f"store's {sr['slots=False new=False 240M']['after_r69']['sa_rows']:,} after the first, and "
+      f"storage-trie reads {sr['slots=True new=True 240M']['after_r72']['joc_nodes']:,} against "
+      f"{sr['slots=True new=True 240M']['after_r72']['sa_nodes']:,} after the second, from "
+      f"{sr['slots=True new=True 240M']['after_r69']['joc_nodes']:,} against "
+      f"{sr['slots=True new=True 240M']['after_r69']['sa_nodes']:,}. The lesson is not about "
+      f"storage: a synthetic store is written once and compacted once, a real one is a stack of "
+      f"levels, and that difference is worth up to "
+      f"{sc['slots=False new=False 160M']['v2']:.1f}&times; on the operations that ask for keys "
+      f"that are not there. Equalising it makes the two stores comparable; it does not make the "
+      f"generated one more like mainnet.</p>")
 
     # ------------------------------------------------- where it stands
     w("<h2>Where it stands</h2>")
@@ -1741,12 +2003,19 @@ def main():
       f"{vc['DIFF_MAX code-exec']['v2r1']:.3f} &mdash; past parity, the same mechanism with the "
       f"sign reversed. Of the cell that ran the other way, ether transfers, about half was this "
       f"study's own tooling having repacked one column of the snapshot; with that undone the "
-      f"cell reads {vc['ether transfer']['v2r1']:.3f} and what is left is not a read-count "
-      f"difference. Four defects in the pipeline, one in the study, five interventions; what "
-      f"remains is a generated store that is a few per cent <em>cheaper</em> than a "
-      f"mainnet-shaped one on the two operations that touch bytecode and a few per cent cheaper "
-      f"on storage and transfers, in the direction that flatters the synthetic state rather "
-      f"than the one this page opened with.</p>")
+      f"cell reads {vc['ether transfer']['v2r1']:.3f}, and on a same-session pair the tests "
+      f"behind it issue the same reads for the same bytes at the same latency, so what is left "
+      f"there is not I/O at all. The storage cell was placement as well, in the two columns no "
+      f"earlier round had settled: with both compacted it reads "
+      f"{ST['cells']['slots=True new=True 160M']['r72']:.3f} and "
+      f"{ST['cells']['slots=False new=False 160M']['r72']:.3f} where it had read "
+      f"{ST['cells']['slots=True new=True 160M']['v2']:.2f} and "
+      f"{ST['cells']['slots=False new=False 160M']['v2']:.2f}. Six defects in the pipeline, two "
+      f"in this study's own tooling, seven interventions. What remains is a generated store a "
+      f"few per cent <em>cheaper</em> than a mainnet-shaped one on the two operations that touch "
+      f"bytecode &mdash; the direction that flatters synthetic state rather than the one this "
+      f"page opened with &mdash; and exactly one test, creating accounts that do not exist, where "
+      f"the two arms read the same bytes and the snapshot spends twice the managed CPU.</p>")
 
     fl = M["filters"]
 
@@ -1839,6 +2108,13 @@ def main():
       f"counts with it. A read-write open of a store by tooling has to transcribe every "
       f"column's options, not just the one being rewritten: an idle column with a compaction "
       f"pending is rewritten under whatever the open carries.</li>")
+    _den = D["outliers"]["denominator"]
+    w(f"<li><b>We called an outlier reproducible because it appeared in two runs that shared a "
+      f"denominator.</b> The regenerated store was measured twice, both times against the same "
+      f"jochemnet run, and a handful of tests sat 20&ndash;38% apart in both. Re-measuring "
+      f"{_den['n']} of them as a fresh pair moved jochemnet by up to {100*_den['joc_spread']:.0f}% "
+      f"on a single test and took the largest transfer excursions back inside the band. Two runs "
+      f"of one arm are one measurement of the ratio, not two.</li>")
     w("</ul>")
     w("<p class=note>The numbers in this page are computed from the collected run data at build "
       "time; the generator refuses to emit the page if the data stops supporting the sentences "
@@ -1869,6 +2145,8 @@ def main():
         "fig_seqno_paths": chart_seqno_paths(BM),
         "fig_idle_reads": chart_idle_reads(BM),
         "fig_marginal_cf": chart_marginal_cf(BM),
+        "fig_levels": chart_levels(D["storage"]),
+        "fig_storage_close": chart_storage_close(D["storage"]),
         "fig_final_cells": chart_final_cells(CL, {c: v["after"] for c, v in D["intervention_blocks"]["cells"].items()}, _v2),
     }
     for name, svg in figs.items():
