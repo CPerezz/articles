@@ -11,27 +11,28 @@ What it opens up is bigger than the opcode. Once your account can pick up real c
 3. Retire the ECDSA key for good
 4. Come back to ECDSA from a code account
 
-A few of these lean on EIPs that are still drafts, and one lean on a PR that isn't merged yet. I'll flag those as they show up. 7702 and 3607 are already live.
+A few of these lean on EIPs that are still drafts, and one leans on a PR that isn't merged yet. I'll flag those as they show up. 7702 and 3607 are already live.
 
 ## The shapes and the line
 
-![Figure 1: the four account shapes, EOA, a 7702 delegate with the key on, a 7702 delegate with the key off, and regular code, with every move between them. The dashed red line marks the point past which only code, never a key, decides what happens next.](figures/f1-map.svg)
+![Figure 1: the map with EIP-7851 included, EOA, a 7702 delegate with the key on, a delegate with the key off, and regular code, with every move between them. The dashed red line is the point past which only code decides, and nothing crosses back over it.](figures/f1-map-with-7851.svg)
 
 Left of the line, your key is always the one steering: it can delegate, redelegate, or clear itself back to a plain EOA whenever it wants. Cross the line and steering changes hands to whatever code you adopted. That's not a bug, it's the entire point of retiring a key.
 
-A few of the missing arrows are worth calling out on purpose:
+[EIP-7851](https://eips.ethereum.org/EIPS/eip-7851) (draft) is the third box: a delegate that switches its own key off with `SETSELFDELEGATE`. Look at where it lands though. No plain transactions, no redelegation, no `ecrecover`, and a wallet that only code can change. That's exactly what a code account gives you, and SETCODEFROM gets you there in the same single move, swaps the wallet later just as easily, and doesn't add a second indicator format (`0xef0101`) that other EIPs like 8141 don't even mention yet. So it doesn't really buy us anything. Skip it, go straight to SETCODEFROM, and the map gets simpler:
+
+![Figure 2: the same map without SETSELFDELEGATE. Three shapes, one crossing, and the two rules that stop anything from coming back.](figures/f1-map.svg)
+
+A few things this map says on purpose:
 
 - SETCODEFROM is self only. It can never reach out and change somebody else's account.
-- It can never install empty code or a `0xEF` delegation indicator, so nothing goes left across the line, ever.
-- Only your key can leave a plain EOA, and only your key can bring a delegate back to one, with a fresh 7702 authorization to `0x0`.
-- Once code is driving, it can't hand the wheel back to a plain key. It can adopt a new implementation, sure, but the account stays a code account.
-- SETCODEFROM in initcode currently halts. There's an open PR, [#12356](https://github.com/ethereum/EIPs/pull/12356), that lifts that ban with one small guard in the deposit step. More on that in want 2.
-- A code update through SETCODEFROM reverts with its transaction, same as any other state change. A 7702 delegation write does not: if the rest of the transaction reverts, the delegation still lands.
-- Two very different things can point at "the same code": a delegation indicator follows whatever its delegate currently runs, live. SETCODEFROM pins a code hash forever, even if the source later changes or dies. Pick the one you actually want.
+- The arrow back from CODE is red because the specs block it, not because I left it off. 8298 only accepts a source whose code hash isn't the empty one and whose code doesn't start with `0xEF`, so SETCODEFROM can't copy "no code" or a 7702 indicator onto you. 7702 skips any authorization from an account that already has real code (its authority must be "empty or already delegated"). And `SELFDESTRUCT` only deletes a contract created in the same transaction ([EIP-6780](https://eips.ethereum.org/EIPS/eip-6780)), which a migrated account never is. Nothing else writes an account's code.
+- Why that's a feature: 8298 says ECDSA transaction origination "remains permanently disabled" after a migration. If code could turn itself back into a key account, a retired, leaked or quantum broken key would get the account back, and for a fresh contract so would anyone who found a colliding key. Code can still adopt a new implementation as often as it likes. It just stays code.
+- A 7702 authorization to `0x0` is not a delegation to address zero. 7702 treats it as "clear": the code hash goes back to empty, no indicator is left behind, and the account is a plain EOA again, byte for byte (geth does exactly this). Your key sends normal transactions, `ecrecover` works, and 8141 gives you the protocol's default code. No contract runs, no Solidity is involved. Only your key can make this move, and only from a delegate with the key on.
 
 ## Who can do what
 
-![Figure 2: a grid of the four shapes against four channels, sending a plain transaction, signing a 7702 authorization, being recovered by ecrecover, and sending an 8141 frame transaction, with which EIP closes or opens each cell.](figures/f2-who-can-do-what.svg)
+![Figure 3: a grid of the four shapes against four channels, sending a plain transaction, signing a 7702 authorization, being recovered by ecrecover, and sending an 8141 frame transaction, with which EIP closes or opens each cell.](figures/f2-who-can-do-what.svg)
 
 Three separate rules close the door on your key, one at a time, and none of them talk to each other: [EIP-3607](https://eips.ethereum.org/EIPS/eip-3607) blocks plain transactions from any address with real code, the [EIP-7702](https://eips.ethereum.org/EIPS/eip-7702) authorization check blocks redelegating an address that already has real code, and [EIP-8151](https://eips.ethereum.org/EIPS/eip-8151) (draft) blocks `ecrecover` from ever returning that address again. Add them up and a key behind real code has nothing left on this chain.
 
@@ -41,7 +42,7 @@ And "nothing left on this chain" is the honest scope of it. Your key still signs
 
 ## Want 1: a code account that still runs on your ECDSA key
 
-![Figure 3: two ways to keep signing with your ECDSA key, staying a 7702 delegate where the key can always bypass the wallet's own rules, versus crossing with SETCODEFROM into a code account where the key still signs but every legacy shortcut is closed and only frame transactions get through.](figures/f3-keep-the-key.svg)
+![Figure 4: two ways to keep signing with your ECDSA key, staying a 7702 delegate where the key can always bypass the wallet's own rules, versus crossing with SETCODEFROM into a code account where the key still signs but every legacy shortcut is closed and only frame transactions get through.](figures/f3-keep-the-key.svg)
 
 **The cheap detour first.** If all you want is to keep your key in charge, you don't have to cross anything. Stay a plain 7702 delegate. Your key can always send a legacy transaction (7702 lifts 3607 for delegated code), switch or clear the delegation whenever it likes, and any old `permit` style contract still recognizes it through `ecrecover` (8151 exempts a plain `0xef0100` indicator). It's fully reversible. The catch: your wallet's own rules, limits, cosigners, whatever you built, are advice, not law. The key can always walk around them with a plain transaction or a new delegation. And your wallet's own code can move you across the line without needing your key at all, so pick it as carefully as you'd pick a key.
 
@@ -55,17 +56,17 @@ Without 8141, none of this native path exists yet. A code account can't originat
 
 ## Want 2: a contract with no key at all
 
-![Figure 4: a factory deploying a minimal shell with CREATE2, calling it to write per instance state, then SETCODEFROM adopting a shared template, contrasted with a 7702 wallet that always carries a live key by design.](figures/f4-no-key-contract.svg)
+![Figure 5: a factory deploying a minimal shell with CREATE2, calling it to write per instance state, then SETCODEFROM adopting a shared template, contrasted with a 7702 wallet that always carries a live key by design.](figures/f4-no-key-contract.svg)
 
 This is the other half of what the opcode is for: cheap clones. A factory deploys a tiny shell with `CREATE2`, calls it once to write whatever per instance state it needs, then the shell adopts a shared template's code with `SETCODEFROM`. The clone pays a flat adoption fee, 9300 gas warm or 12200 cold in the current draft's own numbers, no matter how big the template is, because it's a pointer update to code that's already stored, not a fresh deposit.
 
 The result is as keyless as any ordinary contract, and it costs nothing extra to get there. No key ever existed at that address, so a hypothetical `2^80` collision key gets nothing (3607, the 7702 authority check, and 8151 all shut it out the same way they shut out a real key). Compare that to a 7702 wallet, which by definition always carries a live key that can act outside the wallet's rules. There's no "remember to disable something" step for a clone, because there was never anything to disable.
 
-In the current draft text this is a one transaction deploy only when it goes through a factory; a plain nil `to` create transaction still needs a second call to run the initializer, since `SETCODEFROM` halts inside initcode today. PR #12356 removes that halt with a small deposit step guard, making the whole thing one step everywhere, including a direct create transaction. Counterfactual smart wallets, where the address exists before any code does, follow the same shape through an 8141 deploy frame and the [EIP-7997](https://eips.ethereum.org/EIPS/eip-7997) deterministic factory (currently in Review).
+In the current draft text this is a one transaction deploy only when it goes through a factory; a plain nil `to` create transaction still needs a second call to run the initializer, since `SETCODEFROM` halts inside initcode today. [PR #12356](https://github.com/ethereum/EIPs/pull/12356) removes that halt with a small deposit step guard, making the whole thing one step everywhere, including a direct create transaction. Counterfactual smart wallets, where the address exists before any code does, follow the same shape through an 8141 deploy frame and the [EIP-7997](https://eips.ethereum.org/EIPS/eip-7997) deterministic factory (currently in Review).
 
 ## Want 3: retire the key for good
 
-![Figure 5: one type 4 transaction that delegates to a migrator, stores post quantum wallet state, and adopts a shared template, closing plain transactions, redelegation, and ecrecover all at once, plus the SETSELFDELEGATE alternative from EIP-7851.](figures/f5-retire-the-key.svg)
+![Figure 6: one type 4 transaction that delegates to a migrator, stores post quantum wallet state, and adopts a shared template, closing plain transactions, redelegation, and ecrecover all at once, plus the SETSELFDELEGATE alternative from EIP-7851.](figures/f5-retire-the-key.svg)
 
 One transaction can do the whole migration. Sign a 7702 authorization to a migrator contract, call yourself so the migrator's code runs in your context, have it store your post quantum public key and recovery config, then call `SETCODEFROM` on a shared wallet template and revert if that call returns zero. All three doors close together: plain transactions (3607), redelegation (the 7702 authority check), and third party `ecrecover` (8151, draft).
 
@@ -77,7 +78,7 @@ And keep the scope honest either way: this only closes doors on this chain. The 
 
 ## Want 4: back to ECDSA
 
-![Figure 6: two ways back to ECDSA control, a fresh 7702 authorization to zero from a live delegate, or SETCODEFROM adopting an ECDSA owner template from a code account, with legacy transactions and third party ecrecover staying shut on purpose either way.](figures/f6-back-to-ecdsa.svg)
+![Figure 7: two ways back to ECDSA control, a fresh 7702 authorization to zero from a live delegate, or SETCODEFROM adopting an ECDSA owner template from a code account, with legacy transactions and third party ecrecover staying shut on purpose either way.](figures/f6-back-to-ecdsa.svg)
 
 Two different starting points, two different answers. If you're still a plain 7702 delegate with the key on, a fresh authorization to `0x0` clears you straight back to a true EOA, no different from one that never delegated.
 
@@ -89,6 +90,6 @@ This same "adopt a new template, same address, same storage, no proxy" trick is 
 
 ## Cheat sheet
 
-![Figure 7: a table mapping eight things you might want, EOA perks, a reversible smart wallet, a code account that still trusts your key, a keyless contract, retiring the key, switching wallets, going back to a plain EOA, and an ECDSA owner again after leaving ECDSA, to the exact move and the EIPs it needs.](figures/f7-cheat-sheet.svg)
+![Figure 8: a table mapping eight things you might want, EOA perks, a reversible smart wallet, a code account that still trusts your key, a keyless contract, retiring the key, switching wallets, going back to a plain EOA, and an ECDSA owner again after leaving ECDSA, to the exact move and the EIPs it needs.](figures/f7-cheat-sheet.svg)
 
 **Verdict:** only two things are actually irreversible on this chain, protocol level ECDSA authority and blind `ecrecover` trust, and both are irreversible by design, not by accident. Everything else on this page, including coming back, is a move your own code or your own key can make, and every single one has an EIP number sitting right next to it.

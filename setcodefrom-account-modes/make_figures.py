@@ -147,31 +147,51 @@ def svg(name, w, h, title, body):
 
 
 # --------------------------------------------------------------------------- #
-# F1: the map of shapes and moves
+# F1: the map of shapes and moves, drawn with and without EIP-7851's key-off delegate
 # --------------------------------------------------------------------------- #
-def f1():
-    W, H = 1200, 1070
-    CY, CH, CW = 330, 340, 245
-    b = [head("// the map")]
-    b.append(line(600, 110, 600, 990, RED, 2.5, "10 8"))
-    b.append(chip(600, 80, "one way", RED, anchor="middle"))
-    b.append(text(30, 150, "KEY SIDE", 24, KEY, bold=True, spacing=2))
-    b.append(text(30, 180, "your key can always take the wheel back", 22, MUTED, room=560))
-    b.append(text(640, 150, "CODE SIDE", 24, GREEN, bold=True, spacing=2))
-    b.append(text(640, 180, "only code decides", 22, MUTED, room=530))
+def f1(with_7851):
+    CY, CH = 330, 340
+    bot = CY + CH
+    if with_7851:
+        lx = 600
+        cards = [
+            (30, 245, "EOA", "plain account", MUTED, "empty", KEY, False, "in charge", ["your key"], None),
+            (315, 245, "DELEGATED", "key on", KEY, "0xef0100+wallet", PURPLE, False, "in charge",
+             ["your key, or", "wallet code"], ("new 7702 auth", PURPLE)),
+            (640, 245, "DELEGATED", "key off", RED, "0xef0101+wallet", PURPLE, True, "switched off",
+             ["wallet code"], ("new delegate", PURPLE)),
+            (925, 245, "CODE", "regular code", MUTED, "real bytecode", GREEN, True, "off, or none",
+             ["its own code"], ("SETCODEFROM", GREEN)),
+        ]
+        back = (634, 566)
+        rules = ["7702: auths skipped once code is real", "8298: no empty or 0xEF source code",
+                 "7851: key off never turns back on"]
+    else:
+        lx = 770
+        cards = [
+            (30, 270, "EOA", "plain account", MUTED, "empty", KEY, False, "in charge", ["your key"], None),
+            (350, 290, "DELEGATED", "key on", KEY, "0xef0100+wallet", PURPLE, False, "in charge",
+             ["your key, or", "wallet code"], ("new 7702 auth", PURPLE)),
+            (900, 270, "CODE", "regular code", MUTED, "real bytecode", GREEN, True, "off, or none",
+             ["its own code"], ("SETCODEFROM", GREEN)),
+        ]
+        back = (894, 646)
+        rules = ["7702: auths skipped once code is real", "8298: no empty or 0xEF source code"]
+    note_h = 76 + 28 * (len(rules) + 1)
+    H = 905 + max(note_h, 84) + 90
+    W = 1200
 
-    cards = [
-        (30, "EOA", "plain account", MUTED, "empty", KEY, False, "in charge", ["your key"], None),
-        (315, "DELEGATED", "key on", KEY, "0xef0100+wallet", PURPLE, False, "in charge",
-         ["your key, or", "wallet code"], ("new 7702 auth", PURPLE)),
-        (640, "DELEGATED", "key off", RED, "0xef0101+wallet", PURPLE, True, "switched off",
-         ["wallet code"], ("new delegate", PURPLE)),
-        (925, "CODE", "regular code", MUTED, "real bytecode", GREEN, True, "off, or none",
-         ["its own code"], ("SETCODEFROM", GREEN)),
-    ]
-    room = CW - 36
-    for x, title, sub, subc, code, border, crossed, keytxt, moved, lp in cards:
-        b.append(rect(x, CY, CW, CH, stroke=border, sw=2.5))
+    b = [head("// the map" + (", with 7851" if with_7851 else ""))]
+    b.append(line(lx, 110, lx, 890, RED, 2.5, "10 8"))
+    b.append(chip(lx, 80, "one way", RED, anchor="middle"))
+    b.append(text(30, 150, "KEY SIDE", 24, KEY, bold=True, spacing=2))
+    b.append(text(30, 180, "your key can always take the wheel back", 22, MUTED, room=lx - 40))
+    b.append(text(lx + 40, 150, "CODE SIDE", 24, GREEN, bold=True, spacing=2))
+    b.append(text(lx + 40, 180, "only code decides", 22, MUTED, room=W - lx - 70))
+
+    for x, cw, title, sub, subc, code, border, crossed, keytxt, moved, lp in cards:
+        room = cw - 36
+        b.append(rect(x, CY, cw, CH, stroke=border, sw=2.5))
         b.append(text(x + 18, CY + 46, title, 28, GREEN if title == "CODE" else TEXT, bold=True, room=room))
         b.append(text(x + 18, CY + 80, sub, 24, subc, room=room))
         b.append(chip(x + 18, CY + 122, code, border if border != KEY else MUTED))
@@ -183,20 +203,31 @@ def f1():
             b.append(loop(x + 30, CY + 311, lp[1]))
             b.append(text(x + 52, CY + 319, lp[0], 22, lp[1], room=room - 16))
 
-    # forward moves above the cards
-    b.append(arc(200, CY, 390, CY, -80, PURPLE))
-    b.append(label(295, 222, "sign a 7702 auth", PURPLE, "live since Pectra"))
-    b.append(arc(500, CY, 700, CY, -80, PURPLE))
-    b.append(label(600, 222, "SETSELFDELEGATE", PURPLE, "7851 (draft)"))
-    b.append(arc(830, CY, 985, CY, -80, GREEN, dash="2 9"))
-    b.append(label(907, 222, "SETCODEFROM too", GREEN, "not spelled out yet"))
+    # the way back is shut: a red arrow into the key side, stopped at the line
+    my = CY + CH / 2
+    b.append(path(f"M{back[0]},{my} L{back[1]},{my}", RED, 3, dash="6 6"))
+    b.append(mark(lx, my, False))
+    if not with_7851:
+        b.append(label(lx, my - 36, "no way back", RED, room=240))
 
-    # the main crossing and the way home, below the cards
-    bot = CY + CH
-    b.append(arc(480, bot, 990, bot, 160, GREEN))
-    b.append(label(735, 846, "wallet code runs SETCODEFROM", GREEN, "8298 (draft)"))
-    b.append(arc(360, bot, 200, bot, 80, PURPLE))
-    b.append(label(280, 786, "7702 auth to 0x0", PURPLE, "a plain EOA again"))
+    if with_7851:
+        b.append(arc(200, CY, 390, CY, -80, PURPLE))
+        b.append(label(295, 222, "sign a 7702 auth", PURPLE, "live since Pectra"))
+        b.append(arc(500, CY, 700, CY, -80, PURPLE))
+        b.append(label(600, 222, "SETSELFDELEGATE", PURPLE, "7851 (draft)"))
+        b.append(arc(830, CY, 985, CY, -80, GREEN, dash="2 9"))
+        b.append(label(907, 222, "SETCODEFROM too", GREEN, "not spelled out yet"))
+        b.append(arc(480, bot, 990, bot, 160, GREEN))
+        b.append(label(735, 846, "wallet code runs SETCODEFROM", GREEN, "8298 (draft)"))
+        b.append(arc(360, bot, 200, bot, 80, PURPLE))
+        b.append(label(280, 786, "7702 auth to 0x0", PURPLE, "not a pointer: code cleared"))
+    else:
+        b.append(arc(200, CY, 440, CY, -80, PURPLE))
+        b.append(label(320, 222, "sign a 7702 auth", PURPLE, "live since Pectra"))
+        b.append(arc(560, bot, 980, bot, 160, GREEN))
+        b.append(label(770, 846, "wallet code runs SETCODEFROM", GREEN, "8298 (draft)"))
+        b.append(arc(420, bot, 200, bot, 80, PURPLE))
+        b.append(label(300, 786, "7702 auth to 0x0", PURPLE, "not a pointer: code cleared"))
 
     # fresh contracts enter straight into CODE
     b.append(rect(700, 905, 470, 84, stroke=GREEN, sw=2, dash="7 6"))
@@ -204,19 +235,31 @@ def f1():
     b.append(text(720, 970, "CREATE2 shell, then SETCODEFROM", 22, MUTED, room=430))
     b.append(arrow(1112, 905, 1112, bot + 8, GREEN))
 
-    # legend
-    y = 1036
+    # why nothing crosses back
+    b.append(rect(30, 905, 640, note_h, stroke=RED, fill=TINT[RED], sw=2))
+    b.append(text(52, 942, "no way back to the left", 24, RED, bold=True, room=600))
+    b.append(text(52, 976, rules, 22, TEXT, room=600, lh=1.27))
+    b.append(text(52, 976 + 28 * len(rules), "on purpose: a retired key stays retired", 22, MUTED,
+                  room=600))
+
+    y = H - 34
     b.append(key(30, y - 7, 34))
     b.append(text(76, y, "the key", 22, MUTED))
     b.append(line(210, y - 7, 250, y - 7, PURPLE, 4))
     b.append(text(262, y, "7702 family", 22, MUTED))
     b.append(line(440, y - 7, 480, y - 7, GREEN, 4))
     b.append(text(492, y, "SETCODEFROM", 22, MUTED))
-    b.append(line(670, y - 7, 710, y - 7, GREEN, 4, "2 9"))
-    b.append(text(722, y, "not spelled out yet", 22, MUTED))
-    b.append(line(1000, y - 7, 1040, y - 7, RED, 3, "10 8"))
-    b.append(text(1052, y, "one way", 22, MUTED))
-    svg("f1-map.svg", W, H, "The four account shapes and every move between them", b)
+    ox = 670
+    if with_7851:
+        b.append(line(670, y - 7, 710, y - 7, GREEN, 4, "2 9"))
+        b.append(text(722, y, "not spelled out yet", 22, MUTED))
+        ox = 1000
+    b.append(line(ox, y - 7, ox + 40, y - 7, RED, 3, "10 8"))
+    b.append(text(ox + 52, y, "one way", 22, MUTED))
+    if with_7851:
+        svg("f1-map-with-7851.svg", W, H, "The four account shapes, EIP-7851 included, and every move between them", b)
+    else:
+        svg("f1-map.svg", W, H, "The three account shapes that matter and every move between them", b)
 
 
 # --------------------------------------------------------------------------- #
@@ -447,7 +490,7 @@ def f6():
     b.append(text(52, y + 82, "key on", 22, KEY, room=260))
     b.append(key(200, y + 76, 50))
     b.append(arrow(342, y + 70, 830, y + 70, PURPLE, 3.5))
-    b.append(label(586, y + 52, "7702 auth to 0x0", PURPLE, "live since Pectra"))
+    b.append(label(586, y + 52, "7702 auth to 0x0", PURPLE, "not a pointer: code cleared"))
     b.append(rect(842, y, 328, 140, stroke=KEY, sw=2.5))
     b.append(text(864, y + 48, "EOA", 26, TEXT, bold=True, room=280))
     b.append(text(864, y + 82, "a true EOA again", 22, MUTED, room=280))
@@ -524,5 +567,7 @@ def f7():
 
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
-    for f in (f1, f2, f3, f4, f5, f6, f7):
+    f1(True)
+    f1(False)
+    for f in (f2, f3, f4, f5, f6, f7):
         f()
