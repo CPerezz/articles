@@ -952,6 +952,12 @@ def main():
         "the storage-row compaction is no longer what it says: %r" % _col
     assert len(_col["joc_storagenodes_before"]["levels"]) >= 4 and _col["joc_storagenodes_after"]["levels"] == [6], \
         "the storage-trie compaction is no longer what it says: %r" % _col
+    # the level figure draws per_level; it has to agree with the level list and the file count
+    for _nm, _sh in _col.items():
+        if isinstance(_sh, dict) and "per_level" in _sh:
+            assert {int(k) for k in _sh["per_level"]} == set(_sh["levels"]) and \
+                sum(_sh["per_level"].values()) == _sh["files"], \
+                "per-level counts disagree with the column summary for %s: %r" % (_nm, _sh)
     for _k in ("slots=False new=False 160M", "slots=False new=False 240M"):
         assert _sc[_k]["r68"] > 1.9 and _sc[_k]["r72"] < 1.15, \
             "the absent-slot cell no longer closes: %r" % _sc[_k]
