@@ -58,7 +58,7 @@ This is the other half of what SETCODEFROM is for. The new account just points a
 
 ![Figure 5: a new contract's initcode writes its per instance state and adopts an existing template's code with SETCODEFROM, for a flat fee instead of paying code deposit per byte, contrasted with a 7702 wallet that always carries a live key by design.](figures/f4-no-key-contract.svg)
 
-Under [EIP-8037](https://eips.ethereum.org/EIPS/eip-8037) (in review) every byte of new code costs 1530 gas, so a 32 KiB contract pays about 50.1M gas in code deposit, even when the exact same bytes are already on chain. With SETCODEFROM, the new contract's initcode writes its per instance state and adopts the template's code for a flat 9300 gas warm or 12200 cold, whatever its size. Nothing gets deposited. You still pay for the new account itself, like any deployment, because that part really is new state.
+Under [EIP-8037](https://eips.ethereum.org/EIPS/eip-8037) every byte of new code costs 1530 gas, so a 32 KiB contract pays about 50.1M gas in code deposit, even when the exact same bytes are already on chain. With SETCODEFROM, the new contract's initcode writes its per instance state and adopts the template's code for a flat 9300 gas warm or 12200 cold, whatever its size. Nothing gets deposited. You still pay for the new account itself, like any deployment, because that part really is new state.
 
 No key ever existed at that address, so even a `2^80` collision key gets nothing: 3607, the 7702 authority check and 8151 shut it out like any real key.
 
