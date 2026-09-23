@@ -3962,3 +3962,57 @@ own pre-runs. That is the number worth publishing, and nothing should be changed
 until it lands: trie shape matches, account lookups cost the same, lookup counts are identical, and
 the one asymmetry that is real (recency structure) makes reads *cheaper*, which is the wrong
 direction for a store that was supposed to be too fast.
+
+## Round 61 - paired against a reference built for the job: the class is at parity
+
+### The pair
+
+Both stores on the HDD array (the only place a 1.05 TB reference and a 489 GB store fit side by
+side), overlayfs, same host, same client image, 16 tests each at 100M gas: 8 distinct-code
+categories with their 8 controls. The generated store's fixture bundle has no `*.request` pre-run
+bundle (the Besu filler emits a different shape), so pre-run symmetry was unreachable and the
+control rows carry the offset instead. They sit at **1.1925**, which is what the correction divides
+out.
+
+| opcode | mode | old reference | paired, corrected |
+|---|---|---|---|
+| BALANCE | DIFF_MAX | 1.476 | 0.987 |
+| BALANCE | JUMPDEST | 1.459 | 0.977 |
+| CALL | DIFF_MAX | 1.251 | 0.978 |
+| CALL | JUMPDEST | 1.236 | 0.991 |
+| EXTCODESIZE | DIFF_MAX | 1.491 | 0.962 |
+| EXTCODESIZE | JUMPDEST | 1.492 | 0.980 |
+| STATICCALL | DIFF_MAX | 1.488 | 0.969 |
+| STATICCALL | JUMPDEST | 1.481 | 0.995 |
+
+Median **0.979**, span 0.962 to 0.995, **8 of 8 inside the band**, bytes 1.48 GB against 1.86.
+The corrected values are tight to 3%, which is what a well-behaved offset correction looks like.
+
+### What this retracts
+
+The inversion (1.461) and the corpus-pool figure that replaced it (1.309) were properties of the
+denominator. The archived compacted snapshot reads **3.96x** what the same state costs when flushed
+and compacted from the read-only original, and the clean figure (1.87 GB) sits next to the
+untreated snapshot (1.38 GB), so the archived lineage is the outlier, not the rebuild. Published
+`faf7b0c`, live byte-identical, prefix before "Where this stands" still byte-identical to `5aa2571`.
+
+Seven oracles on the paired block, including that it must keep contradicting the figure it corrects
+and that every category must stay in the band, so the claim cannot rot silently.
+
+### What is not retracted
+
+The three fixes and what they did: filters (#133), unique code hashes and designators (#137, #138),
+and a pool that compresses like mainnet's (#141, merged). Those were measured on store geometry,
+not on the broken denominator.
+
+### Still open, and now flagged in the article
+
+The absence and shared-code classes divide by the same reference and inherit the same doubt. They
+have not been re-run. Doing it properly means the same paired treatment per class, about 5 h per
+arm on the array. The headline 8.1x is in that set.
+
+### No state-actor change
+
+Nothing in rounds 59 to 61 justifies one. Trie shape matches, account lookups cost the same, lookup
+counts are identical (32,215 against 32,205 Bonsai cache misses), and against a reference built for
+the comparison the class measures 0.979. The generator is not the thing that was wrong.
