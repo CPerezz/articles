@@ -317,7 +317,8 @@ def f2():
 # --------------------------------------------------------------------------- #
 def lanes(y0, rows, account, rules_note):
     """rows: (label, state, reason). state: 'open' skips the rules, 'rules' goes through
-    them, 'shut' stops at a red door. account: (title, chip text, chip colour)."""
+    them, 'native' goes through the protocol's signature check and then the rules, 'shut'
+    stops at a red door. account: (title, chip text, chip colour)."""
     b = []
     ys = [y0 + 40 + i * 72 for i in range(len(rows))]
     kx, ky = 40, (ys[0] + ys[-1]) / 2
@@ -338,6 +339,16 @@ def lanes(y0, rows, account, rules_note):
         elif state == "open":
             b.append(arrow(212, y, ax - 6, y, KEY, 3))
             b.append(text(630, y - 12, reason, 22, MUTED, room=260))
+        elif state == "native":
+            b.append(line(212, y, 505, y, BLUE, 3))
+            b.append(rect(505, y - 24, 190, 48, stroke=TEXT, fill=PANEL, rx=8))
+            b.append(text(600, y + 8, "native ECDSA", 22, TEXT, "middle", room=176))
+            b.append(text(600, y + 50, "protocol", 22, MUTED, "middle", room=190))
+            b.append(arrow(695, y, 711, y, BLUE, 3))
+            b.append(rect(717, y - 24, 160, 48, stroke=BLUE, fill=TINT[BLUE], rx=8))
+            b.append(text(797, y + 8, "your rules", 22, BLUE, "middle", room=150))
+            b.append(text(797, y + 50, "your code", 22, MUTED, "middle", room=160))
+            b.append(arrow(877, y, ax - 6, y, BLUE, 3))
         else:
             b.append(line(212, y, 560, y, BLUE, 3))
             b.append(rect(560, y - 24, 200, 48, stroke=BLUE, fill=TINT[BLUE], rx=8))
@@ -349,7 +360,7 @@ def lanes(y0, rows, account, rules_note):
 
 
 def f3():
-    W, H = 1200, 1030
+    W, H = 1200, 1070
     b = [head("// want 1: keep the key")]
     b.append(text(30, 110, "A. STAY A DELEGATE, KEY ON", 24, PURPLE, bold=True))
     b.append(text(30, 140, "the cheap detour: you may not need to cross at all", 22, MUTED))
@@ -363,15 +374,17 @@ def f3():
                   room=1140))
     b.append(line(20, 546, 1180, 546, LINE, 2))
     b.append(text(30, 600, "B. CROSS WITH SETCODEFROM, THE KEY STAYS A SIGNER", 24, GREEN, bold=True))
-    b.append(text(30, 630, "the key still signs, the protocol checks it, your rules bind", 22, MUTED))
+    b.append(text(30, 630, "the protocol checks the signature natively, your code decides", 22, MUTED))
     b += lanes(640, [("plain tx", "shut", "3607"),
                      ("7702 auth", "shut", "7702 auth check"),
                      ("permit via ecrecover", "shut", "8151 (draft)"),
-                     ("frame tx (8141 draft)", "rules", None)],
-               ("your account", "real bytecode", GREEN),
-               "protocol checks the ECDSA, code reads SIGPARAM")
-    b.append(chip(30, 986, "your own ERC 1271 check: the ecrecover as ECMUL trick, or a second owner key",
-                  MUTED, size=21))
+                     ("frame tx (8141 draft)", "native", None)],
+               ("your account", "real bytecode", GREEN), None)
+    b.append(rect(20, 972, 1160, 78, stroke=LINE, fill=PANEL, rx=8))
+    b.append(text(40, 1002, "signed messages for other contracts (ERC 1271): your code checks ECDSA itself",
+                  22, TEXT, room=1120))
+    b.append(text(40, 1032, "8151 hides your own address from ecrecover: use the ECMUL trick or a second key",
+                  22, MUTED, room=1120))
     svg("f3-keep-the-key.svg", W, H, "Keeping the ECDSA key: stay a delegate, or cross and keep it as a signer", b)
 
 
