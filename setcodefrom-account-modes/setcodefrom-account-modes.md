@@ -89,5 +89,3 @@ This same "adopt a new template, same address, same storage, no proxy" trick is 
 ## Cheat sheet
 
 ![Figure 8: a table mapping eight things you might want, EOA perks, a reversible smart wallet, a code account that still trusts your key, a cheap copy of a deployed contract, retiring the key, switching wallets, going back to a plain EOA, and an ECDSA owner again after leaving ECDSA, to the exact move and the EIPs it needs.](figures/f7-cheat-sheet.svg)
-
-**Verdict:** only two things are actually irreversible on this chain, protocol level ECDSA authority and blind `ecrecover` trust, and both are irreversible by design, not by accident. Everything else on this page, including coming back, is a move your own code or your own key can make, and every single one has an EIP number sitting right next to it.

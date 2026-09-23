@@ -547,16 +547,17 @@ def f6():
 def f7():
     rows = [
         (["AA perks, zero setup"], ["nothing: send 8141", "frame txs"], ("EOA", KEY), [("8141", True)]),
-        (["smart wallet, the key", "stays the boss"], ["sign a 7702 auth"], ("key on", PURPLE), [("7702", False)]),
+        (["smart wallet, the key", "stays the boss"], ["sign a 7702 auth"], ("DELEGATED", PURPLE), [("7702", False)]),
         (["code account, the key", "still signs"], ["SETCODEFROM a wallet", "that speaks 8141"], ("CODE", GREEN),
          [("8298", True), ("8141", True)]),
         (["cheap copy of a", "deployed contract"], ["deploy with initcode", "that runs SETCODEFROM"],
          ("CODE", GREEN), [("8298", True)]),
         (["retire the key, go", "post quantum"], ["store the PQ key, then", "SETCODEFROM a PQ wallet"],
          ("CODE", GREEN), [("8298", True), ("8151", True)]),
-        (["switch wallets later"], ["key on: new 7702 auth", "CODE: SETCODEFROM"],
+        (["switch wallets later"], ["delegate: new 7702 auth", "CODE: SETCODEFROM"],
          ("same", MUTED), [("7702", False), ("8298", True)]),
-        (["back to a plain EOA"], ["7702 auth to 0x0", "(only from key on)"], ("EOA", KEY), [("7702", False)]),
+        (["back to a plain EOA"], ["sign a 7702 auth to 0x0", "(only while you're still", "a 7702 delegate)"],
+         ("EOA", KEY), [("7702", False)]),
         (["an ECDSA owner again", "after going code"], ["SETCODEFROM an ECDSA", "owner template, checks", "run in Solidity"],
          ("CODE", GREEN), [("8298", True)]),
     ]
