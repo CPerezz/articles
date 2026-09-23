@@ -2603,3 +2603,26 @@ Worth a look upstream.
 authentication goes through the local gpg-agent to a Yubikey, and with nobody present to touch it
 the connection hangs until it times out. Fixed for future sessions with a `ControlMaster` +
 `ControlPersist=12h` multiplexed connection - one touch keeps every later command flowing.
+
+## Round 74 - Finding 5 published as its own section; the final full-suite pair launched
+
+**Article** `23c4955` on `main` (clean checkout, zero siblings, HTTP 200, byte-identical): the
+storage result is now **Finding 5: two columns nobody had compacted**, two paragraphs plus two
+figures, with the outlier subsection reduced to a pointer.
+- `fig_levels`: files per level for the four columns - the snapshot's storage rows over
+  L0/L2/L3/L4/L5/L6 (807 files) and its storage trie over L0/L3/L4/L5/L6 (1,961), each with its
+  post-compaction lane (108 and 801 files at L6), against the generated store's single level
+  (331 at L4, 1,136 at L6).
+- `fig_storage_close`: the four storage tests walked through `before -> fresh pair -> rows
+  settled -> both settled`, two rows per test (160M/240M), against the +-10% band.
+Two oracles added tying the figure's `per_level` input to the column summary it is drawn from
+(the first version of the figure could have been mis-drawn without failing the build).
+
+**R74 launched** (`/home/ubuntu/r74.sh`, logs `/bench/logs/r74/`): the final pair on two fully
+settled stores. Phase 1 re-fills the **whole** bloatnet suite at 160M/240M against v2 (the
+class-2 fill only covered the long class), asserts >=98% coverage of the 266 ids the published
+comparison used, then runs jochemnet once and state-actor twice in the same session, then
+`r74report.py`: duration split at one second with membership fixed from the jochemnet arm,
+per-category medians against the v1 settled pair, within-+-10% counts for each class, the replica
+floor from the two state-actor runs, and every test still outside the band in both runs. Fill was
+42 tests in at the time of writing; expect ~3 h of fill and ~2 h per run.
