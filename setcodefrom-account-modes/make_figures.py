@@ -494,7 +494,7 @@ def f5():
 # F6: back to ECDSA
 # --------------------------------------------------------------------------- #
 def f6():
-    W, H = 1200, 900
+    W, H = 1200, 950
     b = [head("// want 4: back to ECDSA")]
     b.append(text(30, 110, "A. FROM A DELEGATE, KEY ON", 24, PURPLE, bold=True))
     y = 140
@@ -522,11 +522,13 @@ def f6():
     b.append(rect(592, y, 578, 170, stroke=GREEN, sw=2.5))
     b.append(text(614, y + 48, "CODE, ECDSA owner", 26, GREEN, bold=True, room=540))
     b.append(key(614, y + 102, 44))
-    b.append(rect(672, y + 80, 150, 44, stroke=BLUE, fill=TINT[BLUE], rx=8))
-    b.append(text(747, y + 109, "your rules", 22, BLUE, "middle", room=140))
-    b.append(text(840, y + 96, ["your key signs, the", "protocol checks it", "(8141, still a draft)"],
-                  20, TEXT, room=310, lh=1.3))
-    b.append(text(614, y + 210, "owner: your old address, or a fresh key", 22, MUTED, room=540))
+    b.append(rect(686, y + 80, 220, 44, stroke=TEXT, fill=PANEL, rx=8))
+    b.append(text(796, y + 109, "Solidity ECDSA", 22, TEXT, "middle", room=204))
+    b.append(text(796, y + 152, "more gas, slower", 20, RED, "middle", room=220))
+    b.append(arrow(906, y + 102, 920, y + 102, BLUE, 3))
+    b.append(rect(924, y + 80, 150, 44, stroke=BLUE, fill=TINT[BLUE], rx=8))
+    b.append(text(999, y + 109, "your rules", 22, BLUE, "middle", room=140))
+    b.append(text(614, y + 210, "no ecrecover for your own address (8151)", 22, MUTED, room=556))
     b.append(text(30, 672, "stays shut, on purpose", 22, RED, bold=True))
     shut = [("plain legacy tx", "3607"), ("old contracts trusting the key via ecrecover", "8151 (draft)")]
     for i, (what, why) in enumerate(shut):
@@ -534,8 +536,8 @@ def f6():
         b.append(mark(48, dy, False))
         b.append(text(80, dy + 8, what, 22, TEXT, room=760))
         b.append(text(1170, dy + 8, why, 22, RED, "end", room=300))
-    b.append(chip(30, 858, "fresh owner key at an empty address? plain ecrecover works in your wallet too",
-                  MUTED, size=21))
+    b.append(chip(30, 846, "ECDSA is all you want? a 7702 delegation already does it natively", PURPLE, size=21))
+    b.append(chip(30, 898, "still open: native checks through 8141 frame txs", BLUE, size=21, dash="7 6"))
     svg("f6-back-to-ecdsa.svg", W, H, "Two ways back to ECDSA control, and what stays shut", b)
 
 
@@ -555,8 +557,8 @@ def f7():
         (["switch wallets later"], ["key on: new 7702 auth", "CODE: SETCODEFROM"],
          ("same", MUTED), [("7702", False), ("8298", True)]),
         (["back to a plain EOA"], ["7702 auth to 0x0", "(only from key on)"], ("EOA", KEY), [("7702", False)]),
-        (["an ECDSA owner again", "after going code"], ["SETCODEFROM an ECDSA", "owner template, sign", "via 8141"],
-         ("CODE", GREEN), [("8298", True), ("8141", True)]),
+        (["an ECDSA owner again", "after going code"], ["SETCODEFROM an ECDSA", "owner template, checks", "run in Solidity"],
+         ("CODE", GREEN), [("8298", True)]),
     ]
     RH, y0 = 118, 130
     W, H = 1200, y0 + RH * len(rows) + 70
