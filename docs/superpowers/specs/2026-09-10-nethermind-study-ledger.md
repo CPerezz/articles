@@ -2537,3 +2537,69 @@ shared denominator; `collect_r68.py` added; seven new oracles, all mutation-test
 other columns (`probe-flat -mode rebuild -cf Storage -level 6` + promote) and re-run the four
 sstore tests - the absent-slot cell should collapse the way DIFF_MAX did. The absent-account
 transfer needs a CPU profile, not an I/O trace.
+
+## Rounds 69-73 - the storage class closes; one CPU-bound test left. Published
+
+**R69 (Flat/Storage).** jochemnet's storage-row column was spread over L0/L2/L3/L4/L5/L6, 807
+files, 88.9 GB - never settled by rounds 13/14/34/53, which only ever touched the columns the
+divergent categories read. Compacted to L6 (108 files, 87.8 GB) with the client's table options
+and promoted.
+
+| test | v2 pair | R68 fresh pair | after R69 | after R72 |
+|---|---|---|---|---|
+| absent slot 160M | 2.541 | 2.027 | 1.151 | **0.938** |
+| absent slot 240M | 2.073 | 2.137 | 1.217 | **1.115** |
+| new value 160M | 1.274 | 1.117 | 1.110 | **0.998** |
+| new value 240M | 1.110 | 1.097 | 1.107 | **0.865** |
+| overwrite (control) 160M | 1.114 | 0.995 | 0.984 | 0.999 |
+| overwrite (control) 240M | 1.081 | 0.993 | 1.007 | 0.992 |
+
+R69's read prediction held exactly: jochemnet's storage-row reads on the absent-slot test went
+3,770 -> 643 against state-actor's 609. The *size* prediction missed - "inside 1.15", landed
+1.151/1.217 - which is what pointed at the second column.
+
+**R72 (Flat/StorageNodes).** Still spread over L0/L3/L4/L5/L6, 1,961 files, 195.2 GB -> L6, 801
+files, 188.4 GB. All three predictions held: storage-node reads 49,870 -> 42,804 against
+state-actor's 43,556 at 160M (61,457 against 61,739 at 240M), the new-value cell inside 1.05
+(0.998 / 0.865), the overwrite control unmoved (0.999 / 0.992). **The storage class is closed:
+every sstore cell is inside +-14% with its reads equalised, from 2.5x.**
+
+**R71 (per-thread CPU on the absent-account transfer).** R70's sampler had collected nothing -
+thread names contain spaces (".NET TP Worker"), so the shell field split landed on the wrong
+columns, and 0.5 s sampling gives two samples on a 1.3 s test. Rewritten in Python at 0.1 s,
+comm parsed by the last ')', three repetitions per arm:
+
+| | state-actor | jochemnet |
+|---|---|---|
+| 160M throughput | 147.5 / 147.8 / 149.4 MGas/s | 97.8 / 105.4 / 100.4 |
+| 240M throughput | 169.5 / 167.6 / 169.2 | 137.2 / 117.2 / 127.7 |
+| managed thread-pool CPU, 160M | 1.23 s | **2.14 s** |
+| managed thread-pool CPU, 240M | 1.31 s | **2.35 s** (+0.26 s background GC) |
+
+Nothing in `rocksdb:*` threads, nothing in the tiering thread. The snapshot burns ~75% more
+managed CPU on a test whose disk reads are identical on every column.
+
+**R73 (ablation).** `--Blocks.PreWarming=None` -> joc 119/119 against sa 149/144 at 160M;
+`--FlatDb.TrieWarmerWorkerCount=0` -> joc 94/99 against sa 151/152. Neither warming path explains
+it; the pre-registered reading applies - "it is the trie-insert path itself and the next
+instrument is a profiler, not a flag". The test creates ~5,500 accounts per block (204,600 gas per
+transaction, ~7-8 value-bearing CALLs to absent addresses each) and reads almost nothing.
+
+**Published** `47af67d` on `main` (clean `origin/main` checkout, zero sibling folders touched, HTTP
+200, byte-identical). Finding 4's outlier subsection now carries the staged storage table and the
+CPU localisation; the closing paragraph reads "six defects in the pipeline, two in this study's own
+tooling, seven interventions", with the remaining items named: a generated store a few per cent
+*cheaper* than mainnet-shaped state on bytecode, and one CPU-bound account-creation test. Ten new
+oracles, mutation-tested; `collect_storage.py` added.
+
+**Host state.** jochemnet's baseline now has every flat column at L6 (Account 37, Storage 108,
+StateNodes 158, StateTopNodes 10, StorageNodes 801 files) - the fully settled counterpart to the
+generated store. state-actor v2 remains at Account L3 / Storage L4 / nodes L6, with
+`compaction-pending=1` on Account at zero pending bytes: the "output lands in the deepest level
+that already has files" family that #139 fixed elsewhere, on the one column it still misses.
+Worth a look upstream.
+
+**Operational note.** The recurring multi-hour "host stall" in this study was never the host: ssh
+authentication goes through the local gpg-agent to a Yubikey, and with nobody present to touch it
+the connection hangs until it times out. Fixed for future sessions with a `ControlMaster` +
+`ControlPersist=12h` multiplexed connection - one touch keeps every later command flowing.
