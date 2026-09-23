@@ -4016,3 +4016,45 @@ arm on the array. The headline 8.1x is in that set.
 Nothing in rounds 59 to 61 justifies one. Trie shape matches, account lookups cost the same, lookup
 counts are identical (32,215 against 32,205 Bonsai cache misses), and against a reference built for
 the comparison the class measures 0.979. The generator is not the thing that was wrong.
+
+## Round 62 - I made the same error twice, and the honest answer is "it depends on the disk"
+
+Round 61 published that the archived reference reads 3.96x what the state costs when prepared
+cleanly. That compared the archived arm (NVMe, schelk) against the rebuild (HDD array, overlayfs),
+which is precisely the mistake round 60 had already caught and retracted. Caught it by finishing
+the attribution: the rebuilt reference has the **same LSM shape as the archived one, file for
+file** (cf06 269 files / 17.90 GB, cf09 3,351 / 220.6 GB, identical to `levels.after`), so shape
+was never the difference.
+
+### The medium is
+
+| same store, same method, same tests | NVMe path | HDD array |
+|---|---|---|
+| generated store, bytes per test | 5.67 GB | 1.48 GB |
+| reference, bytes per test | 8.35 (archived) | 1.87 (rebuild) |
+
+Both stores read about 3.8x more bytes on NVMe than on the array. The earlier "path-invariance"
+check (schelk against overlayfs, 5.67 both) held the *device* fixed and proved nothing about media.
+So absolute bytes are not portable, and neither is the ratio: 1.309 on NVMe, 0.979 on the array.
+
+### What the article says now
+
+Both numbers, and that this study cannot say which belongs to the store rather than to the disk
+under it. The NVMe figure is on the medium a node runs on and stands; the array pair is the only
+comparison whose reference was built for it and says parity. Settling it needs both stores on NVMe
+at once: 1,560 GB, against 932 free. Published `2c95c9a`, live byte-identical, prefix before
+"Where this stands" still byte-identical to `5aa2571`.
+
+### Standing conclusions, unchanged by all of this
+
+- No state-actor change is justified. Trie shape matches, account lookups cost the same, lookup
+  counts are identical, and #141 is merged and measured on geometry, not on any arm ratio.
+- The three fixes and their store-level effects stand: they were measured on the stores themselves.
+
+### The rule this round earns
+
+Any cross-store number in this study must name its medium, and two numbers may only be divided if
+they share one. Three of my errors in three rounds were the same shape: comparing measurements
+taken through different stacks. The probe-config bug (round 58), the schelk/HDD byte claim (round
+60), and the reference claim (round 61). The oracles now assert the two media disagree, so the
+caveat cannot quietly disappear.
