@@ -520,6 +520,89 @@ def chart_final_cells(cl, repacked=None, regenerated=None):
     return S.svg(W, H, "".join(o))
 
 
+def chart_levels(st):
+    """Two columns of one store against two of the other, as level stacks.
+
+    A point lookup for a key that is absent has to be refused by every level that could hold it,
+    so what matters is not how many files a column has but over how many levels they sit."""
+    col = st["columns"]
+    lanes = [("jochemnet storage rows", col["joc_storage_before"], "--db-u"),
+             ("  after compaction", col["joc_storage_after"], "--accent"),
+             ("jochemnet storage trie", col["joc_storagenodes_before"], "--db-u"),
+             ("  after compaction", col["joc_storagenodes_after"], "--accent"),
+             ("state-actor storage rows", col["sa_storage"], "--accent"),
+             ("state-actor storage trie", col["sa_storagenodes"], "--accent")]
+    W, L, T = 760, 200, 30
+    rh, bw = 30, 44
+    H = T + rh * len(lanes) + 44
+    o = [S.label(L, T - 14, "files per level (L0 newest, L6 bottom)", "start", "big")]
+    for i, (name, shape, var) in enumerate(lanes):
+        y = T + rh * i
+        o.append(S.label(L - 10, y + 15, name, "end"))
+        for lv in range(7):
+            x = L + lv * (bw + 5)
+            n = shape["per_level"].get(str(lv), 0)
+            o.append(S.band(x, x + bw, y + 2, y + 24, "--line", 0.45))
+            if n:
+                o.append(S.band(x, x + bw, y + 2, y + 24, var, 0.30))
+                o.append(S.label(x + bw / 2, y + 17, "%d" % n, "middle", "tick"))
+        o.append(S.label(L + 7 * (bw + 5) + 6, y + 17, "%.0f GB" % shape["gb"], "start", "tick"))
+    for lv in range(7):
+        o.append(S.label(L + lv * (bw + 5) + bw / 2, T + rh * len(lanes) + 12, "L%d" % lv, "middle", "tick"))
+    o.append(S.dot(L, H - 10, 4, "--db-u"))
+    o.append(S.label(L + 10, H - 6, "as found", "start", "tick"))
+    o.append(S.dot(L + 110, H - 10, 4, "--accent"))
+    o.append(S.label(L + 120, H - 6, "settled: one level", "start", "tick"))
+    return S.svg(W, H, "".join(o))
+
+
+def chart_storage_close(st):
+    """The four storage tests through the two compactions, with the reads that moved under them."""
+    sc = st["cells"]
+    rows = [("absent slot, no write", "slots=False new=False"),
+            ("new value, existing slot", "slots=True new=True"),
+            ("new value, absent slot", "slots=False new=True"),
+            ("overwrite, existing slot", "slots=True new=False")]
+    stages = [("before", "v2"), ("fresh pair", "r68"), ("rows settled", "r69"), ("+ trie settled", "r72")]
+    W, L, R, T = 760, 200, 96, 34
+    rh = 46
+    H = T + rh * len(rows) + 54
+    sx = S.LogScale(0.83, 2.7, L, W - R)
+    bot = T + rh * len(rows) - 12
+    o = [S.band(sx.to(0.9), sx.to(1.1), T - 10, bot + 6, "--accent", 0.10),
+         S.line(sx.to(1.0), T - 10, sx.to(1.0), bot + 6, "--green-muted", 1),
+         S.label(L, T - 18, "throughput ratio, state-actor / jochemnet  (band = \u00b110%)", "start", "big")]
+    for i, (label, key) in enumerate(rows):
+        y = T + rh * i + 8
+        o.append(S.label(L - 10, y + 4, label, "end"))
+        pts = []
+        for gas in ("160M", "240M"):
+            k = "%s %s" % (key, gas)
+            prev = None
+            for j, (_, stage) in enumerate(stages):
+                v = sc[k][stage]
+                x = sx.to(max(0.83, min(2.7, v)))
+                yy = y - 6 + 12 * (1 if gas == "240M" else 0)
+                if prev is not None:
+                    o.append(S.line(prev[0], prev[1], x, yy, "--green-muted", 1, dash="2 3"))
+                var = "--db-u" if j == 0 else ("--accent" if j == len(stages) - 1 else "--green-dim")
+                o.append(S.dot(x, yy, 4.5 if j in (0, len(stages) - 1) else 3, var,
+                               "%s, %s: %.3f" % (gas, stages[j][0], v)))
+                prev = (x, yy)
+                pts.append(v)
+        o.append(S.label(W - R + 6, y + 4, "%.2f \u2192 %.2f" % (sc["%s 160M" % key]["v2"], sc["%s 160M" % key]["r72"]),
+                         "start", "tick"))
+    for t in (0.9, 1.0, 1.25, 1.5, 2.0, 2.5):
+        o.append(S.label(sx.to(t), bot + 26, ("%.2f" % t).rstrip("0").rstrip("."), "middle", "tick"))
+    o.append(S.dot(L, H - 12, 4.5, "--db-u"))
+    o.append(S.label(L + 10, H - 8, "before", "start", "tick"))
+    o.append(S.dot(L + 80, H - 12, 3, "--green-dim"))
+    o.append(S.label(L + 90, H - 8, "each step", "start", "tick"))
+    o.append(S.dot(L + 180, H - 12, 4.5, "--accent"))
+    o.append(S.label(L + 190, H - 8, "settled (two rows: 160M, 240M)", "start", "tick"))
+    return S.svg(W, H, "".join(o))
+
+
 def chart_seqno_paths(bm):
     """Why a store that looks settled still gets rewritten.
 
@@ -869,6 +952,12 @@ def main():
         "the storage-row compaction is no longer what it says: %r" % _col
     assert len(_col["joc_storagenodes_before"]["levels"]) >= 4 and _col["joc_storagenodes_after"]["levels"] == [6], \
         "the storage-trie compaction is no longer what it says: %r" % _col
+    # the level figure draws per_level; it has to agree with the level list and the file count
+    for _nm, _sh in _col.items():
+        if isinstance(_sh, dict) and "per_level" in _sh:
+            assert {int(k) for k in _sh["per_level"]} == set(_sh["levels"]) and \
+                sum(_sh["per_level"].values()) == _sh["files"], \
+                "per-level counts disagree with the column summary for %s: %r" % (_nm, _sh)
     for _k in ("slots=False new=False 160M", "slots=False new=False 240M"):
         assert _sc[_k]["r68"] > 1.9 and _sc[_k]["r72"] < 1.15, \
             "the absent-slot cell no longer closes: %r" % _sc[_k]
@@ -1821,47 +1910,8 @@ def main():
       f"{ot['amt1 diff_to_nonexistent 160M']['thr']['nm-joc-out68']:.0f} MGas/s. Open.</p>")
     ST = D["storage"]
     col, sc, sr = ST["columns"], ST["cells"], ST["reads"]
-    w(f"<p><b>The storage outliers were placement too, and they close.</b> Two of the flat "
-      f"columns had never been settled: the storage rows were spread over "
-      f"{'/'.join('L%d' % l for l in col['joc_storage_before']['levels'])} "
-      f"({col['joc_storage_before']['files']:,} files) and the storage trie over "
-      f"{'/'.join('L%d' % l for l in col['joc_storagenodes_before']['levels'])} "
-      f"({col['joc_storagenodes_before']['files']:,} files), against the generated store's single "
-      f"level in each ({col['sa_storage']['files']:,} and {col['sa_storagenodes']['files']:,} "
-      f"files). Every earlier intervention here targeted the columns the divergent categories "
-      f"read &mdash; account rows and code &mdash; and storage was at parity from the start, so "
-      f"nobody looked. Compacting them one at a time, each with the client's own table options "
-      f"and a pre-registered prediction:</p>")
-    w("<table><tr><th>test</th><th class=n>before</th>"
-      "<th class=n>rows settled</th><th class=n>+ trie settled</th>"
-      "<th>reads that moved</th></tr>")
-    rows = [("slots=False new=False 160M", "store to an absent slot",
-             f"jochemnet's row reads {sr['slots=False new=False 160M']['after_r69']['joc_rows']:,} "
-             f"against {sr['slots=False new=False 160M']['after_r69']['sa_rows']:,}, from 3,770 against 900"),
-            ("slots=False new=False 240M", "the same at 240M", "&mdash;"),
-            ("slots=True new=True 160M", "new value to an existing slot",
-             f"storage-node reads {sr['slots=True new=True 160M']['after_r72']['joc_nodes']:,} "
-             f"against {sr['slots=True new=True 160M']['after_r72']['sa_nodes']:,}, from "
-             f"{sr['slots=True new=True 160M']['after_r69']['joc_nodes']:,} against "
-             f"{sr['slots=True new=True 160M']['after_r69']['sa_nodes']:,}"),
-            ("slots=True new=True 240M", "the same at 240M", "&mdash;"),
-            ("slots=True new=False 160M", "overwrite an existing slot (control)", "unchanged, as it reads no trie"),
-            ("slots=True new=False 240M", "the same at 240M", "&mdash;")]
-    for k, label, note in rows:
-        c = sc[k]
-        cls = lambda x: " bad" if x < 0.9 else (" good" if x > 1.1 else "")
-        w(f"<tr><td>{label}</td><td class=\"n{cls(c['r68'])}\">{c['r68']:.3f}</td>"
-          f"<td class=\"n{cls(c['r69'])}\">{c['r69']:.3f}</td>"
-          f"<td class=\"n{cls(c['r72'])}\">{c['r72']:.3f}</td><td>{note}</td></tr>")
-    w(f"<caption>Throughput ratio, state-actor over jochemnet, each column a same-session pair. "
-      f"Settling the storage rows took the absent-slot test from {sc['slots=False new=False 160M']['r68']:.2f}"
-      f"&ndash;{sc['slots=False new=False 240M']['r68']:.2f}&times; to "
-      f"{sc['slots=False new=False 160M']['r69']:.2f}&ndash;{sc['slots=False new=False 240M']['r69']:.2f}&times; "
-      f"and equalised its reads; settling the storage trie took the new-value tests to "
-      f"{sc['slots=True new=True 160M']['r72']:.3f} and {sc['slots=True new=True 240M']['r72']:.3f} "
-      f"and equalised theirs. The control, which touches no trie node, never moved. Three "
-      f"predictions were recorded before each run; the only one that missed was the size of the "
-      f"first step &mdash; it was told to land inside 1.15 and landed 1.15/1.22.</caption></table>")
+    w(f"<p><b>The storage outliers were placement as well</b>, in two columns no earlier round "
+      f"had settled, and they close: Finding 5 below.</p>")
     aa = ST["absent_account"]
     ab = ST["ablation"]
     _cpu = lambda arm, g: aa["cpu_seconds"][arm][g].get(".net thread pool", 0)
@@ -1883,6 +1933,48 @@ def main():
       f"baseline gap. The test creates about 5,500 accounts per block and reads almost nothing, so "
       f"what is left is the insert-and-rehash path spending more managed CPU on one trie than the "
       f"other. Open, and the next instrument is a profiler rather than a flag.</p>")
+
+    # ------------------------------------------------- finding 5: the storage columns
+    w("<h2>Finding 5: two columns nobody had compacted</h2>")
+    w(f"<p>The snapshot's storage rows sat in "
+      f"{col['joc_storage_before']['files']:,} files spread over "
+      f"{len(col['joc_storage_before']['levels'])} levels, its storage trie in "
+      f"{col['joc_storagenodes_before']['files']:,} over "
+      f"{len(col['joc_storagenodes_before']['levels'])}; the generated store keeps each in a "
+      f"single level. A lookup for a key that is not there has to be refused by every level that "
+      f"could hold it, so on one test the snapshot issued "
+      f"{D['outliers']['tests']['sstore slots=False new=False 240M']['cols']['flat/Storage']['joc_n']:,} "
+      f"storage reads where the generated store issued "
+      f"{D['outliers']['tests']['sstore slots=False new=False 240M']['cols']['flat/Storage']['sa_n']:,}, "
+      f"and where it now issues {sr['slots=False new=False 240M']['after_r72']['joc_rows']:,}. "
+      f"Every earlier intervention "
+      f"targeted the columns the divergent categories read; storage was at parity from the first "
+      f"run, so nobody looked at it for sixty-eight rounds.</p>")
+    w(figure(chart_levels(ST),
+             "Where the files sit. Amber is the snapshot as it was, green is the same column after "
+             "one <code>CompactRange</code> with the client's own table options &mdash; and the "
+             "generated store as it was written."))
+    w(figure(chart_storage_close(ST),
+             f"The four storage tests, through both compactions. Settling the rows took the "
+             f"absent-slot test from {sc['slots=False new=False 160M']['r68']:.2f}&times; to "
+             f"{sc['slots=False new=False 160M']['r69']:.2f}; settling the trie took the new-value "
+             f"tests from {sc['slots=True new=True 160M']['r69']:.2f} to "
+             f"{sc['slots=True new=True 160M']['r72']:.3f}. The overwrite test, which touches no "
+             f"trie node, never left the band &mdash; the control that says each treatment moved "
+             f"what it was aimed at."))
+    w(f"<p>Both steps were pre-registered on their reads, not their timings, and both read "
+      f"predictions held exactly: storage-row reads on the absent-slot test "
+      f"{sr['slots=False new=False 240M']['after_r69']['joc_rows']:,} against the generated "
+      f"store's {sr['slots=False new=False 240M']['after_r69']['sa_rows']:,} after the first, and "
+      f"storage-trie reads {sr['slots=True new=True 240M']['after_r72']['joc_nodes']:,} against "
+      f"{sr['slots=True new=True 240M']['after_r72']['sa_nodes']:,} after the second, from "
+      f"{sr['slots=True new=True 240M']['after_r69']['joc_nodes']:,} against "
+      f"{sr['slots=True new=True 240M']['after_r69']['sa_nodes']:,}. The lesson is not about "
+      f"storage: a synthetic store is written once and compacted once, a real one is a stack of "
+      f"levels, and that difference is worth up to "
+      f"{sc['slots=False new=False 160M']['v2']:.1f}&times; on the operations that ask for keys "
+      f"that are not there. Equalising it makes the two stores comparable; it does not make the "
+      f"generated one more like mainnet.</p>")
 
     # ------------------------------------------------- where it stands
     w("<h2>Where it stands</h2>")
@@ -2053,6 +2145,8 @@ def main():
         "fig_seqno_paths": chart_seqno_paths(BM),
         "fig_idle_reads": chart_idle_reads(BM),
         "fig_marginal_cf": chart_marginal_cf(BM),
+        "fig_levels": chart_levels(D["storage"]),
+        "fig_storage_close": chart_storage_close(D["storage"]),
         "fig_final_cells": chart_final_cells(CL, {c: v["after"] for c, v in D["intervention_blocks"]["cells"].items()}, _v2),
     }
     for name, svg in figs.items():
