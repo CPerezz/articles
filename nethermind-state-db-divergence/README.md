@@ -43,11 +43,12 @@ hash mismatch. Use the `existing-snapshot` family's 14-EIP set, which adds
 | `collect_v2.py` | Runs on the benchmark host: folds round 66 (the top-of-trie packing finding, its two-direction intervention and the file-number provenance) and round 67 (the store regenerated with the fixed generator, its fixtures and the long-class re-measurement) into `data/report_data.json` under `topnodes` and `v2`. |
 | `sstprops.py` | Reads every SST's table properties straight from the file footer (no RocksDB needed): column family, entries, data blocks, bytes per block, filter size, compression, creation time, writing host. The audit that dated the 4 KB top-node files to this study's own round 13. |
 | `collect_r68.py` | Runs on the benchmark host: re-measures the tests still outside +-10% as a fresh same-session pair with per-column pread accounting, and folds them into `data/report_data.json` under `outliers` (per test: throughput on all five runs, per-column reads/bytes/latency, and the storage columns' level spread). |
+| `collect_final.py` | Runs on the benchmark host: the final pair (whole suite at 160M/240M, one session, state-actor twice) reduced to `data/report_data.json` under `final` - per duration class, per category, and every test outside the band in both runs. |
 | `collect_storage.py` | Runs on the benchmark host: folds rounds 69-73 into `data/report_data.json` under `storage` - the two storage columns' level shapes before and after their compactions, the sstore cells at four stages with their per-column read counts, the per-thread CPU of the absent-account transfer, and the two warming ablations. |
 | `report_svg.py` | Inline-SVG primitives (scales, axes, dots, lines, bands). Has its own self-check. |
 | `crt_theme.py` | The site stylesheet, byte-identical to the sibling reports, kept in one place so the three cannot drift apart. |
 | `data/report_data.json` | Every value the report renders. The only input to the generator. |
-| `figures/fig_*.svg` | The fifteen charts as standalone files, site palette derived from `crt_theme.CSS` so a figure cannot disagree with how it renders in the page. |
+| `figures/fig_*.svg` | The sixteen charts as standalone files, site palette derived from `crt_theme.CSS` so a figure cannot disagree with how it renders in the page. |
 
 - The carry-over ceiling: `container-recreate` restarts the client per test, so setup starts
   fully cold and anything the measured step gets free must have been put in the client's memory
@@ -186,10 +187,22 @@ hash mismatch. Use the `existing-snapshot` family's 14-EIP set, which adds
   so what is left is the insert-and-rehash path spending more managed CPU on one trie than the
   other. Next instrument is a profiler, not a flag.
 
+- **The final pair (R74).** Whole suite at 160M/240M in one session on two fully settled stores,
+  state-actor twice so the floor is measured beside the comparison. Long class (144 tests,
+  membership from the jochemnet arm): median **1.012 / 1.014**, **122 and 121 of 144 within
+  +-10%**, against 138 of 144 when the same store is measured twice. Short class (122 tests):
+  median 1.150, 40 and 33 within +-10% - and 50 of 122 against itself, which is why it is never
+  quoted. 19 long tests miss the band in both runs: 14 are distinct-contract code execution and
+  jump-destination scanning (the regenerated pool overshooting, 1.10-1.16), 5 are transfers
+  (absent-account 1.53/1.49 and 1.33/1.31, delegated 1.17/1.19, unique-jumpdest 1.13/1.12).
+  Every other state-reading category is inside 2% of parity with all of its tests in the band:
+  account rows on all five modes 0.98-1.00, code execution on reused/minimal/EOA 0.997-1.001,
+  storage 1.001/1.012 (from 1.093).
+
 ## Regenerate
 
 ```
-python3 gen_nethermind_state_db_report.py   # writes the html and the fifteen svgs
+python3 gen_nethermind_state_db_report.py   # writes the html and the sixteen svgs
 python3 report_svg.py                       # primitive self-check, prints "report_svg selfcheck ok"
 ```
 

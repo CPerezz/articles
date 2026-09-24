@@ -520,6 +520,39 @@ def chart_final_cells(cl, repacked=None, regenerated=None):
     return S.svg(W, H, "".join(o))
 
 
+
+def chart_final_pair(fi):
+    """The whole suite on the settled pair, by duration class, against the floor the harness
+    itself sets: the same store measured twice. The short class cannot be read at all - it does
+    not reproduce against itself any better than it matches the other store."""
+    W, L, R, T = 760, 210, 40, 34
+    rh, gap = 26, 26
+    lanes = [("state-actor / jochemnet, run 1", "run1", "--accent"),
+             ("the same pair, run 2", "run2", "--accent"),
+             ("state-actor twice: the floor", "replica", "--db-sa")]
+    H = T + (rh * len(lanes) + 20 + gap) * 2 + 24
+    sx = S.Scale(0, 100, L, W - R - 150)
+    o = [S.label(L - 10, T - 16, "share of tests within \u00b110% of parity", "start", "big")]
+    y = T
+    for title, key in (("tests \u2265 1 s", "long"), ("tests < 1 s", "short")):
+        d = fi["by_class"][key]
+        o.append(S.label(L - 10, y + 12, "%s  (n=%d)" % (title, d["run1"]["n"]), "end", "big"))
+        y += 20
+        for name, k, var in lanes:
+            v = d[k]
+            pct = 100.0 * v["within10"] / v["n"]
+            o.append(S.band(L, sx.to(pct), y + 2, y + 20, var, 0.30))
+            o.append(S.label(L - 10, y + 15, name, "end", "tick"))
+            o.append(S.label(sx.to(pct) + 8, y + 15, "%.0f%%   median %.3f" % (pct, v["median"]),
+                             "start", "tick"))
+            y += rh
+        y += gap
+    o.append(S.line(L, T - 6, L, y - gap + 2, "--green-muted", 1))
+    for t in (0, 25, 50, 75, 100):
+        o.append(S.label(sx.to(t), H - 8, "%d%%" % t, "middle", "tick"))
+    return S.svg(W, H, "".join(o))
+
+
 def chart_levels(st):
     """Two columns of one store against two of the other, as level stacks.
 
@@ -976,6 +1009,26 @@ def main():
     assert _aa["cpu_seconds"]["joc"]["160M"][".net thread pool"] > \
         1.5 * _aa["cpu_seconds"]["sa"]["160M"][".net thread pool"], \
         "the managed-CPU asymmetry that localises it is gone: %r" % _aa["cpu_seconds"]
+    # The final pair. "Where it stands" is written around four things: the long class sits at
+    # parity with its floor measured beside it, the short class does not reproduce against itself
+    # (which is why it is never quoted), the surviving long outliers are the pool overshoot plus a
+    # handful of transfers, and every other state-reading cell is inside 2%.
+    FI_ = D["final"]
+    _lo, _sh, _ol = FI_["by_class"]["long"], FI_["by_class"]["short"], FI_["outliers"]
+    assert abs(_lo["run1"]["median"] - 1) < 0.03 and abs(_lo["run2"]["median"] - 1) < 0.03, \
+        "the long class is no longer at parity on the settled pair: %r" % _lo
+    assert _lo["replica"]["within10"] >= _lo["run1"]["within10"], \
+        "the cross-store comparison now beats the same-store floor, which cannot be: %r" % _lo
+    assert _sh["replica"]["within10"] / _sh["replica"]["n"] < 0.6, \
+        "the short class now reproduces against itself; it could be quoted after all: %r" % _sh
+    assert _ol["long"] < 0.2 * _lo["run1"]["n"] and _ol["short"] > 2 * _ol["long"], \
+        "the outliers are no longer concentrated in the short class: %r" % _ol
+    assert _ol["long_buckets"].get("code pool (#141 overshoot)", 0) >= 0.6 * _ol["long"], \
+        "the long outliers are no longer mostly the pool overshoot: %r" % _ol["long_buckets"]
+    for _c in ("EXISTING_EOA code-exec", "MINIMAL code-exec", "SAME_MAX code-exec", "storage slot"):
+        _v = FI_["categories"][_c]
+        assert abs(_v["run1"] - 1) < 0.02 and _v["within10"] >= _v["n"] - 1, \
+            "%s is no longer at parity on the settled pair: %r" % (_c, _v)
     _ab = ST_["ablation"]
     for _cfg in ("B prewarming off", "C trie warmer off"):
         assert min(_ab[_cfg]["sa 160M"]) > 1.15 * max(_ab[_cfg]["joc 160M"]), \
@@ -1978,6 +2031,34 @@ def main():
 
     # ------------------------------------------------- where it stands
     w("<h2>Where it stands</h2>")
+    FI = D["final"]
+    lo, sh = FI["by_class"]["long"], FI["by_class"]["short"]
+    ol = FI["outliers"]
+    w(f"<p>With every finding applied to both stores &mdash; the generator's pool fixed at the "
+      f"source, both stores settled, the snapshot's top-of-trie and storage columns compacted the "
+      f"way the client writes them &mdash; the whole suite was run once more in a single session, "
+      f"jochemnet once and state-actor twice, so the floor is measured beside the comparison:</p>")
+    w(figure(chart_final_pair(FI),
+             f"The long class sits at median {lo['run1']['median']:.3f} and "
+             f"{lo['run2']['median']:.3f} with {lo['run1']['within10']} and "
+             f"{lo['run2']['within10']} of {lo['run1']['n']} tests inside the band, against "
+             f"{lo['replica']['within10']} when the <em>same</em> store is measured twice. The "
+             f"short class sits at {sh['run1']['median']:.2f} &mdash; and reproduces against "
+             f"itself no better ({sh['replica']['within10']} of {sh['replica']['n']}), which is "
+             f"the reason this page never quotes it."))
+    _b = ol["long_buckets"]
+    w(f"<p>{ol['long']} of the {lo['run1']['n']} long tests are outside &plusmn;10% in both runs "
+      f"and in the same direction, and they are not spread across the suite: "
+      f"{_b.get('code pool (#141 overshoot)', 0)} are distinct-contract code execution and "
+      f"jump-destination scanning, where the regenerated pool now overshoots (1.10&ndash;1.16 in "
+      f"favour of the generated store); {_b.get('absent-key work', 0) + _b.get('ether transfer', 0)} "
+      f"are transfers, of which the two largest are the absent-account case at "
+      f"{ol['long_rows'][0]['run1']:.2f}/{ol['long_rows'][0]['run2']:.2f} and "
+      f"{ol['long_rows'][1]['run1']:.2f}/{ol['long_rows'][1]['run2']:.2f}. Every other cell that "
+      f"reads state &mdash; account rows on all five modes, code execution on reused and minimal "
+      f"contracts, storage &mdash; is inside 2% of parity with all of its tests in the band. The "
+      f"remaining {ol['short']} outliers are sub-second tests, where the floor is "
+      f"{100 * sh['replica']['within10'] / sh['replica']['n']:.0f}%.</p>")
     fc = CL["final_cells"]
     n_par = sum(1 for v in fc.values() if 0.9 <= v["settled"] <= 1.1)
     _rep = {c: v["after"] for c, v in D["intervention_blocks"]["cells"].items()}
@@ -2145,6 +2226,7 @@ def main():
         "fig_seqno_paths": chart_seqno_paths(BM),
         "fig_idle_reads": chart_idle_reads(BM),
         "fig_marginal_cf": chart_marginal_cf(BM),
+        "fig_final_pair": chart_final_pair(D["final"]),
         "fig_levels": chart_levels(D["storage"]),
         "fig_storage_close": chart_storage_close(D["storage"]),
         "fig_final_cells": chart_final_cells(CL, {c: v["after"] for c, v in D["intervention_blocks"]["cells"].items()}, _v2),
