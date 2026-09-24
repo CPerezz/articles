@@ -53,8 +53,8 @@ def chart_final_pair(fi):
     not reproduce against itself any better than it matches the other store."""
     W, L, R, T = 760, 210, 40, 34
     rh, gap = 26, 26
-    lanes = [("state-actor / jochemnet, run 1", "run1", "--accent"),
-             ("the same pair, run 2", "run2", "--accent"),
+    lanes = [("state-actor / jochemnet", "run1", "--accent"),
+             ("second state-actor run", "run2", "--accent"),
              ("state-actor twice: the floor", "replica", "--db-sa")]
     H = T + (rh * len(lanes) + 20 + gap) * 2 + 24
     sx = S.Scale(0, 100, L, W - R - 150)
@@ -118,7 +118,7 @@ def chart_levels(st):
 def chart_storage_close(st):
     """The four storage tests through the two compactions, with the reads that moved under them."""
     sc = st["cells"]
-    rows = [("absent slot, no write", "slots=False new=False"),
+    rows = [("absent slot (< 1 s)", "slots=False new=False"),
             ("new value, existing slot", "slots=True new=True"),
             ("new value, absent slot", "slots=False new=True"),
             ("overwrite, existing slot", "slots=True new=False")]
@@ -527,6 +527,17 @@ def main():
                 "per-level counts disagree with the column summary for %s" % nm
     for k in ("slots=False new=False 160M", "slots=False new=False 240M"):
         assert sc[k]["r68"] > 1.9 and sc[k]["r72"] < 1.15, "the absent-slot cell no longer closes: %r" % sc[k]
+    for k, v in sc.items():
+        secs = [int(k.split()[-1][:-1]) / v[x] for x in v if x.endswith(("_joc", "_sa"))]
+        if k.startswith("slots=False new=False"):
+            assert max(secs) < 1, "the absent-slot test now runs over a second; quote its ratio: %s" % k
+        elif k.startswith("slots=True"):
+            assert min(secs) > 1, "%s now runs under a second; its ratio can't be quoted" % k
+    ar_ = sr["slots=False new=False 240M"]["after_r69"]
+    assert abs(ar_["joc_rows"] / ar_["sa_rows"] - 1) < 0.15 and \
+        D["outliers"]["tests"]["sstore slots=False new=False 240M"]["cols"]["flat/Storage"]["joc_n"] > \
+        3 * D["outliers"]["tests"]["sstore slots=False new=False 240M"]["cols"]["flat/Storage"]["sa_n"], \
+        "the absent-slot test's storage-row reads no longer equalise from a multiple: %r" % ar_
     for k in ("slots=True new=True 160M", "slots=True new=True 240M"):
         assert sr[k]["after_r69"]["joc_nodes"] > 1.1 * sr[k]["after_r69"]["sa_nodes"] and \
             abs(sr[k]["after_r72"]["joc_nodes"] / sr[k]["after_r72"]["sa_nodes"] - 1) < 0.1, \
@@ -821,9 +832,8 @@ def main():
              "<code>CompactRange</code> with the client's own table options, and the generated "
              "store as it was written."))
     w(figure(chart_storage_close(ST),
-             f"The four storage tests through both compactions. Settling the rows took the "
-             f"absent-slot test from {sc['slots=False new=False 160M']['r68']:.2f}&times; to "
-             f"{sc['slots=False new=False 160M']['r69']:.2f}; settling the trie took the "
+             f"The four storage tests through both compactions. The absent-slot test runs under a "
+             f"second, so it is judged on its reads, below; settling the trie took the "
              f"new-value tests from {sc['slots=True new=True 160M']['r69']:.2f} to "
              f"{sc['slots=True new=True 160M']['r72']:.3f}. The overwrite test, which touches no "
              f"trie node, never left the band."))
@@ -864,9 +874,9 @@ def main():
     w("<caption>Median ratio per family at baseline and on the final pair, and how many of the "
       "final pair's tests sit within &plusmn;10%.</caption></table>")
     w(figure(chart_final_pair(FI),
-             f"The long class reaches {lo['run1']['within10']} and {lo['run2']['within10']} of "
-             f"{lo['run1']['n']} in the band against {lo['replica']['within10']} when the same store "
-             f"is measured twice. The short class reaches {sh_['run1']['within10']} of "
+             f"The long class reaches {lo['run1']['within10']} of {lo['run1']['n']} in the band, "
+             f"and {lo['run2']['within10']} with state-actor's second run over the same jochemnet "
+             f"run, against {lo['replica']['within10']} when the same store is measured twice. The short class reaches {sh_['run1']['within10']} of "
              f"{sh_['run1']['n']}, and only {sh_['replica']['within10']} against itself."))
     w(figure(chart_waterfall(WF),
              "Every family through every stage: 0 baseline, 1 pre-run compacted, 2 tiered JIT off "
