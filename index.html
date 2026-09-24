@@ -77,9 +77,9 @@
       <div class="deck-desc">The same experiment on Besu. Two of the three causes are artifacts of how the store was built — where the pre-run&#x27;s rows land in the LSM tree, and a generated store written with no bloom filters at all.</div>
     </a>
     <a href="nethermind-state-db-divergence/nethermind-state-db-report.html" class="deck-link">
-      <div class="deck-title"><span class="prompt">&gt; </span>Why two identical Nethermind benchmarks disagree by 17×</div>
+      <div class="deck-title"><span class="prompt">&gt; </span>How can two Nethermind databases holding the same state differ 17×?</div>
       <div class="deck-meta"><span class="tag">Ethereum · Nethermind · flat DB · RocksDB · benchmarking</span> · 2026</div>
-      <div class="deck-desc">The same experiment on Nethermind, and the first one taken all the way. The 17× is where the rows sit, not what they contain: equalise placement and re-run the full suite, and every category that reads state comes back to parity.</div>
+      <div class="deck-desc">A mainnet snapshot and a generated store, the same benchmark suite. Five reasons the numbers disagreed, each fixed and measured on its own; with all five fixed, tests over a second sit at parity, and what's left is a generator floor and a CPU gap.</div>
     </a>
   </div>
   <div class="footer">$ <a href="https://github.com/CPerezz/articles">github.com/CPerezz/articles</a></div>

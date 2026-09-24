@@ -9251,5 +9251,422 @@
    }
   },
   "v1_genesis": "0xa9e61c12051aeda72581c40b1718fa76b80c0b5cc5f7b7ebe96e0b6d9669491b"
+ },
+ "waterfall": {
+  "cells": {
+   "long": {
+    "_all": {
+     "baseline": {
+      "median": 0.1752,
+      "n": 144,
+      "within10": 8
+     },
+     "codepool": {
+      "median": 1.0144,
+      "n": 144,
+      "within10": 116
+     },
+     "final": {
+      "median": 1.0116,
+      "n": 144,
+      "within10": 122
+     },
+     "placement": {
+      "median": 0.9781,
+      "n": 144,
+      "within10": 119
+     },
+     "warmup": {
+      "median": 0.9986,
+      "n": 144,
+      "within10": 123
+     }
+    },
+    "account reads": {
+     "baseline": {
+      "max": 0.0787,
+      "median": 0.0577,
+      "min": 0.0408,
+      "n": 20,
+      "within10": 0
+     },
+     "codepool": {
+      "max": 1.016,
+      "median": 0.997,
+      "min": 0.8643,
+      "n": 20,
+      "within10": 19
+     },
+     "final": {
+      "max": 1.0604,
+      "median": 0.995,
+      "min": 0.9233,
+      "n": 20,
+      "within10": 20
+     },
+     "placement": {
+      "max": 1.0384,
+      "median": 0.977,
+      "min": 0.9521,
+      "n": 20,
+      "within10": 20
+     },
+     "warmup": {
+      "max": 1.0823,
+      "median": 0.9957,
+      "min": 0.9321,
+      "n": 20,
+      "within10": 20
+     }
+    },
+    "code, distinct large": {
+     "baseline": {
+      "max": 0.4801,
+      "median": 0.3349,
+      "min": 0.0782,
+      "n": 32,
+      "within10": 0
+     },
+     "codepool": {
+      "max": 1.2394,
+      "median": 1.0943,
+      "min": 0.8769,
+      "n": 32,
+      "within10": 17
+     },
+     "final": {
+      "max": 1.1486,
+      "median": 1.0945,
+      "min": 0.9444,
+      "n": 32,
+      "within10": 17
+     },
+     "placement": {
+      "max": 0.9801,
+      "median": 0.8696,
+      "min": 0.6272,
+      "n": 32,
+      "within10": 13
+     },
+     "warmup": {
+      "max": 1.0177,
+      "median": 0.9406,
+      "min": 0.8438,
+      "n": 32,
+      "within10": 30
+     }
+    },
+    "code, reused or small": {
+     "baseline": {
+      "max": 0.3824,
+      "median": 0.0657,
+      "min": 0.0411,
+      "n": 48,
+      "within10": 0
+     },
+     "codepool": {
+      "max": 1.0345,
+      "median": 0.9978,
+      "min": 0.9172,
+      "n": 48,
+      "within10": 48
+     },
+     "final": {
+      "max": 1.05,
+      "median": 0.9999,
+      "min": 0.9141,
+      "n": 48,
+      "within10": 48
+     },
+     "placement": {
+      "max": 1.0984,
+      "median": 0.9813,
+      "min": 0.9063,
+      "n": 48,
+      "within10": 48
+     },
+     "warmup": {
+      "max": 1.21,
+      "median": 0.9982,
+      "min": 0.9159,
+      "n": 48,
+      "within10": 46
+     }
+    },
+    "ether transfers": {
+     "baseline": {
+      "max": 1.1367,
+      "median": 0.3811,
+      "min": 0.2105,
+      "n": 36,
+      "within10": 1
+     },
+     "final": {
+      "max": 1.5351,
+      "median": 1.054,
+      "min": 0.88,
+      "n": 36,
+      "within10": 29
+     }
+    },
+    "storage": {
+     "baseline": {
+      "max": 1.4654,
+      "median": 0.9986,
+      "min": 0.9537,
+      "n": 8,
+      "within10": 7
+     },
+     "final": {
+      "max": 1.0378,
+      "median": 1.0014,
+      "min": 0.9398,
+      "n": 8,
+      "within10": 8
+     }
+    }
+   },
+   "short": {
+    "_all": {
+     "baseline": {
+      "median": 0.7903,
+      "n": 122,
+      "within10": 19
+     },
+     "final": {
+      "median": 1.1498,
+      "n": 122,
+      "within10": 40
+     },
+     "placement": {
+      "median": 0.7355,
+      "n": 122,
+      "within10": 23
+     },
+     "warmup": {
+      "median": 1.1751,
+      "n": 122,
+      "within10": 19
+     }
+    },
+    "absent accounts": {
+     "baseline": {
+      "max": 1.3219,
+      "median": 1.0208,
+      "min": 0.7381,
+      "n": 20,
+      "within10": 8
+     },
+     "final": {
+      "max": 1.7775,
+      "median": 1.1524,
+      "min": 0.9054,
+      "n": 20,
+      "within10": 7
+     },
+     "placement": {
+      "max": 1.4105,
+      "median": 0.9395,
+      "min": 0.6607,
+      "n": 20,
+      "within10": 10
+     },
+     "warmup": {
+      "max": 1.6625,
+      "median": 1.2493,
+      "min": 1.0479,
+      "n": 20,
+      "within10": 1
+     }
+    },
+    "no state work": {
+     "baseline": {
+      "max": 1.35,
+      "median": 0.7282,
+      "min": 0.4293,
+      "n": 94,
+      "within10": 7
+     },
+     "final": {
+      "max": 2.3236,
+      "median": 1.1504,
+      "min": 0.5922,
+      "n": 94,
+      "within10": 29
+     },
+     "placement": {
+      "max": 1.2598,
+      "median": 0.6979,
+      "min": 0.3963,
+      "n": 94,
+      "within10": 11
+     },
+     "warmup": {
+      "max": 2.1299,
+      "median": 1.1508,
+      "min": 0.6121,
+      "n": 94,
+      "within10": 16
+     }
+    },
+    "storage": {
+     "baseline": {
+      "max": 1.6715,
+      "median": 1.0803,
+      "min": 0.6971,
+      "n": 8,
+      "within10": 4
+     },
+     "final": {
+      "max": 1.7217,
+      "median": 1.0179,
+      "min": 0.7894,
+      "n": 8,
+      "within10": 4
+     }
+    }
+   }
+  },
+  "coverage": {
+   "baseline": {
+    "long": 144,
+    "short": 122
+   },
+   "codepool": {
+    "long": 144,
+    "short": 4
+   },
+   "final": {
+    "long": 144,
+    "short": 122
+   },
+   "placement": {
+    "long": 144,
+    "short": 122
+   },
+   "warmup": {
+    "long": 144,
+    "short": 122
+   }
+  },
+  "families": [
+   "account reads",
+   "code, reused or small",
+   "code, distinct large",
+   "storage",
+   "ether transfers",
+   "absent accounts",
+   "no state work"
+  ],
+  "floor": {
+   "long": {
+    "_all": {
+     "median": 1.0,
+     "n": 144,
+     "within10": 138
+    },
+    "account reads": {
+     "median": 0.9935,
+     "n": 20,
+     "within10": 19
+    },
+    "code, distinct large": {
+     "median": 1.0035,
+     "n": 32,
+     "within10": 32
+    },
+    "code, reused or small": {
+     "median": 0.9962,
+     "n": 48,
+     "within10": 48
+    },
+    "ether transfers": {
+     "median": 1.0022,
+     "n": 36,
+     "within10": 31
+    },
+    "storage": {
+     "median": 1.0007,
+     "n": 8,
+     "within10": 8
+    }
+   },
+   "short": {
+    "_all": {
+     "median": 1.0238,
+     "n": 122,
+     "within10": 50
+    },
+    "absent accounts": {
+     "median": 0.9994,
+     "n": 20,
+     "within10": 16
+    },
+    "no state work": {
+     "median": 1.0238,
+     "n": 94,
+     "within10": 30
+    },
+    "storage": {
+     "median": 1.1158,
+     "n": 8,
+     "within10": 4
+    }
+   }
+  },
+  "membership": {
+   "long": {
+    "absent accounts": 0,
+    "account reads": 20,
+    "code, distinct large": 32,
+    "code, reused or small": 48,
+    "ether transfers": 36,
+    "no state work": 0,
+    "storage": 8
+   },
+   "short": {
+    "absent accounts": 20,
+    "account reads": 0,
+    "code, distinct large": 0,
+    "code, reused or small": 0,
+    "ether transfers": 0,
+    "no state work": 94,
+    "storage": 8
+   }
+  },
+  "src": "The waterfall: the same 266 test ids through every stage of the study, by family and duration\nclass. Membership in the two classes is fixed once, from the final jochemnet run, so no test\nchanges population between stages.",
+  "stage_runs": {
+   "baseline": {
+    "joc": "nm-jochemnet",
+    "sa": "nm-state-actor"
+   },
+   "codepool": {
+    "joc": "nm-joc-v2r1",
+    "sa": "nm-sa-v2r1"
+   },
+   "final": {
+    "joc": "nm-joc-fin1",
+    "sa": "nm-sa-fin1"
+   },
+   "placement": {
+    "joc": "nm-joc-full",
+    "sa": "nm-state-actor"
+   },
+   "warmup": {
+    "joc": "nm-joc-t1",
+    "sa": "nm-sa-t1"
+   }
+  },
+  "stages": [
+   "baseline",
+   "placement",
+   "warmup",
+   "codepool",
+   "final"
+  ],
+  "write_families": [
+   "ether transfers",
+   "storage"
+  ]
  }
 }
