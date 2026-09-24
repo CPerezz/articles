@@ -4,8 +4,9 @@ Why identical EEST bloatnet benchmarks reported a 17× throughput gap between tw
 state databases: `jochemnet` (a mainnet shadowfork snapshot at block 24,402,727, plus a
 7,736-block pre-run promoted into the golden image) and `state-actor` (synthetically generated
 state). Five mechanisms, each fixed and measured on its own. With all five fixed, tests over a
-second sit at 1.012 (122 of 144 within ±10%, against 138 when one store is measured twice);
-tests under a second can't be read at any store shape.
+second sit at 1.012 on two independent pairs (122 and 121 of 144 within ±10%, against 138 and 144
+when each store is measured against itself); tests under a second can't be read at any store
+shape.
 
 This is the third client in the series, after the geth and Besu studies in sibling folders.
 Everything needed to reproduce or re-cut the analysis lives here. The page was rewritten
@@ -50,7 +51,7 @@ hash mismatch. Use the `existing-snapshot` family's 14-EIP set, which adds
 | `sstprops.py` | Reads every SST's table properties straight from the file footer (no RocksDB needed): column family, entries, data blocks, bytes per block, filter size, compression, creation time, writing host. |
 | `collect_r68.py` | Re-measures the tests still outside ±10% as a fresh same-session pair with per-column pread accounting. Under `outliers`. |
 | `collect_storage.py` | Rounds 69-73: the two storage columns' level shapes before and after their compactions, the sstore cells at four stages with their per-column reads, the absent-account transfer's per-thread CPU, and the two warming ablations (Finding 5 and what's left). Under `storage`. |
-| `collect_final.py` | The final pair (whole suite at 160M/240M, one session, state-actor twice) per duration class, per category, and every test outside the band in both runs. Under `final`. |
+| `collect_final.py` | The final pairs (whole suite at 160M/240M): A = sa-fin1/joc-fin1 (R74), B = sa-fin2/joc-fin2 (R75), sharing no run, plus each store against itself; per duration class, per category, every test outside the band in both pairs, and each run's recorded `DOTNET_TieredCompilation`. Under `final`. |
 | `collect_waterfall.py` | The same 266 test ids through every stage, by family and duration class, with membership fixed from the final jochemnet run. Under `waterfall`. |
 | `report_svg.py` | Inline-SVG primitives (scales, axes, dots, lines, bands). Has its own self-check. |
 | `crt_theme.py` | The site stylesheet, byte-identical to the sibling reports, kept in one place so the three cannot drift apart. |
@@ -86,8 +87,9 @@ matches the final pair's classes, write families carry no intermediate stage, th
 covers no short class); the baseline's shape (account and code families far below parity,
 storage at it); each finding's isolated before/after, including the null results the prose is
 written around (bottommost compaction and parallel execution moved nothing toward parity); the
-final pair (long class at parity and under its own floor, short class not reproducing, outliers
-concentrated in the pool overshoot); and the two remaining items (the overshoot, and the
+final pairs (long class at parity on both and under both stores' floors, short class not
+reproducing, every final run recorded with tiered compilation off, outliers concentrated in the
+pool overshoot); and the two remaining items (the overshoot, and the
 absent-account CPU gap surviving both warming ablations). Each oracle was mutation-tested: change
 the one input it guards and generation fails.
 
@@ -123,13 +125,16 @@ the one input it guards and generation fails.
    cells read 1.05-1.10. Besu shows the same shape (0.83 vs 0.94). `intervention_blocks`, `v2`.
 5. **Two storage columns nobody had compacted.** `Flat/Storage` sat in 807 files over six
    levels, `Flat/StorageNodes` in 1,961 over five, against one level each on the generated
-   store; an absent key must be refused by every level. Compacting them: storing to an absent
-   slot 2.03/2.14 → 1.15/1.22 → 0.94/1.12, storage-trie reads equalised, the overwrite control
+   store; an absent key must be refused by every level. Compacting them: the absent-slot test
+   (sub-second, so judged on reads) went from 3,770 storage-row reads against 900 to 850 against
+   952; the new-value tests 1.11 → 0.998 with storage-trie reads equalised; the overwrite control
    unmoved. `storage`.
 
-**Final pair (R74).** Long class 1.012 / 1.014, 122 and 121 of 144 within ±10%, floor 138.
-Short class 1.150 / 1.149, 40 and 33 of 122, floor 50. 19 long tests miss in both runs: 14 are
-the pool overshoot, 5 transfers with read-identical traces. `final`, `waterfall`.
+**Final pairs (R74, R75).** Two pairs that share no run. Long class 1.012 / 1.012, 122 and 121 of
+144 within ±10%; floors 138 (state-actor against itself) and 144 (jochemnet). Short class 1.150 /
+1.122, 40 and 38 of 122; floors 50 and 75. 17 long tests miss in both pairs: 12 are the pool
+overshoot, 5 transfers with read-identical traces. The waterfall's final stage is pair A.
+`final`, `waterfall`.
 
 **What's left.**
 - #141 keeps a 1 KiB floor on pool record size, so on Nethermind's 4 KB code block a fixture
@@ -138,7 +143,8 @@ the pool overshoot, 5 transfers with read-identical traces. `final`, `waterfall`
 - The absent-account transfer: identical reads, 2.14 vs 1.23 CPU-seconds in managed thread-pool
   threads at 160M; neither `--Blocks.PreWarming=None` nor `--FlatDb.TrieWarmerWorkerCount=0`
   closes it. Next instrument is a profiler.
-- Sub-second tests: 41% reproduce against themselves. Needs a burn-in block in the harness.
+- Sub-second tests: 41% (state-actor) and 61% (jochemnet) reproduce against themselves. Needs a
+  burn-in block in the harness.
 - Outside this study: v2's Account column sits at L3 with compaction-pending=1; benchmarkoor's
   podman fill-image naming bug (`pkg/builder/eest_payloads.go`).
 
@@ -201,7 +207,9 @@ per arm — 1.69× the bytes, essentially all of it the code database.
 run 2, but both runs divided by the *same* jochemnet run, so one slow jochemnet measurement made
 a test "reproduce" in both. Re-running 20 of them as a fresh pair moved jochemnet by up to 29% on
 a single test against 14% for state-actor: transfer-to-self 1.353 → 1.086, to an existing account
-1.184 → 1.050. Two runs of one arm are one measurement of the ratio. `outliers`.
+1.184 → 1.050. Two runs of one arm are one measurement of the ratio. `outliers`. R74's final
+pair repeated the shape (state-actor twice over one jochemnet run); R75 re-ran jochemnet so the
+final ratio has two independent measurements.
 
 **Duration classes (round 57 on).** Split every test at one second, membership fixed from the
 reference arm: in the 1,461-test sweep after Finding 1, the short class sat at 0.767 with 18%

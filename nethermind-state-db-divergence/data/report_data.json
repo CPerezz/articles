@@ -5522,24 +5522,31 @@
  "final": {
   "by_class": {
    "long": {
-    "replica": {
+    "floor_joc": {
+     "max": 1.085,
+     "median": 1.0,
+     "min": 0.909,
+     "n": 144,
+     "within10": 144
+    },
+    "floor_sa": {
      "max": 1.201,
      "median": 1.0,
      "min": 0.866,
      "n": 144,
      "within10": 138
     },
-    "run1": {
+    "pair_a": {
      "max": 1.535,
      "median": 1.012,
      "min": 0.88,
      "n": 144,
      "within10": 122
     },
-    "run2": {
-     "max": 1.494,
-     "median": 1.014,
-     "min": 0.861,
+    "pair_b": {
+     "max": 1.446,
+     "median": 1.012,
+     "min": 0.895,
      "n": 144,
      "within10": 121
     },
@@ -5552,26 +5559,33 @@
     }
    },
    "short": {
-    "replica": {
+    "floor_joc": {
+     "max": 1.623,
+     "median": 1.009,
+     "min": 0.593,
+     "n": 122,
+     "within10": 75
+    },
+    "floor_sa": {
      "max": 1.996,
      "median": 1.024,
      "min": 0.431,
      "n": 122,
      "within10": 50
     },
-    "run1": {
+    "pair_a": {
      "max": 2.324,
      "median": 1.15,
      "min": 0.592,
      "n": 122,
      "within10": 40
     },
-    "run2": {
-     "max": 2.403,
-     "median": 1.149,
-     "min": 0.552,
+    "pair_b": {
+     "max": 2.116,
+     "median": 1.122,
+     "min": 0.595,
      "n": 122,
-     "within10": 33
+     "within10": 38
     },
     "v1_pair": {
      "max": 2.13,
@@ -5584,155 +5598,155 @@
   },
   "categories": {
    "DIFF_MAX BAL/HASH": {
+    "floor_sa": 0.989,
     "long": 4,
     "n": 4,
-    "replica": 0.989,
-    "run1": 0.984,
-    "run2": 0.982,
+    "pair_a": 0.984,
+    "pair_b": 0.991,
     "v1_pair": 0.987,
     "within10": 4
    },
    "DIFF_MAX code-exec": {
+    "floor_sa": 1.003,
     "long": 16,
     "n": 16,
-    "replica": 1.003,
-    "run1": 1.092,
-    "run2": 1.103,
+    "pair_a": 1.092,
+    "pair_b": 1.097,
     "v1_pair": 0.938,
     "within10": 9
    },
    "EXISTING_EOA BAL/HASH": {
+    "floor_sa": 0.998,
     "long": 4,
     "n": 4,
-    "replica": 0.998,
-    "run1": 0.997,
-    "run2": 0.998,
+    "pair_a": 0.997,
+    "pair_b": 0.999,
     "v1_pair": 0.995,
     "within10": 4
    },
    "EXISTING_EOA code-exec": {
+    "floor_sa": 0.997,
     "long": 16,
     "n": 16,
-    "replica": 0.997,
-    "run1": 1.001,
-    "run2": 1.001,
+    "pair_a": 1.001,
+    "pair_b": 0.997,
     "v1_pair": 0.997,
     "within10": 16
    },
    "JUMPDEST BAL/HASH": {
+    "floor_sa": 0.987,
     "long": 4,
     "n": 4,
-    "replica": 0.987,
-    "run1": 0.995,
-    "run2": 0.989,
+    "pair_a": 0.995,
+    "pair_b": 0.98,
     "v1_pair": 0.974,
     "within10": 4
    },
    "JUMPDEST code-exec": {
+    "floor_sa": 1.004,
     "long": 16,
     "n": 16,
-    "replica": 1.004,
-    "run1": 1.099,
-    "run2": 1.101,
+    "pair_a": 1.099,
+    "pair_b": 1.095,
     "v1_pair": 0.943,
     "within10": 8
    },
    "MINIMAL BAL/HASH": {
+    "floor_sa": 0.994,
     "long": 4,
     "n": 4,
-    "replica": 0.994,
-    "run1": 0.999,
-    "run2": 0.993,
+    "pair_a": 0.999,
+    "pair_b": 0.996,
     "v1_pair": 0.998,
     "within10": 4
    },
    "MINIMAL code-exec": {
+    "floor_sa": 0.994,
     "long": 16,
     "n": 16,
-    "replica": 0.994,
-    "run1": 1.001,
-    "run2": 0.998,
+    "pair_a": 1.001,
+    "pair_b": 0.996,
     "v1_pair": 0.995,
     "within10": 16
    },
    "SAME_MAX BAL/HASH": {
+    "floor_sa": 1.009,
     "long": 4,
     "n": 4,
-    "replica": 1.009,
-    "run1": 0.975,
-    "run2": 0.997,
+    "pair_a": 0.975,
+    "pair_b": 1.004,
     "v1_pair": 0.998,
     "within10": 4
    },
    "SAME_MAX code-exec": {
+    "floor_sa": 1.004,
     "long": 16,
     "n": 16,
-    "replica": 1.004,
-    "run1": 0.997,
-    "run2": 1.0,
+    "pair_a": 0.997,
+    "pair_b": 1.001,
     "v1_pair": 1.0,
     "within10": 16
    },
    "absent account BAL/HASH": {
+    "floor_sa": 0.992,
     "long": 0,
     "n": 4,
-    "replica": 0.992,
-    "run1": 1.151,
-    "run2": 1.122,
+    "pair_a": 1.151,
+    "pair_b": 1.132,
     "v1_pair": 1.353,
     "within10": 2
    },
    "absent account code-exec": {
+    "floor_sa": 1.005,
     "long": 0,
     "n": 16,
-    "replica": 1.005,
-    "run1": 1.152,
-    "run2": 1.202,
+    "pair_a": 1.152,
+    "pair_b": 1.129,
     "v1_pair": 1.234,
     "within10": 5
    },
    "control (no state work)": {
+    "floor_sa": 1.028,
     "long": 0,
     "n": 80,
-    "replica": 1.028,
-    "run1": 1.111,
-    "run2": 1.136,
+    "pair_a": 1.111,
+    "pair_b": 1.121,
     "v1_pair": 1.142,
     "within10": 28
    },
    "ether transfer": {
+    "floor_sa": 1.002,
     "long": 36,
     "n": 36,
-    "replica": 1.002,
-    "run1": 1.054,
-    "run2": 1.058,
+    "pair_a": 1.054,
+    "pair_b": 1.06,
     "v1_pair": 1.076,
     "within10": 29
    },
    "sload same key": {
+    "floor_sa": 1.1,
     "long": 0,
     "n": 4,
-    "replica": 1.1,
-    "run1": 1.26,
-    "run2": 1.396,
+    "pair_a": 1.26,
+    "pair_b": 1.406,
     "v1_pair": 1.099,
     "within10": 1
    },
    "storage slot": {
+    "floor_sa": 1.005,
     "long": 8,
     "n": 12,
-    "replica": 1.005,
-    "run1": 1.001,
-    "run2": 1.012,
+    "pair_a": 1.001,
+    "pair_b": 1.008,
     "v1_pair": 1.093,
     "within10": 11
    },
    "warm query": {
+    "floor_sa": 0.96,
     "long": 0,
     "n": 14,
-    "replica": 0.96,
-    "run1": 1.27,
-    "run2": 1.235,
+    "pair_a": 1.27,
+    "pair_b": 1.18,
     "v1_pair": 1.349,
     "within10": 1
    }
@@ -5744,11 +5758,11 @@
    "short": 122
   },
   "outliers": {
-   "all": 74,
-   "long": 19,
+   "all": 60,
+   "long": 17,
    "long_buckets": {
     "absent-key work": 2,
-    "code pool (#141 overshoot)": 14,
+    "code pool (#141 overshoot)": 12,
     "ether transfer": 3
    },
    "long_rows": [
@@ -5756,8 +5770,8 @@
      "cat": "ether transfer",
      "joc_s": 1.4,
      "long": true,
-     "run1": 1.535,
-     "run2": 1.494,
+     "pair_a": 1.535,
+     "pair_b": 1.446,
      "sa_s": 0.9,
      "variant": "diff_to_nonexistent 160M"
     },
@@ -5765,71 +5779,71 @@
      "cat": "ether transfer",
      "joc_s": 1.7,
      "long": true,
-     "run1": 1.328,
-     "run2": 1.313,
+     "pair_a": 1.328,
+     "pair_b": 1.356,
      "sa_s": 1.3,
      "variant": "diff_to_nonexistent 240M"
+    },
+    {
+     "cat": "JUMPDEST code-exec",
+     "joc_s": 19.9,
+     "long": true,
+     "pair_a": 1.117,
+     "pair_b": 1.253,
+     "sa_s": 17.8,
+     "variant": "STATICCALL-0 240M"
     },
     {
      "cat": "ether transfer",
      "joc_s": 14.3,
      "long": true,
-     "run1": 1.168,
-     "run2": 1.188,
+     "pair_a": 1.168,
+     "pair_b": 1.151,
      "sa_s": 12.2,
      "variant": "diff_to_delegated_contract_diff 240M"
-    },
-    {
-     "cat": "DIFF_MAX code-exec",
-     "joc_s": 14.5,
-     "long": true,
-     "run1": 1.136,
-     "run2": 1.164,
-     "sa_s": 12.8,
-     "variant": "STATICCALL-0 160M"
-    },
-    {
-     "cat": "DIFF_MAX code-exec",
-     "joc_s": 20.3,
-     "long": true,
-     "run1": 1.148,
-     "run2": 1.153,
-     "sa_s": 17.7,
-     "variant": "CALLCODE-0 240M"
     },
     {
      "cat": "JUMPDEST code-exec",
      "joc_s": 19.5,
      "long": true,
-     "run1": 1.104,
-     "run2": 1.152,
-     "sa_s": 17.7,
-     "variant": "EXTCODECOPY-0 240M"
+     "pair_a": 1.119,
+     "pair_b": 1.153,
+     "sa_s": 17.4,
+     "variant": "EXTCODESIZE-0 240M"
     },
     {
      "cat": "JUMPDEST code-exec",
      "joc_s": 20.1,
      "long": true,
-     "run1": 1.149,
-     "run2": 1.143,
+     "pair_a": 1.149,
+     "pair_b": 1.152,
      "sa_s": 17.5,
      "variant": "CALL-0 240M"
     },
     {
-     "cat": "JUMPDEST code-exec",
-     "joc_s": 20.1,
+     "cat": "DIFF_MAX code-exec",
+     "joc_s": 20.3,
      "long": true,
-     "run1": 1.102,
-     "run2": 1.148,
-     "sa_s": 18.2,
+     "pair_a": 1.148,
+     "pair_b": 1.135,
+     "sa_s": 17.7,
      "variant": "CALLCODE-0 240M"
+    },
+    {
+     "cat": "ether transfer",
+     "joc_s": 10.1,
+     "long": true,
+     "pair_a": 1.115,
+     "pair_b": 1.144,
+     "sa_s": 9.0,
+     "variant": "diff_to_delegated_contract_diff 160M"
     },
     {
      "cat": "DIFF_MAX code-exec",
      "joc_s": 19.0,
      "long": true,
-     "run1": 1.134,
-     "run2": 1.142,
+     "pair_a": 1.134,
+     "pair_b": 1.142,
      "sa_s": 16.8,
      "variant": "EXTCODECOPY-0 240M"
     },
@@ -5837,103 +5851,94 @@
      "cat": "DIFF_MAX code-exec",
      "joc_s": 20.1,
      "long": true,
-     "run1": 1.129,
-     "run2": 1.139,
+     "pair_a": 1.129,
+     "pair_b": 1.14,
      "sa_s": 17.8,
      "variant": "STATICCALL-0 240M"
     },
     {
      "cat": "JUMPDEST code-exec",
-     "joc_s": 19.9,
+     "joc_s": 20.1,
      "long": true,
-     "run1": 1.117,
-     "run2": 1.139,
-     "sa_s": 17.8,
-     "variant": "STATICCALL-0 240M"
+     "pair_a": 1.102,
+     "pair_b": 1.138,
+     "sa_s": 18.2,
+     "variant": "CALLCODE-0 240M"
     },
     {
-     "cat": "JUMPDEST code-exec",
+     "cat": "DIFF_MAX code-exec",
+     "joc_s": 14.5,
+     "long": true,
+     "pair_a": 1.136,
+     "pair_b": 1.112,
+     "sa_s": 12.8,
+     "variant": "STATICCALL-0 160M"
+    },
+    {
+     "cat": "DIFF_MAX code-exec",
      "joc_s": 19.5,
      "long": true,
-     "run1": 1.119,
-     "run2": 1.135,
-     "sa_s": 17.4,
+     "pair_a": 1.129,
+     "pair_b": 1.135,
+     "sa_s": 17.2,
      "variant": "EXTCODESIZE-0 240M"
     },
     {
      "cat": "DIFF_MAX code-exec",
      "joc_s": 20.1,
      "long": true,
-     "run1": 1.107,
-     "run2": 1.134,
+     "pair_a": 1.107,
+     "pair_b": 1.13,
      "sa_s": 18.1,
      "variant": "DELEGATECALL-0 240M"
-    },
-    {
-     "cat": "JUMPDEST code-exec",
-     "joc_s": 14.1,
-     "long": true,
-     "run1": 1.131,
-     "run2": 1.124,
-     "sa_s": 12.5,
-     "variant": "DELEGATECALL-0 160M"
-    },
-    {
-     "cat": "DIFF_MAX code-exec",
-     "joc_s": 19.5,
-     "long": true,
-     "run1": 1.129,
-     "run2": 1.131,
-     "sa_s": 17.2,
-     "variant": "EXTCODESIZE-0 240M"
     },
     {
      "cat": "ether transfer",
      "joc_s": 8.3,
      "long": true,
-     "run1": 1.126,
-     "run2": 1.115,
+     "pair_a": 1.126,
+     "pair_b": 1.103,
      "sa_s": 7.4,
      "variant": "diff_to_unique_code_jumpdest_contract 160M"
     },
     {
-     "cat": "ether transfer",
-     "joc_s": 10.1,
+     "cat": "JUMPDEST code-exec",
+     "joc_s": 19.5,
      "long": true,
-     "run1": 1.115,
-     "run2": 1.119,
-     "sa_s": 9.0,
-     "variant": "diff_to_delegated_contract_diff 160M"
+     "pair_a": 1.104,
+     "pair_b": 1.118,
+     "sa_s": 17.7,
+     "variant": "EXTCODECOPY-0 240M"
     },
     {
      "cat": "DIFF_MAX code-exec",
      "joc_s": 13.5,
      "long": true,
-     "run1": 1.115,
-     "run2": 1.112,
+     "pair_a": 1.115,
+     "pair_b": 1.1,
      "sa_s": 12.1,
-     "variant": "EXTCODESIZE-0 160M"
-    },
-    {
-     "cat": "JUMPDEST code-exec",
-     "joc_s": 13.6,
-     "long": true,
-     "run1": 1.113,
-     "run2": 1.109,
-     "sa_s": 12.2,
      "variant": "EXTCODESIZE-0 160M"
     }
    ],
-   "short": 55
+   "short": 43
   },
   "runs": {
    "nm-joc-fin1": 266,
+   "nm-joc-fin2": 266,
    "nm-joc-t1": 266,
    "nm-sa-fin1": 456,
    "nm-sa-fin2": 456,
    "nm-sa-t1": 266
   },
-  "src": "R74: the whole suite at 160M/240M on the settled pair, one session, state-actor twice"
+  "src": "R74 + R75: the whole suite at 160M/240M on the settled stores, two independent pairs",
+  "tiered_compilation": {
+   "nm-joc-fin1": "0",
+   "nm-joc-fin2": "0",
+   "nm-joc-t1": "0",
+   "nm-sa-fin1": "0",
+   "nm-sa-fin2": "0",
+   "nm-sa-t1": "0"
+  }
  },
  "intervention_blocks": {
   "cells": {

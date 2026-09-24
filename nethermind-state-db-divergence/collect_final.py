@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""R74: the final pair. Both stores fully settled - state-actor v2 (generated with #139 and #141)
-and jochemnet with every flat column compacted to L6 - measured in one session over the whole
-suite, sub-second tests included, state-actor twice so the replica floor is measured beside the
-comparison. Prints JSON to stdout; merged into data/report_data.json under `final`."""
+"""R74 + R75: the final pairs. Both stores fully settled - state-actor v2 (generated with #139 and
+#141) and jochemnet with every flat column compacted to L6 - over the whole suite, sub-second tests
+included. Two independent pairs share no run (A = sa-fin1/joc-fin1, B = sa-fin2/joc-fin2), and each
+store is also measured against itself. Prints JSON to stdout; merged into data/report_data.json
+under `final`."""
 import glob
 import json
 import os
@@ -16,6 +17,7 @@ R = "/bench/results/"
 
 def load(root):
     best, bn = None, -1
+    root = os.path.join(R, root)
     for rj in glob.glob(os.path.join(root, "runs", "*", "result.json")):
         try:
             n = len(json.load(open(rj)).get("tests", {}))
@@ -23,7 +25,11 @@ def load(root):
             continue
         if n > bn:
             best, bn = rj, n
-    return json.load(open(best))["tests"] if best else {}
+    if not best:
+        return {}, None
+    env = (json.load(open(os.path.join(os.path.dirname(best), "config.json"))).get("instance", {})
+           .get("environment") or {})
+    return json.load(open(best))["tests"], env.get("DOTNET_TieredCompilation", "default")
 
 
 def agg(e):
@@ -73,9 +79,11 @@ def variant(t):
     return "%s %s" % ("-".join(m.groups()) if m else v[:28], g.group(1) if g else "")
 
 
-runs = {k: load(R + k) for k in ("nm-sa-fin1", "nm-sa-fin2", "nm-joc-fin1", "nm-sa-t1", "nm-joc-t1")}
-S1, S2, J, S0, J0 = (runs[k] for k in ("nm-sa-fin1", "nm-sa-fin2", "nm-joc-fin1", "nm-sa-t1", "nm-joc-t1"))
-ids = [t for t in S1 if t in J and t in S2 and mg(S1[t]) and mg(S2[t]) and mg(J[t])]
+NAMES = ("nm-sa-fin1", "nm-sa-fin2", "nm-joc-fin1", "nm-joc-fin2", "nm-sa-t1", "nm-joc-t1")
+loaded = {k: load(k) for k in NAMES}
+runs = {k: v[0] for k, v in loaded.items()}
+S1, S2, J, J2, S0, J0 = (runs[k] for k in NAMES)
+ids = [t for t in S1 if t in J and t in S2 and t in J2 and mg(S1[t]) and mg(S2[t]) and mg(J[t]) and mg(J2[t])]
 LONG = [t for t in ids if (secs(J[t]) or 0) >= 1.0]
 SHORT = [t for t in ids if t not in set(LONG)]
 
@@ -90,16 +98,17 @@ def stats(A, B, sel):
 
 
 out = {
-    "src": "R74: the whole suite at 160M/240M on the settled pair, one session, state-actor twice",
+    "src": "R74 + R75: the whole suite at 160M/240M on the settled stores, two independent pairs",
     "runs": {k: len(v) for k, v in runs.items()},
+    "tiered_compilation": {k: v[1] for k, v in loaded.items()},
     "classes": {"long": len(LONG), "short": len(SHORT), "boundary_s": 1.0,
                 "membership": "fixed from the jochemnet arm of this pair"},
     "by_class": {},
 }
 for name, sel in (("long", LONG), ("short", SHORT)):
     out["by_class"][name] = {
-        "v1_pair": stats(S0, J0, sel), "run1": stats(S1, J, sel), "run2": stats(S2, J, sel),
-        "replica": stats(S2, S1, sel),
+        "v1_pair": stats(S0, J0, sel), "pair_a": stats(S1, J, sel), "pair_b": stats(S2, J2, sel),
+        "floor_sa": stats(S2, S1, sel), "floor_joc": stats(J2, J, sel),
     }
 
 by = defaultdict(list)
@@ -107,22 +116,22 @@ for t in ids:
     by[cat(t)].append(t)
 out["categories"] = {}
 for c, ts in by.items():
-    r1, r2 = stats(S1, J, ts), stats(S2, J, ts)
+    r1, r2 = stats(S1, J, ts), stats(S2, J2, ts)
     out["categories"][c] = {
         "n": len(ts), "long": sum(1 for t in ts if t in set(LONG)),
         "v1_pair": (stats(S0, J0, ts) or {}).get("median"),
-        "run1": r1["median"], "run2": r2["median"], "within10": r1["within10"],
-        "replica": (stats(S2, S1, ts) or {}).get("median"),
+        "pair_a": r1["median"], "pair_b": r2["median"], "within10": r1["within10"],
+        "floor_sa": (stats(S2, S1, ts) or {}).get("median"),
     }
 
 outl = []
 for t in ids:
-    a, b = mg(S1[t]) / mg(J[t]), mg(S2[t]) / mg(J[t])
+    a, b = mg(S1[t]) / mg(J[t]), mg(S2[t]) / mg(J2[t])
     if abs(a - 1) > 0.1 and abs(b - 1) > 0.1 and (a - 1) * (b - 1) > 0:
-        outl.append({"cat": cat(t), "variant": variant(t), "run1": round(a, 3), "run2": round(b, 3),
+        outl.append({"cat": cat(t), "variant": variant(t), "pair_a": round(a, 3), "pair_b": round(b, 3),
                      "sa_s": round(secs(S1[t]) or 0, 1), "joc_s": round(secs(J[t]) or 0, 1),
                      "long": t in set(LONG)})
-outl.sort(key=lambda r: -max(r["run1"], r["run2"]))
+outl.sort(key=lambda r: -max(r["pair_a"], r["pair_b"]))
 out["outliers"] = {"all": len(outl), "long": sum(1 for r in outl if r["long"]),
                    "short": sum(1 for r in outl if not r["long"]), "long_rows": [r for r in outl if r["long"]]}
 buckets = defaultdict(int)

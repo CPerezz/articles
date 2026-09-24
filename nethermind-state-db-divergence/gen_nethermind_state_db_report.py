@@ -48,21 +48,21 @@ def standalone(svg):
 
 # --------------------------------------------------------------------------- reused figures
 def chart_final_pair(fi):
-    """The whole suite on the settled pair, by duration class, against the floor the harness
-    itself sets: the same store measured twice. The short class cannot be read at all - it does
-    not reproduce against itself any better than it matches the other store."""
+    """The whole suite on two independent pairs, by duration class, against the floor the harness
+    itself sets: each store measured against itself."""
     W, L, R, T = 760, 210, 40, 34
     rh, gap = 26, 26
-    lanes = [("state-actor / jochemnet", "run1", "--accent"),
-             ("second state-actor run", "run2", "--accent"),
-             ("state-actor twice: the floor", "replica", "--db-sa")]
+    lanes = [("pair A", "pair_a", "--accent"),
+             ("pair B, no run shared", "pair_b", "--accent"),
+             ("state-actor vs itself", "floor_sa", "--db-sa"),
+             ("jochemnet vs itself", "floor_joc", "--db-c")]
     H = T + (rh * len(lanes) + 20 + gap) * 2 + 24
     sx = S.Scale(0, 100, L, W - R - 150)
     o = [S.label(L - 10, T - 16, "share of tests within \u00b110% of parity", "start", "big")]
     y = T
     for title, key in (("tests \u2265 1 s", "long"), ("tests < 1 s", "short")):
         d = fi["by_class"][key]
-        o.append(S.label(L - 10, y + 12, "%s  (n=%d)" % (title, d["run1"]["n"]), "end", "big"))
+        o.append(S.label(L - 10, y + 12, "%s  (n=%d)" % (title, d["pair_a"]["n"]), "end", "big"))
         y += 20
         for name, k, var in lanes:
             v = d[k]
@@ -548,10 +548,15 @@ def main():
     # concentrated, every state-reading family at parity except the two named items.
     lo, sh_ = FI["by_class"]["long"], FI["by_class"]["short"]
     ol = FI["outliers"]
-    assert abs(lo["run1"]["median"] - 1) < 0.03 and abs(lo["run2"]["median"] - 1) < 0.03, "long class left parity: %r" % lo
-    assert lo["replica"]["within10"] >= lo["run1"]["within10"], "comparison beats its own floor: %r" % lo
-    assert sh_["replica"]["within10"] / sh_["replica"]["n"] < 0.6, "short class now reproduces; it could be quoted: %r" % sh_
-    assert ol["long"] < 0.2 * lo["run1"]["n"] and ol["long_buckets"].get("code pool (#141 overshoot)", 0) >= 0.6 * ol["long"], \
+    assert abs(lo["pair_a"]["median"] - 1) < 0.03 and abs(lo["pair_b"]["median"] - 1) < 0.03, "long class left parity: %r" % lo
+    assert min(lo["floor_sa"]["within10"], lo["floor_joc"]["within10"]) >= max(lo["pair_a"]["within10"], lo["pair_b"]["within10"]), \
+        "a pair beats a store's own floor: %r" % lo
+    assert max(sh_["floor_sa"]["within10"], sh_["floor_joc"]["within10"]) / sh_["floor_sa"]["n"] < 0.65, \
+        "short class now reproduces; it could be quoted: %r" % sh_
+    assert set(FI["tiered_compilation"]) >= {"nm-sa-fin1", "nm-sa-fin2", "nm-joc-fin1", "nm-joc-fin2"} and \
+        all(v == "0" for v in FI["tiered_compilation"].values()), \
+        "a run after Finding 2 has tiered compilation on: %r" % FI["tiered_compilation"]
+    assert ol["long"] < 0.2 * lo["pair_a"]["n"] and ol["long_buckets"].get("code pool (#141 overshoot)", 0) >= 0.6 * ol["long"], \
         "the long outliers are no longer mostly the pool overshoot: %r" % ol
     for fam in ("account reads", "code, reused or small", "storage"):
         v = wc["long"][fam]["final"]
@@ -635,14 +640,14 @@ def main():
       "<li>The generated store made the client rewrite it on every boot.</li>"
       "<li>What shares a code block with the contract being read.</li>"
       "<li>Two storage columns nobody had compacted.</li></ol>")
-    fl_long, fl_short = WF["floor"]["long"]["_all"], WF["floor"]["short"]["_all"]
+    fbl, fbs = FI["by_class"]["long"], FI["by_class"]["short"]
+    span = lambda c: "%.0f&ndash;%.0f%%" % tuple(sorted(pct(c[k]["within10"], c[k]["n"]) for k in ("floor_sa", "floor_joc")))
     w(f"<p><b>How to read the numbers.</b> Every ratio is state-actor's throughput over "
       f"jochemnet's on the same test: 1.00 is parity, below 1 the generated store is slower. We "
       f"split the suite at one second of measured time, because a sub-second test doesn't "
       f"reproduce against itself. Measure the same store twice and "
-      f"{pct(fl_long['within10'], fl_long['n']):.0f}% of the longer tests land within "
-      f"&plusmn;10% of their first result, but only {pct(fl_short['within10'], fl_short['n']):.0f}% "
-      f"of the short ones. Short tests appear in every view below, but we read no store "
+      f"{span(fbl)} of the longer tests land within &plusmn;10% of their first result, but only "
+      f"{span(fbs)} of the short ones. Short tests appear in every view below, but we read no store "
       f"difference from them.</p>")
     w(figure(chart_family_overview(WF, "baseline"),
              f"The baseline, by family: {b_long['n']} tests over a second and {b_short['n']} under, "
@@ -846,10 +851,10 @@ def main():
 
     # ================================================================= 3. where it stands
     w("<h2>Where it stands</h2>")
-    w("<p>With all five fixed, we ran the whole suite once more in one session: the snapshot's "
-      "pre-run and storage columns compacted, the generator on the fixed pool with #139's "
-      "compaction, tiered JIT off on both arms. jochemnet ran once and state-actor twice, so the "
-      "floor sits beside the comparison.</p>")
+    w("<p>With all five fixed, we ran the whole suite on both stores twice, as two pairs that "
+      "share no run: the snapshot's pre-run and storage columns compacted, the generator on the "
+      "fixed pool with #139's compaction, tiered JIT off on both arms. Each store is also measured "
+      "against itself, so the floor sits beside the comparison.</p>")
     w(figure(chart_family_overview(WF, "final"),
              "The same view as the first figure, on the final pair. Every family that reads state "
              "is inside the band except distinct-contract code, which is now slightly faster on "
@@ -874,10 +879,12 @@ def main():
     w("<caption>Median ratio per family at baseline and on the final pair, and how many of the "
       "final pair's tests sit within &plusmn;10%.</caption></table>")
     w(figure(chart_final_pair(FI),
-             f"The long class reaches {lo['run1']['within10']} of {lo['run1']['n']} in the band, "
-             f"and {lo['run2']['within10']} with state-actor's second run over the same jochemnet "
-             f"run, against {lo['replica']['within10']} when the same store is measured twice. The short class reaches {sh_['run1']['within10']} of "
-             f"{sh_['run1']['n']}, and only {sh_['replica']['within10']} against itself."))
+             f"Two pairs that share no run. The long class reaches {lo['pair_a']['within10']} and "
+             f"{lo['pair_b']['within10']} of {lo['pair_a']['n']} in the band, against "
+             f"{lo['floor_sa']['within10']} and {lo['floor_joc']['within10']} when each store is "
+             f"measured against itself. The short class reaches {sh_['pair_a']['within10']} and "
+             f"{sh_['pair_b']['within10']} of {sh_['pair_a']['n']}, and only "
+             f"{sh_['floor_sa']['within10']} and {sh_['floor_joc']['within10']} against itself."))
     w(figure(chart_waterfall(WF),
              "Every family through every stage: 0 baseline, 1 pre-run compacted, 2 tiered JIT off "
              "and the generated store settled, 3 the regenerated code pool, 4 final. Dashed segments "
@@ -895,11 +902,11 @@ def main():
       f"class moves only when the JIT is equalised, and then stops at its floor.</p>")
     _b = ol["long_buckets"]
     trf = wc["long"]["ether transfers"]["final"]
-    w(f"<p>{ol['long']} of the {lo['run1']['n']} long tests still miss the band in both runs, and "
+    w(f"<p>{ol['long']} of the {lo['pair_a']['n']} long tests still miss the band in both pairs, and "
       f"they are not spread across the suite: {_b.get('code pool (#141 overshoot)', 0)} are "
       f"distinct-contract code, where the regenerated pool overshoots, and "
       f"{_b.get('absent-key work', 0) + _b.get('ether transfer', 0)} are transfers, led by the "
-      f"transfer to an absent account at {ol['long_rows'][0]['run1']:.2f}. The other "
+      f"transfer to an absent account at {ol['long_rows'][0]['pair_a']:.2f}. The other "
       f"{ol['short']} misses are sub-second.</p>")
     w(f"<p>As a family, transfers reach {trf['median']:.3f}, with {trf['within10']} of {trf['n']} "
       f"in the band. The ones that miss issue the same reads on both stores. The worst reads "
@@ -926,9 +933,9 @@ def main():
       f"worker threads where state-actor spends {tp['sa']['160M']['.net thread pool']:.2f}. "
       f"Turning off state pre-warming or the trie warmer doesn't change it. It is client work, "
       f"and the next instrument is a profiler, not another benchmark.</p>")
-    w(f"<p><b>Sub-second tests can't be read at any store shape.</b> The same store measured "
-      f"twice puts {pct(sh_['replica']['within10'], sh_['replica']['n']):.0f}% of them within "
-      f"&plusmn;10% of themselves. A per-test restart plus a JIT still warming up is most of what "
+    w(f"<p><b>Sub-second tests can't be read at any store shape.</b> Measured against itself, "
+      f"state-actor puts {pct(sh_['floor_sa']['within10'], sh_['floor_sa']['n']):.0f}% of them "
+      f"within &plusmn;10% and jochemnet {pct(sh_['floor_joc']['within10'], sh_['floor_joc']['n']):.0f}%. A per-test restart plus a JIT still warming up is most of what "
       f"a short test measures. That is fixed in the harness, with a discarded burn-in block, not "
       f"in either store.</p>")
     w("<p>The lesson is the one the geth study reached from the other side. A snapshot that was "
