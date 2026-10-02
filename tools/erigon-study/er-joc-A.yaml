@@ -1,0 +1,64 @@
+# Erigon / jochemnet arm, suite A.
+# Mirrors the Nethermind arms (/bench/cfg/nm-*-fin1.yaml) with the canonical erigon instance
+# settings from ethpandaops/benchmarkoor-tests (jochemnet/v1/glamsterdam-devnet-7/clients.yaml).
+# Suite A: replay the pre-run bundle and promote it into the golden image, then two smoke tests.
+global:
+  log_level: info
+  env:
+    ER_DATADIR: /schelk-er-joc/snapshots/erigon/jochemnet/24402727
+runner:
+  client_logs_to_stdout: true
+  docker_network: benchmarkoor
+  cleanup_on_start: true
+  container_runtime: podman
+  live_reporting:
+    enabled: false
+  benchmark:
+    results_dir: /bench/results/er-joc-A-RUNDATE
+    generate_results_index: true
+    generate_suite_stats: true
+    tests:
+      metadata:
+        labels:
+          name: er-joc-A-glamsterdam-devnet-7-stateful
+          block: "24402727"
+          test-type: stateful
+          context: repricing
+          fork: amsterdam
+          data-disk-type: schelk
+      filter: 'regex:(opcode_BALANCE-value_sent_0-account_mode_AccountMode\.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy\.NO_CACHE-benchmark-gas-value_160M|transfer_amount_0-case_id_diff_to_existent-benchmark-gas-value_240M)'
+      source:
+        eest_fixtures:
+          fixtures_url: https://github.com/ethpandaops/benchmarkoor-tests/releases/download/eest-payloads-jochemnet-v1-amsterdam-stateful-d9ad55b3-20260807-000744/eest-payloads-jochemnet-v1-amsterdam-stateful-geth.tar.gz
+          fixtures_subdir: benchmarkoor-build-artifacts/eest-payloads/geth/blockchain_tests_stateful_engine
+          pre_runs:
+            fixtures_subdir: benchmarkoor-build-artifacts/pre-runs/geth/pre_run_bundle
+  client:
+    config:
+      rollback_strategy: container-recreate
+      drop_memory_caches: "steps"
+    datadirs:
+      erigon:
+        source_dir: ${ER_DATADIR}
+        method: schelk
+        schelk_options:
+          promote_post_pre_runs: true
+  instances:
+    - id: er-joc-A
+      client: erigon
+      image: docker.io/ethpandaops/erigon:glamsterdam-devnet-7
+      genesis: /bench/erigon/cfg/jochemnet-genesis.json
+      extra_args:
+        - --exec.no-merge=true
+        - --exec.no-prune=true
+        - --exec.no-background-maintenance
+        - --experimental.parallel-commitment
+        - --override.amsterdam=1769856769
+      bootstrap_fcu:
+        enabled: true
+        max_retries: 120
+        backoff: 30s
+      retry_new_payloads_syncing_state:
+        enabled: true
+        max_retries: 240
+        backoff: 30s

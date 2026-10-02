@@ -1,0 +1,61 @@
+# Erigon / state-actor arm, suite B.
+# Mirrors the Nethermind arms (/bench/cfg/nm-*-fin1.yaml) with the canonical erigon instance
+# settings from ethpandaops/benchmarkoor-tests (jochemnet/v1/glamsterdam-devnet-7/clients.yaml).
+# Suite B: the 266-test 160M/240M subset from the promoted store, no pre-run (replaying it
+# would re-create the store it was promoted from).
+global:
+  log_level: info
+  env:
+    ER_DATADIR: /schelk-er-sa/erigon
+runner:
+  client_logs_to_stdout: true
+  docker_network: benchmarkoor
+  cleanup_on_start: true
+  container_runtime: podman
+  live_reporting:
+    enabled: false
+  benchmark:
+    results_dir: /bench/results/er-sa-B-RUNDATE
+    generate_results_index: true
+    generate_suite_stats: true
+    tests:
+      metadata:
+        labels:
+          name: er-sa-B-glamsterdam-devnet-7-stateful
+          block: "0"
+          test-type: stateful
+          context: repricing
+          fork: amsterdam
+          data-disk-type: schelk
+      filter: 'regex:(160M|240M)'
+      source:
+        eest_fixtures:
+          local_fixtures_dir: /bench/fixtures/sa-v2-full/erigon
+          fixtures_subdir: blockchain_tests_stateful_engine
+  client:
+    config:
+      rollback_strategy: container-recreate
+      drop_memory_caches: "steps"
+    datadirs:
+      erigon:
+        source_dir: ${ER_DATADIR}
+        method: schelk
+  instances:
+    - id: er-sa-B
+      client: erigon
+      image: docker.io/ethpandaops/erigon:glamsterdam-devnet-7
+      genesis: ${ER_DATADIR}/chainspec.json
+      extra_args:
+        - --exec.no-merge=true
+        - --exec.no-prune=true
+        - --exec.no-background-maintenance
+        - --experimental.parallel-commitment
+        - --override.amsterdam=1
+      bootstrap_fcu:
+        enabled: true
+        max_retries: 120
+        backoff: 30s
+      retry_new_payloads_syncing_state:
+        enabled: true
+        max_retries: 240
+        backoff: 30s
