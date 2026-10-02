@@ -28,6 +28,35 @@ def thousands(n):
     return f"{n:,}"
 
 
+# The Besu page's deck and contents styles, so the two reports open the same way.
+PAGE_CSS = """
+.deck { color:var(--muted); font-size:15.5px; line-height:1.6; margin:2px 0 14px; }
+nav.toc { border:1px solid var(--line); background:var(--panel); padding:12px 16px;
+  margin:18px 0 26px; font-size:13.5px; }
+nav.toc .toch { color:var(--accent); letter-spacing:.08em; text-transform:uppercase;
+  font-size:11.5px; margin-bottom:8px; }
+nav.toc ul { list-style:none; margin:0; padding:0; }
+nav.toc li { margin:3px 0; }
+nav.toc a { text-decoration:none; }
+nav.toc a:hover { text-decoration:underline; }
+"""
+
+
+def add_toc(doc):
+    """Give every h2 an id and replace the <!--TOC--> marker with a contents list."""
+    entries = []
+
+    def tag(m):
+        slug = re.sub(r"[^a-z0-9]+", "-", html.unescape(re.sub(r"<[^>]+>", "", m.group(1))).lower()).strip("-")
+        entries.append((slug, m.group(1)))
+        return f'<h2 id="{slug}">{m.group(1)}</h2>'
+
+    doc = re.sub(r"<h2>(.*?)</h2>", tag, doc, flags=re.S)
+    assert entries and doc.count("<!--TOC-->") == 1, "contents: no headings or no marker"
+    items = "".join(f'<li><a href="#{slug}">{text}</a></li>' for slug, text in entries)
+    return doc.replace("<!--TOC-->", f'<nav class=toc><div class=toch>Contents</div><ul>{items}</ul></nav>')
+
+
 def figure(svg, caption=""):
     cap = f"<figcaption>{caption}</figcaption>" if caption else ""
     return f"<figure>{svg}{cap}</figure>"
@@ -496,6 +525,9 @@ def main():
     _na_p, _na_e = JIT["slice"]["published"]["NON_EXISTING_ACCOUNT code-exec"], JIT["slice"]["jit_equalised"]["NON_EXISTING_ACCOUNT code-exec"]
     assert min(_na_p["joc_secs"] / _na_e["joc_secs"], _na_p["sa_secs"] / _na_e["sa_secs"]) > 1.5, \
         "equalising the JIT no longer speeds the short tests up on both arms"
+    _dp, _de = JIT["slice"]["published"]["DIFF_MAX code-exec"], JIT["slice"]["jit_equalised"]["DIFF_MAX code-exec"]
+    assert abs(_de["sa_secs"] / _dp["sa_secs"] - 1) < 0.1 and _de["joc_secs"] > 1.2 * _dp["joc_secs"], \
+        "equalising the JIT no longer slows jochemnet while leaving state-actor put"
     tier = {arm: 100 * p["threads"].get(".NET Tiered Com", 0) / sum(p["threads"].values())
             for arm, p in JIT["profile"].items()}
     assert tier["joc_unsettled"] > 50 and 25 < tier["sa_unsettled"] < 60, \
@@ -589,37 +621,53 @@ def main():
     assert bx_["EXISTING_CONTRACT_DIFF_MAX"]["median"] < bx_["EXISTING_CONTRACT_SAME_MAX"]["median"] - 0.05, \
         "Besu's distinct-contract code no longer trails its reused contract"
 
+    BV4 = json.load(open(os.path.join(HERE, "..", "besu-state-db-divergence", "data",
+                                      "report_data.json")))["status"]["v4"]
+    assert BV4["pr"] == 141 and BV4["classes"]["dark"]["v4"] > 1.1 and \
+        BV4["paired"]["median"] < BV4["classes"]["dark"]["v4"], \
+        "Besu's post-#141 distinct-code result no longer overshoots, or no longer depends on the disk"
+
     # ----------------------------------------------------------------- page
     o = []
     w = o.append
     title = "How can two Nethermind databases holding the same state differ %d&times;?" % round(factor)
     w("<!doctype html><html lang=en><head><meta charset=utf-8>")
     w('<meta name=viewport content="width=device-width,initial-scale=1">')
-    w('<meta name="description" content="A mainnet snapshot and a generated store run the same '
-      'EEST benchmark suite and disagree by up to 17x. Five findings account for it; what is left '
-      'once they are fixed is two named items and a class of tests that cannot be read at all.">')
+    w(f'<meta name="description" content="A Nethermind mainnet snapshot and a generated store run '
+      f'the same EEST benchmarks and disagree by up to {factor:.0f}x. Five findings account for it; '
+      f'what is left once they are fixed is two named items and a class of tests that cannot be '
+      f'read at all.">')
     w('<link rel="preconnect" href="https://fonts.googleapis.com">'
       '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
       '<link href="https://fonts.googleapis.com/css2?family=VT323&'
       'family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" '
       'rel="stylesheet">')
-    w("<title>Nethermind state-DB divergence &mdash; benchmarkoor bloatnet runs</title>")
-    w(f"<style>{CSS}</style></head><body>")
+    w(f"<title>{title}</title>")
+    w(f"<style>{CSS}{PAGE_CSS}</style></head><body>")
     w('<div class=topbar><a href="../">&larr; all articles</a>'
       '<span>EXECUTION &middot; STATE DB</span></div>')
     w('<div class=eyebrow>// REPORT</div>')
     w(f"<h1>{title}</h1>")
+    lo_, dl_ = FI["by_class"]["long"], wc["long"]["code, distinct large"]["final"]["median"]
+    w(f"<p class=deck>We ran the same EEST benchmarks against a Nethermind mainnet snapshot and a "
+      f"store that state-actor generated from scratch. Where the tests read accounts, the generated "
+      f"store came out up to {factor:.0f}&times; slower. We found five things wrong with how the "
+      f"stores and the harness were set up, and four of them made the gap. Fixed, tests over a "
+      f"second land at {lo_['pair_a']['median']:.3f} on two independent pairs, "
+      f"{lo_['pair_a']['within10']} and {lo_['pair_b']['within10']} of {lo_['pair_a']['n']} inside "
+      f"&plusmn;10%. Distinct-contract code overshoots by {(dl_ - 1) * 100:.0f}%, and one kind of "
+      f"transfer still costs the snapshot more CPU. Here's each finding, what it did, and what's "
+      f"left.</p>")
     w('<div class=meta><span class=tag>Ethereum &middot; nethermind &middot; flat DB &middot; '
       'benchmarking</span> &middot; 2026 &middot; '
       '<a href="https://github.com/CPerezz/articles/tree/main/nethermind-state-db-divergence">'
       'reproducible pipeline &amp; data &rarr;</a></div>')
-    w("<p class=sub>A mainnet snapshot, a generated store, the same benchmark suite. Five "
-      "reasons the numbers disagreed, and what is left once all five are fixed.</p>")
+    w("<!--TOC-->")
 
     # ================================================================= 1. the problem
     b_long, b_short = wc["long"]["_all"]["baseline"], wc["short"]["_all"]["baseline"]
     ar0 = wc["long"]["account reads"]["baseline"]
-    w("<h2>The problem</h2>")
+    w(f"<h2>The problem: the same state, {factor:.0f}&times; apart</h2>")
     w(f"<p>We ran the same EEST bloatnet suite against two Nethermind databases holding the "
       f"same logical state: <b>jochemnet</b>, a mainnet shadowfork snapshot at block "
       f"{thousands(P['snapshot_block'])}, and a store generated from scratch by "
@@ -633,13 +681,6 @@ def main():
       f"harness restores the store from a golden image and boots a fresh client, and it drops the "
       f"page cache between the two blocks, so each measured block starts cold. Both arms run the "
       f"same Nethermind image with the same flags, reading through its flat state database.</p>")
-    w("<p>The gap came apart into five findings, each fixed and measured on its own:</p>")
-    w("<ol>"
-      "<li>The snapshot's pre-run was baked into its baseline.</li>"
-      "<li>The client restarts for every test, and the two stores warm it up differently.</li>"
-      "<li>The generated store made the client rewrite it on every boot.</li>"
-      "<li>What shares a code block with the contract being read.</li>"
-      "<li>Two storage columns nobody had compacted.</li></ol>")
     fbl, fbs = FI["by_class"]["long"], FI["by_class"]["short"]
     span = lambda c: "%.0f&ndash;%.0f%%" % tuple(sorted(pct(c[k]["within10"], c[k]["n"]) for k in ("floor_sa", "floor_joc")))
     w(f"<p><b>How to read the numbers.</b> Every ratio is state-actor's throughput over "
@@ -729,6 +770,11 @@ def main():
              f"every method fully optimised on its first call. The control tests cross parity "
              f"({ctl0:.2f} &rarr; {ctl1:.2f}) and distinct-contract code closes most of its gap "
              f"({dm_pub:.2f} &rarr; {dm_eq:.2f})."))
+    dmp, dme = JIT["slice"]["published"]["DIFF_MAX code-exec"], JIT["slice"]["jit_equalised"]["DIFF_MAX code-exec"]
+    w(f"<p>The tell is which arm moved. On distinct-contract code state-actor barely changed, "
+      f"{dmp['sa_secs']:.1f} to {dme['sa_secs']:.1f} s, while jochemnet got slower, "
+      f"{dmp['joc_secs']:.1f} to {dme['joc_secs']:.1f} s: with tiering on, it had been reaching "
+      f"promoted code partway through the test.</p>")
     w(f"<p>The other suspect for a process-level gap was parallel execution, and it points the "
       f"wrong way: turning it off moved the controls to {ab['no_parallel']['thr']:.2f}, further "
       f"from parity, not closer.</p>")
@@ -796,7 +842,7 @@ def main():
       f"A bigger compressed block crosses a 4 KB page boundary more often, so more fetches need a "
       f"second physical read.</caption></table>")
     bxf = M["besu_cross_check"]["families"]["loads_code"]
-    w(f"<p>Besu shows the same shape on its own generated store: distinct-contract code at "
+    w(f"<p><a href=\"../besu-state-db-divergence/besu-state-db-report.html\">Besu</a> shows the same shape on its own generated store: distinct-contract code at "
       f"{bxf['EXISTING_CONTRACT_DIFF_MAX']['median']:.2f} against "
       f"{bxf['EXISTING_CONTRACT_SAME_MAX']['median']:.2f} for the reused contract. Two clients, "
       f"one generator artifact.</p>")
@@ -918,15 +964,15 @@ def main():
 
     # ================================================================= 4. what is left
     tp = aa["cpu_seconds"]
-    w("<h2>What is left, and why</h2>")
+    w("<h2>What's left, and why</h2>")
     w("<p><b>The code pool overshoots.</b> #141 draws its records from mainnet bytecode, but "
       "keeps a 1 KiB floor on record size. Mainnet's median contract is 45 bytes, so on "
       "Nethermind's 4 KB code block a fixture contract now starts a block of its own more often "
       "than it would on mainnet, and reading it is cheaper. Same mechanism as Finding 4, sign "
-      "reversed. The pool was tuned against a 32 KB block, which is what Besu uses and where a "
-      "24 KB fixture contract shares its block with other records either way; Nethermind's 4 KB block is where "
-      "the floor shows. The fix is to draw record sizes from mainnet's distribution rather than a "
-      "floor, in the generator.</p>")
+      "reversed. <a href=\"../besu-state-db-divergence/besu-state-db-report.html\">Besu's</a> generated store also came out fast on "
+      "distinct-contract code after #141, by an amount that depends on the disk it was measured "
+      "on. The fix is to draw record sizes from mainnet's distribution rather than a floor, in "
+      "the generator.</p>")
     w(f"<p><b>Absent-key work costs the snapshot more CPU.</b> Transfers to accounts that don't "
       f"exist issue the same reads on both stores, for the same bytes at the same latency, yet "
       f"jochemnet spends {tp['joc']['160M']['.net thread pool']:.2f} CPU-seconds in managed "
@@ -938,7 +984,7 @@ def main():
       f"within &plusmn;10% and jochemnet {pct(sh_['floor_joc']['within10'], sh_['floor_joc']['n']):.0f}%. A per-test restart plus a JIT still warming up is most of what "
       f"a short test measures. That is fixed in the harness, with a discarded burn-in block, not "
       f"in either store.</p>")
-    w("<p>The lesson is the one the geth study reached from the other side. A snapshot that was "
+    w("<p>The lesson is the one the <a href=\"../state-db-perf-divergence/state-db-perf-report.html\">geth study</a> reached from the other side. A snapshot that was "
       "replayed into shape carries its history: whatever was written last is in the youngest "
       "files, and whatever was never compacted stays a stack of levels. A generated store has "
       "none of that; it is uniform by construction. Equalising the two makes them comparable. It "
@@ -955,7 +1001,7 @@ def main():
     w('<span class=cursor style="position:fixed;bottom:1.4rem;right:1.4rem;z-index:6"></span>')
     w("</body></html>")
 
-    html_text = "\n".join(o)
+    html_text = add_toc("\n".join(o))
     with open(OUT, "w") as fh:
         fh.write(html_text)
     os.makedirs(FIGDIR, exist_ok=True)

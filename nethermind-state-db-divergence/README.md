@@ -93,6 +93,10 @@ pool overshoot); and the two remaining items (the overshoot, and the
 absent-account CPU gap surviving both warming ablations). Each oracle was mutation-tested: change
 the one input it guards and generation fails.
 
+One oracle reads outside this folder: part 4 says Besu's generated store also overshoots on
+distinct-contract code after #141, by an amount that depends on the disk, so the build checks that
+claim against `../besu-state-db-divergence/data/report_data.json`.
+
 ## Findings
 
 1. **The snapshot's pre-run was baked into its baseline.** Only one arm runs a pre-run, and
