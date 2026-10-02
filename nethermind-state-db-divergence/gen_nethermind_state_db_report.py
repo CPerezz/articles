@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the Nethermind state-DB divergence article from the collected run data.
+"""Build the Nethermind state-DB divergence report from the collected run data.
 
 Every number in the page is derived here from data/report_data.json; none is typed into the
 prose. The oracles in main() fail generation if the data stops supporting a sentence the article
@@ -11,6 +11,7 @@ import html
 import json
 import os
 import re
+from statistics import median
 
 import report_svg as S
 from crt_theme import CSS
@@ -18,6 +19,9 @@ from crt_theme import CSS
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "nethermind-state-db-report.html")
 FIGDIR = os.path.join(HERE, "figures")
+
+# Ratios throughout are state-actor / jochemnet, so 1.00 is parity and < 1 means the generated
+# store is slower.
 
 
 def esc(s):
@@ -28,33 +32,17 @@ def thousands(n):
     return f"{n:,}"
 
 
-# The Besu page's deck and contents styles, so the two reports open the same way.
-PAGE_CSS = """
-.deck { color:var(--muted); font-size:15.5px; line-height:1.6; margin:2px 0 14px; }
-nav.toc { border:1px solid var(--line); background:var(--panel); padding:12px 16px;
-  margin:18px 0 26px; font-size:13.5px; }
-nav.toc .toch { color:var(--accent); letter-spacing:.08em; text-transform:uppercase;
-  font-size:11.5px; margin-bottom:8px; }
-nav.toc ul { list-style:none; margin:0; padding:0; }
-nav.toc li { margin:3px 0; }
-nav.toc a { text-decoration:none; }
-nav.toc a:hover { text-decoration:underline; }
-"""
+def ygrid(scale, ticks, x0, x1, fmt=str):
+    """Horizontal gridlines with left-hand labels.
 
-
-def add_toc(doc):
-    """Give every h2 an id and replace the <!--TOC--> marker with a contents list."""
-    entries = []
-
-    def tag(m):
-        slug = re.sub(r"[^a-z0-9]+", "-", html.unescape(re.sub(r"<[^>]+>", "", m.group(1))).lower()).strip("-")
-        entries.append((slug, m.group(1)))
-        return f'<h2 id="{slug}">{m.group(1)}</h2>'
-
-    doc = re.sub(r"<h2>(.*?)</h2>", tag, doc, flags=re.S)
-    assert entries and doc.count("<!--TOC-->") == 1, "contents: no headings or no marker"
-    items = "".join(f'<li><a href="#{slug}">{text}</a></li>' for slug, text in entries)
-    return doc.replace("<!--TOC-->", f'<nav class=toc><div class=toch>Contents</div><ul>{items}</ul></nav>')
+    report_svg.hgrid draws the x axis; a value-to-y grid is specific to this report's charts.
+    """
+    out = []
+    for t in ticks:
+        y = scale.to(t)
+        out.append(S.line(x0, y, x1, y, "--line", 1))
+        out.append(S.label(x0 - 8, y + 4, fmt(t), "end", "tick"))
+    return "".join(out)
 
 
 def figure(svg, caption=""):
@@ -75,37 +63,50 @@ def standalone(svg):
             f'<rect width="100%" height="100%" fill="var(--bg)"/>{rest}')
 
 
-# --------------------------------------------------------------------------- reused figures
-def chart_final_pair(fi):
-    """The whole suite on two independent pairs, by duration class, against the floor the harness
-    itself sets: each store measured against itself."""
-    W, L, R, T = 760, 210, 40, 34
-    rh, gap = 26, 26
-    lanes = [("pair A", "pair_a", "--accent"),
-             ("pair B, no run shared", "pair_b", "--accent"),
-             ("state-actor vs itself", "floor_sa", "--db-sa"),
-             ("jochemnet vs itself", "floor_joc", "--db-c")]
-    H = T + (rh * len(lanes) + 20 + gap) * 2 + 24
-    sx = S.Scale(0, 100, L, W - R - 150)
-    o = [S.label(L - 10, T - 16, "share of tests within \u00b110% of parity", "start", "big")]
-    y = T
-    for title, key in (("tests \u2265 1 s", "long"), ("tests < 1 s", "short")):
-        d = fi["by_class"][key]
-        o.append(S.label(L - 10, y + 12, "%s  (n=%d)" % (title, d["pair_a"]["n"]), "end", "big"))
-        y += 20
-        for name, k, var in lanes:
-            v = d[k]
-            pct = 100.0 * v["within10"] / v["n"]
-            o.append(S.band(L, sx.to(pct), y + 2, y + 20, var, 0.30))
-            o.append(S.label(L - 10, y + 15, name, "end", "tick"))
-            o.append(S.label(sx.to(pct) + 8, y + 15, "%.0f%%   median %.3f" % (pct, v["median"]),
-                             "start", "tick"))
-            y += rh
-        y += gap
-    o.append(S.line(L, T - 6, L, y - gap + 2, "--green-muted", 1))
-    for t in (0, 25, 50, 75, 100):
-        o.append(S.label(sx.to(t), H - 8, "%d%%" % t, "middle", "tick"))
+def chart_amortisation(points):
+    """Two panels over the same log-x: cost per lookup, and cumulative bytes. The saturation in
+    the lower panel is the mechanism - a bounded set of physical blocks, read once."""
+    W, H, L, R = 760, 400, 62, 18
+    ns = [p["n"] for p in points]
+    sx = S.LogScale(min(ns), max(ns), L, W - R)
+
+    # panel 1: blocks per lookup
+    t1, b1 = 16, 178
+    sy1 = S.Scale(0, 2.2, b1, t1)
+    o = [ygrid(sy1, [0, 0.5, 1.0, 1.5, 2.0], L, W - R, fmt=lambda v: f"{v:.1f}")]
+    for key, var in (("sa_blk", "--db-sa"), ("joc_blk", "--accent")):
+        pts = [(sx.to(p["n"]), sy1.to(p[key])) for p in points]
+        o.append(S.polyline(pts, var, 2.5))
+        o += [S.dot(x, y, 3.2, var) for x, y in pts]
+    o.append(S.label(L, t1 - 4, "4 KiB blocks read per lookup", "start", "big"))
+    o.append(S.label(W - R - 4, sy1.to(points[-1]["sa_blk"]) - 9, "state-actor", "end", "big"))
+    o.append(S.label(W - R - 4, sy1.to(points[-1]["joc_blk"]) + 16, "jochemnet", "end", "big"))
+
+    # panel 2: cumulative megabytes
+    t2, b2 = 226, 358
+    hi = max(p["sa_mb"] for p in points)
+    sy2 = S.Scale(0, hi * 1.1, b2, t2)
+    o.append(ygrid(sy2, [0, hi * 0.5, hi], L, W - R, fmt=lambda v: f"{v:.0f} MB"))
+    for key, var in (("sa_mb", "--db-sa"), ("joc_mb", "--accent")):
+        pts = [(sx.to(p["n"]), sy2.to(p[key])) for p in points]
+        o.append(S.polyline(pts, var, 2.5))
+        o += [S.dot(x, y, 3.2, var) for x, y in pts]
+    o.append(S.label(L, t2 - 4, "cumulative bytes pulled from disk", "start", "big"))
+    jl = points[-1]
+    o.append(S.label(sx.to(jl["n"]) - 6, sy2.to(jl["joc_mb"]) - 10,
+                     f"saturates at {jl['joc_mb']:.0f} MB", "end", "big"))
+
+    # The first and last ticks sit on the axis ends, so centring them hangs half the label
+    # outside the figure box. Anchor the outer two inward.
+    for i, p in enumerate(points):
+        anchor = "start" if i == 0 else "end" if i == len(points) - 1 else "middle"
+        o.append(S.label(sx.to(p["n"]), b2 + 22, thousands(p["n"]), anchor, "tick"))
+    o.append(S.label((L + W - R) / 2, H - 6, "cold lookups performed", "middle", "ax"))
     return S.svg(W, H, "".join(o))
+
+
+BUCKETS = ("lt0.2s", "0.2to1s", "1to5s", "ge5s")
+BUCKET_LABEL = {"lt0.2s": "< 0.2 s", "0.2to1s": "0.2 - 1 s", "1to5s": "1 - 5 s", "ge5s": "> 5 s"}
 
 
 def chart_levels(st):
@@ -147,11 +148,12 @@ def chart_levels(st):
 def chart_storage_close(st):
     """The four storage tests through the two compactions, with the reads that moved under them."""
     sc = st["cells"]
-    rows = [("absent slot (< 1 s)", "slots=False new=False"),
+    rows = [("absent slot, no write", "slots=False new=False"),
             ("new value, existing slot", "slots=True new=True"),
             ("new value, absent slot", "slots=False new=True"),
             ("overwrite, existing slot", "slots=True new=False")]
-    stages = [("before", "v2"), ("fresh pair", "r68"), ("rows settled", "r69"), ("+ trie settled", "r72")]
+    # The v2 runs shared one jochemnet denominator (README, errata), so the before is the fresh pair.
+    stages = [("before", "r68"), ("rows settled", "r69"), ("+ trie settled", "r72")]
     W, L, R, T = 760, 200, 96, 34
     rh = 46
     H = T + rh * len(rows) + 54
@@ -178,7 +180,7 @@ def chart_storage_close(st):
                                "%s, %s: %.3f" % (gas, stages[j][0], v)))
                 prev = (x, yy)
                 pts.append(v)
-        o.append(S.label(W - R + 6, y + 4, "%.2f \u2192 %.2f" % (sc["%s 160M" % key]["v2"], sc["%s 160M" % key]["r72"]),
+        o.append(S.label(W - R + 6, y + 4, "%.2f \u2192 %.2f" % (sc["%s 160M" % key]["r68"], sc["%s 160M" % key]["r72"]),
                          "start", "tick"))
     for t in (0.9, 1.0, 1.25, 1.5, 2.0, 2.5):
         o.append(S.label(sx.to(t), bot + 26, ("%.2f" % t).rstrip("0").rstrip("."), "middle", "tick"))
@@ -191,283 +193,280 @@ def chart_storage_close(st):
     return S.svg(W, H, "".join(o))
 
 
-def chart_seqno_paths(bm):
-    """Why a store that looks settled still gets rewritten.
 
-    Both lanes end with every file in the bottom level, which is exactly why level shape and
-    pending-compaction bytes cannot tell them apart. What differs is whether the files were
-    moved there or rewritten there, and therefore whether their sequence numbers were zeroed.
-    """
-    W, H = 760, 252
-    idle, boot = bm["idle"], bm["boot"]
-
-    def box(x, y, w, h, text, sub, var, op=0.16):
-        out = [S.band(x, x + w, y, y + h, var, op),
-               S.line(x, y, x + w, y, var, 1), S.line(x, y + h, x + w, y + h, var, 1),
-               S.line(x, y, x, y + h, var, 1), S.line(x + w, y, x + w, y + h, var, 1),
-               S.label(x + w / 2, y + h / 2 - 2, text, "middle", "big")]
-        if sub:
-            out.append(S.label(x + w / 2, y + h / 2 + 13, sub, "middle", "tick"))
-        return "".join(out)
-
-    def arrow(x1, x2, y, var, text):
-        return "".join([S.line(x1, y, x2 - 8, y, var, 1.5),
-                        S.polyline([(x2 - 10, y - 4), (x2, y), (x2 - 10, y + 4)], var, 1.5),
-                        S.label((x1 + x2) / 2, y - 9, text, "middle", "tick")])
-
-    o = []
-    for i, (title, var, verb, seq, outcome, osub) in enumerate((
-            ("today: plain CompactRange, bottommost_level_compaction = "
-             "kIfHaveCompactionFilter (no filter is configured)",
-             "--db-u", "trivially MOVES", "seq \u2260 0",
-             "client rewrites it",
-             f"{idle['sa_mb']:,} MB idle, {boot['sa']['jobs']} jobs/boot"),
-            ("the one-line fix: the same call with bottommost_level_compaction = kForce",
-             "--accent", "REWRITES", "seq: 0",
-             "client does nothing",
-             f"{idle['sa_settled_mb']} MB idle, {boot['sa_settled']['jobs']} jobs"))):
-        top = 30 + 102 * i
-        o.append(S.label(14, top, title, "start", "tick"))
-        y = top + 12
-        o.append(box(14, y, 150, 46, "flushed L0 files", "seq \u2260 0", "--green-muted", 0.10))
-        o.append(arrow(164, 300, y + 23, var, verb))
-        o.append(box(300, y, 170, 46, "all files at L6", seq, var))
-        o.append(arrow(470, 540, y + 23, var, "opens"))
-        o.append(box(540, y, 206, 46, outcome, osub, var))
-    o.append(S.label(W / 2, H - 8,
-                     "both lanes leave a flat tree with pending-compaction-bytes = 0; "
-                     "only the sequence numbers differ", "middle", "ax"))
-    return S.svg(W, H, "".join(o))
-
-
-
-# --------------------------------------------------------------------------- families
-# Seven families, one per finding or open item. Order is the order the article discusses them.
-FAMILIES = ["account reads", "code, reused or small", "code, distinct large", "storage",
-            "ether transfers", "absent accounts", "no state work"]
-FAMILY_NOTE = {
-    "account reads": "BALANCE, EXTCODEHASH on existing accounts",
-    "code, reused or small": "CALL family on EOA, minimal, one reused max-size contract",
-    "code, distinct large": "CALL family on a different max-size contract per access",
-    "storage": "sload / sstore on bloated contracts",
-    "ether transfers": "value transfers to every receiver shape",
-    "absent accounts": "lookups of accounts that do not exist",
-    "no state work": "overhead-baseline controls and warm queries",
+# --------------------------------------------------------------------------- the rewrite
+GE_ORDER = ["account row EXISTING_EOA", "account row MINIMAL", "account row SAME_MAX",
+            "account row JUMPDEST", "account row DIFF_MAX",
+            "code-exec EXISTING_EOA", "code-exec MINIMAL", "code-exec SAME_MAX",
+            "code-exec JUMPDEST", "code-exec DIFF_MAX", "ether transfer", "storage slot"]
+LT_ORDER = ["control (no state work)", "absent account", "warm query", "sload same key",
+            "storage slot"]
+ROW_LABEL = {
+    "account row EXISTING_EOA": "account row, EOA",
+    "account row MINIMAL": "account row, minimal code",
+    "account row SAME_MAX": "account row, reused contract",
+    "account row JUMPDEST": "account row, jumpdest contract",
+    "account row DIFF_MAX": "account row, distinct contract",
+    "code-exec EXISTING_EOA": "call into an EOA",
+    "code-exec MINIMAL": "call, minimal code",
+    "code-exec SAME_MAX": "call, reused contract",
+    "code-exec JUMPDEST": "call, jumpdest scan",
+    "code-exec DIFF_MAX": "call, distinct contract",
+    "ether transfer": "ether transfer",
+    "storage slot": "storage slot",
+    "control (no state work)": "control, no state work",
+    "absent account": "absent account",
+    "warm query": "warm query",
+    "sload same key": "same slot, reloaded",
 }
-CLASS_TITLE = {"long": "tests \u2265 1 s", "short": "tests < 1 s"}
-STAGE_LABEL = {"baseline": "baseline", "placement": "pre-run", "warmup": "warm-up",
-               "codepool": "code pool", "final": "final"}
 
 
-def pct(k, n):
-    return 100.0 * k / n if n else 0.0
+def final_rows(fn, cls):
+    rows = {r["cat"]: r for r in fn["rows"] if r["cls"] == cls}
+    order = GE_ORDER if cls == "ge1s" else LT_ORDER
+    return [(c, rows[c]) for c in order if c in rows]
 
 
-def chart_family_overview(wf, stage):
-    """One dot per family at its median ratio, the line its range, two panels by class. The
-    same chart is drawn for the baseline and for the final pair so the two read as before and
-    after at a glance."""
-    W, L, R, T = 760, 190, 150, 30
-    rh, gap = 22, 30
-    rows = {c: [f for f in FAMILIES if stage in wf["cells"].get(c, {}).get(f, {})] for c in ("long", "short")}
-    H = T + sum(len(v) for v in rows.values()) * rh + gap * 2 + 30
-    sx = S.LogScale(0.03, 3.0, L, W - R)
-    o = [S.label(L, T - 14, "throughput ratio, state-actor / jochemnet (log; band = \u00b110%)", "start", "big")]
-    y = T
-    for c in ("long", "short"):
-        top = y
-        allc = wf["cells"][c]["_all"][stage]
-        o.append(S.label(L - 10, y + 10, "%s  (n=%d)" % (CLASS_TITLE[c], allc["n"]), "end", "big"))
-        y += 16
-        body_top = y
-        for fam in rows[c]:
-            v = wf["cells"][c][fam][stage]
-            lo, hi, md = (max(0.03, min(3.0, v[k])) for k in ("min", "max", "median"))
-            o.append(S.label(L - 10, y + 12, fam, "end"))
-            o.append(S.line(sx.to(lo), y + 8, sx.to(hi), y + 8, "--green-muted", 2))
-            ok = 0.9 <= v["median"] <= 1.1
-            o.append(S.dot(sx.to(md), y + 8, 5, "--accent" if ok else "--db-u",
-                           "%s, %s: median %.3f, %d of %d in band" % (fam, CLASS_TITLE[c], v["median"], v["within10"], v["n"])))
-            o.append(S.label(W - R + 10, y + 12, "%.2f   %d/%d in band" % (v["median"], v["within10"], v["n"]),
+def chart_overview(fn, stage):
+    """Every test of the page's population as a dot on one log axis, split by duration class.
+
+    Drawn twice with the same axis and the same rows: once for the untreated pair, once for the
+    two settled pairs. Reading one against the other is the article."""
+    W, L, R, T = 760, 250, 112, 34
+    rh, gap = 17, 30
+    ge, lt = final_rows(fn, "ge1s"), final_rows(fn, "lt1s")
+    H = T + 2 * 12 + rh * (len(ge) + len(lt)) + gap + 48
+    sx = S.LogScale(0.03, 3.2, L, W - R)
+    o = [S.label(0, 14, "throughput, state-actor / jochemnet, one dot per test (band = \u00b110%)",
+                 "start", "big")]
+    tests = fn["tests"]
+    keys = ("base",) if stage == "base" else ("a", "b")
+    y0 = T
+    for title, rows, cls in (("tests over a second", ge, "ge1s"),
+                             ("tests under a second: shown, not counted", lt, "lt1s")):
+        o.append(S.label(0, y0 + 4, title, "start", "ax"))
+        if cls == "ge1s":
+            o.append(S.label(W - R + 8, y0 + 4, "median  band", "start", "tick"))
+        top = y0 + 12
+        bot = top + rh * len(rows)
+        o.append(S.band(sx.to(0.9), sx.to(1.1), top, bot, "--accent", 0.10))
+        o.append(S.line(sx.to(1.0), top, sx.to(1.0), bot, "--green-muted", 1))
+        for i, (cat, row) in enumerate(rows):
+            y = top + rh * i + 9
+            o.append(S.label(L - 10, y + 4, ROW_LABEL.get(cat, cat), "end", "tick"))
+            for k in keys:
+                var = "--db-u" if k == "base" else ("--accent" if k == "a" else "--db-c")
+                off = {"base": 0, "a": -2, "b": 2}[k]
+                for t in tests.values():
+                    if t["cls"] == cls and t["cat"] == cat and t[k] is not None:
+                        o.append(S.dot(sx.to(max(0.03, min(3.2, t[k]))), y + off, 2.2, var))
+            s = row["base"] if stage == "base" else row["a"]
+            x = sx.to(max(0.03, min(3.2, s["median"])))
+            o.append(S.line(x, y - 7, x, y + 7, "--fg", 2))
+            o.append(S.label(W - R + 8, y + 4, "%.2f  %d/%d" % (s["median"], s["within10"], s["n"]),
                              "start", "tick"))
-            y += rh
-        o.insert(1, S.band(sx.to(0.9), sx.to(1.1), body_top - 2, y, "--accent", 0.10))
-        o.insert(2, S.line(sx.to(1.0), body_top - 2, sx.to(1.0), y, "--green-muted", 1))
-        y += gap
-    for t in (0.05, 0.1, 0.2, 0.5, 1.0, 2.0):
-        o.append(S.label(sx.to(t), y - gap + 16, ("%g" % t), "middle", "tick"))
+        y0 = bot + gap
+    ty = y0 - gap + 18
+    for t in (0.05, 0.1, 0.25, 0.5, 1, 2):
+        o.append(S.label(sx.to(t), ty, ("%g" % t), "middle", "tick"))
+    ly = H - 8
+    if stage == "base":
+        o.append(S.dot(L, ly - 4, 3, "--db-u"))
+        o.append(S.label(L + 8, ly, "untreated pair", "start", "tick"))
+    else:
+        o.append(S.dot(L, ly - 4, 3, "--accent"))
+        o.append(S.label(L + 8, ly, "pair A", "start", "tick"))
+        o.append(S.dot(L + 80, ly - 4, 3, "--db-c"))
+        o.append(S.label(L + 88, ly, "pair B", "start", "tick"))
+    o.append(S.line(L + 180, ly - 10, L + 180, ly + 2, "--fg", 2))
+    o.append(S.label(L + 188, ly, "category median", "start", "tick"))
     return S.svg(W, H, "".join(o))
 
 
-def chart_placement(wf):
-    """Finding 1, isolated: the only thing that changes between the two points of each row is
-    that jochemnet's pre-run was compacted. Write families are not shown - their intermediate
-    runs were taken on a snapshot our tooling had also repacked."""
-    W, L, R, T = 760, 190, 120, 30
-    rh, gap = 22, 26
-    rows = [(c, fam) for c in ("long", "short") for fam in FAMILIES
-            if {"baseline", "placement"} <= set(wf["cells"].get(c, {}).get(fam, {}))]
-    H = T + len(rows) * rh + gap * 2 + 26
-    sx = S.LogScale(0.03, 3.0, L, W - R)
-    o = [S.label(L, T - 14, "state-actor / jochemnet, before and after compacting the pre-run", "start", "big")]
-    y = T
-    last = None
-    for c, fam in rows:
-        if c != last:
-            if last is not None:
-                y += gap - rh
-            o.append(S.label(L - 10, y + 10, CLASS_TITLE[c], "end", "big"))
-            y += 18
-            last = c
-        a, b = wf["cells"][c][fam]["baseline"]["median"], wf["cells"][c][fam]["placement"]["median"]
-        o.append(S.label(L - 10, y + 12, fam, "end"))
-        o.append(S.line(sx.to(a), y + 8, sx.to(b), y + 8, "--green-muted", 2))
-        o.append(S.dot(sx.to(a), y + 8, 4.5, "--db-u", "%s baseline %.3f" % (fam, a)))
-        o.append(S.dot(sx.to(b), y + 8, 5, "--accent", "%s pre-run compacted %.3f" % (fam, b)))
-        o.append(S.label(W - R + 10, y + 12, "%.2f \u2192 %.2f" % (a, b), "start", "tick"))
-        y += rh
-    o.insert(1, S.band(sx.to(0.9), sx.to(1.1), T + 4, y, "--accent", 0.10))
-    o.insert(2, S.line(sx.to(1.0), T + 4, sx.to(1.0), y, "--green-muted", 1))
-    for t in (0.05, 0.1, 0.2, 0.5, 1.0, 2.0):
-        o.append(S.label(sx.to(t), y + 18, ("%g" % t), "middle", "tick"))
-    o.append(S.dot(L, H - 10, 4.5, "--db-u"))
-    o.append(S.label(L + 10, H - 6, "baseline", "start", "tick"))
-    o.append(S.dot(L + 100, H - 10, 5, "--accent"))
-    o.append(S.label(L + 110, H - 6, "jochemnet's pre-run compacted, nothing else changed", "start", "tick"))
+def floor_buckets(fn):
+    out = {}
+    for b in BUCKETS:
+        lo, hi = {"lt0.2s": (0, 0.2), "0.2to1s": (0.2, 1), "1to5s": (1, 5), "ge5s": (5, 1e9)}[b]
+        ts = [t for t in fn["tests"].values() if lo <= t["joc_secs"] < hi]
+        def pct(k):
+            v = [t[k] for t in ts if t[k] is not None]
+            return (100.0 * sum(1 for r in v if 0.9 <= r <= 1.1) / len(v), len(v)) if v else (None, 0)
+        out[b] = {"floor": pct("floor_sa"), "pair": pct("a")}
+    return out
+
+
+def chart_floor(fn):
+    """How often a test lands within 10% of the number it is compared to, by how long it runs.
+
+    The floor is one store measured twice, so a comparison can't do better than it. Where the
+    two dots meet, the comparison is measuring the harness."""
+    W, L, R, T = 760, 96, 170, 52
+    fb = floor_buckets(fn)
+    H = T + 34 * len(BUCKETS) + 52
+    sx = S.Scale(0, 100, L, W - R)
+    o = [S.label(L, T - 34, "tests inside \u00b110%, by how long the test runs", "start", "big")]
+    for v in (0, 25, 50, 75, 100):
+        o.append(S.label(sx.to(v), T - 16, f"{v}%", "middle", "tick"))
+    for i, b in enumerate(BUCKETS):
+        y = T + 34 * i + 10
+        (fp, _), (cp, cn) = fb[b]["floor"], fb[b]["pair"]
+        o.append(S.label(L - 8, y + 4, BUCKET_LABEL[b], "end"))
+        if fp is None or cp is None:
+            continue
+        o.append(S.line(sx.to(min(fp, cp)), y, sx.to(max(fp, cp)), y, "--green-muted", 2))
+        o.append(S.dot(sx.to(fp), y, 4, "--db-u", f"same store twice: {fp:.0f}%"))
+        o.append(S.dot(sx.to(cp), y, 4.5, "--accent", f"the two stores: {cp:.0f}%"))
+        o.append(S.label(W - R + 10, y + 4, f"{cp:.0f}% of {cn}, floor {fp:.0f}%", "start", "tick"))
+    o.append(S.dot(L + 6, H - 28, 4, "--db-u"))
+    o.append(S.label(L + 16, H - 24, "state-actor, measured twice", "start", "tick"))
+    o.append(S.dot(L + 236, H - 28, 4.5, "--accent"))
+    o.append(S.label(L + 246, H - 24, "the two stores, all fixes applied", "start", "tick"))
     return S.svg(W, H, "".join(o))
 
 
-def chart_jit(jit):
-    """Finding 2, isolated: same stores, one flag on both arms."""
-    ab, pub, eq = jit["ab"], jit["slice"]["published"], jit["slice"]["jit_equalised"]
-    rows = [("no state work (controls)", ab["baseline"]["thr"], ab["no_tiered_jit"]["thr"]),
-            ("absent accounts, code", pub["NON_EXISTING_ACCOUNT code-exec"]["thr"], eq["NON_EXISTING_ACCOUNT code-exec"]["thr"]),
-            ("code, distinct large", pub["DIFF_MAX code-exec"]["thr"], eq["DIFF_MAX code-exec"]["thr"]),
-            ("code, reused max-size", pub["SAME_MAX code-exec"]["thr"], eq["SAME_MAX code-exec"]["thr"])]
-    W, L, R, T = 760, 190, 120, 30
-    rh = 26
-    H = T + len(rows) * rh + 50
-    sx = S.Scale(0.55, 1.25, L, W - R)
-    bot = T + len(rows) * rh
-    o = [S.band(sx.to(0.9), sx.to(1.1), T - 4, bot, "--accent", 0.10),
-         S.line(sx.to(1.0), T - 4, sx.to(1.0), bot, "--green-muted", 1),
-         S.label(L, T - 14, "state-actor / jochemnet, tiered JIT on and off (both arms)", "start", "big")]
-    for i, (name, a, b) in enumerate(rows):
-        y = T + rh * i + 8
-        o.append(S.label(L - 10, y + 4, name, "end"))
-        o.append(S.line(sx.to(a), y, sx.to(b), y, "--green-muted", 2))
-        o.append(S.dot(sx.to(a), y, 4.5, "--db-u", "%s, tiered JIT on: %.3f" % (name, a)))
-        o.append(S.dot(sx.to(b), y, 5, "--accent", "%s, tiered JIT off: %.3f" % (name, b)))
-        o.append(S.label(W - R + 10, y + 4, "%.2f \u2192 %.2f" % (a, b), "start", "tick"))
-    for t in (0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2):
-        o.append(S.label(sx.to(t), bot + 16, "%.1f" % t, "middle", "tick"))
-    o.append(S.dot(L, H - 10, 4.5, "--db-u"))
-    o.append(S.label(L + 10, H - 6, "tiered JIT on (as benchmarked)", "start", "tick"))
-    o.append(S.dot(L + 250, H - 10, 5, "--accent"))
-    o.append(S.label(L + 260, H - 6, "DOTNET_TieredCompilation=0", "start", "tick"))
-    return S.svg(W, H, "".join(o))
+JIT_ROWS = [("control, no state work", ("ab", "baseline"), ("ab", "no_tiered_jit"), "lt"),
+            ("absent account, call", ("published", "NON_EXISTING_ACCOUNT code-exec"),
+             ("jit_equalised", "NON_EXISTING_ACCOUNT code-exec"), "lt"),
+            ("warm query", ("published", "warm query"), ("jit_equalised", "warm query"), "lt"),
+            ("call, reused contract", ("published", "SAME_MAX code-exec"),
+             ("jit_equalised", "SAME_MAX code-exec"), "ge"),
+            ("call, distinct contract", ("published", "DIFF_MAX code-exec"),
+             ("jit_equalised", "DIFF_MAX code-exec"), "ge")]
 
 
-def chart_tenancy(ib, cpop):
-    """Finding 4, as a picture: what is read to fetch one fixture contract. RocksDB packs
-    records into a block until it passes the target size, so a 24,576-byte contract usually
-    lands after a tail of whatever was written before it, and a fetch reads the tail too."""
-    W, L, T = 760, 190, 34
-    rh = 50
-    fix_kb, tail_kb = 24.0, 2.0
-    scale = 360.0 / (fix_kb + tail_kb)
-    rows = [("mainnet snapshot", "real contracts, median %d B, which compress" % cpop["joc"]["p50"], tail_kb, "--green-dim", 0.35),
-            ("generated, old pool", "%d-byte stubs, which don't" % cpop["sa"]["p50"], tail_kb, "--db-u", 0.55),
-            ("generated, #141 pool", "records \u2265 1 KiB: the contract often starts the block", 0.0, "--db-sa", 0.35)]
-    H = T + rh * len(rows) + 20
-    o = [S.label(L, T - 16, "the data block a fetch of one 24 KB fixture contract reads", "start", "big")]
-    for i, (name, note, tail, var, op) in enumerate(rows):
-        y = T + rh * i
-        o.append(S.label(L - 10, y + 16, name, "end"))
-        x = L
-        if tail:
-            w = tail * scale
-            o.append(S.band(x, x + w, y + 4, y + 26, var, op))
-            o.append(S.line(x, y + 4, x, y + 26, var, 1))
-            x += w
-        o.append(S.band(x, x + fix_kb * scale, y + 4, y + 26, "--accent", 0.16))
-        o.append(S.label(x + fix_kb * scale / 2, y + 19, "fixture contract, 24,576 B", "middle", "tick"))
-        o.append(S.label(L, y + 40, ("tail: " + note) if tail else note, "start", "tick"))
-    o.append(S.label(L + (fix_kb + tail_kb) * scale + 14, T + 19, "{:,} B read per fetch".format(ib["pread"]["joc"]["code_mean_b"]), "start", "tick"))
-    o.append(S.label(L + (fix_kb + tail_kb) * scale + 14, T + rh + 19, "{:,} B read per fetch".format(ib["pread"]["sa"]["code_mean_b"]), "start", "tick"))
-    o.append(S.label(L + (fix_kb + tail_kb) * scale + 14, T + 2 * rh + 19, "cheaper than mainnet", "start", "tick"))
-    return S.svg(W, H, "".join(o))
+def jit_value(J, key):
+    kind, name = key
+    return J["ab"][name]["thr"] if kind == "ab" else J["slice"][kind][name]["thr"]
 
 
-def chart_code_cells(ib, v2):
-    """Finding 4, the proof and the fix: the two distinct-contract cells and the reused-contract
-    control, on the old store, the same store repacked, and the regenerated store."""
-    rows = [("code, distinct large (DIFF_MAX)", "DIFF_MAX code-exec"),
-            ("jump-destination scan (JUMPDEST)", "JUMPDEST code-exec"),
-            ("one reused contract (control)", "SAME_MAX code-exec")]
-    W, L, R, T = 760, 230, 60, 30
+def chart_jit(J):
+    """The JIT lever: the same tests with tiered compilation on (as published) and off (both arms
+    running optimised code from the first block)."""
+    W, L, R, T = 760, 236, 112, 34
     rh = 30
-    H = T + rh * len(rows) + 50
-    sx = S.Scale(0.9, 1.15, L, W - R)
-    bot = T + rh * len(rows)
-    o = [S.band(sx.to(0.9), sx.to(1.1), T - 4, bot, "--accent", 0.10),
-         S.line(sx.to(1.0), T - 4, sx.to(1.0), bot, "--green-muted", 1),
-         S.label(L, T - 14, "state-actor / jochemnet on the three code cells", "start", "big")]
-    for i, (name, key) in enumerate(rows):
-        y = T + rh * i + 10
-        o.append(S.label(L - 10, y + 4, name, "end"))
-        pts = [(ib["cells"][key]["before"], "--db-u", 5, "old pool, 4 KB blocks"),
-               (ib["cells"][key]["after"], "--green-dim", 5, "same store, 64-byte blocks"),
-               (v2["cells"][key]["v2r1"], "--db-sa", 5, "regenerated with #141, run 1"),
-               (v2["cells"][key]["v2r2"], "--db-sa", 3.5, "regenerated with #141, run 2")]
-        xs = [sx.to(max(0.9, min(1.15, v))) for v, _, _, _ in pts]
-        o.append(S.line(min(xs), y, max(xs), y, "--green-muted", 1, dash="2 3"))
-        for (v, var, r, t), x in zip(pts, xs):
-            o.append(S.dot(x, y, r, var, "%s: %.3f" % (t, v)))
-    for t in (0.9, 0.95, 1.0, 1.05, 1.1, 1.15):
-        o.append(S.label(sx.to(t), bot + 16, "%.2f" % t, "middle", "tick"))
-    for j, (var, t) in enumerate((("--db-u", "old pool"), ("--green-dim", "repacked: contract alone in its block"),
-                                  ("--db-sa", "regenerated with #141"))):
-        x = 20 + (0, 110, 400)[j]
-        o.append(S.dot(x, H - 10, 5, var))
-        o.append(S.label(x + 10, H - 6, t, "start", "tick"))
+    H = T + rh * len(JIT_ROWS) + 50
+    sx = S.LogScale(0.5, 1.8, L, W - R)
+    bot = T + rh * len(JIT_ROWS) - 8
+    o = [S.band(sx.to(0.9), sx.to(1.1), T - 8, bot, "--accent", 0.10),
+         S.line(sx.to(1.0), T - 8, sx.to(1.0), bot, "--green-muted", 1),
+         S.label(L, T - 18, "throughput, state-actor / jochemnet, before and after taking the JIT out",
+                 "start", "big")]
+    for i, (label, a, b, cls) in enumerate(JIT_ROWS):
+        y = T + rh * i + 6
+        va, vb = jit_value(J, a), jit_value(J, b)
+        o.append(S.label(L - 10, y + 4, label + ("  (<1 s)" if cls == "lt" else ""), "end",
+                         "tick" if cls == "lt" else ""))
+        o.append(S.line(sx.to(va), y, sx.to(vb), y, "--green-muted", 2))
+        o.append(S.dot(sx.to(va), y, 4.5, "--db-u", f"{label}, JIT on: {va:.3f}"))
+        o.append(S.dot(sx.to(vb), y, 4.5, "--accent", f"{label}, JIT off: {vb:.3f}"))
+        o.append(S.label(W - R + 8, y + 4, f"{va:.2f} \u2192 {vb:.2f}", "start", "tick"))
+    for t in (0.5, 0.75, 1.0, 1.25, 1.5):
+        o.append(S.label(sx.to(t), bot + 20, f"{t:g}", "middle", "tick"))
+    o.append(S.dot(L, H - 12, 4.5, "--db-u"))
+    o.append(S.label(L + 10, H - 8, "as published", "start", "tick"))
+    o.append(S.dot(L + 130, H - 12, 4.5, "--accent"))
+    o.append(S.label(L + 140, H - 8, "tiered compilation off, both arms", "start", "tick"))
     return S.svg(W, H, "".join(o))
 
 
-def chart_waterfall(wf):
-    """Every family through every stage, one small panel each, one row per duration class.
-    Transfers and storage show only the two ends; the sub-second row has no code-pool point
-    (that run covered the long class)."""
-    stages = wf["stages"]
-    rows = [(c, [fam for fam in FAMILIES if fam in wf["cells"].get(c, {})]) for c in ("long", "short")]
-    cols = max(len(r) for _, r in rows)
-    W, T, pw, ph, gx = 760, 26, 142, 118, 8
-    H = T + len(rows) * (ph + 40) + 6
-    o = [S.label(8, T - 10, "state-actor / jochemnet at each stage (log; band = \u00b110%)", "start", "big")]
-    for ri, (c, fams) in enumerate(rows):
-        ry = T + 8 + ri * (ph + 40)
-        o.append(S.label(8, ry + 10, CLASS_TITLE[c], "start", "big"))
-        for ci, fam in enumerate(fams):
-            cx, cy = 8 + ci * (pw + gx), ry + 18
-            sx = S.Scale(0, len(stages) - 1, cx + 28, cx + pw - 6)
-            sy = S.LogScale(0.03, 3.0, cy + ph - 22, cy + 22)
-            o.append(S.band(cx + 28, cx + pw - 6, sy.to(1.1), sy.to(0.9), "--accent", 0.10))
-            o.append(S.line(cx + 28, sy.to(1.0), cx + pw - 6, sy.to(1.0), "--green-muted", 1))
-            o.append(S.label(cx + 28, cy + 10, fam, "start", "tick"))
-            for tk in (0.1, 1.0):
-                o.append(S.label(cx + 24, sy.to(tk) + 4, "%g" % tk, "end", "tick"))
-            cell = wf["cells"][c][fam]
-            pts = [(sx.to(j), sy.to(max(0.03, min(3.0, cell[s]["median"]))), s) for j, s in enumerate(stages) if s in cell]
-            for (x1, y1, s1), (x2, y2, s2) in zip(pts, pts[1:]):
-                gapped = stages.index(s2) - stages.index(s1) > 1
-                o.append(S.line(x1, y1, x2, y2, "--green-muted" if gapped else "--accent", 1.5,
-                                dash="3 3" if gapped else None))
-            for x, y, s in pts:
-                m = cell[s]["median"]
-                o.append(S.dot(x, y, 3.5, "--accent" if 0.9 <= m <= 1.1 else "--db-u",
-                               "%s, %s, %s: %.3f" % (fam, CLASS_TITLE[c], STAGE_LABEL[s], m)))
-            for j in range(len(stages)):
-                o.append(S.label(sx.to(j), cy + ph - 6, "%d" % j, "middle", "tick"))
+def chart_fetch(ib):
+    """What one code fetch costs on each store, measured: bytes read per fetch against the 4 KB
+    page, pages touched, and latency. The fixture contract is the same; its neighbours aren't."""
+    W, L, R, T = 760, 200, 70, 40
+    pr, pages = ib["pread"], ib["pages_per_fetch"]
+    rows = [("jochemnet (mainnet code)", "joc", "--accent"), ("state-actor, old pool", "sa", "--db-sa")]
+    rh = 44
+    H = T + rh * len(rows) + 56
+    sx = S.Scale(0, 4096 * 1.08, L, W - R)
+    o = [S.label(L, T - 22, "bytes read per code fetch, one test traced on both stores", "start", "big")]
+    for i, (label, k, var) in enumerate(rows):
+        y = T + rh * i
+        b = pr[k]["code_mean_b"]
+        o.append(S.label(L - 10, y + 16, label, "end"))
+        o.append(S.band(L, sx.to(b), y + 4, y + 26, var, 0.45))
+        o.append(S.label(sx.to(b) + 8, y + 19,
+                         f"{b:,} B, {pages[k]:.2f} pages, {pr[k]['code_mean_us']:,} \u00b5s",
+                         "start", "tick"))
+    x4 = sx.to(4096)
+    o.append(S.line(x4, T - 6, x4, T + rh * len(rows), "--muted", 1, dash="3 3"))
+    o.append(S.label(x4, T + rh * len(rows) + 14, "4 KB page", "middle", "tick"))
+    o.append(S.label(L, H - 10,
+                     f"same number of fetches ({pr['joc']['code_n']:,} and {pr['sa']['code_n']:,}); "
+                     "the account row reads are identical", "start", "tick"))
+    return S.svg(W, H, "".join(o))
+
+
+def chart_topnodes(tn):
+    """A node and its sixteen children, laid out the way each packing stores them."""
+    pk, sw = tn["packing"], tn["swap"]
+    lanes = [("4 KB blocks, as we left it", int(round(pk["joc_before"]["entries_per_block"])),
+              "--db-u", sw["joc"]["top_per_account_before"]),
+             ("16 KB blocks, the client's", int(round(pk["sa_before"]["entries_per_block"])),
+              "--accent", sw["sa"]["top_per_account_before"])]
+    W, L, T = 760, 250, 36
+    cw, ch, gapb = 18, 18, 10
+    rh = 58
+    H = T + rh * len(lanes) + 44
+    o = [S.label(L, T - 18, "a level-4 node and its 16 children, in key order", "start", "big")]
+    for i, (label, per, var, reads) in enumerate(lanes):
+        y = T + rh * i + 6
+        o.append(S.label(L - 12, y + 14, label, "end"))
+        x = L
+        for n in range(17):
+            if n and n % per == 0:
+                x += gapb
+            fill = 0.55 if n == 0 else 0.28
+            o.append(S.band(x, x + cw - 2, y, y + ch, var, fill))
+            x += cw
+        blocks = -(-17 // per)
+        o.append(S.label(L, y + ch + 16,
+                         f"{blocks} block{'s' if blocks > 1 else ''}; {reads:.2f} top-node reads per touched account",
+                         "start", "tick"))
+    o.append(S.label(L, H - 10, "first square: the parent; one gap marks a block boundary", "start", "tick"))
+    return S.svg(W, H, "".join(o))
+
+
+def chart_stages(title, rows, stages):
+    """Tests walked through a sequence of treatments against the \u00b110% band.
+
+    rows: (label, [series]) where each series maps stage key -> ratio.
+    stages: (label, key, colour var, dot radius, final); the right-hand label reads the first
+    stage against every final one."""
+    W, L, R, T = 760, 200, 150, 34
+    rh = 46
+    H = T + rh * len(rows) + 54
+    lo = min(v for _, ss in rows for s in ss for v in s.values())
+    hi = max(v for _, ss in rows for s in ss for v in s.values())
+    sx = S.LogScale(min(0.83, lo * 0.97), max(1.2, hi * 1.05), L, W - R)
+    bot = T + rh * len(rows) - 12
+    o = [S.band(sx.to(0.9), sx.to(1.1), T - 10, bot + 6, "--accent", 0.10),
+         S.line(sx.to(1.0), T - 10, sx.to(1.0), bot + 6, "--green-muted", 1),
+         S.label(L, T - 18, title, "start", "big")]
+    for i, (label, series) in enumerate(rows):
+        y = T + rh * i + 8
+        o.append(S.label(L - 10, y + 4, label, "end"))
+        for si, s in enumerate(series):
+            yy = y - 6 + 12 * si if len(series) > 1 else y
+            prev = None
+            for lab, key, var, r, _ in stages:
+                if key not in s:
+                    continue
+                x = sx.to(s[key])
+                if prev is not None:
+                    o.append(S.line(prev, yy, x, yy, "--green-muted", 1, dash="2 3"))
+                o.append(S.dot(x, yy, r, var, "%s: %.3f" % (lab, s[key])))
+                prev = x
+        s0 = series[0]
+        finals = " / ".join("%.2f" % s0[k] for _, k, _, _, fin in stages if fin and k in s0)
+        o.append(S.label(W - R + 6, y + 4, "%.2f \u2192 %s" % (s0[stages[0][1]], finals), "start", "tick"))
+    ticks = [t for t in (0.85, 0.9, 1.0, 1.1, 1.25, 1.5, 2.0, 2.5) if sx.lo <= t <= sx.hi]
+    for t in ticks:
+        o.append(S.label(sx.to(t), bot + 26, f"{t:g}", "middle", "tick"))
+    lx = L
+    for lab, _, var, r, _ in stages:
+        o.append(S.dot(lx, H - 12, r, var))
+        o.append(S.label(lx + 9, H - 8, lab, "start", "tick"))
+        lx += 20 + 7 * len(lab)
     return S.svg(W, H, "".join(o))
 
 
@@ -476,559 +475,609 @@ def main():
     D = json.load(open(os.path.join(HERE, "data", "report_data.json")))
     P, M = D["provenance"], D["measured"]
     BEF, AFT = D["before"], D["after"]
-    WF, JIT, BM = D["waterfall"], D["jit_experiment"], D["bottommost"]
-    IB, V2, ST, FI = D["intervention_blocks"], D["v2"], D["storage"], D["final"]
-    wc = WF["cells"]
+    bc, ac = BEF["categories"], AFT["categories"]
+    amort = M["amortisation"]["points"]
+    BM, J, IB, TN, ST = D["bottommost"], D["jit_experiment"], D["intervention_blocks"], D["topnodes"], D["storage"]
+    FN = D["final"]
 
-    # ----------------------------------------------------------------- oracles
-    # Scope: the article starts at the flat-backed pair. A collector re-pointed at an earlier run
-    # (before the generated store had the flat layout) must fail, not publish.
-    assert P["arms"]["sa"]["run"] == M["preconditions"]["sa_run_flat_backed"], \
-        "state-actor arm is not the flat-backed run: %r" % P["arms"]["sa"]
-    assert P["arms"]["joc"]["run"] == M["preconditions"]["joc_run"], \
-        "jochemnet arm is not the recorded run: %r" % P["arms"]["joc"]
-    # The headline and Finding 1 (1,461 tests).
-    factor = 1.0 / min(BEF["categories"][c]["thr"] for c in
-                       ("ACCOUNT cold existing EOA", "ACCOUNT cold existing contract"))
-    assert 10 <= factor <= 20, "headline factor moved out of band: %.1f" % factor
-    assert AFT["agreement"]["n"] == BEF["agreement"]["n"] == sum(g["n"] for g in BEF["per_gas"]), \
-        "the sweep's before and after sets are not the same tests"
-    assert AFT["agreement"]["agree_pct"] > 3 * BEF["agreement"]["agree_pct"], \
-        "compacting the pre-run no longer multiplies agreement"
-    # The waterfall: membership, coverage and gap markers must match what the figure draws.
-    assert sum(WF["membership"]["long"].values()) == FI["classes"]["long"] and \
-        sum(WF["membership"]["short"].values()) == FI["classes"]["short"], \
-        "waterfall membership disagrees with the final pair's classes"
-    assert WF["coverage"]["codepool"]["short"] < 0.1 * FI["classes"]["short"] and "codepool" not in wc["short"]["_all"], \
-        "the code-pool stage now covers the short class; the gap marker is wrong"
-    for fam in WF["write_families"]:
-        for c in ("long", "short"):
-            if fam in wc.get(c, {}):
-                assert set(wc[c][fam]) <= {"baseline", "final"}, \
-                    "%s shows intermediate stages taken on an altered snapshot" % fam
-    # The baseline gap is real and lives in the families that read accounts.
-    for fam, lim in (("account reads", 0.1), ("code, reused or small", 0.1), ("code, distinct large", 0.5)):
-        assert wc["long"][fam]["baseline"]["median"] < lim, \
-            "%s was not far below parity at baseline: %r" % (fam, wc["long"][fam]["baseline"])
-    assert abs(wc["long"]["storage"]["baseline"]["median"] - 1) < 0.05, \
-        "storage was not at parity at baseline; 'nobody looked at it' no longer holds"
-    # Finding 1 isolated: compacting jochemnet's pre-run alone brings the account families up.
-    for fam in ("account reads", "code, reused or small"):
-        assert wc["long"][fam]["placement"]["median"] > 0.85, \
-            "compacting the pre-run no longer brings %s to parity: %r" % (fam, wc["long"][fam])
-    # Finding 2 isolated: one flag, both arms; controls cross parity, distinct-code closes most.
-    ab = JIT["ab"]
-    assert ab["baseline"]["thr"] < 0.8 < 1.0 < ab["no_tiered_jit"]["thr"], \
-        "tiered JIT is no longer what separates the control tests: %r" % ab
-    dm_pub, dm_eq = JIT["slice"]["published"]["DIFF_MAX code-exec"]["thr"], JIT["slice"]["jit_equalised"]["DIFF_MAX code-exec"]["thr"]
-    assert dm_eq > dm_pub + 0.2, "equalising the JIT no longer moves distinct-contract code"
-    _na_p, _na_e = JIT["slice"]["published"]["NON_EXISTING_ACCOUNT code-exec"], JIT["slice"]["jit_equalised"]["NON_EXISTING_ACCOUNT code-exec"]
-    assert min(_na_p["joc_secs"] / _na_e["joc_secs"], _na_p["sa_secs"] / _na_e["sa_secs"]) > 1.5, \
-        "equalising the JIT no longer speeds the short tests up on both arms"
-    _dp, _de = JIT["slice"]["published"]["DIFF_MAX code-exec"], JIT["slice"]["jit_equalised"]["DIFF_MAX code-exec"]
-    assert abs(_de["sa_secs"] / _dp["sa_secs"] - 1) < 0.1 and _de["joc_secs"] > 1.2 * _dp["joc_secs"], \
-        "equalising the JIT no longer slows jochemnet while leaving state-actor put"
-    tier = {arm: 100 * p["threads"].get(".NET Tiered Com", 0) / sum(p["threads"].values())
-            for arm, p in JIT["profile"].items()}
-    assert tier["joc_unsettled"] > 50 and 25 < tier["sa_unsettled"] < 60, \
-        "the tiering thread's share of CPU is no longer what the section says: %r" % tier
-    # Finding 3: the client rewrote the store, the fix silenced it, and throughput did not move.
-    assert BM["idle"]["sa_mb"] > 500 > BM["idle"]["joc_mb"] and BM["idle"]["sa_settled_mb"] < 10, \
-        "the idle-rewrite finding no longer holds: %r" % BM["idle"]
-    assert BM["boot"]["sa"]["reason"] == "BottommostFiles", "compaction reason changed: %r" % BM["boot"]["sa"]
-    bm_move = BM["cells"]["DIFF_MAX code-exec"]["settled"] - (BM["cells"]["DIFF_MAX code-exec"]["r1"] + BM["cells"]["DIFF_MAX code-exec"]["r2"]) / 2
-    assert abs(bm_move) < 0.05, "settling the store moved DIFF_MAX %.3f; 'not the cause' is out" % bm_move
-    # Finding 4: larger code fetches on the old pool, repacking closes both cells and leaves the
-    # control, the regenerated store overshoots.
-    assert IB["pread"]["sa"]["code_mean_b"] > 1.2 * IB["pread"]["joc"]["code_mean_b"], \
-        "code blocks are no longer larger per fetch on the old pool: %r" % IB["pread"]
-    for key in ("DIFF_MAX code-exec", "JUMPDEST code-exec"):
-        c_ = IB["cells"][key]
-        assert c_["before"] < 0.96 and abs(c_["after"] - 1) < 0.03, "%s no longer closes when repacked: %r" % (key, c_)
-        assert min(V2["cells"][key]["v2r1"], V2["cells"][key]["v2r2"]) > 1.04, \
-            "%s no longer overshoots on the regenerated store: %r" % (key, V2["cells"][key])
-    assert abs(IB["cells"]["SAME_MAX code-exec"]["after"] - IB["cells"]["SAME_MAX code-exec"]["before"]) < 0.02 and \
-        abs(V2["cells"]["SAME_MAX code-exec"]["v2r1"] - 1) < 0.02, "the reused-contract control moved"
-    # Finding 5: two unsettled columns, each compaction equalised its reads, the control held.
+    # ----- oracles: every sentence below that states a fact has one ---------------------------
+    # Scope: the baseline pair is the flat-backed pair, pinned by run id, in both the old
+    # provenance block and the new population block.
+    assert P["arms"]["sa"]["run"] == M["preconditions"]["sa_run_flat_backed"] == FN["runs"]["baseline"]["sa"], \
+        "the baseline state-actor run is not the flat-backed one"
+    assert P["arms"]["joc"]["run"] == M["preconditions"]["joc_run"] == FN["runs"]["baseline"]["joc"], \
+        "the baseline jochemnet run is not the recorded one"
+    # The headline, on the full suite.
+    worst = min(bc[c]["thr"] for c in ("ACCOUNT cold existing EOA", "ACCOUNT cold existing contract"))
+    factor = 1.0 / worst
+    assert 10 <= factor <= 20, f"headline factor moved out of band: {factor:.1f}"
+    # The population: both views use the same tests and the same class membership. They are
+    # built from one list, so what has to hold is that every row has every column it shows.
+    assert FN["n"] == 266, "the page population is no longer the 266 tests at 160M/240M"
+    assert FN["complete"], "the second final pair is missing"
+    for t in FN["tests"].values():
+        assert t["base"] is not None and t["a"] is not None, "a test lacks a before or after ratio"
+        assert t["b"] is not None, "a test lacks its pair-B ratio"
+    assert len(set(FN["runs"]["final"].values())) == len(FN["runs"]["final"]), "a final run is shared between pairs"
+    ALL = {r["cls"]: r for r in FN["rows"] if r["cat"] == "__all__"}
+    ge_all, lt_all = ALL["ge1s"], ALL["lt1s"]
+    # The rule the page states: under a second one store can't agree with itself, over a
+    # second it nearly always does.
+    arms_ = ("floor_sa", "floor_joc")
+    f_ge = [ge_all[k]["within10"] / ge_all[k]["n"] for k in arms_]
+    f_lt = [lt_all[k]["within10"] / lt_all[k]["n"] for k in arms_]
+    assert min(f_ge) > 0.9 and max(f_lt) < 0.65, \
+        "the duration floors no longer separate: %r / %r" % (f_ge, f_lt)
+    # Part 1: account reads are the slow thing; the controls aren't.
+    ge_rows = dict(final_rows(FN, "ge1s"))
+    lt_rows = dict(final_rows(FN, "lt1s"))
+    acct = [ge_rows[c]["base"]["median"] for c in ge_rows if c.startswith("account row")]
+    assert max(acct) < 0.1, "account-row reads are no longer an order of magnitude apart: %r" % acct
+    assert lt_rows["control (no state work)"]["base"]["median"] > 5 * max(acct), \
+        "the controls are dragged down as far as the account reads; the first clue is gone"
+    assert abs(ge_rows["storage slot"]["base"]["median"] - 1) < 0.05 and \
+        max(acct) < ge_rows["ether transfer"]["base"]["median"] < 0.9, \
+        "the storage/transfer clues moved: %r %r" % (ge_rows["storage slot"]["base"], ge_rows["ether transfer"]["base"])
+    # Finding 1: the corner, and the compaction that removes it.
+    a0, a9 = amort[0], amort[-1]
+    assert abs(a0["joc_blk"] - a0["sa_blk"]) < 0.2, "arms no longer start at parity"
+    assert a9["joc_blk"] < 0.4 and a9["sa_blk"] > 1.8, "saturation broke"
+    assert a9["joc_mb"] < 2 * amort[-2]["joc_mb"], "jochemnet volume no longer saturates"
+    for cat in ("ACCOUNT cold existing EOA", "ACCOUNT cold existing contract"):
+        assert bc[cat]["thr"] < 0.1 and ac[cat]["thr"] > 0.94, f"{cat} before/after moved: {bc[cat]} {ac[cat]}"
+    assert AFT["agreement"]["agree_pct"] > 3 * BEF["agreement"]["agree_pct"], "agreement no longer triples"
+    rk = M["random_keys"]["Account"]
+    ivb, iva = M["intervention"]["account_before"], M["intervention"]["account_after"]
+    assert len(ivb["levels"]) >= 3 and list(iva["levels"]) == ["6"], "the account compaction shape changed: %r %r" % (ivb, iva)
+    assert rk["joc_blk"] > rk["sa_blk"], "random-key inversion gone; 'it isn't a worse store' depends on it"
+    # Finding 2: the JIT lever moves the controls past parity and the distinct-contract cell up,
+    # and jochemnet is the arm that slows down (it had been measuring warm code).
+    dmp, dmj = J["slice"]["published"]["DIFF_MAX code-exec"], J["slice"]["jit_equalised"]["DIFF_MAX code-exec"]
+    assert J["ab"]["baseline"]["thr"] < 0.8 < 1.0 < J["ab"]["no_tiered_jit"]["thr"], "the control lever moved"
+    assert dmj["thr"] > dmp["thr"] + 0.2 and dmj["joc_secs"] > 1.2 * dmp["joc_secs"], \
+        "the distinct-contract cell no longer moves with jochemnet slowing"
+    swing_lt = max(abs(jit_value(J, b) / jit_value(J, a) - 1) for _, a, b, c in JIT_ROWS if c == "lt")
+    swing_ge = max(abs(jit_value(J, b) / jit_value(J, a) - 1) for _, a, b, c in JIT_ROWS
+                   if c == "ge" and "distinct" not in _)
+    assert swing_lt > 3 * swing_ge, "sub-second rows no longer swing hardest under the JIT lever"
+    assert abs(dmj["sa_secs"] / dmp["sa_secs"] - 1) < 0.1, "state-actor moved under the JIT lever"
+    # Every run after finding 2 carries the lever; the baseline pair doesn't. The page says both.
+    TC = FN["tiered_compilation"]
+    assert TC["sa"] == TC["joc"] == "default" and \
+        all(TC[k] == "0" for k in FN["runs"]["final"]), "the JIT setting of a pair is not what the page says: %r" % TC
+    assert lt_rows["control (no state work)"]["a"]["median"] > 1.05 and lt_rows["warm query"]["a"]["median"] > 1.05, \
+        "the short tests no longer land above parity with tiering off"
+    pj, ps = J["profile"]["joc_unsettled"], J["profile"]["sa_unsettled"]
+    assert pj["windows"] == ps["windows"] and all(
+        x["threads"][".NET Tiered Com"] > x["threads"][".NET TP Worker"] for x in (pj, ps)), \
+        "the JIT thread no longer out-burns block execution in the control windows"
+    dr, nd = J["drops"]["drops"], J["drops"]["nodrop"]
+    assert nd["sa_read_mb"] < 1.0 < dr["sa_read_mb"] and nd["sa_mgas"] <= dr["sa_mgas"], \
+        "removing the page-cache drops now helps state-actor; 'taking the I/O away' is out"
+    assert J["ab"]["no_parallel"]["thr"] < J["ab"]["baseline"]["thr"], "parallel execution is no longer exonerated"
+    # Finding 3: two columns spread over levels, each compaction equalised the reads it aimed at,
+    # and the control never moved.
     col, sc, sr = ST["columns"], ST["cells"], ST["reads"]
-    assert len(col["joc_storage_before"]["levels"]) >= 5 and col["joc_storage_after"]["levels"] == [6]
-    assert len(col["joc_storagenodes_before"]["levels"]) >= 4 and col["joc_storagenodes_after"]["levels"] == [6]
-    for nm, sh in col.items():
+    assert len(col["joc_storage_before"]["levels"]) >= 5 and col["joc_storage_after"]["levels"] == [6], \
+        "the snapshot's storage rows are no longer many levels settled to one"
+    assert len(col["joc_storagenodes_before"]["levels"]) >= 4 and col["joc_storagenodes_after"]["levels"] == [6], \
+        "the snapshot's storage trie is no longer many levels settled to one"
+    assert len(col["sa_storage"]["levels"]) == 1 and len(col["sa_storagenodes"]["levels"]) == 1, \
+        "the generated store's storage columns are no longer single-level"
+    for nm_, sh in col.items():
         if isinstance(sh, dict) and "per_level" in sh:
-            assert {int(k) for k in sh["per_level"]} == set(sh["levels"]) and sum(sh["per_level"].values()) == sh["files"], \
-                "per-level counts disagree with the column summary for %s" % nm
-    for k in ("slots=False new=False 160M", "slots=False new=False 240M"):
-        assert sc[k]["r68"] > 1.9 and sc[k]["r72"] < 1.15, "the absent-slot cell no longer closes: %r" % sc[k]
-    for k, v in sc.items():
-        secs = [int(k.split()[-1][:-1]) / v[x] for x in v if x.endswith(("_joc", "_sa"))]
-        if k.startswith("slots=False new=False"):
-            assert max(secs) < 1, "the absent-slot test now runs over a second; quote its ratio: %s" % k
-        elif k.startswith("slots=True"):
-            assert min(secs) > 1, "%s now runs under a second; its ratio can't be quoted" % k
-    ar_ = sr["slots=False new=False 240M"]["after_r69"]
-    assert abs(ar_["joc_rows"] / ar_["sa_rows"] - 1) < 0.15 and \
-        D["outliers"]["tests"]["sstore slots=False new=False 240M"]["cols"]["flat/Storage"]["joc_n"] > \
-        3 * D["outliers"]["tests"]["sstore slots=False new=False 240M"]["cols"]["flat/Storage"]["sa_n"], \
-        "the absent-slot test's storage-row reads no longer equalise from a multiple: %r" % ar_
-    for k in ("slots=True new=True 160M", "slots=True new=True 240M"):
-        assert sr[k]["after_r69"]["joc_nodes"] > 1.1 * sr[k]["after_r69"]["sa_nodes"] and \
-            abs(sr[k]["after_r72"]["joc_nodes"] / sr[k]["after_r72"]["sa_nodes"] - 1) < 0.1, \
-            "storage-trie reads did not equalise: %r" % sr[k]
-    for k in ("slots=True new=False 160M", "slots=True new=False 240M"):
-        assert abs(sc[k]["r69"] - 1) < 0.05 and abs(sc[k]["r72"] - 1) < 0.05, "the overwrite control moved: %r" % sc[k]
-    # Where it stands: long class at parity beside its floor, short class unreadable, outliers
-    # concentrated, every state-reading family at parity except the two named items.
-    lo, sh_ = FI["by_class"]["long"], FI["by_class"]["short"]
-    ol = FI["outliers"]
-    assert abs(lo["pair_a"]["median"] - 1) < 0.03 and abs(lo["pair_b"]["median"] - 1) < 0.03, "long class left parity: %r" % lo
-    assert min(lo["floor_sa"]["within10"], lo["floor_joc"]["within10"]) >= max(lo["pair_a"]["within10"], lo["pair_b"]["within10"]), \
-        "a pair beats a store's own floor: %r" % lo
-    assert max(sh_["floor_sa"]["within10"], sh_["floor_joc"]["within10"]) / sh_["floor_sa"]["n"] < 0.65, \
-        "short class now reproduces; it could be quoted: %r" % sh_
-    assert set(FI["tiered_compilation"]) >= {"nm-sa-fin1", "nm-sa-fin2", "nm-joc-fin1", "nm-joc-fin2"} and \
-        all(v == "0" for v in FI["tiered_compilation"].values()), \
-        "a run after Finding 2 has tiered compilation on: %r" % FI["tiered_compilation"]
-    assert ol["long"] < 0.2 * lo["pair_a"]["n"] and ol["long_buckets"].get("code pool (#141 overshoot)", 0) >= 0.6 * ol["long"], \
-        "the long outliers are no longer mostly the pool overshoot: %r" % ol
-    for fam in ("account reads", "code, reused or small", "storage"):
-        v = wc["long"][fam]["final"]
-        assert abs(v["median"] - 1) < 0.03 and v["within10"] >= v["n"] - 1, "%s is not at parity on the final pair: %r" % (fam, v)
-    assert wc["long"]["code, distinct large"]["final"]["median"] > 1.04, "the pool overshoot is gone; rewrite part 4"
-    aa = ST["absent_account"]
-    assert min(aa["throughput"]["160M"]["sa"]) > 1.2 * max(aa["throughput"]["160M"]["joc"]) and \
-        aa["cpu_seconds"]["joc"]["160M"][".net thread pool"] > 1.5 * aa["cpu_seconds"]["sa"]["160M"][".net thread pool"], \
-        "the absent-account CPU item no longer holds: %r" % aa
+            assert {int(k) for k in sh["per_level"]} == set(sh["levels"]) and \
+                sum(sh["per_level"].values()) == sh["files"], "level figure input disagrees: %s" % nm_
+    for g in ("160M", "240M"):
+        assert sc["slots=False new=False " + g]["r68"] > 1.9 and sc["slots=False new=False " + g]["r72"] < 1.15, \
+        "the absent-slot cell no longer closes from about 2x"
+        assert sc["slots=True new=True " + g]["r68"] > 1.05 and abs(sc["slots=True new=True " + g]["r72"] - 1) < 0.15, \
+        "the new-value cell no longer closes"
+        assert abs(sc["slots=True new=False " + g]["r69"] - 1) < 0.05 and abs(sc["slots=True new=False " + g]["r72"] - 1) < 0.05, \
+        "the overwrite control moved"
+        r = sr["slots=True new=True " + g]
+        assert r["after_r69"]["joc_nodes"] > 1.1 * r["after_r69"]["sa_nodes"] and \
+            abs(r["after_r72"]["joc_nodes"] / r["after_r72"]["sa_nodes"] - 1) < 0.1, \
+        "the storage-trie reads did not equalise after the second compaction"
+    absent_reads = D["outliers"]["tests"]["sstore slots=False new=False 240M"]["cols"]["flat/Storage"]
+    assert absent_reads["joc_n"] > 3 * absent_reads["sa_n"], "the absent-slot read asymmetry is gone"
+    # Finding 3's cells run on sstore tests; the ones under a second get their timing shown and
+    # their reads counted, same rule as everywhere else.
+    absent_slot = [t for k, t in FN["tests"].items()
+                   if "test_sstore" in k and "existing_slots_False" in k and "write_new_value_False" in k]
+    assert len(absent_slot) == 2, "expected the absent-slot sstore test at 160M and 240M: %d" % len(absent_slot)
+    assert all(t["cls"] == "lt1s" for t in absent_slot), \
+        "an absent-slot test now runs over a second; finding 3 says both run under one"
+    # Finding 4: bigger code blocks per fetch, the repack closes both cells without moving the
+    # control, and the regenerated store overshoots in both final pairs.
+    assert IB["pread"]["sa"]["code_mean_b"] > 1.2 * IB["pread"]["joc"]["code_mean_b"], \
+        "code blocks are no longer bigger per fetch on the generated store"
+    assert IB["pread"]["sa"]["code_n"] / IB["pread"]["joc"]["code_n"] - 1 < 0.01, "fetch counts diverged"
+    for c in ("DIFF_MAX code-exec", "JUMPDEST code-exec"):
+        assert IB["cells"][c]["before"] < 0.96 and abs(IB["cells"][c]["after"] - 1) < 0.03, \
+        "a code cell no longer closes under the repack"
+    assert abs(IB["cells"]["SAME_MAX code-exec"]["after"] - IB["cells"]["SAME_MAX code-exec"]["before"]) < 0.02, \
+        "the reused-contract control moved under the repack"
+    for c in ("code-exec DIFF_MAX", "code-exec JUMPDEST"):
+        assert ge_rows[c]["a"]["median"] > 1.04 and ge_rows[c]["b"]["median"] > 1.04, \
+            "%s no longer overshoots on the regenerated store" % c
+    assert abs(ge_rows["code-exec SAME_MAX"]["a"]["median"] - 1) < 0.02, "the reused-contract control moved"
+    cpop, cprobe, csweep = M["code_population"], M["code_probe"], M["code_sweep"]
+    assert cprobe["sa"]["bytes"] < cprobe["joc"]["bytes"] and cprobe["sa"]["us"] < cprobe["joc"]["us"] and \
+        csweep["sa"]["bytes"] < csweep["joc"]["bytes"], "code lookups are no longer cheaper on the generated store"
+    assert abs(cpop["sa"]["at_max"] / cpop["joc"]["at_max"] - 1) < 0.05, "max-size contract counts diverged"
+    bx_lc = M["besu_cross_check"]["families"]["loads_code"]
+    assert bx_lc["EXISTING_CONTRACT_DIFF_MAX"]["median"] < 0.9 < bx_lc["EXISTING_CONTRACT_SAME_MAX"]["median"], \
+        "the Besu store no longer shows the distinct-vs-reused split: %r" % bx_lc
+    sec = IB["secs"]
+    assert min(sec["sa_4k"]) > max(sec["joc"]) and max(sec["sa_64b"]) < min(sec["sa_4k"]) and \
+        median(sec["sa_64b"]) <= median(sec["joc"]), "the traced test no longer moves to jochemnet's side: %r" % sec
+    assert cpop["sa"]["pct"] > cpop["joc"]["pct"] and cpop["sa"]["p50"] == cpop["sa"]["p90"] < cpop["joc"]["p50"], \
+        "the generated store's code is no longer a uniform stub smaller than mainnet's median: %r" % cpop
+    # Finding 5: same trie shape, the packing differed and the swap swapped it, the cell closed,
+    # the read counts swapped, and the file numbers date the 4 KB files to our tooling.
+    assert TN["shape"]["joc"]["top_nodes"] == TN["shape"]["sa_v1"]["top_nodes"] == 1118481, \
+        "the two tops are no longer the same complete tree"
+    assert TN["shape"]["sa_v1"]["walk_nodes"] >= TN["shape"]["joc"]["walk_nodes"] - 0.05, \
+        "the generated trie is now shallower than the snapshot's"
+    pk, sw = TN["packing"], TN["swap"]
+    assert pk["joc_before"]["bytes_per_block"] < 5000 < 12000 < pk["sa_before"]["bytes_per_block"], \
+        "the top-of-trie packing no longer differed the way the page says"
+    assert pk["joc_after"]["bytes_per_block"] > 12000 > 5000 > pk["sa_after"]["bytes_per_block"], \
+        "the swap no longer swapped the packing"
+    assert sw["ratio_settled"] > 1.05 and abs(sw["ratio_swapped"] - 1) < 0.03, \
+        "the swap no longer closed the transfer cell"
+    gap = sw["ratio_settled"] - 1
+    assert sw["joc_change"] - 1 > 0.25 * gap and 1 - sw["sa_change"] > 0.25 * gap, \
+        "the swap no longer moves both arms toward each other: %r" % sw
+    assert TN["shape"]["sa_v1"]["accounts_est_M"] > TN["shape"]["joc"]["accounts_est_M"], "the generated trie is no longer the bigger one"
+    assert sw["joc"]["top_per_account_before"] > sw["sa"]["top_per_account_before"] and \
+        sw["joc"]["top_per_account_after_240M"] < sw["sa"]["top_per_account_after_240M"], \
+        "the top-node reads per account did not swap with the layout"
+    pv = TN["provenance"]
+    assert pv["Storage"]["min"] < 1000 < pv["StateTopNodes"]["min"] <= pv["StateTopNodes"]["max"] \
+        < pv["Account"]["min"], "the 4 KB top-node files no longer predate our account rebuild: %r" % pv
+    # The one-line mention: #139 was real and moved nothing.
+    assert BM["idle"]["sa_mb"] > 500 > BM["idle"]["joc_mb"] and BM["idle"]["sa_settled_mb"] < 10, \
+        "the #139 idle rewrite or its settle changed"
+    for c in ("DIFF_MAX code-exec", "JUMPDEST code-exec"):
+        cl = BM["cells"][c]
+        assert abs(cl["settled"] - (cl["r1"] + cl["r2"]) / 2) < 0.05, "#139's settle moved %s" % c
+    # Part 3: the long class is at parity in both pairs, close to its own floor.
+    for k in ("a", "b"):
+        s = ge_all[k]
+        assert abs(s["median"] - 1) < 0.03 and s["within10"] >= 0.8 * s["n"], "long class left parity: %r" % s
+    assert abs(ge_all["a"]["median"] - ge_all["b"]["median"]) < 0.02, "the two final pairs disagree"
+    # "Three rows are still further from parity than the floor explains", and every other long row
+    # is close to it. The three are named in part 4, so the set itself is the claim.
+    off = {c for c, r in ge_rows.items() if abs(r["a"]["median"] - 1) >= 0.03}
+    assert off == {"ether transfer", "code-exec DIFF_MAX", "code-exec JUMPDEST"}, \
+        "the long rows off parity are no longer the three part 4 names: %r" % sorted(off)
+    for c in off:
+        assert abs(ge_rows[c]["floor_sa"]["median"] - 1) < abs(ge_rows[c]["a"]["median"] - 1) / 2, \
+            "%s is inside what one store measured twice explains" % c
+    # Part 4: the absent-account transfer is CPU and survives both warming ablations.
+    aa, ab_ = ST["absent_account"], ST["ablation"]
+    assert min(aa["throughput"]["160M"]["sa"]) > 1.2 * max(aa["throughput"]["160M"]["joc"]), \
+        "the absent-account transfer is no longer faster on the generated store"
+    assert aa["cpu_seconds"]["joc"]["160M"][".net thread pool"] > 1.5 * aa["cpu_seconds"]["sa"]["160M"][".net thread pool"], \
+        "the absent-account CPU asymmetry is gone"
+    tr_ = D["outliers"]["tests"]["amt1 diff_to_nonexistent 160M"]["cols"]
+    for cf in ("flat/Account", "flat/StateTopNodes", "flat/StateNodes"):
+        assert abs(tr_[cf]["sa_n"] / tr_[cf]["joc_n"] - 1) < 0.05 and abs(tr_[cf]["sa_us"] / tr_[cf]["joc_us"] - 1) < 0.1, \
+            "the absent-account transfer no longer reads the same on %s: %r" % (cf, tr_[cf])
+    traced = {k: v["cols"] for k, v in D["outliers"]["tests"].items() if k.startswith("amt")}
+    assert len(traced) >= 10 and all(abs(c["sa_n"] / c["joc_n"] - 1) < 0.05 for cols in traced.values()
+                                     for c in cols.values()), "a traced transfer test reads differently now"
+    nonexist = [t["a"] for k, t in FN["tests"].items()
+                if t["cat"] == "ether transfer" and "transfer_amount_1-case_id_diff_to_nonexistent" in k]
+    nonexist_max = max(nonexist)
+    assert len(nonexist) == 2 and nonexist_max == max(t["a"] for t in FN["tests"].values()
+                                                     if t["cat"] == "ether transfer" and t["cls"] == "ge1s"), \
+        "value transfers to absent accounts are no longer the extreme of the ether row"
     for cfg in ("B prewarming off", "C trie warmer off"):
-        assert min(ST["ablation"][cfg]["sa 160M"]) > 1.15 * max(ST["ablation"][cfg]["joc 160M"]), \
-            "%s now closes the absent-account gap" % cfg
-    # Where it stands, transfers: the worst long miss is an absent-account transfer, and every
-    # traced transfer outlier issues the same reads on both stores.
-    ot = D["outliers"]["tests"]
-    assert ol["long_rows"][0]["cat"] == "ether transfer" and "nonexistent" in ol["long_rows"][0]["variant"], \
-        "the worst long miss is no longer an absent-account transfer: %r" % ol["long_rows"][0]
-    wtr = next(v["cols"] for k, v in ot.items() if k.startswith("amt") and k.split(" ", 1)[1] == ol["long_rows"][0]["variant"])
-    tr_dev = 100 * max(abs(c_["sa_n"] / c_["joc_n"] - 1) for k, v in ot.items() if k.startswith("amt") for c_ in v["cols"].values())
-    assert tr_dev < 5, "a transfer outlier now reads differently on the two stores: %.1f%%" % tr_dev
-    # Finding 1's placement evidence, Finding 2's setup reads and parallel ablation, Besu's shape.
-    rkn_, am_ = M["random_keys"]["StateNodes"], M["amortisation"]["points"][-1]
-    assert rkn_["joc_blk"] > rkn_["sa_blk"], "jochemnet is no longer the more expensive store on random keys"
-    assert am_["joc_blk"] < 0.5 * am_["sa_blk"] and am_["joc_mb"] < 0.5 * am_["sa_mb"], \
-        "jochemnet's working set no longer stops growing: %r" % am_
-    assert D["steps"]["control"]["joc"]["setup"] > 2 * D["steps"]["control"]["sa"]["setup"], \
-        "jochemnet's setup block no longer does much more work than state-actor's"
-    assert ab["no_parallel"]["thr"] < ab["baseline"]["thr"], "turning parallel execution off no longer moves away from parity"
-    bx_ = M["besu_cross_check"]["families"]["loads_code"]
-    assert bx_["EXISTING_CONTRACT_DIFF_MAX"]["median"] < bx_["EXISTING_CONTRACT_SAME_MAX"]["median"] - 0.05, \
-        "Besu's distinct-contract code no longer trails its reused contract"
+        assert min(ab_[cfg]["sa 160M"]) > 1.15 * max(ab_[cfg]["joc 160M"]), "%s closed the gap" % cfg
 
-    BV4 = json.load(open(os.path.join(HERE, "..", "besu-state-db-divergence", "data",
-                                      "report_data.json")))["status"]["v4"]
-    assert BV4["pr"] == 141 and BV4["classes"]["dark"]["v4"] > 1.1 and \
-        BV4["paired"]["median"] < BV4["classes"]["dark"]["v4"], \
-        "Besu's post-#141 distinct-code result no longer overshoots, or no longer depends on the disk"
-
-    # ----------------------------------------------------------------- page
+    # ----- page ------------------------------------------------------------------------------
     o = []
     w = o.append
-    title = "How can two Nethermind databases holding the same state differ %d&times;?" % round(factor)
+    figs = {}
+
+    def fig(name, svg, caption):
+        figs[name] = svg
+        return figure(svg, caption)
+
+    title = (f"How can two Nethermind databases holding the same state differ "
+             f"{factor:.0f}&times;, and then agree?")
     w("<!doctype html><html lang=en><head><meta charset=utf-8>")
     w('<meta name=viewport content="width=device-width,initial-scale=1">')
-    w(f'<meta name="description" content="A Nethermind mainnet snapshot and a generated store run '
-      f'the same EEST benchmarks and disagree by up to {factor:.0f}x. Five findings account for it; '
-      f'what is left once they are fixed is two named items and a class of tests that cannot be '
-      f'read at all.">')
+    w(f'<meta name="description" content="Identical EEST bloatnet runs reported a {factor:.0f}x '
+      'throughput gap between two Nethermind state databases. Five things about how the stores '
+      'were built and measured made it. Fix them and the tests that run over a second come back '
+      'to parity.">')
     w('<link rel="preconnect" href="https://fonts.googleapis.com">'
       '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
       '<link href="https://fonts.googleapis.com/css2?family=VT323&'
       'family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" '
       'rel="stylesheet">')
-    w(f"<title>{title}</title>")
-    w(f"<style>{CSS}{PAGE_CSS}</style></head><body>")
+    w("<title>Nethermind state-DB divergence, benchmarkoor bloatnet runs</title>")
+    w(f"<style>{CSS}</style></head><body>")
     w('<div class=topbar><a href="../">&larr; all articles</a>'
       '<span>EXECUTION &middot; STATE DB</span></div>')
     w('<div class=eyebrow>// REPORT</div>')
     w(f"<h1>{title}</h1>")
-    lo_, dl_ = FI["by_class"]["long"], wc["long"]["code, distinct large"]["final"]["median"]
-    w(f"<p class=deck>We ran the same EEST benchmarks against a Nethermind mainnet snapshot and a "
-      f"store that state-actor generated from scratch. Where the tests read accounts, the generated "
-      f"store came out up to {factor:.0f}&times; slower. We found five things wrong with how the "
-      f"stores and the harness were set up, and four of them made the gap. Fixed, tests over a "
-      f"second land at {lo_['pair_a']['median']:.3f} on two independent pairs, "
-      f"{lo_['pair_a']['within10']} and {lo_['pair_b']['within10']} of {lo_['pair_a']['n']} inside "
-      f"&plusmn;10%. Distinct-contract code overshoots by {(dl_ - 1) * 100:.0f}%, and one kind of "
-      f"transfer still costs the snapshot more CPU. Here's each finding, what it did, and what's "
-      f"left.</p>")
     w('<div class=meta><span class=tag>Ethereum &middot; nethermind &middot; flat DB &middot; '
       'benchmarking</span> &middot; 2026 &middot; '
       '<a href="https://github.com/CPerezz/articles/tree/main/nethermind-state-db-divergence">'
       'reproducible pipeline &amp; data &rarr;</a></div>')
-    w("<!--TOC-->")
+    w(f"<p class=sub>We ran the same EEST bloatnet benchmarks against two Nethermind databases "
+      f"that hold the same state. The one generated from scratch came out up to "
+      f"{factor:.0f}&times; slower. It wasn't. Five things about how the two stores were built "
+      f"and measured made the gap. Fix them one at a time and the tests that run over a second "
+      f"land at a median of {ge_all['a']['median']:.2f}, {ge_all['a']['within10']} of "
+      f"{ge_all['a']['n']} inside &plusmn;10%. Here's each one, what it did to the numbers, and "
+      f"what's left.</p>")
 
-    # ================================================================= 1. the problem
-    b_long, b_short = wc["long"]["_all"]["baseline"], wc["short"]["_all"]["baseline"]
-    ar0 = wc["long"]["account reads"]["baseline"]
-    w(f"<h2>The problem: the same state, {factor:.0f}&times; apart</h2>")
-    w(f"<p>We ran the same EEST bloatnet suite against two Nethermind databases holding the "
-      f"same logical state: <b>jochemnet</b>, a mainnet shadowfork snapshot at block "
-      f"{thousands(P['snapshot_block'])}, and a store generated from scratch by "
-      f"<b>state-actor</b>. Same fixtures, same machine, page cache dropped between tests. If the "
-      f"two stores were equivalent, every test would run at the same speed on both. They didn't: "
-      f"where the tests read accounts, the generated store looked up to "
-      f"<b>{factor:.0f}&times;</b> slower.</p>")
-    w(f"<p>Each test is two blocks. A setup block deploys or funds what the test needs; then the "
-      f"measured block does the work, thousands of cold account lookups, contract calls, storage "
-      f"writes or transfers sized to a gas budget (160M and 240M here). Before every test the "
-      f"harness restores the store from a golden image and boots a fresh client, and it drops the "
-      f"page cache between the two blocks, so each measured block starts cold. Both arms run the "
-      f"same Nethermind image with the same flags, reading through its flat state database.</p>")
-    fbl, fbs = FI["by_class"]["long"], FI["by_class"]["short"]
-    span = lambda c: "%.0f&ndash;%.0f%%" % tuple(sorted(pct(c[k]["within10"], c[k]["n"]) for k in ("floor_sa", "floor_joc")))
-    w(f"<p><b>How to read the numbers.</b> Every ratio is state-actor's throughput over "
-      f"jochemnet's on the same test: 1.00 is parity, below 1 the generated store is slower. We "
-      f"split the suite at one second of measured time, because a sub-second test doesn't "
-      f"reproduce against itself. Measure the same store twice and "
-      f"{span(fbl)} of the longer tests land within &plusmn;10% of their first result, but only "
-      f"{span(fbs)} of the short ones. Short tests appear in every view below, but we read no store "
-      f"difference from them.</p>")
-    w(figure(chart_family_overview(WF, "baseline"),
-             f"The baseline, by family: {b_long['n']} tests over a second and {b_short['n']} under, "
-             f"at 160M and 240M gas. Each dot is a family's median, the line its range. Account "
-             f"reads sit at {ar0['median']:.2f} and code on reused contracts at "
-             f"{wc['long']['code, reused or small']['baseline']['median']:.2f}; storage, which "
-             f"reads no account, is the one family at parity."))
-    w("<table><tr><th>family</th><th>what it does</th><th class=n>\u2265 1 s</th>"
-      "<th class=n>median</th><th class=n>&lt; 1 s</th><th class=n>median</th></tr>")
-    for fam in FAMILIES:
-        cl_ = wc["long"].get(fam, {}).get("baseline")
-        cs_ = wc["short"].get(fam, {}).get("baseline")
-        def cell(v):
-            if not v:
-                return "<td class=n>&ndash;</td><td class=n>&ndash;</td>"
-            cls_ = " bad" if v["median"] < 0.9 else (" good" if v["median"] > 1.1 else "")
-            return f"<td class=n>{v['n']}</td><td class=\"n{cls_}\">{v['median']:.2f}</td>"
-        w(f"<tr><td>{esc(fam)}</td><td>{esc(FAMILY_NOTE[fam])}</td>{cell(cl_)}{cell(cs_)}</tr>")
-    w("<caption>Baseline medians, state-actor over jochemnet.</caption></table>")
+    # ---- part 1: the problem
+    gb = ge_all["base"]
+    w("<h2>The problem: the same state, up to %d&times; apart</h2>" % round(factor))
+    w(f"<p>Two databases with the same accounts: a mainnet shadowfork snapshot at block "
+      f"{thousands(P['snapshot_block'])} (we call it jochemnet), and the same state written from "
+      f"scratch by <code>state-actor</code>. Same fixtures, same machine, page cache dropped "
+      f"between tests. Every number here is state-actor's throughput divided by jochemnet's: "
+      f"1.00 is parity, 0.10 means the generated store is ten times slower.</p>")
+    w(fig("fig_overview_before", chart_overview(FN, "base"),
+             f"The untreated pair, the {FN['n']} tests at 160M and 240M gas. Over a second, "
+             f"{gb['within10']} of {gb['n']} tests sit inside the band; the account reads sit "
+             f"at {min(acct):.2f} to {max(acct):.2f}."))
+    w("<table><tr><th>tests</th><th class=n>n</th><th class=n>median</th>"
+      "<th class=n>inside &plusmn;10%</th></tr>")
+    for cls, label in (("ge1s", "over a second"), ("lt1s", "under a second")):
+        w(f"<tr><td colspan=4><b>{label}</b></td></tr>")
+        for cat, row in final_rows(FN, cls):
+            s = row["base"]
+            bad = " bad" if s["median"] < 0.5 else ""
+            w(f"<tr><td>{esc(ROW_LABEL.get(cat, cat))}</td><td class=n>{s['n']}</td>"
+              f"<td class=\"n{bad}\">{s['median']:.3f}</td><td class=n>{s['within10']}/{s['n']}</td></tr>")
+    w(f"<caption>Median ratio per category, untreated pair. The full suite of "
+      f"{thousands(BEF['agreement']['n'])} tests says the same thing, and gives the "
+      f"{factor:.0f}&times; in the title.</caption></table>")
+    w("<p>Each dot in the figure is one test. The white tick is the category's median, and the "
+      "numbers on the right are that median and how many of the category's tests land inside "
+      "&plusmn;10%. The same rows and the same axis come back at the end, after the fixes.</p>")
+    w(f"<p>The tests that read accounts are {1/max(acct):.0f} to {1/min(acct):.0f} times slower on "
+      f"the generated store. The controls run the same loop and touch no state, and they sit at "
+      f"{lt_rows['control (no state work)']['base']['median']:.2f}. That's the first clue. "
+      f"Whatever makes account reads that slow isn't the whole client being slow.</p>")
+    w(f"<p><b>The second clue is storage.</b> The storage tests that run over a second read far "
+      f"more data than any corner of a store could hold, and they sit at "
+      f"{ge_rows['storage slot']['base']['median']:.2f}. Ether transfers, which touch accounts "
+      f"too, sit at {ge_rows['ether transfer']['base']['median']:.2f}. Whatever this is, it's "
+      f"about reading accounts that already exist.</p>")
+    w(f"<p><b>Two kinds of test.</b> A test that runs for ten seconds and one that runs for a "
+      f"tenth of a second aren't measuring the same thing. Every test boots a fresh client, and "
+      f"for its first fraction of a second the client is still warming up. So every view here "
+      f"is split at one second of measured time. Under a second, one store measured twice "
+      f"lands only {100*min(f_lt):.0f}% to {100*max(f_lt):.0f}% of its tests within "
+      f"&plusmn;10% of itself; over a second, {100*min(f_ge):.0f}% to {100*max(f_ge):.0f}% do. "
+      f"Sub-second tests are always shown and never counted as "
+      f"evidence.</p>")
+    w(fig("fig_floor", chart_floor(FN),
+             "Amber is state-actor measured twice, the best any comparison can do. Green is the "
+             "two stores with every fix applied. Above a second the two nearly meet; below it, "
+             "neither gets far."))
+    w("<p>Five things caused the gap:</p><ol>"
+      "<li>the benchmark's accounts were the newest files in the snapshot;</li>"
+      "<li>every test boots a fresh client, and the two stores warm it up differently;</li>"
+      "<li>two storage columns nobody had compacted;</li>"
+      "<li>a contract's code block is shared with whatever the generator packed next to it;</li>"
+      "<li>we had repacked the top of the snapshot's trie into blocks a quarter of the "
+      "client's size.</li></ol>")
 
-    # ================================================================= finding 1
+    # ---- finding 1
     pr = M["prerun"]
-    w("<h2>Finding 1: the snapshot's pre-run was baked into its baseline</h2>")
-    w(f"<p>Before measuring, the jochemnet arm replays {thousands(pr['blocks'])} blocks that "
-      f"create the accounts the benchmark reads, and the harness promotes the result into the "
-      f"image every test restores from. Those accounts are then the newest versions in the "
-      f"youngest files of the LSM tree: a handful of recently flushed files near the top, where a "
-      f"cold lookup finds them in one or two reads. On the generated store the same accounts are "
-      f"spread through a fully compacted tree, which is what a cold read on a real node looks "
-      f"like. The baseline compared a hot corner of one store with the whole of the other.</p>")
-    rkn, am9 = M["random_keys"]["StateNodes"], M["amortisation"]["points"][-1]
-    w(f"<p>Two measurements say it is placement and not content. On keys sampled from each "
-      f"store's own contents instead of the benchmark's, jochemnet is the <em>more</em> expensive "
-      f"store: {rkn['joc_blk']:.2f} blocks per trie-node lookup against {rkn['sa_blk']:.2f}. Its "
-      f"data isn't cheaper to read; the benchmark's keys are. And as the benchmark reads more "
-      f"accounts, jochemnet's read volume stops growing: {am9['joc_mb']:.0f} MB for "
-      f"{thousands(am9['n'])} lookups, {am9['joc_blk']:.2f} blocks each, because the same few "
-      f"files serve all of them. state-actor reads {am9['sa_mb']:.0f} MB at "
-      f"{am9['sa_blk']:.2f} blocks each, flat. A working set that stops growing is the signature "
-      f"of a hot corner.</p>")
-    w("<p>We fixed it the way a real node would have: compact the snapshot, so its benchmark "
-      "accounts sit where every other key does. Nothing about the generated store changed.</p>")
-    ar1 = wc["long"]["account reads"]["placement"]
-    cr0, cr1 = wc["long"]["code, reused or small"]["baseline"], wc["long"]["code, reused or small"]["placement"]
-    w(figure(chart_placement(WF),
-             f"The same tests before and after compacting jochemnet's pre-run. Account reads go "
-             f"from {ar0['median']:.2f} to {ar1['median']:.2f}, code on reused or small contracts "
-             f"from {cr0['median']:.2f} to {cr1['median']:.2f}. Transfers and storage are left out "
-             f"here and shown at the two ends in the waterfall below."))
-    pg = [g["gas"] for g in BEF["per_gas"]]
-    w(f"<p>Across the full sweep, {thousands(AFT['agreement']['n'])} tests at {len(pg)} gas levels "
-      f"from {min(pg)}M to {max(pg)}M, the share that agree within "
-      f"&plusmn;10% went from {BEF['agreement']['agree_pct']:.1f}% to "
-      f"{AFT['agreement']['agree_pct']:.1f}%, and the long class's median from "
-      f"{wc['long']['_all']['baseline']['median']:.2f} to {wc['long']['_all']['placement']['median']:.2f}. "
-      f"That is the bulk of the {factor:.0f}&times;. What it left behind is distinct-contract code at "
-      f"{wc['long']['code, distinct large']['placement']['median']:.2f}, and a sub-second class that "
-      f"got no better, which is the next finding.</p>")
+    eo_b, eo_a = bc["ACCOUNT cold existing EOA"]["thr"], ac["ACCOUNT cold existing EOA"]["thr"]
+    ec_b, ec_a = bc["ACCOUNT cold existing contract"]["thr"], ac["ACCOUNT cold existing contract"]["thr"]
+    w("<h2>1. The benchmark's accounts were the newest files in the snapshot</h2>")
+    w(fig("fig_amortisation", chart_amortisation(amort),
+             f"Cold account lookups against each store's own copy of the fixtures' accounts. At "
+             f"{thousands(a0['n'])} lookups the two cost the same, {a0['joc_blk']:.2f} against "
+             f"{a0['sa_blk']:.2f} blocks each. By {thousands(a9['n'])}, jochemnet's read volume "
+             f"has stopped growing: it has run out of new blocks to read."))
+    w(f"<p>Only jochemnet runs a pre-run: {thousands(pr['blocks'])} blocks that create the "
+      f"accounts the benchmark then reads. The harness promotes the result into the image every "
+      f"test restores from. So each of those accounts has its newest copy in a handful of fresh "
+      f"files at the top of the LSM tree, and a lookup stops at the newest file holding the key. "
+      f"On jochemnet the benchmark reads a small, hot corner of the store; on state-actor it "
+      f"reads all of it.</p>")
+    w(f"<p><b>It isn't caching, and it isn't a worse store.</b> The page cache is dropped between "
+      f"tests, so the advantage is on disk. And on keys sampled at random from each store's own "
+      f"accounts, jochemnet is the more expensive one: {rk['joc_blk']:.2f} blocks per lookup "
+      f"against {rk['sa_blk']:.2f}. What the figure shows is that the benchmark's keys are "
+      f"special. The cost per lookup is the same on both stores; what runs out on jochemnet is "
+      f"the supply of blocks it hasn't read yet.</p>")
+    w(f"<p><b>The fix</b> is one compaction of the promoted image, into the bottom level, with the "
+      f"client's own table options. No value changes and the state root doesn't move; only which "
+      f"file holds each key's newest copy. Then the pre-run comes out of the arm's config: its "
+      f"writes are already in the promoted image, and replaying it would rebuild the corner we "
+      f"just flattened. The snapshot's account column went from "
+      f"{sum(ivb['levels'].values())} files on {len(ivb['levels'])} levels to "
+      f"{sum(iva['levels'].values())} files on the bottom one, rewritten in {iva['seconds']:.0f} s. "
+      f"<b>What it did,</b> across the full suite of {thousands(AFT['agreement']['n'])} tests: "
+      f"existing EOAs went from "
+      f"{eo_b:.3f} to {eo_a:.3f}, existing contracts from {ec_b:.3f} to {ec_a:.3f}, and the share "
+      f"of tests inside the band from {BEF['agreement']['agree_pct']:.0f}% to "
+      f"{AFT['agreement']['agree_pct']:.0f}%. That's almost all of the {factor:.0f}&times;.</p>")
 
-    # ================================================================= finding 2
-    ctl0, ctl1 = ab["baseline"]["thr"], ab["no_tiered_jit"]["thr"]
-    w("<h2>Finding 2: the client restarts for every test, and the stores warm it up differently</h2>")
-    w(f"<p>The harness restarts Nethermind for every test, so tests stay independent. That "
-      f"means every measured block runs in a .NET process a few seconds old, which is still "
-      f"compiling itself: hot methods start in an unoptimised tier and get promoted in the "
-      f"background. jochemnet's setup step is heavy EVM work, so its interpreter is promoted by "
-      f"the time the measured block arrives. state-actor's setup is an empty block, so its "
-      f"measured block runs unoptimised. The tiering thread alone takes "
-      f"{tier['joc_unsettled']:.0f}% of jochemnet's measured-step CPU and "
-      f"{min(tier['sa_unsettled'], tier['sa_settled']):.0f}&ndash;{max(tier['sa_unsettled'], tier['sa_settled']):.0f}% "
-      f"of state-actor's.</p>")
-    stp = D["steps"]["control"]
-    w(f"<p>The control tests show it most cleanly, because they do no state work at all: they "
-      f"measure the process. Their setup block reads {stp['joc']['setup']:.0f} MB on jochemnet and "
-      f"{stp['sa']['setup']:.0f} MB on state-actor, and their measured block ran at "
-      f"{ctl0:.2f}, the generated store slower on a test that never touches the store.</p>")
-    w(figure(chart_jit(JIT),
-             f"One flag on both arms, <code>DOTNET_TieredCompilation=0</code>, which compiles "
-             f"every method fully optimised on its first call. The control tests cross parity "
-             f"({ctl0:.2f} &rarr; {ctl1:.2f}) and distinct-contract code closes most of its gap "
-             f"({dm_pub:.2f} &rarr; {dm_eq:.2f})."))
-    dmp, dme = JIT["slice"]["published"]["DIFF_MAX code-exec"], JIT["slice"]["jit_equalised"]["DIFF_MAX code-exec"]
-    w(f"<p>The tell is which arm moved. On distinct-contract code state-actor barely changed, "
-      f"{dmp['sa_secs']:.1f} to {dme['sa_secs']:.1f} s, while jochemnet got slower, "
-      f"{dmp['joc_secs']:.1f} to {dme['joc_secs']:.1f} s: with tiering on, it had been reaching "
-      f"promoted code partway through the test.</p>")
-    w(f"<p>The other suspect for a process-level gap was parallel execution, and it points the "
-      f"wrong way: turning it off moved the controls to {ab['no_parallel']['thr']:.2f}, further "
-      f"from parity, not closer.</p>")
-    na_p, na_e = JIT["slice"]["published"]["NON_EXISTING_ACCOUNT code-exec"], JIT["slice"]["jit_equalised"]["NON_EXISTING_ACCOUNT code-exec"]
-    speed = min(na_p["joc_secs"] / na_e["joc_secs"], na_p["sa_secs"] / na_e["sa_secs"])
-    w("<p>The fix is a harness setting, not a store change, and it equalises the arms rather than "
-      "making them realistic: a live node's EVM is long past the tiering threshold. It also makes "
-      f"the sub-second account tests at least {speed:.1f}&times; faster on both arms, which says "
-      "how much of a short test is the process warming up. The honest fix is a discarded burn-in block before every "
-      "measured one; the harness can't do that yet, so every number from here on is taken with "
-      "tiered compilation off on both sides.</p>")
+    # ---- finding 2
+    w("<h2>2. Every test boots a fresh client, and the two stores warm it up differently</h2>")
+    w(fig("fig_jit", chart_jit(J),
+             "The same tests with .NET tiered compilation on, as published, and off on both arms. "
+             "The sub-second rows swing hardest, which is the reason they aren't counted."))
+    w("<p>The harness restarts Nethermind for every test so tests can't leak into each other. "
+      "That means every measured block runs in a process a few seconds old, and a young .NET "
+      "process is still compiling itself: hot methods start on an unoptimised tier and get "
+      "promoted in the background once they've been called enough.</p>")
+    w("<p><b>Why the arms differ.</b> The first block after boot is slow on both arms, whatever "
+      "it holds. jochemnet's fixtures spend it on a block of real EVM work, so the interpreter "
+      "is promoted before the measurement starts. state-actor's fixtures spend it on an empty "
+      "block, a fork-activation block they need because that chain starts at genesis. So "
+      "state-actor enters the measured block with an interpreter that's still being compiled "
+      "underneath it. One arm measures warm code, the other measures the JIT catching up.</p>")
+    w(f"<p>The compiler isn't a rounding error. Inside the measured steps of "
+      f"{pj['windows']} control tests, the JIT thread burned {pj['threads']['.NET Tiered Com']:.1f} "
+      f"CPU-seconds on jochemnet and {ps['threads']['.NET Tiered Com']:.1f} on state-actor, more "
+      f"than the threads executing the blocks ({pj['threads']['.NET TP Worker']:.1f} and "
+      f"{ps['threads']['.NET TP Worker']:.1f}).</p>")
+    w(f"<p><b>What it isn't.</b> Turning off the page-cache drops took state-actor's control "
+      f"reads from {dr['sa_read_mb']:.0f} MB to {nd['sa_read_mb']:.1f} MB and made it no faster "
+      f"({dr['sa_mgas']:.1f} to {nd['sa_mgas']:.1f} MGas/s). Turning off parallel execution "
+      f"made the gap wider ({J['ab']['no_parallel']['thr']:.2f}). Taking the I/O away didn't "
+      f"remove the gap. Taking the JIT away did.</p>")
+    w(f"<p><b>The test:</b> switch tiered compilation off on both arms, so both run optimised "
+      f"code from the first block. It's a diagnostic, not a production setting. <b>What it "
+      f"did:</b> the controls went from {J['ab']['baseline']['thr']:.2f} to "
+      f"{J['ab']['no_tiered_jit']['thr']:.2f}, and distinct-contract calls from "
+      f"{dmp['thr']:.2f} to {dmj['thr']:.2f}. That's the tell: state-actor barely moved, and "
+      f"jochemnet got slower ({dmp['joc_secs']:.1f} to {dmj['joc_secs']:.1f} s). With tiering on "
+      f"it had reached promoted code partway through the test.</p>")
+    w("<p><b>The fix</b> that belongs in the harness is a discarded burn-in block before the "
+      "measured one. The harness doesn't have one yet, so <b>every number after this section is "
+      "measured with tiered compilation off on both arms</b>. That over-corrects the short tests, "
+      "which now land above parity, and it's one more reason they aren't counted.</p>")
 
-    # ================================================================= finding 3
-    w("<h2>Finding 3: the generated store made the client rewrite it on every boot</h2>")
-    w(f"<p>state-actor finished its store with a plain <code>CompactRange</code>. With no "
-      f"compaction filter configured, RocksDB <em>moves</em> the flushed files into the bottom "
-      f"level instead of rewriting them, so their sequence numbers stay set. Every client that "
-      f"opens the store starts rewriting its bottom files, and since the harness restarts the "
-      f"client per test, that rewrite restarted {thousands(M['harness']['tests'])} times and "
-      f"never finished. An idle client with zero queries read "
-      f"{thousands(BM['idle']['sa_mb'])} MB in {BM['idle']['window_s']} seconds.</p>")
-    w(f"<p>The client's own event log names it: {BM['boot']['sa']['jobs']} compaction jobs at "
-      f"every boot, reason <code>{esc(BM['boot']['sa']['reason'])}</code>, on a store with nothing "
-      f"pending.</p>")
-    w(figure(chart_seqno_paths(BM),
-             "Both paths end with every file in the bottom level and no compaction pending, which "
-             "is why neither level shape nor pending bytes can tell them apart. Only the sequence "
-             "numbers differ."))
-    w(f"<p>Forcing the bottommost rewrite silenced it: idle reads went from "
-      f"{thousands(BM['idle']['sa_mb'])} MB to {BM['idle']['sa_settled_mb']}. The fix is now in "
-      f"the generator as <a href=\"https://github.com/ethereum/state-actor/pull/139\">"
-      f"state-actor#139</a>. Throughput moved by {bm_move:+.3f}. A real defect, and not the "
-      f"cause.</p>")
+    # ---- finding 3
+    w("<h2>3. Two storage columns nobody had compacted</h2>")
+    w(fig("fig_levels", chart_levels(ST),
+             "Where the files sit. Amber is the snapshot as we found it, green is the same column "
+             "after one compaction, and the generated store as it was written."))
+    w(f"<p>The snapshot's storage rows sat in {col['joc_storage_before']['files']:,} files over "
+      f"{len(col['joc_storage_before']['levels'])} LSM levels, and its storage trie in "
+      f"{col['joc_storagenodes_before']['files']:,} over "
+      f"{len(col['joc_storagenodes_before']['levels'])}. The generated store keeps each in one. "
+      f"A lookup for a slot that doesn't exist has to be turned away by every level, so on one "
+      f"test the snapshot read {absent_reads['joc_n']:,} blocks where the generated store read "
+      f"{absent_reads['sa_n']:,}. This one cut the other way: the generated store was the fast "
+      f"one. It hid in the first comparison because the storage tests over a second sat at "
+      f"parity, and the absent-slot test runs under one. Finding 1 compacted the columns the "
+      f"slow tests read, and storage wasn't one of them.</p>")
+    w(fig("fig_storage_close", chart_storage_close(ST),
+             "Each storage test through both compactions, 160M and 240M. The overwrite test "
+             "touches no trie node and never left the band: each step moved what it was aimed "
+             "at."))
+    w(f"<p><b>The fix</b> is the same compaction as in finding 1, one column at a time. <b>What it "
+      f"did:</b> the absent-slot test went from {sc['slots=False new=False 160M']['r68']:.2f}&times; "
+      f"to {sc['slots=False new=False 160M']['r72']:.2f}, and new-value writes from "
+      f"{sc['slots=True new=True 160M']['r68']:.2f} to {sc['slots=True new=True 160M']['r72']:.2f}. "
+      f"Both absent-slot tests run under a second, so their timings are shown, not counted. The reads are what closed: storage-row reads on the absent-slot "
+      f"test are {sr['slots=False new=False 240M']['after_r72']['joc_rows']:,} against "
+      f"{sr['slots=False new=False 240M']['after_r72']['sa_rows']:,}, and storage-trie reads on "
+      f"the new-value test {sr['slots=True new=True 240M']['after_r72']['joc_nodes']:,} against "
+      f"{sr['slots=True new=True 240M']['after_r72']['sa_nodes']:,}.</p>")
+    w(f"<p>The lesson isn't about storage. A generated store is written once and compacted once. "
+      f"A real one is a stack of levels, and on operations that ask for keys that aren't there "
+      f"that difference was worth up to {max(v['r68'] for v in sc.values()):.1f}&times;. "
+      f"Compacting the snapshot makes the two stores comparable. It doesn't make the generated "
+      f"one more like mainnet.</p>")
 
-    # ================================================================= finding 4
-    pj, ps = IB["pread"]["joc"], IB["pread"]["sa"]
-    dmc, jdc, smc = IB["cells"]["DIFF_MAX code-exec"], IB["cells"]["JUMPDEST code-exec"], IB["cells"]["SAME_MAX code-exec"]
-    w("<h2>Finding 4: what shares a code block with the contract being read</h2>")
-    w(f"<p>With the first three fixed, one thing still separated the stores on long tests: "
-      f"executing a contract the store had never served. Distinct-contract code sat at "
-      f"{dmc['before']:.3f} and jump-destination scanning at {jdc['before']:.3f}, while the same "
-      f"opcodes on one reused contract were at {smc['before']:.3f}.</p>")
-    w("<p>Code is keyed by its hash, so a contract's neighbours in a data block are random. What "
-      "differs is who they are. RocksDB packs records into a block until it passes the target "
-      "size, so a 24 KB fixture contract usually lands after a tail of whatever was written "
-      "before it, and fetching the contract reads that tail too. On the snapshot the tail is "
-      f"real mainnet contracts, median {M['code_population']['joc']['p50']} bytes, which compress. "
-      f"On the generated store it was the filler pool's {M['code_population']['sa']['p50']}-byte "
-      f"stubs, which don't.</p>")
-    w(figure(chart_tenancy(IB, M["code_population"]),
-             "What one fetch of a fixture contract reads. The contract is the same on both stores; "
-             "the tail in front of it is not."))
-    w("<table><tr><th>one distinct-contract test, per fetch</th><th class=n>jochemnet</th>"
-      "<th class=n>state-actor, old pool</th></tr>")
-    w(f"<tr><td>code reads</td><td class=n>{thousands(pj['code_n'])}</td><td class=n>{thousands(ps['code_n'])}</td></tr>")
-    w(f"<tr><td>bytes per read</td><td class=n>{thousands(pj['code_mean_b'])}</td>"
-      f"<td class=\"n bad\">{thousands(ps['code_mean_b'])}</td></tr>")
-    w(f"<tr><td>disk pages per read</td><td class=n>{IB['pages_per_fetch']['joc']:.2f}</td>"
-      f"<td class=\"n bad\">{IB['pages_per_fetch']['sa']:.2f}</td></tr>")
-    w(f"<tr><td>mean latency per read</td><td class=n>{thousands(pj['code_mean_us'])} &micro;s</td>"
-      f"<td class=\"n bad\">{thousands(ps['code_mean_us'])} &micro;s</td></tr>")
-    w(f"<tr><td>account-row reads (unchanged)</td><td class=n>{thousands(pj['account_n'])}</td>"
-      f"<td class=n>{thousands(ps['account_n'])}</td></tr>")
-    w(f"<caption>Same number of fetches, {ps['code_mean_b'] - pj['code_mean_b']} bytes more each. "
-      f"A bigger compressed block crosses a 4 KB page boundary more often, so more fetches need a "
-      f"second physical read.</caption></table>")
-    bxf = M["besu_cross_check"]["families"]["loads_code"]
-    w(f"<p><a href=\"../besu-state-db-divergence/besu-state-db-report.html\">Besu</a> shows the same shape on its own generated store: distinct-contract code at "
-      f"{bxf['EXISTING_CONTRACT_DIFF_MAX']['median']:.2f} against "
-      f"{bxf['EXISTING_CONTRACT_SAME_MAX']['median']:.2f} for the reused contract. Two clients, "
-      f"one generator artifact.</p>")
-    w(f"<p>To prove it we rewrote the generated code database with a {IB['repack']['block_size']}-byte "
-      f"block, so every contract sits alone: same keys, same values, same state root. The two "
-      f"cells went to {dmc['after']:.3f} and {jdc['after']:.3f}; the reused-contract control "
-      f"stayed at {smc['after']:.3f}.</p>")
-    w(figure(chart_code_cells(IB, V2),
-             "The two distinct-contract cells and the reused-contract control on the old store, "
-             "the same store repacked, and a store regenerated with the fixed pool."))
-    dv = V2["cells"]
-    w(f"<p>The 64-byte block is a diagnostic, not a fix. The fix belongs in the generator: "
-      f"<a href=\"https://github.com/ethereum/state-actor/pull/141\">state-actor#141</a> slices "
-      f"the pool from real mainnet bytecode at mainnet compressibility. On a store regenerated "
-      f"with it the two cells read "
-      f"{min(dv['DIFF_MAX code-exec']['v2r1'], dv['JUMPDEST code-exec']['v2r1']):.2f}&ndash;"
-      f"{max(dv['DIFF_MAX code-exec']['v2r2'], dv['JUMPDEST code-exec']['v2r1']):.2f}: fixed, and "
-      f"a little past parity, for a reason we come back to at the end.</p>")
+    # ---- finding 4
+    dm_a, jd_a = ge_rows["code-exec DIFF_MAX"]["a"]["median"], ge_rows["code-exec JUMPDEST"]["a"]["median"]
+    dm_b = ge_rows["code-exec DIFF_MAX"]["b"]["median"]
+    jd_b = ge_rows["code-exec JUMPDEST"]["b"]["median"]
+    extra = IB["pread"]["sa"]["code_mean_b"] - IB["pread"]["joc"]["code_mean_b"]
+    w("<h2>4. A contract's code block is shared with whatever the generator packed next to it</h2>")
+    w(fig("fig_fetch", chart_fetch(IB),
+             "One distinct-contract test, traced on both stores. Same fetches, same account reads; "
+             "each code fetch is bigger on the generated store, and more of them cross a page."))
+    w(f"<p>After the first three fixes, one kind of test was still slow: calls into a different "
+      f"maximum-size contract every time. Both stores key code by its hash, so a contract's "
+      f"neighbours in a data block are random. What differs is who they are. On the snapshot, "
+      f"{cpop['joc']['pct']:.0f}% of accounts have code, median {cpop['joc']['p50']} bytes and "
+      f"a wide spread. On the generated store, {cpop['sa']['pct']:.0f}% do, almost all of it a "
+      f"distinct {cpop['sa']['p50']}-byte stub that doesn't compress. Every code fetch is one "
+      f"block, and each one is {extra} bytes bigger on the generated store, so more of them cross "
+      f"a 4 KB page and pay a second physical read.</p>")
+    w(f"<p><b>Why the obvious answer is wrong.</b> The generated store's code database is "
+      f"{esc(cprobe['sa']['size'])} against {esc(cprobe['joc']['size'])}, so the natural guess "
+      f"is that code lookups cost more there. Measured alone, they cost less. One random cold "
+      f"lookup reads {cprobe['sa']['bytes']:,} bytes in {cprobe['sa']['us']:.0f} &micro;s "
+      f"against {cprobe['joc']['bytes']:,} bytes in {cprobe['joc']['us']:.0f} &micro;s, and a "
+      f"sweep of {thousands(csweep['n'])} distinct maximum-size contracts reads "
+      f"{csweep['sa']['bytes']:,} bytes per contract against {csweep['joc']['bytes']:,}. The two "
+      f"stores even hold about the same number of maximum-size contracts, "
+      f"{cpop['sa']['at_max']} and {cpop['joc']['at_max']} per {thousands(cpop['scanned'])} "
+      f"accounts. The cost isn't in the lookup. It's in what the lookup drags in with it.</p>")
+    w(f"<p>Each code read takes "
+      f"{IB['pread']['sa']['code_mean_us'] - IB['pread']['joc']['code_mean_us']} &micro;s longer "
+      f"on average, and {IB['hist_code_ms']['sa']['1-2']}% of them land in the 1&ndash;2 ms "
+      f"bucket against {IB['hist_code_ms']['joc']['1-2']}%. The traced test runs about a second "
+      f"slower: "
+      f"{min(IB['secs']['sa_4k']):.2f}&ndash;{max(IB['secs']['sa_4k']):.2f} s against "
+      f"{min(IB['secs']['joc']):.2f}&ndash;{max(IB['secs']['joc']):.2f} s, five runs each.</p>")
+    w(fig("fig_code_cells", chart_stages(
+        "throughput ratio, state-actor / jochemnet  (band = \u00b110%)",
+        [("call, distinct contract", [{"v1": IB["cells"]["DIFF_MAX code-exec"]["before"], "rp": IB["cells"]["DIFF_MAX code-exec"]["after"], "a": dm_a, "b": dm_b}]),
+         ("call, jumpdest scan", [{"v1": IB["cells"]["JUMPDEST code-exec"]["before"], "rp": IB["cells"]["JUMPDEST code-exec"]["after"], "a": jd_a, "b": jd_b}]),
+         ("call, reused contract", [{"v1": IB["cells"]["SAME_MAX code-exec"]["before"], "rp": IB["cells"]["SAME_MAX code-exec"]["after"],
+                                     "a": ge_rows["code-exec SAME_MAX"]["a"]["median"],
+                                     "b": ge_rows["code-exec SAME_MAX"]["b"]["median"]}])],
+        [("old pool", "v1", "--db-u", 4.5, False), ("one contract per block", "rp", "--green-dim", 3, False),
+         ("#141, pair A", "a", "--accent", 4.5, True), ("#141, pair B", "b", "--db-c", 4.5, True)]),
+        "The two code cells through the diagnostic repack and the generator fix. The reused "
+        "contract never paid for its neighbours and doesn't move."))
+    w(f"<p><b>The test:</b> rewrite the generated store's code with one contract per block. Every "
+      f"key and value stays the same, and the traced test then ran in "
+      f"{', '.join(f'{s:.2f}' for s in IB['secs']['sa_64b'])} s, on jochemnet's side of the gap. Both "
+      f"cells closed "
+      f"({IB['cells']['DIFF_MAX code-exec']['before']:.3f} to "
+      f"{IB['cells']['DIFF_MAX code-exec']['after']:.3f}, "
+      f"{IB['cells']['JUMPDEST code-exec']['before']:.3f} to "
+      f"{IB['cells']['JUMPDEST code-exec']['after']:.3f}) and the reused-contract control stayed "
+      f"put. <b>The fix</b> belongs in the generator's code pool, not in a block size: "
+      f"<a href=\"https://github.com/ethereum/state-actor/pull/{IB['pr']}\">state-actor#{IB['pr']}</a> "
+      f"slices it from real mainnet bytecode. On a store regenerated with it the two cells read "
+      f"{dm_a:.2f} and {jd_a:.2f}. That's the gap closed and a little past it.</p>")
+    w(f"<p>Besu sees the same split on the store its own study generated: calls into a distinct "
+      f"contract at {bx_lc['EXISTING_CONTRACT_DIFF_MAX']['median']:.2f} against "
+      f"{bx_lc['EXISTING_CONTRACT_SAME_MAX']['median']:.2f} for a reused one. Different client, "
+      f"different block size, same neighbours.</p>")
 
-    # ================================================================= finding 5
-    w("<h2>Finding 5: two storage columns nobody had compacted</h2>")
-    ab_rows = D["outliers"]["tests"]["sstore slots=False new=False 240M"]["cols"]["flat/Storage"]
-    w(f"<p>The snapshot's storage rows sat in {thousands(col['joc_storage_before']['files'])} "
-      f"files spread over {len(col['joc_storage_before']['levels'])} levels, its storage trie in "
-      f"{thousands(col['joc_storagenodes_before']['files'])} over "
-      f"{len(col['joc_storagenodes_before']['levels'])}; the generated store keeps each in one "
-      f"level. A lookup for a key that isn't there has to be refused by every level that could "
-      f"hold it, so on one test the snapshot issued {thousands(ab_rows['joc_n'])} storage reads "
-      f"where the generated store issued {thousands(ab_rows['sa_n'])}. Finding 1 compacted the "
-      f"columns the account tests read; storage was at parity from the first run, so nobody "
-      f"looked at it.</p>")
-    w(f"<p>The pre-run is why. Its {thousands(pr['blocks'])} blocks of {pr['txs_per_block']} "
-      f"transactions each write storage, and every flush lands fresh files at the top of the tree "
-      f"that cascade down over the following compactions. The account column had been settled by "
-      f"hand; the storage ones hadn't.</p>")
-    w(figure(chart_levels(ST),
-             "Where the files sit. Amber is the snapshot as it was, green the same column after one "
-             "<code>CompactRange</code> with the client's own table options, and the generated "
-             "store as it was written."))
-    w(figure(chart_storage_close(ST),
-             f"The four storage tests through both compactions. The absent-slot test runs under a "
-             f"second, so it is judged on its reads, below; settling the trie took the "
-             f"new-value tests from {sc['slots=True new=True 160M']['r69']:.2f} to "
-             f"{sc['slots=True new=True 160M']['r72']:.3f}. The overwrite test, which touches no "
-             f"trie node, never left the band."))
-    w(f"<p>Each step was registered on its reads before it ran, and both read predictions held: "
-      f"storage-row reads on the absent-slot test fell to "
-      f"{thousands(sr['slots=False new=False 240M']['after_r69']['joc_rows'])} against the "
-      f"generated store's {thousands(sr['slots=False new=False 240M']['after_r69']['sa_rows'])}, "
-      f"and storage-trie reads to {thousands(sr['slots=True new=True 240M']['after_r72']['joc_nodes'])} "
-      f"against {thousands(sr['slots=True new=True 240M']['after_r72']['sa_nodes'])}.</p>")
+    # ---- finding 5
+    w("<h2>5. We had repacked the top of the snapshot's trie into 4 KB blocks</h2>")
+    w(fig("fig_topnodes", chart_topnodes(TN),
+             "Nodes are keyed by path, so a parent and its children are neighbours. The walk to a "
+             "touched account reads the parent and one child: one block when they share it, two "
+             "when they don't."))
+    w(f"<p>A transfer writes two accounts, so every transfer re-hashes both paths up to the state "
+      f"root. Nethermind keeps the top of that trie, every node on a path of up to five nibbles, in "
+      f"one column, where a node and its "
+      f"sixteen children sit side by side. The client packs them into 16 KB blocks, "
+      f"{pk['sa_before']['entries_per_block']:.0f} nodes each, so a family usually shares one "
+      f"read. The snapshot's column held {pk['joc_before']['entries_per_block']:.0f} nodes per "
+      f"4 KB block: {sw['joc']['top_per_account_before']:.2f} top-node reads per touched account "
+      f"against {sw['sa']['top_per_account_before']:.2f}.</p>")
+    w(f"<p><b>The tries are the same shape.</b> Both tops are the complete sixteen-way tree five "
+      f"nibbles deep, "
+      f"{thousands(TN['shape']['joc']['top_nodes'])} nodes. The generated trie holds "
+      f"{100*(TN['shape']['sa_v1']['accounts_est_M']/TN['shape']['joc']['accounts_est_M']-1):.0f}% "
+      f"more accounts and is marginally deeper, {TN['shape']['sa_v1']['walk_nodes']:.2f} nodes on "
+      f"a cold root-to-leaf walk against {TN['shape']['joc']['walk_nodes']:.2f}. Shape can't make "
+      f"it read fewer nodes. The packing can.</p>")
+    w(f"<p>That layout wasn't the snapshot's. We wrote it. RocksDB numbers files in order, and "
+      f"the 4 KB files ({pv['StateTopNodes']['min']:06d}&ndash;{pv['StateTopNodes']['max']:06d}) "
+      f"came just before our rebuild of the account column ({pv['Account']['min']:06d}+). The "
+      f"tool that did it opened the store with the client's options for that one column and "
+      f"RocksDB's defaults for the rest, and a pending compaction rewrote the top-of-trie column "
+      f"under those defaults. <b>The test:</b> give each store the other's packing. Across "
+      f"{sw['n_pairs']} transfer test pairs the cell went from {sw['ratio_settled']:.3f} to "
+      f"{sw['ratio_swapped']:.3f}, the read counts swapped, and each arm moved about half the gap "
+      f"(jochemnet &times;{sw['joc_change']:.3f}, state-actor &times;{sw['sa_change']:.3f}). The "
+      f"snapshot now carries the client's packing.</p>")
+    w(f"<p class=note>Also found and fixed, and moving nothing: the generator's closing "
+      f"compaction left files the client rewrote on every boot, {thousands(BM['idle']['sa_mb'])} "
+      f"MB in {BM['idle']['window_s']} idle seconds "
+      f"(<a href=\"https://github.com/ethereum/state-actor/pull/139\">state-actor#139</a>). The "
+      f"dead ends and our own measurement mistakes are in the "
+      f"<a href=\"https://github.com/CPerezz/articles/tree/main/nethermind-state-db-divergence#method-and-errata\">"
+      f"README</a>.</p>")
 
-    # ================================================================= 3. where it stands
+    # ---- part 3
+    ga = ge_all["a"]
+    gbb = ge_all["b"]
+    la = lt_all["a"]
     w("<h2>Where it stands</h2>")
-    w("<p>With all five fixed, we ran the whole suite on both stores twice, as two pairs that "
-      "share no run: the snapshot's pre-run and storage columns compacted, the generator on the "
-      "fixed pool with #139's compaction, tiered JIT off on both arms. Each store is also measured "
-      "against itself, so the floor sits beside the comparison.</p>")
-    w(figure(chart_family_overview(WF, "final"),
-             "The same view as the first figure, on the final pair. Every family that reads state "
-             "is inside the band except distinct-contract code, which is now slightly faster on "
-             "the generated store."))
-    w("<table><tr><th>family</th><th class=n colspan=3>\u2265 1 s: baseline &rarr; final, in band</th>"
-      "<th class=n colspan=3>&lt; 1 s: baseline &rarr; final, in band</th></tr>")
-    for fam in FAMILIES:
-        def pair(c):
-            cell_ = wc[c].get(fam)
-            if not cell_:
-                return "<td class=n>&ndash;</td><td class=n>&ndash;</td><td class=n>&ndash;</td>"
-            a, b = cell_["baseline"], cell_["final"]
-            cls_ = "" if 0.9 <= b["median"] <= 1.1 else (" bad" if b["median"] < 0.9 else " good")
-            return (f"<td class=n>{a['median']:.2f}</td><td class=\"n{cls_}\">{b['median']:.3f}</td>"
-                    f"<td class=n>{b['within10']}/{b['n']}</td>")
-        w(f"<tr><td>{esc(fam)}</td>{pair('long')}{pair('short')}</tr>")
-    fa, fs = wc["long"]["_all"], wc["short"]["_all"]
-    w(f"<tr><td><b>all</b></td><td class=n>{fa['baseline']['median']:.2f}</td><td class=n><b>{fa['final']['median']:.3f}</b></td>"
-      f"<td class=n>{fa['final']['within10']}/{fa['final']['n']}</td>"
-      f"<td class=n>{fs['baseline']['median']:.2f}</td><td class=n>{fs['final']['median']:.3f}</td>"
-      f"<td class=n>{fs['final']['within10']}/{fs['final']['n']}</td></tr>")
-    w("<caption>Median ratio per family at baseline and on the final pair, and how many of the "
-      "final pair's tests sit within &plusmn;10%.</caption></table>")
-    w(figure(chart_final_pair(FI),
-             f"Two pairs that share no run. The long class reaches {lo['pair_a']['within10']} and "
-             f"{lo['pair_b']['within10']} of {lo['pair_a']['n']} in the band, against "
-             f"{lo['floor_sa']['within10']} and {lo['floor_joc']['within10']} when each store is "
-             f"measured against itself. The short class reaches {sh_['pair_a']['within10']} and "
-             f"{sh_['pair_b']['within10']} of {sh_['pair_a']['n']}, and only "
-             f"{sh_['floor_sa']['within10']} and {sh_['floor_joc']['within10']} against itself."))
-    w(figure(chart_waterfall(WF),
-             "Every family through every stage: 0 baseline, 1 pre-run compacted, 2 tiered JIT off "
-             "and the generated store settled, 3 the regenerated code pool, 4 final. Dashed segments "
-             "skip a stage: transfers and storage show only the two ends, because their intermediate "
-             "runs were taken on a snapshot our tooling had also altered, and the code-pool run "
-             f"covered only {WF['coverage']['codepool']['short']} of the {FI['classes']['short']} "
-             "short tests."))
-    la, dl = wc["long"]["_all"], wc["long"]["code, distinct large"]
-    w(f"<p>Read left to right, the long class moves in four steps. Compacting the pre-run takes it "
-      f"from {la['baseline']['median']:.2f} to {la['placement']['median']:.2f}. Equalising the JIT "
-      f"and settling the store adds a little, mostly on distinct-contract code "
-      f"({dl['placement']['median']:.2f} &rarr; {dl['warmup']['median']:.2f}). The regenerated pool "
-      f"moves that one family past parity ({dl['codepool']['median']:.2f}) and nothing else. "
-      f"Settling the storage columns closes storage and leaves the rest where it was. The short "
-      f"class moves only when the JIT is equalised, and then stops at its floor.</p>")
-    _b = ol["long_buckets"]
-    trf = wc["long"]["ether transfers"]["final"]
-    w(f"<p>{ol['long']} of the {lo['pair_a']['n']} long tests still miss the band in both pairs, and "
-      f"they are not spread across the suite: {_b.get('code pool (#141 overshoot)', 0)} are "
-      f"distinct-contract code, where the regenerated pool overshoots, and "
-      f"{_b.get('absent-key work', 0) + _b.get('ether transfer', 0)} are transfers, led by the "
-      f"transfer to an absent account at {ol['long_rows'][0]['pair_a']:.2f}. The other "
-      f"{ol['short']} misses are sub-second.</p>")
-    w(f"<p>As a family, transfers reach {trf['median']:.3f}, with {trf['within10']} of {trf['n']} "
-      f"in the band. The ones that miss issue the same reads on both stores. The worst reads "
-      f"{thousands(wtr['flat/Account']['sa_n'])} accounts on state-actor and "
-      f"{thousands(wtr['flat/Account']['joc_n'])} on jochemnet, and "
-      f"{thousands(wtr['flat/StateTopNodes']['sa_n'])} against "
-      f"{thousands(wtr['flat/StateTopNodes']['joc_n'])} top-of-trie nodes; every transfer outlier "
-      f"we traced is within {tr_dev:.0f}% on every column. What is left there is not I/O.</p>")
+    w(fig("fig_overview_after", chart_overview(FN, "after"),
+             "The same tests after all five fixes, measured as two independent pairs. Compare it "
+             "with the first figure: same rows, same axis."))
+    w("<table><tr><th>tests</th><th class=n>n</th><th class=n>before</th>"
+      "<th class=n>pair A</th><th class=n>pair B</th><th class=n>inside &plusmn;10%</th>"
+      "<th class=n>same store twice</th></tr>")
+    for cls, label in (("ge1s", "over a second"), ("lt1s", "under a second")):
+        w(f"<tr><td colspan=7><b>{label}</b></td></tr>")
+        for cat, row in final_rows(FN, cls):
+            b_, a_, bb_, fl = row["base"], row["a"], row["b"], row["floor_sa"]
+            good = " good" if 0.9 <= a_["median"] <= 1.1 else ""
+            w(f"<tr><td>{esc(ROW_LABEL.get(cat, cat))}</td><td class=n>{a_['n']}</td>"
+              f"<td class=n>{b_['median']:.3f}</td><td class=\"n{good}\">{a_['median']:.3f}</td>"
+              f"<td class=n>{bb_['median']:.3f}</td>")
+            w(f"<td class=n>{a_['within10']}/{a_['n']}</td><td class=n>{fl['within10']}/{fl['n']}</td></tr>")
+    w("<caption>Median ratio per category. Pair A and pair B are separate runs of both stores; "
+      "the last column is state-actor measured twice, the best any row can do.</caption></table>")
+    acct_a = [ge_rows[c]["a"]["median"] for c in ge_rows if c.startswith("account row")]
+    plain_a = [ge_rows["code-exec " + m]["a"]["median"] for m in ("EXISTING_EOA", "MINIMAL", "SAME_MAX")]
+    w(f"<p>Over a second, {ga['within10']} of {ga['n']} tests now sit inside the band (median "
+      f"{ga['median']:.3f}, and {gbb['median']:.3f} in the second pair), against "
+      f"{ge_all['floor_sa']['within10']} of {ge_all['floor_sa']['n']} when state-actor is "
+      f"measured twice. The account reads that started at {min(acct):.2f} are at "
+      f"{min(acct_a):.3f} to {max(acct_a):.3f}. Calls into an EOA, a minimal contract or a reused "
+      f"one sit at {min(plain_a):.3f} to {max(plain_a):.3f}, and storage at "
+      f"{ge_rows['storage slot']['a']['median']:.2f}. Three rows are still further from parity "
+      f"than the floor explains: ether transfers at {ge_rows['ether transfer']['a']['median']:.2f}, "
+      f"and the distinct-contract and jumpdest calls at {dm_a:.2f} and {jd_a:.2f}. They're the "
+      f"first two items below.</p>")
+    w(f"<p><b>Pair B</b> repeats the whole comparison with fresh runs of both stores, so neither "
+      f"arm's number is shared between the two pairs. Over a second it lands at "
+      f"{gbb['median']:.3f} against pair A's {ga['median']:.3f}. That's how we know the table isn't "
+      f"one lucky run of either store.</p>")
+    w(f"<p><b>Under a second</b>, {la['within10']} of {la['n']} tests land in the band, and the "
+      f"same store measured twice manages only {lt_all['floor_sa']['within10']} "
+      f"({lt_all['floor_joc']['within10']} for jochemnet). The controls "
+      f"read {lt_rows['control (no state work)']['a']['median']:.2f} and the warm queries "
+      f"{lt_rows['warm query']['a']['median']:.2f}, above parity because tiering is off. Those "
+      f"rows measure the harness, not the stores.</p>")
 
-    # ================================================================= 4. what is left
-    tp = aa["cpu_seconds"]
+    # ---- part 4
+    cpu_j = aa["cpu_seconds"]["joc"]["160M"][".net thread pool"]
+    cpu_s = aa["cpu_seconds"]["sa"]["160M"][".net thread pool"]
     w("<h2>What's left, and why</h2>")
-    w("<p><b>The code pool overshoots.</b> #141 draws its records from mainnet bytecode, but "
-      "keeps a 1 KiB floor on record size. Mainnet's median contract is 45 bytes, so on "
-      "Nethermind's 4 KB code block a fixture contract now starts a block of its own more often "
-      "than it would on mainnet, and reading it is cheaper. Same mechanism as Finding 4, sign "
-      "reversed. <a href=\"../besu-state-db-divergence/besu-state-db-report.html\">Besu's</a> generated store also came out fast on "
-      "distinct-contract code after #141, by an amount that depends on the disk it was measured "
-      "on. The fix is to draw record sizes from mainnet's distribution rather than a floor, in "
-      "the generator.</p>")
-    w(f"<p><b>Absent-key work costs the snapshot more CPU.</b> Transfers to accounts that don't "
-      f"exist issue the same reads on both stores, for the same bytes at the same latency, yet "
-      f"jochemnet spends {tp['joc']['160M']['.net thread pool']:.2f} CPU-seconds in managed "
-      f"worker threads where state-actor spends {tp['sa']['160M']['.net thread pool']:.2f}. "
-      f"Turning off state pre-warming or the trie warmer doesn't change it. It is client work, "
-      f"and the next instrument is a profiler, not another benchmark.</p>")
-    w(f"<p><b>Sub-second tests can't be read at any store shape.</b> Measured against itself, "
-      f"state-actor puts {pct(sh_['floor_sa']['within10'], sh_['floor_sa']['n']):.0f}% of them "
-      f"within &plusmn;10% and jochemnet {pct(sh_['floor_joc']['within10'], sh_['floor_joc']['n']):.0f}%. A per-test restart plus a JIT still warming up is most of what "
-      f"a short test measures. That is fixed in the harness, with a discarded burn-in block, not "
-      f"in either store.</p>")
-    w("<p>The lesson is the one the <a href=\"../state-db-perf-divergence/state-db-perf-report.html\">geth study</a> reached from the other side. A snapshot that was "
-      "replayed into shape carries its history: whatever was written last is in the youngest "
-      "files, and whatever was never compacted stays a stack of levels. A generated store has "
-      "none of that; it is uniform by construction. Equalising the two makes them comparable. It "
-      "does not make the generated one look like mainnet, and a benchmark that wants to know how "
-      "an aged, fragmented store behaves needs one.</p>")
-    w("<p class=note>Earlier versions of this page attributed the transfer tests' small edge first "
-      "to a migrated trie costing more to update, then to per-read cost on a mainnet-shaped trie. "
-      "The traces refute both: those tests issue identical reads on both stores. The numbers in "
-      "this page are computed from the collected run data at build time, and the generator refuses "
-      "to emit the page if the data stops supporting a sentence above.</p>")
+    w(f"<p>The generated state was never {factor:.0f}&times; slower. Three things are left, and "
+      f"each has a name:</p><ul>")
+    w(f"<li><b>Distinct-contract code runs {100*(min(dm_a, dm_b, jd_a, jd_b)-1):.0f} to "
+      f"{100*(max(dm_a, dm_b, jd_a, jd_b)-1):.0f}% faster on the generated store.</b> "
+      f"#{IB['pr']} samples real mainnet code but keeps a 1 KiB floor on each record, so a "
+      f"fixture contract starts a block of its own more often than on mainnet, where the median "
+      f"contract is {cpop['joc']['p50']} bytes. Cheaper than mainnet is as wrong as dearer. The "
+      f"next generator fix is record sizes drawn from mainnet's distribution.</li>")
+    w(f"<li><b>Ether transfers run about {100*(ge_rows['ether transfer']['a']['median']-1):.0f}% "
+      f"faster on the generated store, and up to {nonexist_max:.1f}&times; when the value goes to "
+      f"accounts that don't exist yet.</b> We traced {len(traced)} transfer tests on both stores, "
+      f"and the read counts match within 5% on every column. So it's client work, not I/O. The "
+      f"clearest case creates thousands of accounts in every block, and there the snapshot spends "
+      f"{cpu_j:.2f} CPU-seconds in managed thread-pool threads against {cpu_s:.2f}. Turning off "
+      f"either warming path doesn't change that. It's open, and the next instrument is a "
+      f"profiler.</li>")
+    w("<li><b>Sub-second tests can't be compared on this harness yet.</b> That's not a store "
+      "property. Every test boots a fresh client, and under a second the measurement is mostly "
+      "that client warming up. A discarded burn-in block before the measured one would fix it. "
+      "Until the harness has one, those numbers are shown and not counted.</li></ul>")
+    w("<p>None of the three is a reason to distrust the generated store on tests over a second. "
+      "The first is a generator fix, the second is a question for the client, and the third is a "
+      "harness fix.</p>")
+    w("<p class=note>Every number on this page is computed from the collected run data when the "
+      "page is built, and the build fails if the data stops supporting a sentence.</p>")
     w('<div class=endbar><a href="../">&larr; all articles</a>'
       '<a href="https://github.com/CPerezz/articles/tree/main/nethermind-state-db-divergence">'
       'source &amp; data &rarr;</a></div>')
     w('<span class=cursor style="position:fixed;bottom:1.4rem;right:1.4rem;z-index:6"></span>')
     w("</body></html>")
 
-    html_text = add_toc("\n".join(o))
+    html_text = "\n".join(o)
     with open(OUT, "w") as fh:
         fh.write(html_text)
     os.makedirs(FIGDIR, exist_ok=True)
-    figs = {
-        "fig_baseline": chart_family_overview(WF, "baseline"),
-        "fig_placement": chart_placement(WF),
-        "fig_jit": chart_jit(JIT),
-        "fig_seqno_paths": chart_seqno_paths(BM),
-        "fig_tenancy": chart_tenancy(IB, M["code_population"]),
-        "fig_code_cells": chart_code_cells(IB, V2),
-        "fig_levels": chart_levels(ST),
-        "fig_storage_close": chart_storage_close(ST),
-        "fig_final": chart_family_overview(WF, "final"),
-        "fig_final_pair": chart_final_pair(FI),
-        "fig_waterfall": chart_waterfall(WF),
-    }
+    for old in os.listdir(FIGDIR):
+        if old.endswith(".svg"):
+            os.remove(os.path.join(FIGDIR, old))
     for name, svg in figs.items():
         with open(os.path.join(FIGDIR, name + ".svg"), "w") as fh:
             fh.write(standalone(svg) + "\n")
-    print(f"wrote {os.path.relpath(OUT, HERE)} ({len(html_text):,} bytes)")
-    for name in figs:
-        print(f"wrote figures/{name}.svg ({os.path.getsize(os.path.join(FIGDIR, name + '.svg')):,} bytes)")
+    print(f"wrote {os.path.relpath(OUT, HERE)} ({len(html_text):,} bytes), "
+          f"{len(figs)} standalone figures")
     print(f"headline factor: {factor:.1f}x")
-    print(f"long class: baseline {fa['baseline']['median']:.3f} -> final {fa['final']['median']:.3f} "
-          f"({fa['final']['within10']}/{fa['final']['n']} in band)")
-    print(f"short class: baseline {fs['baseline']['median']:.3f} -> final {fs['final']['median']:.3f} "
-          f"({fs['final']['within10']}/{fs['final']['n']} in band)")
+    print(f"over 1 s: before {gb['median']:.3f} ({gb['within10']}/{gb['n']}), after "
+          f"{ga['median']:.3f} ({ga['within10']}/{ga['n']}), floor {ge_all['floor_sa']['within10']}/{ge_all['floor_sa']['n']}")
+    print(f"under 1 s: after {la['median']:.3f} ({la['within10']}/{la['n']}), floor "
+          f"{lt_all['floor_sa']['within10']}/{lt_all['floor_sa']['n']}")
 
 
 if __name__ == "__main__":

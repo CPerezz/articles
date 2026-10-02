@@ -86,12 +86,13 @@ ARTICLES = [
         "prebuilt": True,
         "href": "nethermind-state-db-divergence/nethermind-state-db-report.html",
         "eyebrow": "EXECUTION · STATE DB",
-        "card_title": "Why two identical Nethermind benchmarks disagree by 17×",
+        "card_title": "How can two Nethermind databases holding the same state differ 17×, and then agree?",
         "date": "2026",
         "tags": "Ethereum · Nethermind · flat DB · RocksDB · benchmarking",
-        "blurb": "The same experiment on Nethermind, and the first one taken all the way. The "
-                 "17× is where the rows sit, not what they contain: equalise placement and "
-                 "re-run the full suite, and every category that reads state comes back to parity.",
+        "blurb": "A mainnet snapshot and a generated store, the same benchmark suite, up to 17× "
+                 "apart. Five things about how the stores were built and measured made the gap; "
+                 "fixed one at a time, the tests that run over a second land at parity on two "
+                 "independent pairs.",
         "repo": "nethermind-state-db-divergence/",
     },
 ]

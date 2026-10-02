@@ -5520,424 +5520,3433 @@
   }
  },
  "final": {
-  "by_class": {
-   "long": {
-    "floor_joc": {
-     "max": 1.085,
-     "median": 1.0,
-     "min": 0.909,
-     "n": 144,
-     "within10": 144
-    },
-    "floor_sa": {
-     "max": 1.201,
-     "median": 1.0,
-     "min": 0.866,
-     "n": 144,
-     "within10": 138
-    },
-    "pair_a": {
-     "max": 1.535,
-     "median": 1.012,
+  "complete": true,
+  "n": 266,
+  "rows": [
+   {
+    "a": {
+     "max": 1.5351,
+     "median": 1.0116,
      "min": 0.88,
      "n": 144,
      "within10": 122
     },
-    "pair_b": {
-     "max": 1.446,
-     "median": 1.012,
-     "min": 0.895,
+    "b": {
+     "max": 1.4455,
+     "median": 1.0122,
+     "min": 0.8951,
      "n": 144,
      "within10": 121
     },
-    "v1_pair": {
-     "max": 1.439,
-     "median": 0.999,
-     "min": 0.844,
+    "base": {
+     "max": 1.4654,
+     "median": 0.1752,
+     "min": 0.0408,
      "n": 144,
-     "within10": 123
+     "within10": 8
+    },
+    "cat": "__all__",
+    "cls": "ge1s",
+    "floor_joc": {
+     "max": 1.0852,
+     "median": 1.0002,
+     "min": 0.9093,
+     "n": 144,
+     "within10": 144
+    },
+    "floor_sa": {
+     "max": 1.2014,
+     "median": 1.0,
+     "min": 0.8656,
+     "n": 144,
+     "within10": 138
     }
    },
-   "short": {
+   {
+    "a": {
+     "max": 0.9988,
+     "median": 0.9837,
+     "min": 0.9697,
+     "n": 4,
+     "within10": 4
+    },
+    "b": {
+     "max": 1.0095,
+     "median": 0.9913,
+     "min": 0.9191,
+     "n": 4,
+     "within10": 4
+    },
+    "base": {
+     "max": 0.0643,
+     "median": 0.0577,
+     "min": 0.0567,
+     "n": 4,
+     "within10": 0
+    },
+    "cat": "account row DIFF_MAX",
+    "cls": "ge1s",
     "floor_joc": {
-     "max": 1.623,
-     "median": 1.009,
-     "min": 0.593,
+     "max": 1.0171,
+     "median": 0.9909,
+     "min": 0.9781,
+     "n": 4,
+     "within10": 4
+    },
+    "floor_sa": {
+     "max": 1.007,
+     "median": 0.9894,
+     "min": 0.964,
+     "n": 4,
+     "within10": 4
+    }
+   },
+   {
+    "a": {
+     "max": 1.0235,
+     "median": 0.9967,
+     "min": 0.9934,
+     "n": 4,
+     "within10": 4
+    },
+    "b": {
+     "max": 1.0063,
+     "median": 0.9994,
+     "min": 0.9866,
+     "n": 4,
+     "within10": 4
+    },
+    "base": {
+     "max": 0.0747,
+     "median": 0.0514,
+     "min": 0.0408,
+     "n": 4,
+     "within10": 0
+    },
+    "cat": "account row EXISTING_EOA",
+    "cls": "ge1s",
+    "floor_joc": {
+     "max": 1.02,
+     "median": 0.9955,
+     "min": 0.9891,
+     "n": 4,
+     "within10": 4
+    },
+    "floor_sa": {
+     "max": 1.0038,
+     "median": 0.9983,
+     "min": 0.9814,
+     "n": 4,
+     "within10": 4
+    }
+   },
+   {
+    "a": {
+     "max": 1.0075,
+     "median": 0.9951,
+     "min": 0.9756,
+     "n": 4,
+     "within10": 4
+    },
+    "b": {
+     "max": 0.9922,
+     "median": 0.9802,
+     "min": 0.9368,
+     "n": 4,
+     "within10": 4
+    },
+    "base": {
+     "max": 0.0689,
+     "median": 0.0596,
+     "min": 0.0456,
+     "n": 4,
+     "within10": 0
+    },
+    "cat": "account row JUMPDEST",
+    "cls": "ge1s",
+    "floor_joc": {
+     "max": 1.016,
+     "median": 1.0009,
+     "min": 0.9889,
+     "n": 4,
+     "within10": 4
+    },
+    "floor_sa": {
+     "max": 1.0172,
+     "median": 0.9869,
+     "min": 0.9323,
+     "n": 4,
+     "within10": 4
+    }
+   },
+   {
+    "a": {
+     "max": 1.0604,
+     "median": 0.9991,
+     "min": 0.9957,
+     "n": 4,
+     "within10": 4
+    },
+    "b": {
+     "max": 1.011,
+     "median": 0.9961,
+     "min": 0.9173,
+     "n": 4,
+     "within10": 4
+    },
+    "base": {
+     "max": 0.0787,
+     "median": 0.0587,
+     "min": 0.0485,
+     "n": 4,
+     "within10": 0
+    },
+    "cat": "account row MINIMAL",
+    "cls": "ge1s",
+    "floor_joc": {
+     "max": 1.0463,
+     "median": 1.0007,
+     "min": 0.9961,
+     "n": 4,
+     "within10": 4
+    },
+    "floor_sa": {
+     "max": 0.9984,
+     "median": 0.9945,
+     "min": 0.923,
+     "n": 4,
+     "within10": 4
+    }
+   },
+   {
+    "a": {
+     "max": 1.0026,
+     "median": 0.9753,
+     "min": 0.9233,
+     "n": 4,
+     "within10": 4
+    },
+    "b": {
+     "max": 1.0643,
+     "median": 1.0042,
+     "min": 0.8979,
+     "n": 4,
+     "within10": 3
+    },
+    "base": {
+     "max": 0.068,
+     "median": 0.0651,
+     "min": 0.055,
+     "n": 4,
+     "within10": 0
+    },
+    "cat": "account row SAME_MAX",
+    "cls": "ge1s",
+    "floor_joc": {
+     "max": 1.0027,
+     "median": 0.9722,
+     "min": 0.935,
+     "n": 4,
+     "within10": 4
+    },
+    "floor_sa": {
+     "max": 1.0778,
+     "median": 1.0086,
+     "min": 0.8845,
+     "n": 4,
+     "within10": 3
+    }
+   },
+   {
+    "a": {
+     "max": 1.1481,
+     "median": 1.0917,
+     "min": 0.9806,
+     "n": 16,
+     "within10": 9
+    },
+    "b": {
+     "max": 1.1416,
+     "median": 1.0966,
+     "min": 1.0009,
+     "n": 16,
+     "within10": 8
+    },
+    "base": {
+     "max": 0.3153,
+     "median": 0.1038,
+     "min": 0.0782,
+     "n": 16,
+     "within10": 0
+    },
+    "cat": "code-exec DIFF_MAX",
+    "cls": "ge1s",
+    "floor_joc": {
+     "max": 1.0472,
+     "median": 1.0024,
+     "min": 0.9948,
+     "n": 16,
+     "within10": 16
+    },
+    "floor_sa": {
+     "max": 1.0666,
+     "median": 1.0034,
+     "min": 0.964,
+     "n": 16,
+     "within10": 16
+    }
+   },
+   {
+    "a": {
+     "max": 1.05,
+     "median": 1.0015,
+     "min": 0.9296,
+     "n": 16,
+     "within10": 16
+    },
+    "b": {
+     "max": 1.0993,
+     "median": 0.9975,
+     "min": 0.9752,
+     "n": 16,
+     "within10": 16
+    },
+    "base": {
+     "max": 0.3824,
+     "median": 0.0568,
+     "min": 0.0411,
+     "n": 16,
+     "within10": 0
+    },
+    "cat": "code-exec EXISTING_EOA",
+    "cls": "ge1s",
+    "floor_joc": {
+     "max": 1.0467,
+     "median": 1.0039,
+     "min": 0.9114,
+     "n": 16,
+     "within10": 16
+    },
+    "floor_sa": {
+     "max": 1.0778,
+     "median": 0.9974,
+     "min": 0.9818,
+     "n": 16,
+     "within10": 16
+    }
+   },
+   {
+    "a": {
+     "max": 1.1486,
+     "median": 1.0987,
+     "min": 0.9444,
+     "n": 16,
+     "within10": 8
+    },
+    "b": {
+     "max": 1.2525,
+     "median": 1.0948,
+     "min": 0.9785,
+     "n": 16,
+     "within10": 10
+    },
+    "base": {
+     "max": 0.4801,
+     "median": 0.3871,
+     "min": 0.3545,
+     "n": 16,
+     "within10": 0
+    },
+    "cat": "code-exec JUMPDEST",
+    "cls": "ge1s",
+    "floor_joc": {
+     "max": 1.0852,
+     "median": 0.9949,
+     "min": 0.9093,
+     "n": 16,
+     "within10": 16
+    },
+    "floor_sa": {
+     "max": 1.0572,
+     "median": 1.0035,
+     "min": 0.9547,
+     "n": 16,
+     "within10": 16
+    }
+   },
+   {
+    "a": {
+     "max": 1.0251,
+     "median": 1.0013,
+     "min": 0.9141,
+     "n": 16,
+     "within10": 16
+    },
+    "b": {
+     "max": 1.0083,
+     "median": 0.9955,
+     "min": 0.9376,
+     "n": 16,
+     "within10": 16
+    },
+    "base": {
+     "max": 0.3673,
+     "median": 0.07,
+     "min": 0.0495,
+     "n": 16,
+     "within10": 0
+    },
+    "cat": "code-exec MINIMAL",
+    "cls": "ge1s",
+    "floor_joc": {
+     "max": 1.0271,
+     "median": 1.0,
+     "min": 0.975,
+     "n": 16,
+     "within10": 16
+    },
+    "floor_sa": {
+     "max": 1.0937,
+     "median": 0.9936,
+     "min": 0.9428,
+     "n": 16,
+     "within10": 16
+    }
+   },
+   {
+    "a": {
+     "max": 1.0316,
+     "median": 0.9968,
+     "min": 0.9496,
+     "n": 16,
+     "within10": 16
+    },
+    "b": {
+     "max": 1.0583,
+     "median": 1.0014,
+     "min": 0.9823,
+     "n": 16,
+     "within10": 16
+    },
+    "base": {
+     "max": 0.3501,
+     "median": 0.0663,
+     "min": 0.0491,
+     "n": 16,
+     "within10": 0
+    },
+    "cat": "code-exec SAME_MAX",
+    "cls": "ge1s",
+    "floor_joc": {
+     "max": 1.0446,
+     "median": 0.9959,
+     "min": 0.9493,
+     "n": 16,
+     "within10": 16
+    },
+    "floor_sa": {
+     "max": 1.0542,
+     "median": 1.0038,
+     "min": 0.9863,
+     "n": 16,
+     "within10": 16
+    }
+   },
+   {
+    "a": {
+     "max": 1.5351,
+     "median": 1.0539,
+     "min": 0.88,
+     "n": 36,
+     "within10": 29
+    },
+    "b": {
+     "max": 1.4455,
+     "median": 1.0601,
+     "min": 0.8951,
+     "n": 36,
+     "within10": 29
+    },
+    "base": {
+     "max": 1.1367,
+     "median": 0.3811,
+     "min": 0.2105,
+     "n": 36,
+     "within10": 1
+    },
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": {
+     "max": 1.0655,
+     "median": 1.0042,
+     "min": 0.9172,
+     "n": 36,
+     "within10": 36
+    },
+    "floor_sa": {
+     "max": 1.2014,
+     "median": 1.0023,
+     "min": 0.8656,
+     "n": 36,
+     "within10": 31
+    }
+   },
+   {
+    "a": {
+     "max": 1.0378,
+     "median": 1.0014,
+     "min": 0.9398,
+     "n": 8,
+     "within10": 8
+    },
+    "b": {
+     "max": 1.1134,
+     "median": 0.9971,
+     "min": 0.9691,
+     "n": 8,
+     "within10": 7
+    },
+    "base": {
+     "max": 1.4654,
+     "median": 0.9987,
+     "min": 0.9537,
+     "n": 8,
+     "within10": 7
+    },
+    "cat": "storage slot",
+    "cls": "ge1s",
+    "floor_joc": {
+     "max": 1.0138,
+     "median": 0.9965,
+     "min": 0.9384,
+     "n": 8,
+     "within10": 8
+    },
+    "floor_sa": {
+     "max": 1.0916,
+     "median": 1.0007,
+     "min": 0.9511,
+     "n": 8,
+     "within10": 8
+    }
+   },
+   {
+    "a": {
+     "max": 2.3236,
+     "median": 1.1498,
+     "min": 0.5922,
+     "n": 122,
+     "within10": 40
+    },
+    "b": {
+     "max": 2.1164,
+     "median": 1.1218,
+     "min": 0.5947,
+     "n": 122,
+     "within10": 38
+    },
+    "base": {
+     "max": 1.6715,
+     "median": 0.7902,
+     "min": 0.4293,
+     "n": 122,
+     "within10": 19
+    },
+    "cat": "__all__",
+    "cls": "lt1s",
+    "floor_joc": {
+     "max": 1.6225,
+     "median": 1.0087,
+     "min": 0.5928,
      "n": 122,
      "within10": 75
     },
     "floor_sa": {
-     "max": 1.996,
-     "median": 1.024,
-     "min": 0.431,
+     "max": 1.9957,
+     "median": 1.0238,
+     "min": 0.4305,
      "n": 122,
      "within10": 50
+    }
+   },
+   {
+    "a": {
+     "max": 1.7775,
+     "median": 1.1524,
+     "min": 0.9054,
+     "n": 20,
+     "within10": 7
     },
-    "pair_a": {
-     "max": 2.324,
-     "median": 1.15,
-     "min": 0.592,
-     "n": 122,
-     "within10": 40
+    "b": {
+     "max": 1.5505,
+     "median": 1.1298,
+     "min": 1.0261,
+     "n": 20,
+     "within10": 6
     },
-    "pair_b": {
-     "max": 2.116,
-     "median": 1.122,
-     "min": 0.595,
-     "n": 122,
-     "within10": 38
+    "base": {
+     "max": 1.3219,
+     "median": 1.0208,
+     "min": 0.7381,
+     "n": 20,
+     "within10": 8
     },
-    "v1_pair": {
-     "max": 2.13,
-     "median": 1.175,
-     "min": 0.612,
-     "n": 122,
-     "within10": 19
+    "cat": "absent account",
+    "cls": "lt1s",
+    "floor_joc": {
+     "max": 1.5409,
+     "median": 1.0099,
+     "min": 0.8392,
+     "n": 20,
+     "within10": 13
+    },
+    "floor_sa": {
+     "max": 1.4672,
+     "median": 0.9993,
+     "min": 0.8305,
+     "n": 20,
+     "within10": 16
+    }
+   },
+   {
+    "a": {
+     "max": 2.3236,
+     "median": 1.1105,
+     "min": 0.5922,
+     "n": 80,
+     "within10": 28
+    },
+    "b": {
+     "max": 2.1164,
+     "median": 1.121,
+     "min": 0.5947,
+     "n": 80,
+     "within10": 26
+    },
+    "base": {
+     "max": 1.35,
+     "median": 0.7198,
+     "min": 0.4293,
+     "n": 80,
+     "within10": 3
+    },
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": {
+     "max": 1.6225,
+     "median": 1.0013,
+     "min": 0.5928,
+     "n": 80,
+     "within10": 53
+    },
+    "floor_sa": {
+     "max": 1.9957,
+     "median": 1.0276,
+     "min": 0.4305,
+     "n": 80,
+     "within10": 26
+    }
+   },
+   {
+    "a": {
+     "max": 1.7217,
+     "median": 1.2595,
+     "min": 0.9827,
+     "n": 4,
+     "within10": 1
+    },
+    "b": {
+     "max": 1.5498,
+     "median": 1.4056,
+     "min": 1.1179,
+     "n": 4,
+     "within10": 0
+    },
+    "base": {
+     "max": 1.0698,
+     "median": 0.9915,
+     "min": 0.6971,
+     "n": 4,
+     "within10": 3
+    },
+    "cat": "sload same key",
+    "cls": "lt1s",
+    "floor_joc": {
+     "max": 1.1825,
+     "median": 1.0782,
+     "min": 0.886,
+     "n": 4,
+     "within10": 1
+    },
+    "floor_sa": {
+     "max": 1.2847,
+     "median": 1.1004,
+     "min": 1.0037,
+     "n": 4,
+     "within10": 2
+    }
+   },
+   {
+    "a": {
+     "max": 1.0292,
+     "median": 0.9853,
+     "min": 0.7894,
+     "n": 4,
+     "within10": 3
+    },
+    "b": {
+     "max": 1.2008,
+     "median": 1.0646,
+     "min": 1.0047,
+     "n": 4,
+     "within10": 3
+    },
+    "base": {
+     "max": 1.6715,
+     "median": 1.5506,
+     "min": 1.0909,
+     "n": 4,
+     "within10": 1
+    },
+    "cat": "storage slot",
+    "cls": "lt1s",
+    "floor_joc": {
+     "max": 1.177,
+     "median": 0.9953,
+     "min": 0.7969,
+     "n": 4,
+     "within10": 2
+    },
+    "floor_sa": {
+     "max": 1.2241,
+     "median": 1.1538,
+     "min": 0.9883,
+     "n": 4,
+     "within10": 2
+    }
+   },
+   {
+    "a": {
+     "max": 2.0669,
+     "median": 1.2704,
+     "min": 0.8776,
+     "n": 14,
+     "within10": 1
+    },
+    "b": {
+     "max": 1.5887,
+     "median": 1.1798,
+     "min": 0.8305,
+     "n": 14,
+     "within10": 3
+    },
+    "base": {
+     "max": 1.2391,
+     "median": 0.8353,
+     "min": 0.6333,
+     "n": 14,
+     "within10": 4
+    },
+    "cat": "warm query",
+    "cls": "lt1s",
+    "floor_joc": {
+     "max": 1.5073,
+     "median": 1.0682,
+     "min": 0.6251,
+     "n": 14,
+     "within10": 6
+    },
+    "floor_sa": {
+     "max": 1.6519,
+     "median": 0.96,
+     "min": 0.5983,
+     "n": 14,
+     "within10": 4
     }
    }
-  },
-  "categories": {
-   "DIFF_MAX BAL/HASH": {
-    "floor_sa": 0.989,
-    "long": 4,
-    "n": 4,
-    "pair_a": 0.984,
-    "pair_b": 0.991,
-    "v1_pair": 0.987,
-    "within10": 4
-   },
-   "DIFF_MAX code-exec": {
-    "floor_sa": 1.003,
-    "long": 16,
-    "n": 16,
-    "pair_a": 1.092,
-    "pair_b": 1.097,
-    "v1_pair": 0.938,
-    "within10": 9
-   },
-   "EXISTING_EOA BAL/HASH": {
-    "floor_sa": 0.998,
-    "long": 4,
-    "n": 4,
-    "pair_a": 0.997,
-    "pair_b": 0.999,
-    "v1_pair": 0.995,
-    "within10": 4
-   },
-   "EXISTING_EOA code-exec": {
-    "floor_sa": 0.997,
-    "long": 16,
-    "n": 16,
-    "pair_a": 1.001,
-    "pair_b": 0.997,
-    "v1_pair": 0.997,
-    "within10": 16
-   },
-   "JUMPDEST BAL/HASH": {
-    "floor_sa": 0.987,
-    "long": 4,
-    "n": 4,
-    "pair_a": 0.995,
-    "pair_b": 0.98,
-    "v1_pair": 0.974,
-    "within10": 4
-   },
-   "JUMPDEST code-exec": {
-    "floor_sa": 1.004,
-    "long": 16,
-    "n": 16,
-    "pair_a": 1.099,
-    "pair_b": 1.095,
-    "v1_pair": 0.943,
-    "within10": 8
-   },
-   "MINIMAL BAL/HASH": {
-    "floor_sa": 0.994,
-    "long": 4,
-    "n": 4,
-    "pair_a": 0.999,
-    "pair_b": 0.996,
-    "v1_pair": 0.998,
-    "within10": 4
-   },
-   "MINIMAL code-exec": {
-    "floor_sa": 0.994,
-    "long": 16,
-    "n": 16,
-    "pair_a": 1.001,
-    "pair_b": 0.996,
-    "v1_pair": 0.995,
-    "within10": 16
-   },
-   "SAME_MAX BAL/HASH": {
-    "floor_sa": 1.009,
-    "long": 4,
-    "n": 4,
-    "pair_a": 0.975,
-    "pair_b": 1.004,
-    "v1_pair": 0.998,
-    "within10": 4
-   },
-   "SAME_MAX code-exec": {
-    "floor_sa": 1.004,
-    "long": 16,
-    "n": 16,
-    "pair_a": 0.997,
-    "pair_b": 1.001,
-    "v1_pair": 1.0,
-    "within10": 16
-   },
-   "absent account BAL/HASH": {
-    "floor_sa": 0.992,
-    "long": 0,
-    "n": 4,
-    "pair_a": 1.151,
-    "pair_b": 1.132,
-    "v1_pair": 1.353,
-    "within10": 2
-   },
-   "absent account code-exec": {
-    "floor_sa": 1.005,
-    "long": 0,
-    "n": 16,
-    "pair_a": 1.152,
-    "pair_b": 1.129,
-    "v1_pair": 1.234,
-    "within10": 5
-   },
-   "control (no state work)": {
-    "floor_sa": 1.028,
-    "long": 0,
-    "n": 80,
-    "pair_a": 1.111,
-    "pair_b": 1.121,
-    "v1_pair": 1.142,
-    "within10": 28
-   },
-   "ether transfer": {
-    "floor_sa": 1.002,
-    "long": 36,
-    "n": 36,
-    "pair_a": 1.054,
-    "pair_b": 1.06,
-    "v1_pair": 1.076,
-    "within10": 29
-   },
-   "sload same key": {
-    "floor_sa": 1.1,
-    "long": 0,
-    "n": 4,
-    "pair_a": 1.26,
-    "pair_b": 1.406,
-    "v1_pair": 1.099,
-    "within10": 1
-   },
-   "storage slot": {
-    "floor_sa": 1.005,
-    "long": 8,
-    "n": 12,
-    "pair_a": 1.001,
-    "pair_b": 1.008,
-    "v1_pair": 1.093,
-    "within10": 11
-   },
-   "warm query": {
-    "floor_sa": 0.96,
-    "long": 0,
-    "n": 14,
-    "pair_a": 1.27,
-    "pair_b": 1.18,
-    "v1_pair": 1.349,
-    "within10": 1
-   }
-  },
-  "classes": {
-   "boundary_s": 1.0,
-   "long": 144,
-   "membership": "fixed from the jochemnet arm of this pair",
-   "short": 122
-  },
-  "outliers": {
-   "all": 60,
-   "long": 17,
-   "long_buckets": {
-    "absent-key work": 2,
-    "code pool (#141 overshoot)": 12,
-    "ether transfer": 3
-   },
-   "long_rows": [
-    {
-     "cat": "ether transfer",
-     "joc_s": 1.4,
-     "long": true,
-     "pair_a": 1.535,
-     "pair_b": 1.446,
-     "sa_s": 0.9,
-     "variant": "diff_to_nonexistent 160M"
-    },
-    {
-     "cat": "ether transfer",
-     "joc_s": 1.7,
-     "long": true,
-     "pair_a": 1.328,
-     "pair_b": 1.356,
-     "sa_s": 1.3,
-     "variant": "diff_to_nonexistent 240M"
-    },
-    {
-     "cat": "JUMPDEST code-exec",
-     "joc_s": 19.9,
-     "long": true,
-     "pair_a": 1.117,
-     "pair_b": 1.253,
-     "sa_s": 17.8,
-     "variant": "STATICCALL-0 240M"
-    },
-    {
-     "cat": "ether transfer",
-     "joc_s": 14.3,
-     "long": true,
-     "pair_a": 1.168,
-     "pair_b": 1.151,
-     "sa_s": 12.2,
-     "variant": "diff_to_delegated_contract_diff 240M"
-    },
-    {
-     "cat": "JUMPDEST code-exec",
-     "joc_s": 19.5,
-     "long": true,
-     "pair_a": 1.119,
-     "pair_b": 1.153,
-     "sa_s": 17.4,
-     "variant": "EXTCODESIZE-0 240M"
-    },
-    {
-     "cat": "JUMPDEST code-exec",
-     "joc_s": 20.1,
-     "long": true,
-     "pair_a": 1.149,
-     "pair_b": 1.152,
-     "sa_s": 17.5,
-     "variant": "CALL-0 240M"
-    },
-    {
-     "cat": "DIFF_MAX code-exec",
-     "joc_s": 20.3,
-     "long": true,
-     "pair_a": 1.148,
-     "pair_b": 1.135,
-     "sa_s": 17.7,
-     "variant": "CALLCODE-0 240M"
-    },
-    {
-     "cat": "ether transfer",
-     "joc_s": 10.1,
-     "long": true,
-     "pair_a": 1.115,
-     "pair_b": 1.144,
-     "sa_s": 9.0,
-     "variant": "diff_to_delegated_contract_diff 160M"
-    },
-    {
-     "cat": "DIFF_MAX code-exec",
-     "joc_s": 19.0,
-     "long": true,
-     "pair_a": 1.134,
-     "pair_b": 1.142,
-     "sa_s": 16.8,
-     "variant": "EXTCODECOPY-0 240M"
-    },
-    {
-     "cat": "DIFF_MAX code-exec",
-     "joc_s": 20.1,
-     "long": true,
-     "pair_a": 1.129,
-     "pair_b": 1.14,
-     "sa_s": 17.8,
-     "variant": "STATICCALL-0 240M"
-    },
-    {
-     "cat": "JUMPDEST code-exec",
-     "joc_s": 20.1,
-     "long": true,
-     "pair_a": 1.102,
-     "pair_b": 1.138,
-     "sa_s": 18.2,
-     "variant": "CALLCODE-0 240M"
-    },
-    {
-     "cat": "DIFF_MAX code-exec",
-     "joc_s": 14.5,
-     "long": true,
-     "pair_a": 1.136,
-     "pair_b": 1.112,
-     "sa_s": 12.8,
-     "variant": "STATICCALL-0 160M"
-    },
-    {
-     "cat": "DIFF_MAX code-exec",
-     "joc_s": 19.5,
-     "long": true,
-     "pair_a": 1.129,
-     "pair_b": 1.135,
-     "sa_s": 17.2,
-     "variant": "EXTCODESIZE-0 240M"
-    },
-    {
-     "cat": "DIFF_MAX code-exec",
-     "joc_s": 20.1,
-     "long": true,
-     "pair_a": 1.107,
-     "pair_b": 1.13,
-     "sa_s": 18.1,
-     "variant": "DELEGATECALL-0 240M"
-    },
-    {
-     "cat": "ether transfer",
-     "joc_s": 8.3,
-     "long": true,
-     "pair_a": 1.126,
-     "pair_b": 1.103,
-     "sa_s": 7.4,
-     "variant": "diff_to_unique_code_jumpdest_contract 160M"
-    },
-    {
-     "cat": "JUMPDEST code-exec",
-     "joc_s": 19.5,
-     "long": true,
-     "pair_a": 1.104,
-     "pair_b": 1.118,
-     "sa_s": 17.7,
-     "variant": "EXTCODECOPY-0 240M"
-    },
-    {
-     "cat": "DIFF_MAX code-exec",
-     "joc_s": 13.5,
-     "long": true,
-     "pair_a": 1.115,
-     "pair_b": 1.1,
-     "sa_s": 12.1,
-     "variant": "EXTCODESIZE-0 160M"
-    }
-   ],
-   "short": 43
-  },
+  ],
   "runs": {
-   "nm-joc-fin1": 266,
-   "nm-joc-fin2": 266,
-   "nm-joc-t1": 266,
-   "nm-sa-fin1": 456,
-   "nm-sa-fin2": 456,
-   "nm-sa-t1": 266
+   "baseline": {
+    "joc": "1789101020_23e0ca97_nm-jochemnet",
+    "sa": "1789207753_887c4915_nm-sa"
+   },
+   "final": {
+    "joc1": "1790160480_462be6fe_nm-joc-fin1",
+    "joc2": "1790243401_2074a314_nm-joc-fin2",
+    "sa1": "1790169466_b2f4e211_nm-sa-fin1",
+    "sa2": "1790179222_ef50d999_nm-sa-fin2"
+   }
   },
-  "src": "R74 + R75: the whole suite at 160M/240M on the settled stores, two independent pairs",
+  "src": "collect_final.py: untreated pair pinned by run id; final pairs R74 (sa-fin1/joc-fin1) and R75 (sa-fin2/joc-fin2); class at 1 s of measured step time on the final jochemnet arm",
+  "tests": {
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.9858,
+    "b": 0.9973,
+    "base": 0.0567,
+    "cat": "account row DIFF_MAX",
+    "cls": "ge1s",
+    "floor_joc": 0.9781,
+    "floor_sa": 0.9895,
+    "joc_secs": 8.375
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.9988,
+    "b": 0.9854,
+    "base": 0.0643,
+    "cat": "account row DIFF_MAX",
+    "cls": "ge1s",
+    "floor_joc": 1.0028,
+    "floor_sa": 0.9894,
+    "joc_secs": 12.311
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.7841,
+    "b": 1.0199,
+    "base": 0.5233,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.359,
+    "floor_sa": 1.7677,
+    "joc_secs": 0.082
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.9737,
+    "b": 1.0911,
+    "base": 0.8417,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.0024,
+    "floor_sa": 1.1232,
+    "joc_secs": 0.153
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.9756,
+    "b": 0.9922,
+    "base": 0.0648,
+    "cat": "account row JUMPDEST",
+    "cls": "ge1s",
+    "floor_joc": 1.0001,
+    "floor_sa": 1.0172,
+    "joc_secs": 8.319
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.9965,
+    "b": 0.9856,
+    "base": 0.0545,
+    "cat": "account row JUMPDEST",
+    "cls": "ge1s",
+    "floor_joc": 1.0017,
+    "floor_sa": 0.9908,
+    "joc_secs": 12.271
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.2899,
+    "b": 1.973,
+    "base": 0.7742,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.0326,
+    "floor_sa": 1.5794,
+    "joc_secs": 0.117
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0826,
+    "b": 1.1247,
+    "base": 0.657,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.9666,
+    "floor_sa": 1.0042,
+    "joc_secs": 0.156
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.0604,
+    "b": 1.011,
+    "base": 0.0787,
+    "cat": "account row MINIMAL",
+    "cls": "ge1s",
+    "floor_joc": 1.0463,
+    "floor_sa": 0.9975,
+    "joc_secs": 8.712
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.9999,
+    "b": 0.9943,
+    "base": 0.0485,
+    "cat": "account row MINIMAL",
+    "cls": "ge1s",
+    "floor_joc": 0.997,
+    "floor_sa": 0.9915,
+    "joc_secs": 12.298
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.0145,
+    "b": 1.1354,
+    "base": 0.686,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.0292,
+    "floor_sa": 1.1519,
+    "joc_secs": 0.112
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.9553,
+    "b": 1.1354,
+    "base": 0.6265,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.0059,
+    "floor_sa": 1.1955,
+    "joc_secs": 0.153
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.0026,
+    "b": 1.0125,
+    "base": 0.068,
+    "cat": "account row SAME_MAX",
+    "cls": "ge1s",
+    "floor_joc": 0.9857,
+    "floor_sa": 0.9955,
+    "joc_secs": 8.415
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.9774,
+    "b": 0.996,
+    "base": 0.055,
+    "cat": "account row SAME_MAX",
+    "cls": "ge1s",
+    "floor_joc": 1.0027,
+    "floor_sa": 1.0217,
+    "joc_secs": 12.309
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.3022,
+    "b": 2.1164,
+    "base": 0.7971,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.0397,
+    "floor_sa": 1.6898,
+    "joc_secs": 0.117
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0721,
+    "b": 1.0977,
+    "base": 0.715,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.0155,
+    "floor_sa": 1.0397,
+    "joc_secs": 0.153
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.9943,
+    "b": 0.9866,
+    "base": 0.0747,
+    "cat": "account row EXISTING_EOA",
+    "cls": "ge1s",
+    "floor_joc": 0.9891,
+    "floor_sa": 0.9814,
+    "joc_secs": 8.492
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.9991,
+    "b": 0.9988,
+    "base": 0.0498,
+    "cat": "account row EXISTING_EOA",
+    "cls": "ge1s",
+    "floor_joc": 1.0002,
+    "floor_sa": 0.9999,
+    "joc_secs": 12.429
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.011,
+    "b": 1.1451,
+    "base": 1.3066,
+    "cat": "absent account",
+    "cls": "lt1s",
+    "floor_joc": 1.0374,
+    "floor_sa": 1.175,
+    "joc_secs": 0.194
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.2472,
+    "b": 1.0261,
+    "base": 0.8035,
+    "cat": "absent account",
+    "cls": "lt1s",
+    "floor_joc": 1.0096,
+    "floor_sa": 0.8305,
+    "joc_secs": 0.274
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.0905,
+    "b": 1.093,
+    "base": 0.1057,
+    "cat": "code-exec DIFF_MAX",
+    "cls": "ge1s",
+    "floor_joc": 1.0013,
+    "floor_sa": 1.0036,
+    "joc_secs": 13.599
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0645,
+    "b": 1.1183,
+    "base": 0.0782,
+    "cat": "code-exec DIFF_MAX",
+    "cls": "ge1s",
+    "floor_joc": 1.0034,
+    "floor_sa": 1.0541,
+    "joc_secs": 20.012
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.0982,
+    "b": 0.8067,
+    "base": 0.6331,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.3664,
+    "floor_sa": 1.0037,
+    "joc_secs": 0.093
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0307,
+    "b": 1.0747,
+    "base": 0.7948,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.0482,
+    "floor_sa": 1.093,
+    "joc_secs": 0.155
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.095,
+    "b": 1.0895,
+    "base": 0.3922,
+    "cat": "code-exec JUMPDEST",
+    "cls": "ge1s",
+    "floor_joc": 1.0018,
+    "floor_sa": 0.9967,
+    "joc_secs": 13.614
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.1486,
+    "b": 1.1516,
+    "base": 0.3685,
+    "cat": "code-exec JUMPDEST",
+    "cls": "ge1s",
+    "floor_joc": 0.9924,
+    "floor_sa": 0.995,
+    "joc_secs": 20.189
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 2.1823,
+    "b": 0.9827,
+    "base": 0.8556,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.0361,
+    "floor_sa": 0.4666,
+    "joc_secs": 0.118
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.9347,
+    "b": 1.8724,
+    "base": 0.6853,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.9963,
+    "floor_sa": 1.9957,
+    "joc_secs": 0.158
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.004,
+    "b": 1.0015,
+    "base": 0.0948,
+    "cat": "code-exec MINIMAL",
+    "cls": "ge1s",
+    "floor_joc": 0.975,
+    "floor_sa": 0.9726,
+    "joc_secs": 8.404
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.9928,
+    "b": 0.9998,
+    "base": 0.064,
+    "cat": "code-exec MINIMAL",
+    "cls": "ge1s",
+    "floor_joc": 1.0004,
+    "floor_sa": 1.0075,
+    "joc_secs": 12.216
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.0768,
+    "b": 1.2054,
+    "base": 0.7213,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.9522,
+    "floor_sa": 1.0659,
+    "joc_secs": 0.112
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.8399,
+    "b": 1.757,
+    "base": 0.5376,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.9777,
+    "floor_sa": 0.9336,
+    "joc_secs": 0.155
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.9944,
+    "b": 1.0157,
+    "base": 0.087,
+    "cat": "code-exec SAME_MAX",
+    "cls": "ge1s",
+    "floor_joc": 0.9826,
+    "floor_sa": 1.0036,
+    "joc_secs": 8.348
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.9508,
+    "b": 0.9823,
+    "base": 0.0652,
+    "cat": "code-exec SAME_MAX",
+    "cls": "ge1s",
+    "floor_joc": 0.9937,
+    "floor_sa": 1.0266,
+    "joc_secs": 12.305
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.8118,
+    "b": 0.9515,
+    "base": 0.7907,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.9989,
+    "floor_sa": 0.5246,
+    "joc_secs": 0.111
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.7091,
+    "b": 0.9306,
+    "base": 0.443,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.5934,
+    "floor_sa": 0.7787,
+    "joc_secs": 0.129
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.9933,
+    "b": 0.9752,
+    "base": 0.0597,
+    "cat": "code-exec EXISTING_EOA",
+    "cls": "ge1s",
+    "floor_joc": 1.007,
+    "floor_sa": 0.9887,
+    "joc_secs": 8.391
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.9939,
+    "b": 0.9884,
+    "base": 0.0536,
+    "cat": "code-exec EXISTING_EOA",
+    "cls": "ge1s",
+    "floor_joc": 0.9995,
+    "floor_sa": 0.994,
+    "joc_secs": 12.343
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.4539,
+    "b": 1.3859,
+    "base": 0.7576,
+    "cat": "absent account",
+    "cls": "lt1s",
+    "floor_joc": 1.1491,
+    "floor_sa": 1.0953,
+    "joc_secs": 0.229
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.1606,
+    "b": 1.14,
+    "base": 1.0966,
+    "cat": "absent account",
+    "cls": "lt1s",
+    "floor_joc": 1.1028,
+    "floor_sa": 1.0831,
+    "joc_secs": 0.282
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.9806,
+    "b": 1.0501,
+    "base": 0.2842,
+    "cat": "code-exec DIFF_MAX",
+    "cls": "ge1s",
+    "floor_joc": 0.996,
+    "floor_sa": 1.0666,
+    "joc_secs": 6.74
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0258,
+    "b": 1.0046,
+    "base": 0.2314,
+    "cat": "code-exec DIFF_MAX",
+    "cls": "ge1s",
+    "floor_joc": 1.0131,
+    "floor_sa": 0.9922,
+    "joc_secs": 9.412
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.4517,
+    "b": 1.0743,
+    "base": 0.7514,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.206,
+    "floor_sa": 0.8925,
+    "joc_secs": 0.041
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.4345,
+    "b": 0.8348,
+    "base": 0.8051,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.9214,
+    "floor_sa": 0.5362,
+    "joc_secs": 0.056
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.9444,
+    "b": 0.9785,
+    "base": 0.4801,
+    "cat": "code-exec JUMPDEST",
+    "cls": "ge1s",
+    "floor_joc": 0.9909,
+    "floor_sa": 1.0267,
+    "joc_secs": 6.527
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0216,
+    "b": 1.0939,
+    "base": 0.4394,
+    "cat": "code-exec JUMPDEST",
+    "cls": "ge1s",
+    "floor_joc": 0.9363,
+    "floor_sa": 1.0025,
+    "joc_secs": 9.555
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.675,
+    "b": 1.6002,
+    "base": 0.6155,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.9411,
+    "floor_sa": 0.8991,
+    "joc_secs": 0.044
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 2.1567,
+    "b": 1.275,
+    "base": 0.6025,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.2359,
+    "floor_sa": 0.7306,
+    "joc_secs": 0.054
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.9728,
+    "b": 0.9938,
+    "base": 0.3673,
+    "cat": "code-exec MINIMAL",
+    "cls": "ge1s",
+    "floor_joc": 1.0107,
+    "floor_sa": 1.0326,
+    "joc_secs": 5.194
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0251,
+    "b": 0.9831,
+    "base": 0.2854,
+    "cat": "code-exec MINIMAL",
+    "cls": "ge1s",
+    "floor_joc": 1.0038,
+    "floor_sa": 0.9627,
+    "joc_secs": 7.481
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.3782,
+    "b": 1.6997,
+    "base": 0.5904,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.9979,
+    "floor_sa": 1.2307,
+    "joc_secs": 0.048
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.56,
+    "b": 1.9756,
+    "base": 1.173,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.2164,
+    "floor_sa": 1.5405,
+    "joc_secs": 0.05
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.9871,
+    "b": 0.9947,
+    "base": 0.3501,
+    "cat": "code-exec SAME_MAX",
+    "cls": "ge1s",
+    "floor_joc": 0.9789,
+    "floor_sa": 0.9863,
+    "joc_secs": 5.237
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0316,
+    "b": 1.0039,
+    "base": 0.2549,
+    "cat": "code-exec SAME_MAX",
+    "cls": "ge1s",
+    "floor_joc": 1.0206,
+    "floor_sa": 0.9931,
+    "joc_secs": 7.575
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.7302,
+    "b": 1.0588,
+    "base": 0.6679,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.1126,
+    "floor_sa": 0.6808,
+    "joc_secs": 0.049
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.8331,
+    "b": 1.4119,
+    "base": 0.5432,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.0154,
+    "floor_sa": 1.7209,
+    "joc_secs": 0.054
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.0298,
+    "b": 0.9989,
+    "base": 0.3824,
+    "cat": "code-exec EXISTING_EOA",
+    "cls": "ge1s",
+    "floor_joc": 1.022,
+    "floor_sa": 0.9913,
+    "joc_secs": 5.305
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0271,
+    "b": 1.0229,
+    "base": 0.2892,
+    "cat": "code-exec EXISTING_EOA",
+    "cls": "ge1s",
+    "floor_joc": 1.0124,
+    "floor_sa": 1.0083,
+    "joc_secs": 7.608
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.0327,
+    "b": 1.0643,
+    "base": 0.9998,
+    "cat": "absent account",
+    "cls": "lt1s",
+    "floor_joc": 1.0102,
+    "floor_sa": 1.0411,
+    "joc_secs": 0.497
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_1-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0382,
+    "b": 1.0718,
+    "base": 1.0317,
+    "cat": "absent account",
+    "cls": "lt1s",
+    "floor_joc": 0.9489,
+    "floor_sa": 0.9796,
+    "joc_secs": 0.672
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.0898,
+    "b": 1.0561,
+    "base": 0.1032,
+    "cat": "code-exec DIFF_MAX",
+    "cls": "ge1s",
+    "floor_joc": 0.9948,
+    "floor_sa": 0.964,
+    "joc_secs": 13.616
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.1481,
+    "b": 1.1355,
+    "base": 0.0804,
+    "cat": "code-exec DIFF_MAX",
+    "cls": "ge1s",
+    "floor_joc": 1.0154,
+    "floor_sa": 1.0042,
+    "joc_secs": 20.166
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.2594,
+    "b": 0.9467,
+    "base": 0.6268,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.0895,
+    "floor_sa": 0.819,
+    "joc_secs": 0.116
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.9305,
+    "b": 1.1148,
+    "base": 0.6578,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.973,
+    "floor_sa": 1.1658,
+    "joc_secs": 0.154
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.094,
+    "b": 1.0658,
+    "base": 0.3952,
+    "cat": "code-exec JUMPDEST",
+    "cls": "ge1s",
+    "floor_joc": 1.0852,
+    "floor_sa": 1.0572,
+    "joc_secs": 14.132
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.1023,
+    "b": 1.1379,
+    "base": 0.367,
+    "cat": "code-exec JUMPDEST",
+    "cls": "ge1s",
+    "floor_joc": 1.0085,
+    "floor_sa": 1.0411,
+    "joc_secs": 20.015
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.1997,
+    "b": 1.64,
+    "base": 0.6268,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.0412,
+    "floor_sa": 1.4234,
+    "joc_secs": 0.11
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0814,
+    "b": 1.0996,
+    "base": 0.6615,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.6062,
+    "floor_sa": 0.6164,
+    "joc_secs": 0.132
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.0127,
+    "b": 0.9806,
+    "base": 0.0719,
+    "cat": "code-exec MINIMAL",
+    "cls": "ge1s",
+    "floor_joc": 1.0175,
+    "floor_sa": 0.9851,
+    "joc_secs": 8.315
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.9973,
+    "b": 0.9909,
+    "base": 0.0721,
+    "cat": "code-exec MINIMAL",
+    "cls": "ge1s",
+    "floor_joc": 1.0003,
+    "floor_sa": 0.9939,
+    "joc_secs": 12.191
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.9565,
+    "b": 1.2322,
+    "base": 0.6393,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.0126,
+    "floor_sa": 1.3045,
+    "joc_secs": 0.115
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.9321,
+    "b": 1.0342,
+    "base": 1.1988,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.9985,
+    "floor_sa": 1.1079,
+    "joc_secs": 0.155
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.0039,
+    "b": 1.0083,
+    "base": 0.094,
+    "cat": "code-exec SAME_MAX",
+    "cls": "ge1s",
+    "floor_joc": 0.9981,
+    "floor_sa": 1.0023,
+    "joc_secs": 8.34
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.9956,
+    "b": 0.9979,
+    "base": 0.0657,
+    "cat": "code-exec SAME_MAX",
+    "cls": "ge1s",
+    "floor_joc": 1.0032,
+    "floor_sa": 1.0055,
+    "joc_secs": 12.257
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.9041,
+    "b": 2.0346,
+    "base": 0.8154,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.9502,
+    "floor_sa": 1.0153,
+    "joc_secs": 0.113
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0621,
+    "b": 1.1034,
+    "base": 1.1853,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.9889,
+    "floor_sa": 1.0274,
+    "joc_secs": 0.154
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.0267,
+    "b": 0.995,
+    "base": 0.0586,
+    "cat": "code-exec EXISTING_EOA",
+    "cls": "ge1s",
+    "floor_joc": 1.0305,
+    "floor_sa": 0.9987,
+    "joc_secs": 8.5
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0019,
+    "b": 0.9946,
+    "base": 0.0539,
+    "cat": "code-exec EXISTING_EOA",
+    "cls": "ge1s",
+    "floor_joc": 1.0073,
+    "floor_sa": 1.0,
+    "joc_secs": 12.358
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.986,
+    "b": 1.1175,
+    "base": 1.083,
+    "cat": "absent account",
+    "cls": "lt1s",
+    "floor_joc": 0.8582,
+    "floor_sa": 0.9727,
+    "joc_secs": 0.189
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.2079,
+    "b": 1.4033,
+    "base": 1.2414,
+    "cat": "absent account",
+    "cls": "lt1s",
+    "floor_joc": 0.8392,
+    "floor_sa": 0.975,
+    "joc_secs": 0.298
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.0364,
+    "b": 1.0009,
+    "base": 0.3153,
+    "cat": "code-exec DIFF_MAX",
+    "cls": "ge1s",
+    "floor_joc": 1.0141,
+    "floor_sa": 0.9794,
+    "joc_secs": 3.311
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0889,
+    "b": 1.0562,
+    "base": 0.2226,
+    "cat": "code-exec DIFF_MAX",
+    "cls": "ge1s",
+    "floor_joc": 1.0343,
+    "floor_sa": 1.0033,
+    "joc_secs": 5.017
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.2091,
+    "b": 0.8812,
+    "base": 0.8441,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.1877,
+    "floor_sa": 0.8656,
+    "joc_secs": 0.047
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0195,
+    "b": 0.8162,
+    "base": 0.6095,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.9171,
+    "floor_sa": 0.7342,
+    "joc_secs": 0.056
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.0356,
+    "b": 1.1288,
+    "base": 0.4229,
+    "cat": "code-exec JUMPDEST",
+    "cls": "ge1s",
+    "floor_joc": 0.9176,
+    "floor_sa": 1.0002,
+    "joc_secs": 3.447
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0394,
+    "b": 1.052,
+    "base": 0.4279,
+    "cat": "code-exec JUMPDEST",
+    "cls": "ge1s",
+    "floor_joc": 0.9936,
+    "floor_sa": 1.0056,
+    "joc_secs": 4.932
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.3152,
+    "b": 1.7433,
+    "base": 0.8734,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.9769,
+    "floor_sa": 1.2949,
+    "joc_secs": 0.049
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.4544,
+    "b": 1.2492,
+    "base": 0.6957,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.9346,
+    "floor_sa": 0.8028,
+    "joc_secs": 0.059
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.0027,
+    "b": 0.9973,
+    "base": 0.1975,
+    "cat": "code-exec MINIMAL",
+    "cls": "ge1s",
+    "floor_joc": 0.9898,
+    "floor_sa": 0.9845,
+    "joc_secs": 2.038
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0115,
+    "b": 1.0082,
+    "base": 0.138,
+    "cat": "code-exec MINIMAL",
+    "cls": "ge1s",
+    "floor_joc": 0.9965,
+    "floor_sa": 0.9933,
+    "joc_secs": 2.985
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.1998,
+    "b": 1.0762,
+    "base": 0.5051,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.0201,
+    "floor_sa": 0.915,
+    "joc_secs": 0.051
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.9599,
+    "b": 1.588,
+    "base": 1.0677,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.7261,
+    "floor_sa": 1.2012,
+    "joc_secs": 0.048
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.9999,
+    "b": 1.0013,
+    "base": 0.2105,
+    "cat": "code-exec SAME_MAX",
+    "cls": "ge1s",
+    "floor_joc": 1.0025,
+    "floor_sa": 1.0039,
+    "joc_secs": 2.024
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.9979,
+    "b": 0.9935,
+    "base": 0.1448,
+    "cat": "code-exec SAME_MAX",
+    "cls": "ge1s",
+    "floor_joc": 0.9913,
+    "floor_sa": 0.9869,
+    "joc_secs": 2.996
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.1056,
+    "b": 1.2406,
+    "base": 0.9956,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.3418,
+    "floor_sa": 1.5056,
+    "joc_secs": 0.041
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_1-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.7151,
+    "b": 1.11,
+    "base": 0.8198,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.3045,
+    "floor_sa": 0.8443,
+    "joc_secs": 0.05
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_1-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.9882,
+    "b": 0.9985,
+    "base": 0.1528,
+    "cat": "code-exec EXISTING_EOA",
+    "cls": "ge1s",
+    "floor_joc": 0.986,
+    "floor_sa": 0.9962,
+    "joc_secs": 2.026
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_1-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0196,
+    "b": 1.0158,
+    "base": 0.1191,
+    "cat": "code-exec EXISTING_EOA",
+    "cls": "ge1s",
+    "floor_joc": 1.0108,
+    "floor_sa": 1.007,
+    "joc_secs": 3.005
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_1-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.9054,
+    "b": 1.521,
+    "base": 1.0099,
+    "cat": "absent account",
+    "cls": "lt1s",
+    "floor_joc": 0.8733,
+    "floor_sa": 1.4672,
+    "joc_secs": 0.089
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALLCODE-value_sent_1-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.4751,
+    "b": 1.5505,
+    "base": 0.9359,
+    "cat": "absent account",
+    "cls": "lt1s",
+    "floor_joc": 0.9476,
+    "floor_sa": 0.996,
+    "joc_secs": 0.103
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_DELEGATECALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.0929,
+    "b": 1.0918,
+    "base": 0.1021,
+    "cat": "code-exec DIFF_MAX",
+    "cls": "ge1s",
+    "floor_joc": 1.0006,
+    "floor_sa": 0.9996,
+    "joc_secs": 13.629
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_DELEGATECALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.1067,
+    "b": 1.1296,
+    "base": 0.0797,
+    "cat": "code-exec DIFF_MAX",
+    "cls": "ge1s",
+    "floor_joc": 1.0042,
+    "floor_sa": 1.025,
+    "joc_secs": 20.025
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_DELEGATECALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.8265,
+    "b": 1.2889,
+    "base": 1.3497,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.6543,
+    "floor_sa": 1.0203,
+    "joc_secs": 0.098
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_DELEGATECALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.8936,
+    "b": 1.0312,
+    "base": 1.0367,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.9847,
+    "floor_sa": 0.5362,
+    "joc_secs": 0.154
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_DELEGATECALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.1312,
+    "b": 1.0814,
+    "base": 0.3868,
+    "cat": "code-exec JUMPDEST",
+    "cls": "ge1s",
+    "floor_joc": 1.0398,
+    "floor_sa": 0.994,
+    "joc_secs": 13.858
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_DELEGATECALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.1355,
+    "b": 1.0915,
+    "base": 0.3758,
+    "cat": "code-exec JUMPDEST",
+    "cls": "ge1s",
+    "floor_joc": 0.9932,
+    "floor_sa": 0.9547,
+    "joc_secs": 20.028
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_DELEGATECALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.7477,
+    "b": 1.8607,
+    "base": 0.7292,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.716,
+    "floor_sa": 1.7818,
+    "joc_secs": 0.089
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_DELEGATECALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.9007,
+    "b": 1.08,
+    "base": 0.6654,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.9936,
+    "floor_sa": 0.5646,
+    "joc_secs": 0.152
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_DELEGATECALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.0097,
+    "b": 0.9765,
+    "base": 0.0625,
+    "cat": "code-exec MINIMAL",
+    "cls": "ge1s",
+    "floor_joc": 1.0271,
+    "floor_sa": 0.9933,
+    "joc_secs": 8.412
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_DELEGATECALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.929,
+    "b": 1.0083,
+    "base": 0.0651,
+    "cat": "code-exec MINIMAL",
+    "cls": "ge1s",
+    "floor_joc": 0.9846,
+    "floor_sa": 1.0687,
+    "joc_secs": 12.288
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_DELEGATECALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.273,
+    "b": 1.2258,
+    "base": 0.4293,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.1063,
+    "floor_sa": 1.0653,
+    "joc_secs": 0.117
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_DELEGATECALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0315,
+    "b": 1.0318,
+    "base": 0.7044,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.0435,
+    "floor_sa": 1.0438,
+    "joc_secs": 0.151
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_DELEGATECALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.9893,
+    "b": 1.0015,
+    "base": 0.0737,
+    "cat": "code-exec SAME_MAX",
+    "cls": "ge1s",
+    "floor_joc": 1.0045,
+    "floor_sa": 1.0169,
+    "joc_secs": 8.325
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_DELEGATECALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0094,
+    "b": 0.9924,
+    "base": 0.066,
+    "cat": "code-exec SAME_MAX",
+    "cls": "ge1s",
+    "floor_joc": 1.0446,
+    "floor_sa": 1.027,
+    "joc_secs": 12.529
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_DELEGATECALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.6354,
+    "b": 1.0234,
+    "base": 0.7552,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.9487,
+    "floor_sa": 0.5937,
+    "joc_secs": 0.112
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_DELEGATECALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0689,
+    "b": 1.1205,
+    "base": 0.6007,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.0077,
+    "floor_sa": 1.0564,
+    "joc_secs": 0.154
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_DELEGATECALL-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.9605,
+    "b": 0.9945,
+    "base": 0.0505,
+    "cat": "code-exec EXISTING_EOA",
+    "cls": "ge1s",
+    "floor_joc": 0.9995,
+    "floor_sa": 1.0349,
+    "joc_secs": 8.396
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_DELEGATECALL-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0034,
+    "b": 1.014,
+    "base": 0.0416,
+    "cat": "code-exec EXISTING_EOA",
+    "cls": "ge1s",
+    "floor_joc": 0.9858,
+    "floor_sa": 0.9962,
+    "joc_secs": 12.499
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_DELEGATECALL-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.1435,
+    "b": 1.0463,
+    "base": 0.8902,
+    "cat": "absent account",
+    "cls": "lt1s",
+    "floor_joc": 0.927,
+    "floor_sa": 0.8481,
+    "joc_secs": 0.179
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_DELEGATECALL-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.7775,
+    "b": 1.1155,
+    "base": 1.2586,
+    "cat": "absent account",
+    "cls": "lt1s",
+    "floor_joc": 1.5409,
+    "floor_sa": 0.967,
+    "joc_secs": 0.329
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODECOPY-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.0904,
+    "b": 1.0914,
+    "base": 0.116,
+    "cat": "code-exec DIFF_MAX",
+    "cls": "ge1s",
+    "floor_joc": 0.9953,
+    "floor_sa": 0.9962,
+    "joc_secs": 12.909
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODECOPY-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.1339,
+    "b": 1.1416,
+    "base": 0.0838,
+    "cat": "code-exec DIFF_MAX",
+    "cls": "ge1s",
+    "floor_joc": 1.0002,
+    "floor_sa": 1.007,
+    "joc_secs": 19.001
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODECOPY-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.7445,
+    "b": 1.2439,
+    "base": 0.6728,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.7143,
+    "floor_sa": 1.1934,
+    "joc_secs": 0.095
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODECOPY-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.6709,
+    "b": 1.0936,
+    "base": 0.6444,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.9707,
+    "floor_sa": 0.6354,
+    "joc_secs": 0.148
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODECOPY-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.0864,
+    "b": 1.0957,
+    "base": 0.391,
+    "cat": "code-exec JUMPDEST",
+    "cls": "ge1s",
+    "floor_joc": 0.9961,
+    "floor_sa": 1.0046,
+    "joc_secs": 12.962
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODECOPY-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.1037,
+    "b": 1.1181,
+    "base": 0.3545,
+    "cat": "code-exec JUMPDEST",
+    "cls": "ge1s",
+    "floor_joc": 1.0301,
+    "floor_sa": 1.0436,
+    "joc_secs": 19.258
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODECOPY-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.7713,
+    "b": 1.3457,
+    "base": 0.7908,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.6603,
+    "floor_sa": 1.1521,
+    "joc_secs": 0.097
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODECOPY-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.1154,
+    "b": 1.1785,
+    "base": 0.7964,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.9985,
+    "floor_sa": 1.055,
+    "joc_secs": 0.15
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODECOPY-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.004,
+    "b": 1.0038,
+    "base": 0.0617,
+    "cat": "code-exec MINIMAL",
+    "cls": "ge1s",
+    "floor_joc": 0.996,
+    "floor_sa": 0.9957,
+    "joc_secs": 7.883
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODECOPY-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0032,
+    "b": 0.9822,
+    "base": 0.0495,
+    "cat": "code-exec MINIMAL",
+    "cls": "ge1s",
+    "floor_joc": 1.0168,
+    "floor_sa": 0.9955,
+    "joc_secs": 11.62
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODECOPY-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.1505,
+    "b": 1.0996,
+    "base": 0.7734,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.0358,
+    "floor_sa": 0.99,
+    "joc_secs": 0.106
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODECOPY-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.176,
+    "b": 1.5811,
+    "base": 0.7898,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.6806,
+    "floor_sa": 0.9151,
+    "joc_secs": 0.121
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODECOPY-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.0078,
+    "b": 1.0534,
+    "base": 0.0666,
+    "cat": "code-exec SAME_MAX",
+    "cls": "ge1s",
+    "floor_joc": 0.9493,
+    "floor_sa": 0.9923,
+    "joc_secs": 8.069
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODECOPY-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.9946,
+    "b": 0.9883,
+    "base": 0.0491,
+    "cat": "code-exec SAME_MAX",
+    "cls": "ge1s",
+    "floor_joc": 1.0025,
+    "floor_sa": 0.9962,
+    "joc_secs": 11.557
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODECOPY-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.1896,
+    "b": 1.8486,
+    "base": 0.72,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.9851,
+    "floor_sa": 1.5309,
+    "joc_secs": 0.107
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODECOPY-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.5922,
+    "b": 1.0268,
+    "base": 0.8933,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.5928,
+    "floor_sa": 1.0279,
+    "joc_secs": 0.123
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODECOPY-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.0011,
+    "b": 0.9962,
+    "base": 0.0882,
+    "cat": "code-exec EXISTING_EOA",
+    "cls": "ge1s",
+    "floor_joc": 0.9903,
+    "floor_sa": 0.9855,
+    "joc_secs": 7.974
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODECOPY-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.9832,
+    "b": 1.0028,
+    "base": 0.0429,
+    "cat": "code-exec EXISTING_EOA",
+    "cls": "ge1s",
+    "floor_joc": 1.002,
+    "floor_sa": 1.0219,
+    "joc_secs": 11.727
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODECOPY-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.1452,
+    "b": 1.1137,
+    "base": 1.1153,
+    "cat": "absent account",
+    "cls": "lt1s",
+    "floor_joc": 0.9909,
+    "floor_sa": 0.9637,
+    "joc_secs": 0.178
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODECOPY-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.194,
+    "b": 1.1667,
+    "base": 0.7381,
+    "cat": "absent account",
+    "cls": "lt1s",
+    "floor_joc": 1.0733,
+    "floor_sa": 1.0488,
+    "joc_secs": 0.255
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODEHASH-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.9697,
+    "b": 0.9191,
+    "base": 0.058,
+    "cat": "account row DIFF_MAX",
+    "cls": "ge1s",
+    "floor_joc": 1.0171,
+    "floor_sa": 0.964,
+    "joc_secs": 8.342
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODEHASH-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.9815,
+    "b": 1.0095,
+    "base": 0.0574,
+    "cat": "account row DIFF_MAX",
+    "cls": "ge1s",
+    "floor_joc": 0.9791,
+    "floor_sa": 1.007,
+    "joc_secs": 12.364
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODEHASH-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.0607,
+    "b": 1.1219,
+    "base": 0.6222,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.9175,
+    "floor_sa": 0.9704,
+    "joc_secs": 0.116
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODEHASH-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0551,
+    "b": 1.1447,
+    "base": 0.7337,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.989,
+    "floor_sa": 1.073,
+    "joc_secs": 0.154
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODEHASH-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.9937,
+    "b": 0.9368,
+    "base": 0.0689,
+    "cat": "account row JUMPDEST",
+    "cls": "ge1s",
+    "floor_joc": 0.9889,
+    "floor_sa": 0.9323,
+    "joc_secs": 8.365
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODEHASH-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0075,
+    "b": 0.9747,
+    "base": 0.0456,
+    "cat": "account row JUMPDEST",
+    "cls": "ge1s",
+    "floor_joc": 1.016,
+    "floor_sa": 0.9829,
+    "joc_secs": 12.419
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODEHASH-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.1802,
+    "b": 1.1216,
+    "base": 0.6321,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.0528,
+    "floor_sa": 1.0005,
+    "joc_secs": 0.111
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODEHASH-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0789,
+    "b": 1.3553,
+    "base": 0.7196,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.0428,
+    "floor_sa": 1.31,
+    "joc_secs": 0.159
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODEHASH-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.9983,
+    "b": 0.9173,
+    "base": 0.0564,
+    "cat": "account row MINIMAL",
+    "cls": "ge1s",
+    "floor_joc": 1.0044,
+    "floor_sa": 0.923,
+    "joc_secs": 8.313
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODEHASH-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.9957,
+    "b": 0.998,
+    "base": 0.0611,
+    "cat": "account row MINIMAL",
+    "cls": "ge1s",
+    "floor_joc": 0.9961,
+    "floor_sa": 0.9984,
+    "joc_secs": 12.275
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODEHASH-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.1929,
+    "b": 1.2501,
+    "base": 1.1799,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.6225,
+    "floor_sa": 1.7003,
+    "joc_secs": 0.096
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODEHASH-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.4627,
+    "b": 0.9498,
+    "base": 0.6701,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.9346,
+    "floor_sa": 0.6069,
+    "joc_secs": 0.157
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODEHASH-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.9732,
+    "b": 0.8979,
+    "base": 0.0679,
+    "cat": "account row SAME_MAX",
+    "cls": "ge1s",
+    "floor_joc": 0.9586,
+    "floor_sa": 0.8845,
+    "joc_secs": 8.504
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODEHASH-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.9233,
+    "b": 1.0643,
+    "base": 0.0623,
+    "cat": "account row SAME_MAX",
+    "cls": "ge1s",
+    "floor_joc": 0.935,
+    "floor_sa": 1.0778,
+    "joc_secs": 12.778
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODEHASH-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.134,
+    "b": 0.8315,
+    "base": 0.6993,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.4311,
+    "floor_sa": 1.0494,
+    "joc_secs": 0.097
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODEHASH-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.7267,
+    "b": 1.0912,
+    "base": 0.7638,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.0532,
+    "floor_sa": 0.6656,
+    "joc_secs": 0.157
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODEHASH-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.0235,
+    "b": 1.0001,
+    "base": 0.0531,
+    "cat": "account row EXISTING_EOA",
+    "cls": "ge1s",
+    "floor_joc": 1.02,
+    "floor_sa": 0.9966,
+    "joc_secs": 8.549
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODEHASH-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.9934,
+    "b": 1.0063,
+    "base": 0.0408,
+    "cat": "account row EXISTING_EOA",
+    "cls": "ge1s",
+    "floor_joc": 0.9909,
+    "floor_sa": 1.0038,
+    "joc_secs": 12.47
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODEHASH-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.0538,
+    "b": 1.1196,
+    "base": 0.8673,
+    "cat": "absent account",
+    "cls": "lt1s",
+    "floor_joc": 0.9437,
+    "floor_sa": 1.0027,
+    "joc_secs": 0.195
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODEHASH-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.3011,
+    "b": 1.2099,
+    "base": 1.1384,
+    "cat": "absent account",
+    "cls": "lt1s",
+    "floor_joc": 1.0552,
+    "floor_sa": 0.9812,
+    "joc_secs": 0.286
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODESIZE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.115,
+    "b": 1.1002,
+    "base": 0.1044,
+    "cat": "code-exec DIFF_MAX",
+    "cls": "ge1s",
+    "floor_joc": 1.0109,
+    "floor_sa": 0.9975,
+    "joc_secs": 13.459
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODESIZE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.129,
+    "b": 1.1351,
+    "base": 0.0782,
+    "cat": "code-exec DIFF_MAX",
+    "cls": "ge1s",
+    "floor_joc": 0.9968,
+    "floor_sa": 1.0021,
+    "joc_secs": 19.485
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODESIZE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.1879,
+    "b": 1.0427,
+    "base": 0.6422,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.003,
+    "floor_sa": 0.8804,
+    "joc_secs": 0.108
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODESIZE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0246,
+    "b": 1.8112,
+    "base": 0.6858,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.0773,
+    "floor_sa": 1.9043,
+    "joc_secs": 0.154
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODESIZE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.1135,
+    "b": 1.0965,
+    "base": 0.3864,
+    "cat": "code-exec JUMPDEST",
+    "cls": "ge1s",
+    "floor_joc": 1.0114,
+    "floor_sa": 0.996,
+    "joc_secs": 13.489
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODESIZE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.1189,
+    "b": 1.1532,
+    "base": 0.3791,
+    "cat": "code-exec JUMPDEST",
+    "cls": "ge1s",
+    "floor_joc": 0.9846,
+    "floor_sa": 1.0148,
+    "joc_secs": 19.654
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODESIZE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.0489,
+    "b": 0.5947,
+    "base": 0.5635,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.4515,
+    "floor_sa": 0.8229,
+    "joc_secs": 0.09
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODESIZE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.1643,
+    "b": 1.1253,
+    "base": 1.35,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.0215,
+    "floor_sa": 0.9873,
+    "joc_secs": 0.155
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODESIZE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.0,
+    "b": 0.9376,
+    "base": 0.0681,
+    "cat": "code-exec MINIMAL",
+    "cls": "ge1s",
+    "floor_joc": 1.0055,
+    "floor_sa": 0.9428,
+    "joc_secs": 8.047
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODESIZE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.9949,
+    "b": 0.9611,
+    "base": 0.052,
+    "cat": "code-exec MINIMAL",
+    "cls": "ge1s",
+    "floor_joc": 0.9827,
+    "floor_sa": 0.9493,
+    "joc_secs": 12.021
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODESIZE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 2.3236,
+    "b": 1.0139,
+    "base": 0.7712,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.9866,
+    "floor_sa": 0.4305,
+    "joc_secs": 0.107
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODESIZE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.036,
+    "b": 0.7028,
+    "base": 0.8418,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.5457,
+    "floor_sa": 1.0486,
+    "joc_secs": 0.121
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODESIZE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.9496,
+    "b": 1.03,
+    "base": 0.0581,
+    "cat": "code-exec SAME_MAX",
+    "cls": "ge1s",
+    "floor_joc": 0.9719,
+    "floor_sa": 1.0542,
+    "joc_secs": 8.174
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODESIZE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0038,
+    "b": 1.0583,
+    "base": 0.0508,
+    "cat": "code-exec SAME_MAX",
+    "cls": "ge1s",
+    "floor_joc": 0.9561,
+    "floor_sa": 1.008,
+    "joc_secs": 12.364
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODESIZE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.9297,
+    "b": 1.2097,
+    "base": 0.8078,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.0503,
+    "floor_sa": 1.3665,
+    "joc_secs": 0.109
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODESIZE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.8245,
+    "b": 1.0048,
+    "base": 0.6604,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.9671,
+    "floor_sa": 0.5326,
+    "joc_secs": 0.151
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODESIZE-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.05,
+    "b": 0.9965,
+    "base": 0.0619,
+    "cat": "code-exec EXISTING_EOA",
+    "cls": "ge1s",
+    "floor_joc": 1.0467,
+    "floor_sa": 0.9933,
+    "joc_secs": 8.366
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODESIZE-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.002,
+    "b": 0.9781,
+    "base": 0.0411,
+    "cat": "code-exec EXISTING_EOA",
+    "cls": "ge1s",
+    "floor_joc": 1.0058,
+    "floor_sa": 0.9818,
+    "joc_secs": 12.101
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODESIZE-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.0516,
+    "b": 1.0735,
+    "base": 1.0087,
+    "cat": "absent account",
+    "cls": "lt1s",
+    "floor_joc": 1.026,
+    "floor_sa": 1.0473,
+    "joc_secs": 0.169
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_EXTCODESIZE-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.1597,
+    "b": 1.0571,
+    "base": 1.1646,
+    "cat": "absent account",
+    "cls": "lt1s",
+    "floor_joc": 1.1113,
+    "floor_sa": 1.013,
+    "joc_secs": 0.248
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_STATICCALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.1355,
+    "b": 1.1116,
+    "base": 0.1066,
+    "cat": "code-exec DIFF_MAX",
+    "cls": "ge1s",
+    "floor_joc": 1.0472,
+    "floor_sa": 1.0251,
+    "joc_secs": 14.181
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_STATICCALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.1286,
+    "b": 1.1399,
+    "base": 0.0806,
+    "cat": "code-exec DIFF_MAX",
+    "cls": "ge1s",
+    "floor_joc": 0.9988,
+    "floor_sa": 1.0088,
+    "joc_secs": 20.139
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_STATICCALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.0925,
+    "b": 1.027,
+    "base": 1.1925,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.0768,
+    "floor_sa": 1.0122,
+    "joc_secs": 0.114
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_STATICCALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.988,
+    "b": 1.1085,
+    "base": 0.4934,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.0002,
+    "floor_sa": 1.1223,
+    "joc_secs": 0.155
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_STATICCALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.0913,
+    "b": 1.0881,
+    "base": 0.3874,
+    "cat": "code-exec JUMPDEST",
+    "cls": "ge1s",
+    "floor_joc": 1.004,
+    "floor_sa": 1.0011,
+    "joc_secs": 13.585
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_STATICCALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.117,
+    "b": 1.2525,
+    "base": 0.3792,
+    "cat": "code-exec JUMPDEST",
+    "cls": "ge1s",
+    "floor_joc": 0.9093,
+    "floor_sa": 1.0197,
+    "joc_secs": 20.883
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_STATICCALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.862,
+    "b": 1.7588,
+    "base": 0.7273,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.6874,
+    "floor_sa": 1.4026,
+    "joc_secs": 0.097
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_STATICCALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0992,
+    "b": 1.1066,
+    "base": 0.792,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.5918,
+    "floor_sa": 1.6026,
+    "joc_secs": 0.125
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_STATICCALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.9141,
+    "b": 1.0002,
+    "base": 0.0901,
+    "cat": "code-exec MINIMAL",
+    "cls": "ge1s",
+    "floor_joc": 0.9995,
+    "floor_sa": 1.0937,
+    "joc_secs": 8.282
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_STATICCALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.9944,
+    "b": 1.0003,
+    "base": 0.0542,
+    "cat": "code-exec MINIMAL",
+    "cls": "ge1s",
+    "floor_joc": 0.9997,
+    "floor_sa": 1.0056,
+    "joc_secs": 12.262
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_STATICCALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.8179,
+    "b": 1.2476,
+    "base": 0.8281,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.9182,
+    "floor_sa": 0.6301,
+    "joc_secs": 0.113
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_STATICCALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.6216,
+    "b": 1.1608,
+    "base": 0.7087,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.6102,
+    "floor_sa": 1.1394,
+    "joc_secs": 0.128
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_STATICCALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.9825,
+    "b": 1.0053,
+    "base": 0.0657,
+    "cat": "code-exec SAME_MAX",
+    "cls": "ge1s",
+    "floor_joc": 0.9874,
+    "floor_sa": 1.0103,
+    "joc_secs": 8.42
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_STATICCALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.0073,
+    "b": 0.9948,
+    "base": 0.0604,
+    "cat": "code-exec SAME_MAX",
+    "cls": "ge1s",
+    "floor_joc": 1.0048,
+    "floor_sa": 0.9923,
+    "joc_secs": 12.269
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_STATICCALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.1503,
+    "b": 1.1289,
+    "base": 0.8335,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 1.0123,
+    "floor_sa": 0.9935,
+    "joc_secs": 0.109
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_STATICCALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_SAME_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.6143,
+    "b": 0.8632,
+    "base": 0.6826,
+    "cat": "control (no state work)",
+    "cls": "lt1s",
+    "floor_joc": 0.6473,
+    "floor_sa": 0.9095,
+    "joc_secs": 0.128
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_STATICCALL-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 0.9296,
+    "b": 1.0993,
+    "base": 0.0506,
+    "cat": "code-exec EXISTING_EOA",
+    "cls": "ge1s",
+    "floor_joc": 0.9114,
+    "floor_sa": 1.0778,
+    "joc_secs": 8.774
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_STATICCALL-value_sent_0-account_mode_AccountMode.EXISTING_EOA-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 0.9929,
+    "b": 1.036,
+    "base": 0.055,
+    "cat": "code-exec EXISTING_EOA",
+    "cls": "ge1s",
+    "floor_joc": 0.9632,
+    "floor_sa": 1.0051,
+    "joc_secs": 12.609
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_STATICCALL-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "a": 1.1421,
+    "b": 1.3105,
+    "base": 1.0078,
+    "cat": "absent account",
+    "cls": "lt1s",
+    "floor_joc": 0.9351,
+    "floor_sa": 1.073,
+    "joc_secs": 0.197
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_STATICCALL-value_sent_0-account_mode_AccountMode.NON_EXISTING_ACCOUNT-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "a": 1.3808,
+    "b": 1.1763,
+    "base": 1.3219,
+    "cat": "absent account",
+    "cls": "lt1s",
+    "floor_joc": 1.0891,
+    "floor_sa": 0.9278,
+    "joc_secs": 0.285
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_ext_account_query_warm[fork_Amsterdam-blockchain_test_stateful_engine-initial_storage_True-initial_balance_True-empty_code_True-opcode_BALANCE-benchmark-gas-value_160M]": {
+    "a": 1.675,
+    "b": 1.5887,
+    "base": 0.7377,
+    "cat": "warm query",
+    "cls": "lt1s",
+    "floor_joc": 1.2303,
+    "floor_sa": 1.167,
+    "joc_secs": 0.052
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_ext_account_query_warm[fork_Amsterdam-blockchain_test_stateful_engine-initial_storage_True-initial_balance_True-empty_code_True-opcode_BALANCE-benchmark-gas-value_240M]": {
+    "a": 1.1492,
+    "b": 1.4182,
+    "base": 0.7619,
+    "cat": "warm query",
+    "cls": "lt1s",
+    "floor_joc": 0.8616,
+    "floor_sa": 1.0633,
+    "joc_secs": 0.056
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_ext_account_query_warm[fork_Amsterdam-blockchain_test_stateful_engine-initial_storage_True-initial_balance_True-empty_code_True-opcode_CALL-benchmark-gas-value_160M]": {
+    "a": 1.1371,
+    "b": 1.1738,
+    "base": 0.6907,
+    "cat": "warm query",
+    "cls": "lt1s",
+    "floor_joc": 1.0629,
+    "floor_sa": 1.0972,
+    "joc_secs": 0.088
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_ext_account_query_warm[fork_Amsterdam-blockchain_test_stateful_engine-initial_storage_True-initial_balance_True-empty_code_True-opcode_CALL-benchmark-gas-value_240M]": {
+    "a": 1.3686,
+    "b": 1.3655,
+    "base": 0.6333,
+    "cat": "warm query",
+    "cls": "lt1s",
+    "floor_joc": 1.4174,
+    "floor_sa": 1.4142,
+    "joc_secs": 0.112
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_ext_account_query_warm[fork_Amsterdam-blockchain_test_stateful_engine-initial_storage_True-initial_balance_True-empty_code_True-opcode_CALLCODE-benchmark-gas-value_160M]": {
+    "a": 1.4449,
+    "b": 0.8305,
+    "base": 0.8073,
+    "cat": "warm query",
+    "cls": "lt1s",
+    "floor_joc": 1.0714,
+    "floor_sa": 0.6158,
+    "joc_secs": 0.068
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_ext_account_query_warm[fork_Amsterdam-blockchain_test_stateful_engine-initial_storage_True-initial_balance_True-empty_code_True-opcode_CALLCODE-benchmark-gas-value_240M]": {
+    "a": 0.8776,
+    "b": 1.4752,
+    "base": 1.2391,
+    "cat": "warm query",
+    "cls": "lt1s",
+    "floor_joc": 0.9828,
+    "floor_sa": 1.6519,
+    "joc_secs": 0.069
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_ext_account_query_warm[fork_Amsterdam-blockchain_test_stateful_engine-initial_storage_True-initial_balance_True-empty_code_True-opcode_DELEGATECALL-benchmark-gas-value_160M]": {
+    "a": 1.2389,
+    "b": 1.1858,
+    "base": 1.0259,
+    "cat": "warm query",
+    "cls": "lt1s",
+    "floor_joc": 0.6251,
+    "floor_sa": 0.5983,
+    "joc_secs": 0.126
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_ext_account_query_warm[fork_Amsterdam-blockchain_test_stateful_engine-initial_storage_True-initial_balance_True-empty_code_True-opcode_DELEGATECALL-benchmark-gas-value_240M]": {
+    "a": 1.5671,
+    "b": 1.0106,
+    "base": 0.6611,
+    "cat": "warm query",
+    "cls": "lt1s",
+    "floor_joc": 1.2713,
+    "floor_sa": 0.8198,
+    "joc_secs": 0.109
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_ext_account_query_warm[fork_Amsterdam-blockchain_test_stateful_engine-initial_storage_True-initial_balance_True-empty_code_True-opcode_EXTCODEHASH-benchmark-gas-value_160M]": {
+    "a": 1.6815,
+    "b": 1.3856,
+    "base": 0.9901,
+    "cat": "warm query",
+    "cls": "lt1s",
+    "floor_joc": 1.3787,
+    "floor_sa": 1.1361,
+    "joc_secs": 0.083
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_ext_account_query_warm[fork_Amsterdam-blockchain_test_stateful_engine-initial_storage_True-initial_balance_True-empty_code_True-opcode_EXTCODEHASH-benchmark-gas-value_240M]": {
+    "a": 1.2423,
+    "b": 1.1033,
+    "base": 1.0816,
+    "cat": "warm query",
+    "cls": "lt1s",
+    "floor_joc": 1.0749,
+    "floor_sa": 0.9546,
+    "joc_secs": 0.069
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_ext_account_query_warm[fork_Amsterdam-blockchain_test_stateful_engine-initial_storage_True-initial_balance_True-empty_code_True-opcode_EXTCODESIZE-benchmark-gas-value_160M]": {
+    "a": 1.0579,
+    "b": 1.5185,
+    "base": 0.987,
+    "cat": "warm query",
+    "cls": "lt1s",
+    "floor_joc": 0.6725,
+    "floor_sa": 0.9653,
+    "joc_secs": 0.05
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_ext_account_query_warm[fork_Amsterdam-blockchain_test_stateful_engine-initial_storage_True-initial_balance_True-empty_code_True-opcode_EXTCODESIZE-benchmark-gas-value_240M]": {
+    "a": 1.2984,
+    "b": 1.0724,
+    "base": 1.1206,
+    "cat": "warm query",
+    "cls": "lt1s",
+    "floor_joc": 0.958,
+    "floor_sa": 0.7912,
+    "joc_secs": 0.046
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_ext_account_query_warm[fork_Amsterdam-blockchain_test_stateful_engine-initial_storage_True-initial_balance_True-empty_code_True-opcode_STATICCALL-benchmark-gas-value_160M]": {
+    "a": 1.2169,
+    "b": 0.8601,
+    "base": 0.8632,
+    "cat": "warm query",
+    "cls": "lt1s",
+    "floor_joc": 1.065,
+    "floor_sa": 0.7528,
+    "joc_secs": 0.083
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_ext_account_query_warm[fork_Amsterdam-blockchain_test_stateful_engine-initial_storage_True-initial_balance_True-empty_code_True-opcode_STATICCALL-benchmark-gas-value_240M]": {
+    "a": 2.0669,
+    "b": 1.0192,
+    "base": 0.7221,
+    "cat": "warm query",
+    "cls": "lt1s",
+    "floor_joc": 1.5073,
+    "floor_sa": 0.7432,
+    "joc_secs": 0.115
+   },
+   "benchmark/stateful/bloatnet/test_sload.py::test_sload_bloated[10GB-fork_Amsterdam-blockchain_test_stateful_engine-cache_strategy_CacheStrategy.NO_CACHE-existing_slots_False-benchmark-gas-value_160M]": {
+    "a": 0.964,
+    "b": 1.0047,
+    "base": 1.0909,
+    "cat": "storage slot",
+    "cls": "lt1s",
+    "floor_joc": 1.051,
+    "floor_sa": 1.0954,
+    "joc_secs": 0.198
+   },
+   "benchmark/stateful/bloatnet/test_sload.py::test_sload_bloated[10GB-fork_Amsterdam-blockchain_test_stateful_engine-cache_strategy_CacheStrategy.NO_CACHE-existing_slots_False-benchmark-gas-value_240M]": {
+    "a": 1.0292,
+    "b": 1.0825,
+    "base": 1.4471,
+    "cat": "storage slot",
+    "cls": "lt1s",
+    "floor_joc": 0.9396,
+    "floor_sa": 0.9883,
+    "joc_secs": 0.288
+   },
+   "benchmark/stateful/bloatnet/test_sload.py::test_sload_bloated[10GB-fork_Amsterdam-blockchain_test_stateful_engine-cache_strategy_CacheStrategy.NO_CACHE-existing_slots_True-benchmark-gas-value_160M]": {
+    "a": 1.0,
+    "b": 0.9946,
+    "base": 0.9752,
+    "cat": "storage slot",
+    "cls": "ge1s",
+    "floor_joc": 1.0032,
+    "floor_sa": 0.9977,
+    "joc_secs": 8.595
+   },
+   "benchmark/stateful/bloatnet/test_sload.py::test_sload_bloated[10GB-fork_Amsterdam-blockchain_test_stateful_engine-cache_strategy_CacheStrategy.NO_CACHE-existing_slots_True-benchmark-gas-value_240M]": {
+    "a": 0.9885,
+    "b": 0.9913,
+    "base": 0.9595,
+    "cat": "storage slot",
+    "cls": "ge1s",
+    "floor_joc": 0.9928,
+    "floor_sa": 0.9956,
+    "joc_secs": 12.437
+   },
+   "benchmark/stateful/bloatnet/test_sload.py::test_sload_same_key_benchmark[fork_Amsterdam-blockchain_test_stateful_engine-storage_keys_pre_set_False-benchmark-gas-value_160M]": {
+    "a": 1.1733,
+    "b": 1.1179,
+    "base": 0.9792,
+    "cat": "sload same key",
+    "cls": "lt1s",
+    "floor_joc": 1.0534,
+    "floor_sa": 1.0037,
+    "joc_secs": 0.071
+   },
+   "benchmark/stateful/bloatnet/test_sload.py::test_sload_same_key_benchmark[fork_Amsterdam-blockchain_test_stateful_engine-storage_keys_pre_set_False-benchmark-gas-value_240M]": {
+    "a": 1.7217,
+    "b": 1.5498,
+    "base": 1.0039,
+    "cat": "sload same key",
+    "cls": "lt1s",
+    "floor_joc": 1.1825,
+    "floor_sa": 1.0645,
+    "joc_secs": 0.085
+   },
+   "benchmark/stateful/bloatnet/test_sload.py::test_sload_same_key_benchmark[fork_Amsterdam-blockchain_test_stateful_engine-storage_keys_pre_set_True-benchmark-gas-value_160M]": {
+    "a": 1.3458,
+    "b": 1.3863,
+    "base": 1.0698,
+    "cat": "sload same key",
+    "cls": "lt1s",
+    "floor_joc": 1.103,
+    "floor_sa": 1.1362,
+    "joc_secs": 0.079
+   },
+   "benchmark/stateful/bloatnet/test_sload.py::test_sload_same_key_benchmark[fork_Amsterdam-blockchain_test_stateful_engine-storage_keys_pre_set_True-benchmark-gas-value_240M]": {
+    "a": 0.9827,
+    "b": 1.4249,
+    "base": 0.6971,
+    "cat": "sload same key",
+    "cls": "lt1s",
+    "floor_joc": 0.886,
+    "floor_sa": 1.2847,
+    "joc_secs": 0.078
+   },
+   "benchmark/stateful/bloatnet/test_sstore.py::test_sstore_bloated[10GB-fork_Amsterdam-blockchain_test_stateful_engine-cache_strategy_CacheStrategy.NO_CACHE-existing_slots_False-write_new_value_False-benchmark-gas-value_160M]": {
+    "a": 1.0066,
+    "b": 1.0468,
+    "base": 1.6715,
+    "cat": "storage slot",
+    "cls": "lt1s",
+    "floor_joc": 1.177,
+    "floor_sa": 1.2241,
+    "joc_secs": 0.222
+   },
+   "benchmark/stateful/bloatnet/test_sstore.py::test_sstore_bloated[10GB-fork_Amsterdam-blockchain_test_stateful_engine-cache_strategy_CacheStrategy.NO_CACHE-existing_slots_False-write_new_value_False-benchmark-gas-value_240M]": {
+    "a": 0.7894,
+    "b": 1.2008,
+    "base": 1.6541,
+    "cat": "storage slot",
+    "cls": "lt1s",
+    "floor_joc": 0.7969,
+    "floor_sa": 1.2123,
+    "joc_secs": 0.323
+   },
+   "benchmark/stateful/bloatnet/test_sstore.py::test_sstore_bloated[10GB-fork_Amsterdam-blockchain_test_stateful_engine-cache_strategy_CacheStrategy.NO_CACHE-existing_slots_False-write_new_value_True-benchmark-gas-value_160M]": {
+    "a": 1.0274,
+    "b": 1.0582,
+    "base": 1.0253,
+    "cat": "storage slot",
+    "cls": "ge1s",
+    "floor_joc": 0.9793,
+    "floor_sa": 1.0086,
+    "joc_secs": 1.018
+   },
+   "benchmark/stateful/bloatnet/test_sstore.py::test_sstore_bloated[10GB-fork_Amsterdam-blockchain_test_stateful_engine-cache_strategy_CacheStrategy.NO_CACHE-existing_slots_False-write_new_value_True-benchmark-gas-value_240M]": {
+    "a": 1.0118,
+    "b": 0.9691,
+    "base": 1.4654,
+    "cat": "storage slot",
+    "cls": "ge1s",
+    "floor_joc": 0.993,
+    "floor_sa": 0.9511,
+    "joc_secs": 1.439
+   },
+   "benchmark/stateful/bloatnet/test_sstore.py::test_sstore_bloated[10GB-fork_Amsterdam-blockchain_test_stateful_engine-cache_strategy_CacheStrategy.NO_CACHE-existing_slots_True-write_new_value_False-benchmark-gas-value_160M]": {
+    "a": 1.0028,
+    "b": 0.9997,
+    "base": 0.9746,
+    "cat": "storage slot",
+    "cls": "ge1s",
+    "floor_joc": 1.0069,
+    "floor_sa": 1.0037,
+    "joc_secs": 8.628
+   },
+   "benchmark/stateful/bloatnet/test_sstore.py::test_sstore_bloated[10GB-fork_Amsterdam-blockchain_test_stateful_engine-cache_strategy_CacheStrategy.NO_CACHE-existing_slots_True-write_new_value_False-benchmark-gas-value_240M]": {
+    "a": 1.0378,
+    "b": 1.1134,
+    "base": 0.9537,
+    "cat": "storage slot",
+    "cls": "ge1s",
+    "floor_joc": 0.9384,
+    "floor_sa": 1.0067,
+    "joc_secs": 13.428
+   },
+   "benchmark/stateful/bloatnet/test_sstore.py::test_sstore_bloated[10GB-fork_Amsterdam-blockchain_test_stateful_engine-cache_strategy_CacheStrategy.NO_CACHE-existing_slots_True-write_new_value_True-benchmark-gas-value_160M]": {
+    "a": 0.9398,
+    "b": 1.0119,
+    "base": 1.0221,
+    "cat": "storage slot",
+    "cls": "ge1s",
+    "floor_joc": 1.0138,
+    "floor_sa": 1.0916,
+    "joc_secs": 7.363
+   },
+   "benchmark/stateful/bloatnet/test_sstore.py::test_sstore_bloated[10GB-fork_Amsterdam-blockchain_test_stateful_engine-cache_strategy_CacheStrategy.NO_CACHE-existing_slots_True-write_new_value_True-benchmark-gas-value_240M]": {
+    "a": 0.9964,
+    "b": 0.9714,
+    "base": 1.0369,
+    "cat": "storage slot",
+    "cls": "ge1s",
+    "floor_joc": 0.9999,
+    "floor_sa": 0.9747,
+    "joc_secs": 10.169
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_0-case_id_diff_to_contract-benchmark-gas-value_160M]": {
+    "a": 1.0724,
+    "b": 1.0595,
+    "base": 0.6091,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 1.0123,
+    "floor_sa": 1.0001,
+    "joc_secs": 7.13
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_0-case_id_diff_to_contract-benchmark-gas-value_240M]": {
+    "a": 1.0734,
+    "b": 0.8951,
+    "base": 0.5278,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 1.0382,
+    "floor_sa": 0.8656,
+    "joc_secs": 10.224
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_0-case_id_diff_to_contract_diff_max-benchmark-gas-value_160M]": {
+    "a": 1.0523,
+    "b": 1.0429,
+    "base": 0.3868,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 1.0156,
+    "floor_sa": 1.0065,
+    "joc_secs": 8.219
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_0-case_id_diff_to_contract_diff_max-benchmark-gas-value_240M]": {
+    "a": 1.0586,
+    "b": 1.0583,
+    "base": 0.3064,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 1.0023,
+    "floor_sa": 1.0021,
+    "joc_secs": 11.803
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_0-case_id_diff_to_contract_minimal-benchmark-gas-value_160M]": {
+    "a": 1.0455,
+    "b": 1.045,
+    "base": 0.3614,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 1.0264,
+    "floor_sa": 1.0259,
+    "joc_secs": 7.119
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_0-case_id_diff_to_contract_minimal-benchmark-gas-value_240M]": {
+    "a": 1.0386,
+    "b": 1.0467,
+    "base": 0.3137,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 1.0099,
+    "floor_sa": 1.0178,
+    "joc_secs": 10.131
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_0-case_id_diff_to_contract_same_max-benchmark-gas-value_160M]": {
+    "a": 1.0457,
+    "b": 1.0814,
+    "base": 0.3708,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 0.9366,
+    "floor_sa": 0.9685,
+    "joc_secs": 7.311
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_0-case_id_diff_to_contract_same_max-benchmark-gas-value_240M]": {
+    "a": 1.0557,
+    "b": 1.0693,
+    "base": 0.3035,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 0.9987,
+    "floor_sa": 1.0116,
+    "joc_secs": 10.191
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_0-case_id_diff_to_delegated_contract_diff-benchmark-gas-value_160M]": {
+    "a": 1.1151,
+    "b": 1.1437,
+    "base": 0.3165,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 0.9784,
+    "floor_sa": 1.0034,
+    "joc_secs": 10.174
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_0-case_id_diff_to_delegated_contract_diff-benchmark-gas-value_240M]": {
+    "a": 1.1019,
+    "b": 1.0848,
+    "base": 0.2105,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 1.011,
+    "floor_sa": 0.9953,
+    "joc_secs": 14.018
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_0-case_id_diff_to_existent-benchmark-gas-value_160M]": {
+    "a": 1.0595,
+    "b": 1.084,
+    "base": 0.3919,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 0.9916,
+    "floor_sa": 1.0145,
+    "joc_secs": 7.188
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_0-case_id_diff_to_existent-benchmark-gas-value_240M]": {
+    "a": 0.9368,
+    "b": 1.0366,
+    "base": 0.3119,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 0.9884,
+    "floor_sa": 1.0938,
+    "joc_secs": 9.966
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_0-case_id_diff_to_nonexistent-benchmark-gas-value_160M]": {
+    "a": 1.0777,
+    "b": 1.0299,
+    "base": 0.5141,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 0.9925,
+    "floor_sa": 0.9485,
+    "joc_secs": 5.441
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_0-case_id_diff_to_nonexistent-benchmark-gas-value_240M]": {
+    "a": 1.0468,
+    "b": 1.0693,
+    "base": 0.423,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 0.9794,
+    "floor_sa": 1.0004,
+    "joc_secs": 7.519
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_0-case_id_diff_to_self-benchmark-gas-value_160M]": {
+    "a": 1.0385,
+    "b": 1.0808,
+    "base": 0.4717,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 0.9776,
+    "floor_sa": 1.0175,
+    "joc_secs": 6.379
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_0-case_id_diff_to_self-benchmark-gas-value_240M]": {
+    "a": 0.9884,
+    "b": 1.0245,
+    "base": 0.3755,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 1.019,
+    "floor_sa": 1.0562,
+    "joc_secs": 8.962
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_0-case_id_diff_to_unique_code_jumpdest_contract-benchmark-gas-value_160M]": {
+    "a": 1.0721,
+    "b": 1.0607,
+    "base": 0.4406,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 0.9976,
+    "floor_sa": 0.987,
+    "joc_secs": 8.313
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_0-case_id_diff_to_unique_code_jumpdest_contract-benchmark-gas-value_240M]": {
+    "a": 1.0632,
+    "b": 1.0559,
+    "base": 0.3962,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 1.0291,
+    "floor_sa": 1.0221,
+    "joc_secs": 11.99
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_1-case_id_diff_to_contract-benchmark-gas-value_160M]": {
+    "a": 1.0297,
+    "b": 1.0039,
+    "base": 0.7618,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 0.9864,
+    "floor_sa": 0.9617,
+    "joc_secs": 6.979
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_1-case_id_diff_to_contract-benchmark-gas-value_240M]": {
+    "a": 0.9252,
+    "b": 1.0456,
+    "base": 0.6702,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 1.0068,
+    "floor_sa": 1.1378,
+    "joc_secs": 9.768
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_1-case_id_diff_to_contract_diff_max-benchmark-gas-value_160M]": {
+    "a": 1.0959,
+    "b": 1.1062,
+    "base": 0.3947,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 0.9931,
+    "floor_sa": 1.0024,
+    "joc_secs": 8.059
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_1-case_id_diff_to_contract_diff_max-benchmark-gas-value_240M]": {
+    "a": 1.0459,
+    "b": 0.9757,
+    "base": 0.3199,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 0.9932,
+    "floor_sa": 0.9266,
+    "joc_secs": 10.986
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_1-case_id_diff_to_contract_minimal-benchmark-gas-value_160M]": {
+    "a": 1.0848,
+    "b": 1.01,
+    "base": 0.3494,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 1.0107,
+    "floor_sa": 0.9411,
+    "joc_secs": 7.068
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_1-case_id_diff_to_contract_minimal-benchmark-gas-value_240M]": {
+    "a": 0.941,
+    "b": 0.9248,
+    "base": 0.287,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 1.0073,
+    "floor_sa": 0.9899,
+    "joc_secs": 9.807
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_1-case_id_diff_to_contract_same_max-benchmark-gas-value_160M]": {
+    "a": 0.88,
+    "b": 1.0702,
+    "base": 0.4223,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 0.9879,
+    "floor_sa": 1.2014,
+    "joc_secs": 7.019
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_1-case_id_diff_to_contract_same_max-benchmark-gas-value_240M]": {
+    "a": 1.0034,
+    "b": 0.9131,
+    "base": 0.2885,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 1.0061,
+    "floor_sa": 0.9156,
+    "joc_secs": 9.966
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_1-case_id_diff_to_delegated_contract_diff-benchmark-gas-value_160M]": {
+    "a": 1.0809,
+    "b": 1.0763,
+    "base": 0.3217,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 1.0107,
+    "floor_sa": 1.0064,
+    "joc_secs": 9.15
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_1-case_id_diff_to_delegated_contract_diff-benchmark-gas-value_240M]": {
+    "a": 1.1679,
+    "b": 1.1514,
+    "base": 0.2611,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 1.0314,
+    "floor_sa": 1.0169,
+    "joc_secs": 14.082
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_1-case_id_diff_to_existent-benchmark-gas-value_160M]": {
+    "a": 1.0348,
+    "b": 1.0674,
+    "base": 0.3926,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 0.9762,
+    "floor_sa": 1.007,
+    "joc_secs": 7.008
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_1-case_id_diff_to_existent-benchmark-gas-value_240M]": {
+    "a": 1.0365,
+    "b": 1.0146,
+    "base": 0.297,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 0.9172,
+    "floor_sa": 0.8978,
+    "joc_secs": 10.209
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_1-case_id_diff_to_nonexistent-benchmark-gas-value_160M]": {
+    "a": 1.5351,
+    "b": 1.4455,
+    "base": 1.1367,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 1.0335,
+    "floor_sa": 0.9732,
+    "joc_secs": 1.416
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_1-case_id_diff_to_nonexistent-benchmark-gas-value_240M]": {
+    "a": 1.3285,
+    "b": 1.356,
+    "base": 1.0422,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 0.9685,
+    "floor_sa": 0.9886,
+    "joc_secs": 1.763
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_1-case_id_diff_to_self-benchmark-gas-value_160M]": {
+    "a": 1.0493,
+    "b": 1.0996,
+    "base": 0.407,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 1.0655,
+    "floor_sa": 1.1166,
+    "joc_secs": 6.775
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_1-case_id_diff_to_self-benchmark-gas-value_240M]": {
+    "a": 0.9965,
+    "b": 1.0583,
+    "base": 0.3653,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 1.0134,
+    "floor_sa": 1.0763,
+    "joc_secs": 9.045
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_1-case_id_diff_to_unique_code_jumpdest_contract-benchmark-gas-value_160M]": {
+    "a": 1.1263,
+    "b": 1.1027,
+    "base": 0.4365,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 1.0113,
+    "floor_sa": 0.9901,
+    "joc_secs": 8.248
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_1-case_id_diff_to_unique_code_jumpdest_contract-benchmark-gas-value_240M]": {
+    "a": 1.0556,
+    "b": 1.075,
+    "base": 0.3619,
+    "cat": "ether transfer",
+    "cls": "ge1s",
+    "floor_joc": 0.9666,
+    "floor_sa": 0.9843,
+    "joc_secs": 11.347
+   }
+  },
   "tiered_compilation": {
-   "nm-joc-fin1": "0",
-   "nm-joc-fin2": "0",
-   "nm-joc-t1": "0",
-   "nm-sa-fin1": "0",
-   "nm-sa-fin2": "0",
-   "nm-sa-t1": "0"
+   "joc": "default",
+   "joc1": "0",
+   "joc2": "0",
+   "sa": "default",
+   "sa1": "0",
+   "sa2": "0"
   }
  },
  "intervention_blocks": {
@@ -9256,422 +12265,5 @@
    }
   },
   "v1_genesis": "0xa9e61c12051aeda72581c40b1718fa76b80c0b5cc5f7b7ebe96e0b6d9669491b"
- },
- "waterfall": {
-  "cells": {
-   "long": {
-    "_all": {
-     "baseline": {
-      "median": 0.1752,
-      "n": 144,
-      "within10": 8
-     },
-     "codepool": {
-      "median": 1.0144,
-      "n": 144,
-      "within10": 116
-     },
-     "final": {
-      "median": 1.0116,
-      "n": 144,
-      "within10": 122
-     },
-     "placement": {
-      "median": 0.9781,
-      "n": 144,
-      "within10": 119
-     },
-     "warmup": {
-      "median": 0.9986,
-      "n": 144,
-      "within10": 123
-     }
-    },
-    "account reads": {
-     "baseline": {
-      "max": 0.0787,
-      "median": 0.0577,
-      "min": 0.0408,
-      "n": 20,
-      "within10": 0
-     },
-     "codepool": {
-      "max": 1.016,
-      "median": 0.997,
-      "min": 0.8643,
-      "n": 20,
-      "within10": 19
-     },
-     "final": {
-      "max": 1.0604,
-      "median": 0.995,
-      "min": 0.9233,
-      "n": 20,
-      "within10": 20
-     },
-     "placement": {
-      "max": 1.0384,
-      "median": 0.977,
-      "min": 0.9521,
-      "n": 20,
-      "within10": 20
-     },
-     "warmup": {
-      "max": 1.0823,
-      "median": 0.9957,
-      "min": 0.9321,
-      "n": 20,
-      "within10": 20
-     }
-    },
-    "code, distinct large": {
-     "baseline": {
-      "max": 0.4801,
-      "median": 0.3349,
-      "min": 0.0782,
-      "n": 32,
-      "within10": 0
-     },
-     "codepool": {
-      "max": 1.2394,
-      "median": 1.0943,
-      "min": 0.8769,
-      "n": 32,
-      "within10": 17
-     },
-     "final": {
-      "max": 1.1486,
-      "median": 1.0945,
-      "min": 0.9444,
-      "n": 32,
-      "within10": 17
-     },
-     "placement": {
-      "max": 0.9801,
-      "median": 0.8696,
-      "min": 0.6272,
-      "n": 32,
-      "within10": 13
-     },
-     "warmup": {
-      "max": 1.0177,
-      "median": 0.9406,
-      "min": 0.8438,
-      "n": 32,
-      "within10": 30
-     }
-    },
-    "code, reused or small": {
-     "baseline": {
-      "max": 0.3824,
-      "median": 0.0657,
-      "min": 0.0411,
-      "n": 48,
-      "within10": 0
-     },
-     "codepool": {
-      "max": 1.0345,
-      "median": 0.9978,
-      "min": 0.9172,
-      "n": 48,
-      "within10": 48
-     },
-     "final": {
-      "max": 1.05,
-      "median": 0.9999,
-      "min": 0.9141,
-      "n": 48,
-      "within10": 48
-     },
-     "placement": {
-      "max": 1.0984,
-      "median": 0.9813,
-      "min": 0.9063,
-      "n": 48,
-      "within10": 48
-     },
-     "warmup": {
-      "max": 1.21,
-      "median": 0.9982,
-      "min": 0.9159,
-      "n": 48,
-      "within10": 46
-     }
-    },
-    "ether transfers": {
-     "baseline": {
-      "max": 1.1367,
-      "median": 0.3811,
-      "min": 0.2105,
-      "n": 36,
-      "within10": 1
-     },
-     "final": {
-      "max": 1.5351,
-      "median": 1.054,
-      "min": 0.88,
-      "n": 36,
-      "within10": 29
-     }
-    },
-    "storage": {
-     "baseline": {
-      "max": 1.4654,
-      "median": 0.9986,
-      "min": 0.9537,
-      "n": 8,
-      "within10": 7
-     },
-     "final": {
-      "max": 1.0378,
-      "median": 1.0014,
-      "min": 0.9398,
-      "n": 8,
-      "within10": 8
-     }
-    }
-   },
-   "short": {
-    "_all": {
-     "baseline": {
-      "median": 0.7903,
-      "n": 122,
-      "within10": 19
-     },
-     "final": {
-      "median": 1.1498,
-      "n": 122,
-      "within10": 40
-     },
-     "placement": {
-      "median": 0.7355,
-      "n": 122,
-      "within10": 23
-     },
-     "warmup": {
-      "median": 1.1751,
-      "n": 122,
-      "within10": 19
-     }
-    },
-    "absent accounts": {
-     "baseline": {
-      "max": 1.3219,
-      "median": 1.0208,
-      "min": 0.7381,
-      "n": 20,
-      "within10": 8
-     },
-     "final": {
-      "max": 1.7775,
-      "median": 1.1524,
-      "min": 0.9054,
-      "n": 20,
-      "within10": 7
-     },
-     "placement": {
-      "max": 1.4105,
-      "median": 0.9395,
-      "min": 0.6607,
-      "n": 20,
-      "within10": 10
-     },
-     "warmup": {
-      "max": 1.6625,
-      "median": 1.2493,
-      "min": 1.0479,
-      "n": 20,
-      "within10": 1
-     }
-    },
-    "no state work": {
-     "baseline": {
-      "max": 1.35,
-      "median": 0.7282,
-      "min": 0.4293,
-      "n": 94,
-      "within10": 7
-     },
-     "final": {
-      "max": 2.3236,
-      "median": 1.1504,
-      "min": 0.5922,
-      "n": 94,
-      "within10": 29
-     },
-     "placement": {
-      "max": 1.2598,
-      "median": 0.6979,
-      "min": 0.3963,
-      "n": 94,
-      "within10": 11
-     },
-     "warmup": {
-      "max": 2.1299,
-      "median": 1.1508,
-      "min": 0.6121,
-      "n": 94,
-      "within10": 16
-     }
-    },
-    "storage": {
-     "baseline": {
-      "max": 1.6715,
-      "median": 1.0803,
-      "min": 0.6971,
-      "n": 8,
-      "within10": 4
-     },
-     "final": {
-      "max": 1.7217,
-      "median": 1.0179,
-      "min": 0.7894,
-      "n": 8,
-      "within10": 4
-     }
-    }
-   }
-  },
-  "coverage": {
-   "baseline": {
-    "long": 144,
-    "short": 122
-   },
-   "codepool": {
-    "long": 144,
-    "short": 4
-   },
-   "final": {
-    "long": 144,
-    "short": 122
-   },
-   "placement": {
-    "long": 144,
-    "short": 122
-   },
-   "warmup": {
-    "long": 144,
-    "short": 122
-   }
-  },
-  "families": [
-   "account reads",
-   "code, reused or small",
-   "code, distinct large",
-   "storage",
-   "ether transfers",
-   "absent accounts",
-   "no state work"
-  ],
-  "floor": {
-   "long": {
-    "_all": {
-     "median": 1.0,
-     "n": 144,
-     "within10": 138
-    },
-    "account reads": {
-     "median": 0.9935,
-     "n": 20,
-     "within10": 19
-    },
-    "code, distinct large": {
-     "median": 1.0035,
-     "n": 32,
-     "within10": 32
-    },
-    "code, reused or small": {
-     "median": 0.9962,
-     "n": 48,
-     "within10": 48
-    },
-    "ether transfers": {
-     "median": 1.0022,
-     "n": 36,
-     "within10": 31
-    },
-    "storage": {
-     "median": 1.0007,
-     "n": 8,
-     "within10": 8
-    }
-   },
-   "short": {
-    "_all": {
-     "median": 1.0238,
-     "n": 122,
-     "within10": 50
-    },
-    "absent accounts": {
-     "median": 0.9994,
-     "n": 20,
-     "within10": 16
-    },
-    "no state work": {
-     "median": 1.0238,
-     "n": 94,
-     "within10": 30
-    },
-    "storage": {
-     "median": 1.1158,
-     "n": 8,
-     "within10": 4
-    }
-   }
-  },
-  "membership": {
-   "long": {
-    "absent accounts": 0,
-    "account reads": 20,
-    "code, distinct large": 32,
-    "code, reused or small": 48,
-    "ether transfers": 36,
-    "no state work": 0,
-    "storage": 8
-   },
-   "short": {
-    "absent accounts": 20,
-    "account reads": 0,
-    "code, distinct large": 0,
-    "code, reused or small": 0,
-    "ether transfers": 0,
-    "no state work": 94,
-    "storage": 8
-   }
-  },
-  "src": "The waterfall: the same 266 test ids through every stage of the study, by family and duration\nclass. Membership in the two classes is fixed once, from the final jochemnet run, so no test\nchanges population between stages.",
-  "stage_runs": {
-   "baseline": {
-    "joc": "nm-jochemnet",
-    "sa": "nm-state-actor"
-   },
-   "codepool": {
-    "joc": "nm-joc-v2r1",
-    "sa": "nm-sa-v2r1"
-   },
-   "final": {
-    "joc": "nm-joc-fin1",
-    "sa": "nm-sa-fin1"
-   },
-   "placement": {
-    "joc": "nm-joc-full",
-    "sa": "nm-state-actor"
-   },
-   "warmup": {
-    "joc": "nm-joc-t1",
-    "sa": "nm-sa-t1"
-   }
-  },
-  "stages": [
-   "baseline",
-   "placement",
-   "warmup",
-   "codepool",
-   "final"
-  ],
-  "write_families": [
-   "ether transfers",
-   "storage"
-  ]
  }
 }

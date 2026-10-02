@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""R74 + R75: the final pairs. Both stores fully settled - state-actor v2 (generated with #139 and
-#141) and jochemnet with every flat column compacted to L6 - over the whole suite, sub-second tests
-included. Two independent pairs share no run (A = sa-fin1/joc-fin1, B = sa-fin2/joc-fin2), and each
-store is also measured against itself. Prints JSON to stdout; merged into data/report_data.json
-under `final`."""
-import glob
+"""The before and after views of the page: one population, one class membership, three pairs.
+
+Population: the 266 tests the final pair ran (160M and 240M gas). Before is the untreated published
+pair, pinned by run id. After is two independent pairs of the fully settled stores, R74 + R75, each
+state-actor run divided by its own jochemnet run. Every test is classed once, at one second of
+measured step time on the jochemnet arm of the final pair, so no test changes population between
+the two views. Runs on the bench host; prints JSON to stdout, merged under `final`.
+"""
 import json
 import os
 import re
@@ -13,23 +15,26 @@ from collections import defaultdict
 from statistics import median
 
 R = "/bench/results/"
+BASELINE = {"sa": ("nm-state-actor", "1789207753_887c4915_nm-sa"),
+            "joc": ("nm-jochemnet", "1789101020_23e0ca97_nm-jochemnet")}
+FINAL = {"sa1": "nm-sa-fin1", "joc1": "nm-joc-fin1", "sa2": "nm-sa-fin2", "joc2": "nm-joc-fin2"}
 
 
-def load(root):
+def pinned(root, run):
+    return json.load(open(os.path.join(R, root, "runs", run, "result.json")))["tests"]
+
+
+def largest(root):
     best, bn = None, -1
-    root = os.path.join(R, root)
-    for rj in glob.glob(os.path.join(root, "runs", "*", "result.json")):
-        try:
-            n = len(json.load(open(rj)).get("tests", {}))
-        except Exception:
+    d = os.path.join(R, root, "runs")
+    for run in os.listdir(d):
+        p = os.path.join(d, run, "result.json")
+        if not os.path.exists(p):
             continue
+        n = len(json.load(open(p)).get("tests", {}))
         if n > bn:
-            best, bn = rj, n
-    if not best:
-        return {}, None
-    env = (json.load(open(os.path.join(os.path.dirname(best), "config.json"))).get("instance", {})
-           .get("environment") or {})
-    return json.load(open(best))["tests"], env.get("DOTNET_TieredCompilation", "default")
+            best, bn = p, n
+    return json.load(open(best))["tests"], os.path.basename(os.path.dirname(best))
 
 
 def agg(e):
@@ -43,23 +48,21 @@ def mg(e):
 
 
 def secs(e):
-    a = agg(e)
-    t = a.get("gas_used_time_total")
+    t = agg(e).get("gas_used_time_total")
     return t / 1e9 if t else None
 
 
-def cat(t):
+def category(t):
     fam = t.split("::", 1)[1].split("[")[0]
     if fam == "test_account_access":
         m = re.search(r"opcode_([A-Z]+)-value_sent_\d.*account_mode_AccountMode\.(\w+?)-overhead_baseline_(\w+)", t)
-        if not m:
-            return fam
         op, mode, ctl = m.group(1), m.group(2), m.group(3)
         if ctl == "True":
             return "control (no state work)"
+        if mode == "NON_EXISTING_ACCOUNT":
+            return "absent account"
         mode = mode.replace("EXISTING_CONTRACT_", "")
-        kind = "BAL/HASH" if op in ("BALANCE", "EXTCODEHASH") else "code-exec"
-        return "absent account %s" % kind if mode == "NON_EXISTING_ACCOUNT" else "%s %s" % (mode, kind)
+        return "%s %s" % ("account row" if op in ("BALANCE", "EXTCODEHASH") else "code-exec", mode)
     if fam == "test_ext_account_query_warm":
         return "warm query"
     if fam.startswith("test_sload_same_key"):
@@ -71,73 +74,59 @@ def cat(t):
     return fam
 
 
-def variant(t):
-    v = t.split("::", 1)[1]
-    g = re.search(r"gas-value_(\d+M)", v)
-    m = (re.search(r"opcode_(\w+?)-value_sent_(\d)", v) or re.search(r"case_id_(\w+?)-benchmark", v) or
-         re.search(r"existing_slots_(\w+)-write_new_value_(\w+)", v) or re.search(r"(storage_keys_\w+?)-", v))
-    return "%s %s" % ("-".join(m.groups()) if m else v[:28], g.group(1) if g else "")
-
-
-NAMES = ("nm-sa-fin1", "nm-sa-fin2", "nm-joc-fin1", "nm-joc-fin2", "nm-sa-t1", "nm-joc-t1")
-loaded = {k: load(k) for k in NAMES}
-runs = {k: v[0] for k, v in loaded.items()}
-S1, S2, J, J2, S0, J0 = (runs[k] for k in NAMES)
-ids = [t for t in S1 if t in J and t in S2 and t in J2 and mg(S1[t]) and mg(S2[t]) and mg(J[t]) and mg(J2[t])]
-LONG = [t for t in ids if (secs(J[t]) or 0) >= 1.0]
-SHORT = [t for t in ids if t not in set(LONG)]
-
-
-def stats(A, B, sel):
-    rs = [mg(A[t]) / mg(B[t]) for t in sel if t in A and t in B and mg(A[t]) and mg(B[t])]
+def summary(rs):
+    rs = [r for r in rs if r is not None]
     if not rs:
         return None
-    return {"n": len(rs), "median": round(median(rs), 3),
-            "within10": sum(1 for r in rs if 0.9 <= r <= 1.1),
-            "min": round(min(rs), 3), "max": round(max(rs), 3)}
+    return {"n": len(rs), "median": round(median(rs), 4), "within10": sum(1 for r in rs if 0.9 <= r <= 1.1),
+            "min": round(min(rs), 4), "max": round(max(rs), 4)}
 
+
+def ratio(A, B, t):
+    return mg(A[t]) / mg(B[t]) if t in A and t in B and mg(A[t]) and mg(B[t]) else None
+
+
+def tiered(root, run):
+    """The finding-2 lever as the run recorded it; absent means the .NET default (tiered on)."""
+    cfg = json.load(open(os.path.join(R, root, "runs", run, "config.json")))
+    return (cfg.get("instance", {}).get("environment") or {}).get("DOTNET_TieredCompilation", "default")
+
+
+SB, JB = (pinned(*BASELINE[k]) for k in ("sa", "joc"))
+runs, run_ids = {}, {}
+for k, root in FINAL.items():
+    if os.path.isdir(os.path.join(R, root)):
+        runs[k], run_ids[k] = largest(root)
+S1, J1, S2 = runs["sa1"], runs["joc1"], runs["sa2"]
+J2 = runs.get("joc2", {})
+have_joc2 = len(J2) >= 260
+
+ids = sorted(t for t in J1 if t in S1 and t in S2 and t in SB and t in JB and mg(J1[t]))
+tests, rows = {}, defaultdict(lambda: defaultdict(list))
+for t in ids:
+    js = [secs(J1[t])] + ([secs(J2[t])] if have_joc2 and t in J2 and secs(J2[t]) else [])
+    cls = "ge1s" if median(js) >= 1.0 else "lt1s"
+    c = category(t)
+    rec = {"cls": cls, "cat": c, "joc_secs": round(median(js), 3),
+           "base": ratio(SB, JB, t), "a": ratio(S1, J1, t),
+           "b": ratio(S2, J2, t) if have_joc2 else None,
+           "floor_sa": ratio(S2, S1, t), "floor_joc": ratio(J2, J1, t) if have_joc2 else None}
+    rec = {k: (round(v, 4) if isinstance(v, float) else v) for k, v in rec.items()}
+    tests[t] = rec
+    for k in ("base", "a", "b", "floor_sa", "floor_joc"):
+        rows[(cls, c)][k].append(rec[k])
+        rows[(cls, "__all__")][k].append(rec[k])
 
 out = {
-    "src": "R74 + R75: the whole suite at 160M/240M on the settled stores, two independent pairs",
-    "runs": {k: len(v) for k, v in runs.items()},
-    "tiered_compilation": {k: v[1] for k, v in loaded.items()},
-    "classes": {"long": len(LONG), "short": len(SHORT), "boundary_s": 1.0,
-                "membership": "fixed from the jochemnet arm of this pair"},
-    "by_class": {},
+    "src": "collect_final.py: untreated pair pinned by run id; final pairs R74 (sa-fin1/joc-fin1) and "
+           "R75 (sa-fin2/joc-fin2); class at 1 s of measured step time on the final jochemnet arm",
+    "runs": {"baseline": {k: v[1] for k, v in BASELINE.items()}, "final": run_ids},
+    "tiered_compilation": {**{k: tiered(*v) for k, v in BASELINE.items()},
+                           **{k: tiered(FINAL[k], run_ids[k]) for k in run_ids}},
+    "complete": have_joc2,
+    "n": len(ids),
+    "tests": tests,
+    "rows": [{"cls": cls, "cat": c, **{k: summary(v) for k, v in d.items()}}
+             for (cls, c), d in sorted(rows.items(), key=lambda kv: (kv[0][0] != "ge1s", kv[0][1] != "__all__", kv[0][1]))],
 }
-for name, sel in (("long", LONG), ("short", SHORT)):
-    out["by_class"][name] = {
-        "v1_pair": stats(S0, J0, sel), "pair_a": stats(S1, J, sel), "pair_b": stats(S2, J2, sel),
-        "floor_sa": stats(S2, S1, sel), "floor_joc": stats(J2, J, sel),
-    }
-
-by = defaultdict(list)
-for t in ids:
-    by[cat(t)].append(t)
-out["categories"] = {}
-for c, ts in by.items():
-    r1, r2 = stats(S1, J, ts), stats(S2, J2, ts)
-    out["categories"][c] = {
-        "n": len(ts), "long": sum(1 for t in ts if t in set(LONG)),
-        "v1_pair": (stats(S0, J0, ts) or {}).get("median"),
-        "pair_a": r1["median"], "pair_b": r2["median"], "within10": r1["within10"],
-        "floor_sa": (stats(S2, S1, ts) or {}).get("median"),
-    }
-
-outl = []
-for t in ids:
-    a, b = mg(S1[t]) / mg(J[t]), mg(S2[t]) / mg(J2[t])
-    if abs(a - 1) > 0.1 and abs(b - 1) > 0.1 and (a - 1) * (b - 1) > 0:
-        outl.append({"cat": cat(t), "variant": variant(t), "pair_a": round(a, 3), "pair_b": round(b, 3),
-                     "sa_s": round(secs(S1[t]) or 0, 1), "joc_s": round(secs(J[t]) or 0, 1),
-                     "long": t in set(LONG)})
-outl.sort(key=lambda r: -max(r["pair_a"], r["pair_b"]))
-out["outliers"] = {"all": len(outl), "long": sum(1 for r in outl if r["long"]),
-                   "short": sum(1 for r in outl if not r["long"]), "long_rows": [r for r in outl if r["long"]]}
-buckets = defaultdict(int)
-for r in outl:
-    if r["long"]:
-        buckets["code pool (#141 overshoot)" if "code-exec" in r["cat"] and r["cat"].split()[0] in ("DIFF_MAX", "JUMPDEST")
-                else ("absent-key work" if ("absent" in r["cat"] or "nonexistent" in r["variant"]) else r["cat"])] += 1
-out["outliers"]["long_buckets"] = dict(buckets)
 json.dump(out, sys.stdout, indent=1, sort_keys=True)
