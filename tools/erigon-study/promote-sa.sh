@@ -9,10 +9,18 @@ DONE=/bench/erigon/logs/promote-sa.done
 FAIL=/bench/erigon/logs/promote-sa.fail
 
 rm -f "$DONE" "$FAIL"
+cd /
 fail() { echo "FAIL $1" | tee -a "$LOG"; echo "$1" > "$FAIL"; exit 1; }
 
 until [ -f /bench/erigon/logs/gen-sa.done ] || [ -f /bench/erigon/logs/gen-sa.fail ]; do sleep 60; done
 [ -f /bench/erigon/logs/gen-sa.done ] || fail "G4: generation failed: $(cat /bench/erigon/logs/gen-sa.fail)"
+
+# schelk calls on the two instances share one global lock: a promote here while a suite runs can
+# fail the suite's own schelk call. Wait until no suite runs, then hold .busy so none starts.
+BUSY=/bench/erigon/.busy
+while [ -f "$BUSY" ] || pgrep -x benchmarkoor >/dev/null; do sleep 60; done
+echo "promote-sa" > "$BUSY"
+trap 'rm -f "$BUSY"' EXIT
 
 free_kb=$(df --output=avail -k / | tail -1)
 virgin_kb=$(( $(stat -c %s /bench/schelk-vols/er-sa-virgin.img) / 1024 ))
@@ -23,11 +31,13 @@ need_kb=$(( virgin_kb - alloc_kb + 500 * 1024 * 1024 ))
 {
   echo "======== promote sa: $(date -Is) ========"
   time flock "$LOCK" sudo schelk promote -y --state-path "$STATE"
+  echo "promote rc: $?" | tee /bench/erigon/logs/sa-promote.rc
   flock "$LOCK" sudo schelk mount -y --state-path "$STATE"
   findmnt -n /schelk-er-sa
   sudo schelk status --state-path "$STATE"
   echo "virgin allocated: $(du -sh /bench/schelk-vols/er-sa-virgin.img | cut -f1)"
 } >> "$LOG" 2>&1
+grep -q "promote rc: 0" /bench/erigon/logs/sa-promote.rc || fail "promote failed"
 [ -f /schelk-er-sa/erigon/state-actor-manifest.json ] || fail "promote/remount: store missing"
 
 /bench/erigon/tools/probe.sh sa

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # jochemnet arm, end to end up to the probe (plan section 3): wait for the verified tarball and the
-# mounted er-joc scratch, extract into it with a listing, check the extract, delete the tarball,
-# promote, remount, then probe.
+# mounted er-joc scratch, extract into it with a listing, check the extract, promote, remount,
+# delete the tarball, then probe.
 #
 # The scratch is not the baseline: every benchmarkoor run starts with a schelk restore from the
 # virgin image, so the extract only counts once it has been promoted.
@@ -17,6 +17,7 @@ DONE=/bench/erigon/logs/extract-joc.done
 FAIL=/bench/erigon/logs/extract-joc.fail
 
 rm -f "$DONE" "$FAIL"
+cd /
 fail() { echo "FAIL $1" | tee -a "$LOG"; echo "$1" > "$FAIL"; exit 1; }
 
 until [ -f /bench/logs/erigon/fetch-joc.done ]; do sleep 60; done
@@ -29,8 +30,9 @@ findmnt -n /schelk-er-joc >/dev/null || fail "G2: /schelk-er-joc not mounted"
   echo "======== extract: $(date -Is) ========"
   echo "free on scratch: $(df -h /schelk-er-joc | tail -1)"
   mkdir -p "$DEST"
-  cd "$DEST" || exit 1
-  nice -n 10 ionice -c2 -n7 tar -I zstd -xvf "$TARBALL" > /bench/erigon/logs/joc-extract-list.txt
+  # Subshell: a shell whose cwd sits inside the mount keeps it busy and makes the promote's
+  # unmount fail (it did, 2026-10-03 03:44).
+  ( cd "$DEST" && nice -n 10 ionice -c2 -n7 tar -I zstd -xvf "$TARBALL" > /bench/erigon/logs/joc-extract-list.txt )
   echo "tar rc: $?" | tee /bench/erigon/logs/joc-extract.rc
   echo "finished: $(date -Is)"
 } >> "$LOG" 2>&1
@@ -53,10 +55,8 @@ grep -q "tar rc: 0" /bench/erigon/logs/joc-extract.rc || fail "G3: tar failed"
 } >> "$LOG" 2>&1
 grep -qE "ENTRY MISMATCH|MDBX SIZE MISMATCH" "$LOG" && fail "G3: extract check"
 
-rm -f "$TARBALL"
-echo "tarball deleted; free $(df -h / | tail -1 | awk '{print $4}')" >> "$LOG"
-
 # A promote allocates the whole virgin image; keep half a terabyte spare on the shared host.
+# The tarball goes only after the promote has frozen the extract into the virgin image.
 free_kb=$(df --output=avail -k / | tail -1)
 virgin_kb=$(( $(stat -c %s /bench/schelk-vols/er-joc-virgin.img) / 1024 ))
 alloc_kb=$(du -k /bench/schelk-vols/er-joc-virgin.img | cut -f1)
@@ -66,12 +66,16 @@ need_kb=$(( virgin_kb - alloc_kb + 500 * 1024 * 1024 ))
 {
   echo "======== promote: $(date -Is) ========"
   time flock "$LOCK" sudo schelk promote -y --state-path "$STATE"
+  echo "promote rc: $?" | tee /bench/erigon/logs/joc-promote.rc
   flock "$LOCK" sudo schelk mount -y --state-path "$STATE"
   findmnt -n /schelk-er-joc
   sudo schelk status --state-path "$STATE"
   echo "virgin allocated: $(du -sh /bench/schelk-vols/er-joc-virgin.img | cut -f1)"
 } >> "$LOG" 2>&1
+grep -q "promote rc: 0" /bench/erigon/logs/joc-promote.rc || fail "promote failed"
 [ -d "$DEST/chaindata" ] || fail "promote/remount: $DEST/chaindata missing"
+rm -f "$TARBALL"
+echo "tarball deleted; free $(df -h / | tail -1 | awk '{print $4}')" >> "$LOG"
 
 /bench/erigon/tools/probe.sh joc
 echo "rc=0" > "$DONE"

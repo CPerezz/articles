@@ -54,3 +54,106 @@ just the two smoke tests, without a promote.
 **Contention observed.** `schelk init-new` clones the whole virgin image to scratch (1.9 TB at
 0.4-1.3 GB/s); while it ran, the single-stream download fell from ~90 MB/s to ~8-18 MB/s although
 a parallel range read still got 69 MB/s. Left to finish; the clone is ~1-1.5 h.
+
+**schelk instances built** (`setup-er-schelk.sh`, 22:51-23:22 UTC): ramdisks zeroed with `dd`
+(sized to the device; plain `dd` to the end returns ENOSPC); `er-joc` virgin/scratch on
+loop3/loop4, `/dev/ram0`, `er_joc_era`, 1.9T fs; `er-sa` on loop6/loop8, `/dev/ram1`,
+`er_sa_era`, 787G fs. Clones ran at ~1.5 GB/s; rootfs 3.0T used / 3.7T free afterwards (both
+scratches fully allocated). The NM v2 store was removed after the reference values above were
+recorded and the fill copied to `/bench/fixtures/sa-v2-full/erigon` (identical, `diff -rq`).
+
+**state-actor generation started** 23:23 UTC (`gen-sa.sh`, directly into `/schelk-er-sa/erigon`,
+rootful podman, nice/ionice). The writer reports the same composition as the Nethermind v2 store
+(422,156,694 auto-fill EOAs, 7,340,032 contracts, chain id 1337, osaka, gas limit 1e9). Pipelines
+queued behind markers: `extract-joc.sh` (G1 -> extract -> G3 -> delete tarball -> disk gate ->
+promote -> probe) and `promote-sa.sh` (G4 -> disk gate -> promote -> probe). schelk operations in
+both are serialised by `flock /bench/erigon/.schelk.lock`.
+
+## Round 1 - jochemnet snapshot: download, extract, probe (2026-10-03 00:00-04:00 UTC)
+
+**Download.** 1,038,829,525,851 B, `zstd -t` OK at 03:04 UTC. Eight server-side disconnects were
+resumed by `wget -c` with `206 Partial Content`; the ninth reconnect (01:16) got `200 OK`, on which
+`wget -c` re-reads the stream from byte 0 and discards it up to the local length (660 GB, ~1.7 h of
+waste). Killed the fetch script and wget (no `.done` written), restarted it: `206` again, done at
+02:45. Rule: on a `200 OK` in the fetch log, restart rather than wait.
+
+**Extract** 03:05-03:40 UTC into the mounted er-joc scratch (~630 MB/s), 173 entries, tar rc 0,
+`chaindata/mdbx.dat` apparent size matches. Tarball deleted after G3, as the plan said.
+
+**Incident: the promote did not happen.** `extract-joc.sh` ran tar after `cd` into the mount, so its
+own shell held `/schelk-er-joc` busy: `schelk promote` failed to unmount ("target is busy", listing
+the script's PID), the script did not check the promote's exit code, the virgin stayed at 1.1 GB
+allocated, and the probe then ran on the unpromoted scratch. The probe's closing `schelk restore`
+failed for the same reason, so the scratch kept the probe's writes (one idle 16 s erigon boot, clean
+shutdown in its log). Since the tarball was already deleted, the extract was not redone: the promoted
+image is the extract plus that boot, and suite A's pre-run boots and writes the same store before its
+own promote anyway. Fixed in the scripts: tar runs in a subshell, every script `cd /` first,
+promote and restore exit codes are checked, and the tarball is deleted only after a successful
+promote. Promote re-run by hand at ~04:00 UTC.
+
+**Probe (G5-joc), on the scratch.** Erigon 3.7.0-dev boots the extract with the bench flag set
+and answers RPC; `eth_blockNumber` 24,402,727, head hash
+`0x488010e5acf359838e53d5908b1c3cb166ddc7b84c04e3f14463a95c249a5ba8`, state root
+`0xec649dff…0160`. Chain config logged as `{ChainID: 1, …, Glamsterdam: 2026-01-31 10:52:49 UTC}`
+= 1769856769, i.e. `--override.amsterdam` applies to the DB-stored config. Block 0 is not served
+(`--prune.mode=full`). No index rebuild lines. The tarball's own metadata file names block
+24,350,000, the fork base, as expected.
+
+**state-actor generation, mid-run.** Accounts done at 01:24 UTC (60k/s); contracts at 54% by 03:23
+(~280/s, store 331 GB). Projected store ~550-650 GB against a 787 GB volume: watched.
+
+## Round 2 - suite A on jochemnet: the pre-run is commit-bound (2026-10-03 04:09 UTC onward)
+
+**Promote** (by hand, 03:45-04:09): 1,436.65 GB of changed blocks copied in 24 min (1,022 MB/s);
+virgin now 1.5 TB allocated; rootfs 2.4 TB free.
+
+**Suite A launched** 04:09 (`run-suite.sh joc A A`, config sha256 `c60f7803…`): schelk restore,
+erigon boot, then the 7,736-block pre-run (15,472 calls) before the promote and the two tests.
+
+**Gate tripped: pre-run ETA 14 h** (plan limit 6 h). Every `engine_newPayloadV5` takes 50-75 ms;
+every `engine_forkchoiceUpdatedV3` takes 5-6 s. Erigon's own log: `Timings: Forkchoice
+flush+commit=4s` per block. Investigation:
+- Pausing the state-actor generator (`podman pause`) for 150 s cut FCU from ~5.5 s to ~3.7 s, so
+  the generator's I/O costs ~30% but is not the cause. Unpaused.
+- fsync through the schelk stack is not slow: a 4 KB write+fsync takes 8-9 ms on `/schelk-er-joc`
+  against 5-7 ms on the host fs.
+- During commits the jochemnet device writes 5.5 MB/s at 2% busy and reads 0.2 MB/s, while the
+  erigon process sits at ~99% of one core: the commit is single-thread CPU work inside erigon/MDBX
+  on a 572 GB `mdbx.dat`, not I/O.
+
+**Decision: let it run** (~12.5 h). No flag in this image makes the commit asynchronous
+(`--fcu.background.commit` is absent; only `--fcu.timeout` and `--fcu.background.prune`), and the
+pre-run's output is a state, so its wall time does not touch the measurement. The state-actor arm
+proceeds meanwhile; suite A on state-actor and the B chain follow, serially.
+
+**Measurement note for the analysis.** benchmarkoor's throughput uses `gas_used_time_total`, which
+is newPayload time only (checked on `nm-joc-fin1`: it equals `method_stats.times.engine_newPayloadV5`;
+FCU time is recorded separately). On erigon the per-block flush and commit happen in FCU, so the
+collector must report FCU time per test beside newPayload throughput, or erigon's state-dependent
+commit cost is invisible.
+
+## Round 3 - state-actor generation moved off the scratch (2026-10-03 06:40 UTC)
+
+**First run stopped by hand** at 06:40 after 7 h 17 min, 329.8 M of the ~335 M spec-storage slots
+drained (`podman stop`; writer exit 2, no OOM or XFS errors). The writer was in place on the 787 GB
+er-sa filesystem with 602 GB used and 146 GB free, all of it stream-sort temp directories
+(accounts/storage/code plus 16 commitment-input parts; one at 148 GB, sixteen at ~22 GB). In
+state-actor `005a19c` (`client/erigon/snapshot_cgo.go`) the commitment-input stores are closed only
+after the fold, and the fold's branch store and the accounts/storage/code `.kv` writes both land in
+the same directory while every temp store is still on disk. The volume was filling at ~2 GB/min
+with those phases still ahead, so ENOSPC was likely, not certain.
+
+**Restart cost nothing on the critical path.** Suite A on jochemnet holds the box until ~16:15
+and suites never overlap, so the state-actor store is not needed before then; a fresh run from
+06:43 lands ~14:30.
+
+**New procedure** (`gen-sa-rootfs.sh`): same image, spec, seed and flags, written to
+`/bench/erigon/sa-store` on the rootfs (2.4 TB free), checked (writer exit 0, manifest
+`result.state_root` = `0x48d611bb…51b8`, no stream-sort dirs left), then `cp -a` into the scratch
+with byte and file counts compared. The genesis-hash log check of `gen-sa.sh` was wrong for this
+writer: only the Nethermind writer prints `genesis hash =`; the erigon one does not, so that check
+would have failed a good run. The probe's block 0 is the genesis check now.
+
+**`promote-sa.sh` now waits for an idle box** (no `.busy`, no benchmarkoor process) and holds
+`.busy` during promote and probe: schelk calls on both instances share one global lock, so an
+er-sa promote during the jochemnet suite could fail the suite's own schelk call.

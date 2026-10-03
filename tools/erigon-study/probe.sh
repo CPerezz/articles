@@ -23,6 +23,7 @@ FAIL=/bench/erigon/logs/probe-$ARM.fail
 LOCK=/bench/erigon/.schelk.lock
 
 rm -f "$DONE" "$FAIL"; mkdir -p "$OUT"
+cd /
 fail() { echo "FAIL $1" | tee -a "$LOG"; echo "$1" > "$FAIL"; }
 rpc() { curl -s -m 10 -H 'content-type: application/json' \
           -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"$1\",\"params\":$2}" "http://127.0.0.1:$PORT"; }
@@ -73,6 +74,7 @@ findmnt -n "/schelk-er-$ARM" >/dev/null || { fail "/schelk-er-$ARM not mounted";
   sudo podman rm "$NAME" >/dev/null
   # The probe's writes must not survive: restore the scratch from the golden image and remount.
   flock "$LOCK" sudo schelk restore -y --state-path "$STATE"
+  echo "restore rc: $?"
   findmnt -n "/schelk-er-$ARM" >/dev/null || flock "$LOCK" sudo schelk mount -y --state-path "$STATE"
   findmnt -n "/schelk-er-$ARM"
   echo "finished: $(date -Is)"
