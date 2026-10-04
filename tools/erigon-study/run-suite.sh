@@ -26,7 +26,6 @@ fail() { echo "FAIL $1" | tee -a "$LOG"; echo "$1" > "$FAIL"; exit 1; }
 [ -f "$BUSY" ] && fail "busy: $(cat "$BUSY")"
 pgrep -x benchmarkoor >/dev/null && fail "another benchmarkoor is running"
 [ "$(sudo podman image inspect -f '{{.Id}}' "$IMG")" = "$WANT_IMG_ID" ] || fail "erigon image id changed"
-findmnt -n "/schelk-er-$ARM" >/dev/null || fail "/schelk-er-$ARM not mounted"
 
 sed -e "s|er-$ARM-$SUITE-RUNDATE|er-$ARM-$TAG-$DAY|" -e "s|id: er-$ARM-$SUITE\$|id: er-$ARM-$TAG|" \
     -e "s|name: er-$ARM-$SUITE-|name: er-$ARM-$TAG-|" "$SRC" > "$CFG"

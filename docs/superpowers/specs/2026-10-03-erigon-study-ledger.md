@@ -157,3 +157,82 @@ would have failed a good run. The probe's block 0 is the genesis check now.
 **`promote-sa.sh` now waits for an idle box** (no `.busy`, no benchmarkoor process) and holds
 `.busy` during promote and probe: schelk calls on both instances share one global lock, so an
 er-sa promote during the jochemnet suite could fail the suite's own schelk call.
+
+## Round 4 - suite A on jochemnet passes the gate (2026-10-03 14:13 UTC)
+
+**Pre-run:** 15,472/15,472 calls succeeded in 10 h 0 min (04:10-14:10). Head 24,410,463
+(`0x4525339a…2c4e`), as expected. FCU per block: p50 4.3 s, mean 4.5 s, max 10.0 s; newPayload
+p50 55 ms. `mdbx.dat` grew from 572.46 GB to 584.40 GB.
+
+**Promote** 14:10:19-14:11:34 after a graceful stop (`Got interrupt, shutting down`); client
+restarted on the new baseline. After the suite the snapshot tree has no temp or zero-length files
+except `chaindata/mdbx.lck`, which is normal.
+
+**Smoke tests:** both succeeded, 0 failures, at the expected gas.
+
+| test | gas | newPayload | FCU |
+|---|---|---|---|
+| BALANCE / EXISTING_EOA / NO_CACHE 160M | 159,998,626 | 0.416 s | 4.056 s |
+| ether transfers, diff_to_existent 240M | 240,000,000 | 5.885 s | 13.844 s |
+
+On jochemnet the commit in FCU costs 2-10x the execution that benchmarkoor's throughput measures.
+So FCU has to be reported beside newPayload. The collector's prefix match covers the
+`engine_forkchoiceUpdatedV4` used by the tests (the pre-run uses V3).
+
+**Per-test overhead:** the two tests took 1 min 6 s in total (~33 s each, including container
+recreate and `schelk recover`), under the 68 s limit, so the full B chain runs.
+
+**Fix:** benchmarkoor leaves the volume unmounted when a suite ends, and `run-suite.sh` refused to
+start on an unmounted volume, so every B suite would have failed at once. benchmarkoor's own
+`schelk restore` mounts ("ensure baseline + mounted"), so the check is gone.
+
+**Held:** the B chain waits for the state-actor generator, which is still running on the same NVMe
+(storage and commitment domains). A suite that overlapped it would measure the generator's I/O.
+
+## Round 5 - state-actor store generated, promoted, probed (2026-10-04 02:42 UTC)
+
+**Generation on the rootfs** took 19 h 42 min (06:43 Oct 3 to 02:24 Oct 4) and the writer exited
+0. Phase times from the writer:
+- `WriteDomain` accounts: 26 min.
+- code: 1 h 28 min.
+- storage: 3 h 46 min.
+- fold: 2 h 38 min.
+- `WriteCommitment`: 11 h 37 min, the critical path.
+
+The finished store is 509 GB in 25 files (the 350 GB target counts the state, not erigon's
+files), against the ~600 GB of temp files that ruled out generating in place. The manifest state
+root is `0x48d611bb…51b8`.
+
+**Copy** into the scratch 02:25-02:31: 545,623,174,078 B and 25 files on both sides.
+**Promote** in 9 min 45 s; virgin now 795 GB allocated.
+
+**Probe G5-sa:**
+- RPC up; head 0.
+- Block 0 hash `0x0cb03528…8623` and state root `0x48d611bb…51b8`, both equal to the
+  reference (the Nethermind v2 store), with chain id 1337. So the 160M/240M fill applies unchanged.
+- The EIP-8282 system contract has code and `0x1000` holds 1 ETH.
+- No errors or index rebuilds.
+- Clean stop in 1 s; restore copied back 75 blocks (4.7 MB).
+
+The raw store stays at `/bench/erigon/sa-store` (rootfs 1.1 TB free) as a fallback for the
+virgin image.
+
+## Round 6 - suite A on state-actor, B chain launched (2026-10-04 06:27 UTC)
+
+**Suite A on state-actor:** 2/2 passed, 55.6 s for both tests, rc 0. The gas matches jochemnet
+test for test (159,998,626 and 240,000,000).
+
+Single smoke runs, so these values are not measurements:
+
+| test | arm | newPayload | FCU |
+|---|---|---|---|
+| BALANCE 160M | jochemnet | 0.416 s | 4.056 s |
+| BALANCE 160M | state-actor | 0.481 s | 0.021 s |
+| ether 240M | jochemnet | 5.885 s | 13.844 s |
+| ether 240M | state-actor | 14.519 s | 0.645 s |
+
+So FCU differs by one to two orders of magnitude between the arms. That supports collecting FCU
+per test in B.
+
+**B chain** (`chain-B.sh`: joc B1, sa B1, joc B2, sa B2) launched at 06:29 on an otherwise idle
+box (the generator was done and no other container was running).
