@@ -214,6 +214,59 @@ def chart_reads(B):
     return S.svg(W, H, "".join(o))
 
 
+SOURCE_GROUPS = (("database", ("database",), "--db-u"),
+                 ("account files", ("accounts files", "accounts indexes"), "--db-c"),
+                 ("code files", ("code files", "code indexes"), "--db-sa"),
+                 ("commitment files", ("commitment files", "commitment indexes"), "--accent"),
+                 ("storage files", ("storage files", "storage indexes"), "--good-fg"))
+TRACED = (("opcode_BALANCE", "account read"), ("EXISTING_CONTRACT_JUMPDEST", "call, jumpdest scan"),
+          ("test_ether_transfers", "ether transfer"), ("test_sstore", "storage write"))
+
+
+def traced(S0, arm):
+    """Per traced test: the share of newPayload's page reads each source group served, and the total."""
+    out = []
+    for needle, label in TRACED:
+        test = next(t for t in S0[arm]["tests"] if needle in t)
+        b = S0[arm]["tests"][test]["bytes"]["engine_newPayload"]
+        tot = sum(b.values())
+        shares = {g: sum(b.get(c, 0) for c in cats) / tot for g, cats, _ in SOURCE_GROUPS}
+        shares["other"] = max(0.0, 1 - sum(shares.values()))
+        out.append((label, shares, tot))
+    return out
+
+
+def chart_sources(S0):
+    """Where each traced test's newPayload reads came from, one bar per store."""
+    W, L, R, T = 760, 250, 90, 34
+    rh, gap = 16, 10
+    tests = list(zip(traced(S0, "joc"), traced(S0, "sa")))
+    H = T + len(tests) * (2 * rh + gap) + 56
+    sx = S.Scale(0, 1, L, W - R)
+    o = [S.label(0, 14, "share of the pages each test read inside newPayload, by file", "start", "big"),
+         S.label(W - R + 8, T - 6, "read", "start", "tick")]
+    colours = dict((g, v) for g, _, v in SOURCE_GROUPS) | {"other": "--muted"}
+    y = T
+    for (label, sj, tj), (_, ss, ts) in tests:
+        for arm, shares, tot in (("jochemnet", sj, tj), ("state-actor", ss, ts)):
+            o.append(S.label(L - 10, y + 11, f"{label}, {arm}", "end", "tick"))
+            x = 0.0
+            for g in list(colours):
+                if shares.get(g, 0) > 0:
+                    o.append(S.band(sx.to(x), sx.to(x + shares[g]), y + 2, y + rh - 2, colours[g], 0.85))
+                    x += shares[g]
+            o.append(S.label(W - R + 8, y + 11, f"{tot / 1e9:.2f} GB", "start", "tick"))
+            y += rh
+        y += gap
+    for v in (0, 0.25, 0.5, 0.75, 1):
+        o.append(S.label(sx.to(v), y + 8, f"{v:.0%}", "middle", "tick"))
+    lx, ly = 0, H - 10
+    for g in colours:
+        o.append(S.band(lx, lx + 10, ly - 9, ly + 1, colours[g], 0.85))
+        o.append(S.label(lx + 14, ly, g, "start", "tick"))
+        lx += 14 + 8 * len(g) + 18
+    return S.svg(W, H, "".join(o))
+
 # --------------------------------------------------------------------------- page
 def main():
     D = json.load(open(DATA))
@@ -287,11 +340,28 @@ def main():
     acct = [t for t in tests.values() if t["cls"] == "ge1s" and t["cat"].startswith("account row")]
     sa_rd, joc_rd = med(acct, "sa_np_read_mb"), med(acct, "joc_np_read_mb")
     assert sa_rd > 5 * joc_rd, "state-actor no longer reads several times the bytes: %.0f / %.0f" % (sa_rd, joc_rd)
-    # Part 2, finding 1: where each store keeps its state, and what the benchmark's flags do to it.
-    fork_blocks = P["snapshot_block"] - P["joc_files_end_block"]
-    db_blocks = P["head_after_prerun"] - P["joc_files_end_block"]
-    assert {"--exec.no-background-maintenance", "--exec.no-prune=true"} <= set(P["benchmark_flags"]), \
-        "the benchmark no longer switches erigon's housekeeping off"
+    # Part 2, finding 1: where each store serves the benchmark's reads from, and why.
+    S0 = D["step0"]
+    db_blocks = P["db_blocks"]
+    assert db_blocks == P["head_after_prerun"] - P["joc_files_end_block"] + 1 and \
+        db_blocks == P["fork_db_blocks"] + P["prerun_blocks"] and \
+        P["db_txs"] == P["fork_db_txs"] + P["prerun_txs"], "the database's block and transaction counts no longer add up"
+    step_fill = (P["db_txs"] + 2 * db_blocks) / P["step_size"]
+    assert 0.5 < step_fill < 1, "the database no longer holds one unfinished step: %.3f" % step_fill
+    files_end_step = max(s[1] for s in S0["joc"]["domain_steps"]["accounts"])
+    assert P["retire_domain_files"]["before"] == P["retire_domain_files"]["after"], "retire built state files"
+    ms = P["mainnet_sample"]
+    mn_density = ms["txs"] / ms["blocks"]
+    fork_density = P["fork_db_txs"] / P["fork_db_blocks"]
+    mn_bps = P["step_size"] / (mn_density + 2)
+    assert mn_density > 10 * fork_density and mn_bps * 12 < 86400, "mainnet no longer fills a step within a day"
+    joc_tr, sa_tr = traced(S0, "joc"), traced(S0, "sa")
+    assert min(s["database"] for _, s, _ in joc_tr) >= 0.99, "a traced jochemnet test reads outside its database"
+    assert max(s["database"] for _, s, _ in sa_tr) < 0.01, "a traced state-actor test reads its database"
+    top = {label: max(s, key=s.get) for label, s, _ in sa_tr}
+    assert top == {"account read": "account files", "call, jumpdest scan": "code files",
+                   "ether transfer": "commitment files", "storage write": "commitment files"}, \
+        "the state-actor files each traced test reads most have changed: %r" % top
     rd = {c: med([t for t in tests.values() if t["cls"] == "ge1s" and t["cat"] == c], "sa_np_read_mb") /
           med([t for t in tests.values() if t["cls"] == "ge1s" and t["cat"] == c], "joc_np_read_mb")
           for c in EXISTING if c in ge}
@@ -430,52 +500,56 @@ def main():
           f"Bytes each test read from disk inside newPayload, pair 1, tests over a second. On "
           f"every row that reads existing accounts, state-actor reads {min(rd.values()):.1f} to "
           f"{max(rd.values()):.1f} times what jochemnet does."))
-    w(f"<p>Erigon keeps state in two places. Recent writes live in a database (MDBX). A "
-      f"background job freezes each finished step of history into immutable files, then clears "
-      f"it from the database. A read asks the database first and walks the files, newest first, "
+    w(f"<p>Erigon keeps state in two places. Recent writes live in a database (MDBX). Older "
+      f"history is frozen into immutable files one step at a time, {thousands(P['step_size'])} "
+      f"transactions per step, and Erigon {src('db/state/aggregator.go', 2309, 'never freezes')} "
+      f"a step that isn't full. A read asks the database first and walks the files, newest first, "
       f"only on a {src('db/state/domain.go', 1854, 'miss')}.</p>")
-    w(f"<p><b>The benchmark switches that job off.</b> Its erigon config passes "
-      f"<code>--exec.no-background-maintenance</code>, which stops the client "
-      f"{src('db/state/aggregator.go', 2233, 'building any file')}, and "
-      f"<code>--exec.no-prune</code>, which stops it clearing the database. The flag's own help "
-      f"{src('cmd/utils/flags.go', 1220, 'calls it')} &ldquo;NOT an operational setting&rdquo;. "
-      f"Jochemnet's files end at block {thousands(P['joc_files_end_block'])}. Everything after "
-      f"that is in its {P['joc_mdbx_gb']:.0f} GB database: {thousands(fork_blocks)} blocks of the "
-      f"shadowfork, and the {thousands(P['prerun_blocks'])} pre-run blocks that create the "
-      f"accounts the tests read.</p>")
+    sa_lbl = dict((label, s) for label, s, _ in sa_tr)
+    w(fig("fig_sources", chart_sources(S0),
+          f"Four of these tests, traced page by page with the page cache dropped first. Jochemnet "
+          f"read at least {100 * min(s['database'] for _, s, _ in joc_tr):.0f}% from its database, "
+          f"state-actor nothing. Totals count the pages the client asked for, which is less than the "
+          f"disk traffic in the reads figure."))
+    w(f"<p><b>We traced it.</b> We recorded which file every page came from while four of these "
+      f"tests ran. On jochemnet, at least {100 * min(s['database'] for _, s, _ in joc_tr):.0f}% "
+      f"of what newPayload read came from the database, on every one. On state-actor, none did. "
+      f"The account read went to the account files and their indexes, and the jumpdest call "
+      f"mostly to the code files "
+      f"({100 * sa_lbl['call, jumpdest scan']['code files']:.0f}%). The transfer and the storage "
+      f"write went mostly to the commitment files, the trie Erigon recomputes the state root "
+      f"from.</p>")
+    w(f"<p><b>Why jochemnet's state is in the database.</b> Its files end where step "
+      f"{thousands(files_end_step)} begins, at block {thousands(P['joc_files_end_block'])}. The "
+      f"{thousands(db_blocks)} blocks after that hold {thousands(P['db_txs'])} transactions. "
+      f"Counted the way Erigon counts, with two bookkeeping entries per block, that's "
+      f"{100 * step_fill:.0f}% of one step. So all of it sits in the database, on any node. "
+      f"Erigon's own housekeeping can't move it: <code>erigon snapshots retire</code>, run on the "
+      f"promoted image, built no state file ({P['retire_domain_files']['before']} domain files "
+      f"before and after).</p>")
+    w(f"<p>On mainnet a step fills fast. Just before the fork, mainnet blocks carried "
+      f"{mn_density:.0f} transactions each, so a step took about {thousands(int(round(mn_bps, -2)))} "
+      f"blocks, some {mn_bps * 12 / 3600:.0f} hours. The shadowfork's blocks carry "
+      f"{fork_density:.0f}. One unfinished step stretched over all {thousands(db_blocks)} of them, "
+      f"and everything written after block {thousands(P['joc_files_end_block'])}, the pre-run "
+      f"included, landed in it.</p>")
     w(f"<p>State-actor does the opposite. It writes all "
       f"{(P['sa_eoas'] + P['sa_contracts']) / 1e6:.0f} million accounts straight into frozen "
-      f"files, as if every one of them were old. Its database holds the chain's configuration "
-      f"and little else, {sa_db_gb:.1f} GB against {sa_files_gb:.0f} GB of files. So a lookup that "
-      f"the snapshot answers from its database has to miss there on the generated store and go to "
-      f"the files. That's our explanation for the extra bytes in the figure, and the fix below "
-      f"tests it. The one row where both read the same is the absent account "
-      f"({med(absent_ts, 'joc_np_read_mb') / 1e3:.2f} GB against "
-      f"{med(absent_ts, 'sa_np_read_mb') / 1e3:.2f} GB): a key that exists nowhere can't be "
-      f"answered from the database on either store. It would also explain why the commit runs the "
-      f"other way: one store writes every block into a {P['joc_mdbx_gb']:.0f} GB database, the "
-      f"other into an empty one.</p>")
-    w(f"<p><b>Which one is right?</b> Neither is exactly how a node runs. A node in normal "
-      f"operation freezes every finished step and clears it from its database. So an account "
-      f"created long ago, which is what these tests mean by an existing cold account, is read from "
-      f"a file. State-actor gets that right. Its database lacks only the newest, unfinished step, "
-      f"which Erigon {src('db/state/aggregator.go', 2309, 'never freezes')}. Jochemnet keeps "
-      f"{thousands(db_blocks)} blocks there, all but the newest step of which a running node would "
-      f"have frozen.</p>")
-    w(f"<p><b>The fix</b> is Erigon's own housekeeping, run once on the promoted jochemnet image "
-      f"with the client stopped. <code>erigon snapshots retire</code> "
-      f"{src('cmd/utils/app/snapshots_cmd.go', 3542, 'builds the missing files')}, merges them "
-      f"and {src('cmd/utils/app/snapshots_cmd.go', 3549, 'clears the database')}. Then "
-      f"<code>mdbx_copy -c</code> {src('cmd/integration/Readme.md', 153, 'compacts it')}. No value "
-      f"changes, so the head's state root stays the same; only where each value lives does. The "
-      f"benchmark's flags stay on for the tests, so housekeeping still can't run while a test is "
-      f"timed.</p>")
-    w("<p>We change the snapshot and not the generated store for two reasons. The generated store "
-      "is the closer of the two to a running node here. And Erigon does this itself, while moving "
-      "state-actor's accounts into the database would take a change to the generator.</p>")
-    w(f"<p><b>What it should do.</b> If this is the gap, jochemnet's newPayload slows on the "
-      f"account and call tests, its commit drops under a second, and the ratio over a second moves "
-      f"from {ge_all['a']['median']:.2f} toward 1.</p>")
+      f"files, as if every one of them were old, and its database holds {sa_db_gb:.1f} GB against "
+      f"{sa_files_gb:.0f} GB of files. In the reads figure, the one row where both stores read the "
+      f"same is the absent account ({med(absent_ts, 'joc_np_read_mb') / 1e3:.2f} GB against "
+      f"{med(absent_ts, 'sa_np_read_mb') / 1e3:.2f} GB). A key that exists nowhere can't be "
+      f"answered from the database on either store.</p>")
+    w(f"<p><b>So the two stores answer different questions.</b> On jochemnet the benchmark reads "
+      f"state Erigon considers new, served from its database. On state-actor it reads state Erigon "
+      f"considers old, served from files. On a mainnet node almost every account a benchmark could "
+      f"pick is more than a day old, so it lives in a file. The commit splits the same way: "
+      f"jochemnet writes every block into a {P['joc_mdbx_gb']:.0f} GB database, state-actor into "
+      f"an empty one.</p>")
+    w("<p>The snapshot can't be moved to match. Erigon won't freeze an unfinished step, and filling "
+      "it would mean adding blocks the fixtures weren't built on. The generated store can: "
+      "state-actor would have to write the state the tests read as a recent, unfrozen step. Until "
+      "it does, every Erigon ratio on this page compares new state against old.</p>")
 
     w("<p class=note>Every number on this page is computed from the collected run data when the "
       "page is built, and the build fails if the data stops supporting a sentence.</p>")

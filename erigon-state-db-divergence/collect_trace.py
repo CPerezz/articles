@@ -5,15 +5,13 @@ Input per arm, written by the study's trace-tests.sh on the bench host into /ben
 trace.txt (kernel filemap:mm_filemap_add_to_page_cache events for the arm's device, plus WALL
 markers), files.txt (inode, size, path of every file on the store) and run_dir.txt (benchmarkoor's
 run directory). The page cache is dropped before every test step, so the pages a step adds are the
-bytes it read from disk. A step's window opens at benchmarkoor's "Running test step" line; its
-first newPayload-time seconds are newPayload, the rest until the next harness line is
-forkchoiceUpdated.
+bytes it read from disk. Each engine call's window is [end - duration, end], from benchmarkoor's
+"RPC call completed" line for that call in the test step.
 
 Prints JSON to stdout; the page reads it as data/report_data.json's "step0".
 Usage: collect_trace.py <tag>        e.g. collect_trace.py T0
 """
 import bisect
-import glob
 import json
 import os
 import re
@@ -27,6 +25,9 @@ EVENT = re.compile(r"\s(\d+\.\d+): mm_filemap_add_to_page_cache: dev \d+:\d+ ino
                    r"pfn=\S+ ofs=\d+(?: order=(\d+))?")
 MARK = re.compile(r"\s(\d+\.\d+): tracing_mark_write: WALL (\d+\.\d+)")
 STAMP = re.compile(r"(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z)")
+CALL = re.compile(r"RPC call completed .*?full_duration=(\S+) method=(engine_\w+?)V\d")
+GO_DUR = re.compile(r"(\d+(?:\.\d+)?)(h|ms|µs|us|ns|m|s)")
+UNIT = {"h": 3600, "m": 60, "s": 1, "ms": 1e-3, "µs": 1e-6, "us": 1e-6, "ns": 1e-9}
 DOMAINS = ("accounts", "storage", "code", "commitment")
 
 
@@ -56,6 +57,10 @@ def epoch(s):
         if "." in s else datetime.strptime(s.replace("Z", "+0000"), "%Y-%m-%dT%H:%M:%S%z").timestamp()
 
 
+def go_duration(s):
+    return sum(float(v) * UNIT[u] for v, u in GO_DUR.findall(s))
+
+
 def arm(name):
     d = os.path.join(ROOT, f"{name}-{TAG}")
     files = {}
@@ -74,16 +79,18 @@ def arm(name):
     run = open(os.path.join(d, "run_dir.txt")).read().split()[0]
     result = json.load(open(os.path.join(run, "result.json")))["tests"]
     log = open(os.path.join(run, "benchmarkoor.log"), errors="replace").read().splitlines()
-    starts = []
+    windows = []
     for i, line in enumerate(log):
         if "Running test step" not in line:
             continue
         test = next(t for t in result if t.split("::")[-1] in line or t in line)
-        nxt = next(l for l in log[i + 1:] if STAMP.search(l) and "CLIE" not in l)
-        times = result[test]["steps"]["test"]["aggregated"]["method_stats"]["times"]
-        np_s = sum(m["last"] for k, m in times.items() if k.startswith("engine_newPayload")) / 1e9
-        t0 = epoch(STAMP.search(line).group(1))
-        starts.append((test, t0, t0 + np_s, epoch(STAMP.search(nxt).group(1))))
+        for l in log[i + 1:]:
+            if "Test completed" in l or "Running test step" in l:
+                break
+            m = CALL.search(l)
+            if m:
+                end = epoch(STAMP.search(l).group(1))
+                windows.append((test, m.group(2), end - go_duration(m.group(1)), end))
 
     offset, events = None, []
     for line in open(os.path.join(d, "trace.txt"), errors="replace"):
@@ -98,14 +105,13 @@ def arm(name):
     events.sort()
     ts = [e[0] + offset for e in events]
 
-    tests = {}
-    for test, t0, t_np, t_end in starts:
-        win = {"newPayload": defaultdict(int), "forkchoiceUpdated": defaultdict(int)}
-        for j in range(bisect.bisect_left(ts, t0), bisect.bisect_left(ts, t_end)):
-            part = "newPayload" if ts[j] < t_np else "forkchoiceUpdated"
-            win[part][files.get(events[j][1], "unmapped")] += events[j][2]
-        tests[test] = {"np_secs": round(t_np - t0, 3), "window_secs": round(t_end - t0, 3),
-                       **{k: dict(v) for k, v in win.items()}}
+    tests = defaultdict(lambda: {"secs": {}, "bytes": {}})
+    for test, method, t0, t1 in windows:
+        b = defaultdict(int)
+        for j in range(bisect.bisect_left(ts, t0), bisect.bisect_left(ts, t1)):
+            b[files.get(events[j][1], "unmapped")] += events[j][2]
+        tests[test]["secs"][method] = round(t1 - t0, 3)
+        tests[test]["bytes"][method] = dict(b)
     return {"inventory_bytes": dict(inventory), "events": len(events),
             "domain_steps": {k: sorted(v) for k, v in domain_steps.items()}, "tests": tests}
 

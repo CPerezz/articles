@@ -7570,23 +7570,33 @@
   }
  },
  "provenance": {
-  "benchmark_flags": [
-   "--exec.no-merge=true",
-   "--exec.no-prune=true",
-   "--exec.no-background-maintenance",
-   "--experimental.parallel-commitment"
-  ],
-  "benchmark_flags_source": "ethpandaops/benchmarkoor-tests jochemnet/v1/glamsterdam-devnet-7 erigon instance, mirrored in /bench/cfg/er-*-B*.yaml",
   "client": "erigon 3.7.0-dev-5f62f4ed",
+  "db_blocks": 61057,
+  "db_txs": 1212682,
+  "db_txs_source": "eth_getBlockTransactionCountByNumber over blocks 24,349,407-24,410,463 on the promoted image (ledger round 9)",
   "erigon_commit": "5f62f4edcf410280747bcd92218692b8d1e85fa2",
+  "fork_db_blocks": 53321,
+  "fork_db_txs": 911267,
   "head_after_prerun": 24410463,
   "image": "docker.io/ethpandaops/erigon:glamsterdam-devnet-7",
   "joc_files_end_block": 24349407,
   "joc_files_end_block_source": "erigon log at boot, [snapshots:history] first_history_idx_in_db (suite er-joc-A)",
   "joc_mdbx_gb": 584.4,
   "joc_mdbx_gb_source": "chaindata/mdbx.dat after the promoted pre-run (study ledger round 4)",
+  "mainnet_sample": {
+   "blocks": 49407,
+   "first": 24300000,
+   "last": 24349406,
+   "txs": 16813931
+  },
   "medium": "one host, both stores on the same NVMe array (md2)",
   "prerun_blocks": 7736,
+  "prerun_txs": 301415,
+  "retire_domain_files": {
+   "after": 124,
+   "before": 124
+  },
+  "retire_source": "erigon snapshots retire on the promoted image, fold-joc.log (ledger round 9)",
   "sa_accounts_source": "state-actor writer log, Auto-fill line (gen-sa.log)",
   "sa_contracts": 7340032,
   "sa_eoas": 422156694,
@@ -7595,6 +7605,326 @@
   "sa_sizes_source": "du -sb of the generated store, byte-identical to the promoted image (ledger round 5)",
   "snapshot_block": 24402727,
   "state_actor": "ghcr.io/ethereum/state-actor-erigon:main-005a19c",
-  "state_root": "0x48d611bb839188317e983453705b31e1420b2c4416675f98d776ad8e130d51b8"
+  "state_root": "0x48d611bb839188317e983453705b31e1420b2c4416675f98d776ad8e130d51b8",
+  "step_size": 1562500,
+  "step_size_source": "snapshots/erigondb.toml in the jochemnet datadir"
+ },
+ "step0": {
+  "joc": {
+   "domain_steps": {
+    "accounts": [
+     [
+      0,
+      2048
+     ],
+     [
+      2048,
+      2080
+     ],
+     [
+      2080,
+      2096
+     ],
+     [
+      2096,
+      2098
+     ],
+     [
+      2098,
+      2099
+     ]
+    ],
+    "code": [
+     [
+      0,
+      2048
+     ],
+     [
+      2048,
+      2080
+     ],
+     [
+      2080,
+      2096
+     ],
+     [
+      2096,
+      2098
+     ],
+     [
+      2098,
+      2099
+     ]
+    ],
+    "commitment": [
+     [
+      0,
+      2048
+     ],
+     [
+      2048,
+      2080
+     ],
+     [
+      2080,
+      2096
+     ],
+     [
+      2096,
+      2098
+     ],
+     [
+      2098,
+      2099
+     ]
+    ],
+    "other": [
+     [
+      0,
+      2048
+     ],
+     [
+      2048,
+      2080
+     ],
+     [
+      2080,
+      2096
+     ],
+     [
+      2096,
+      2098
+     ],
+     [
+      2098,
+      2099
+     ]
+    ],
+    "storage": [
+     [
+      0,
+      2048
+     ],
+     [
+      2048,
+      2080
+     ],
+     [
+      2080,
+      2096
+     ],
+     [
+      2096,
+      2098
+     ],
+     [
+      2098,
+      2099
+     ]
+    ]
+   },
+   "events": 4593687,
+   "inventory_bytes": {
+    "accounts files": 13226363067,
+    "accounts indexes": 807931626,
+    "block files": 561235533352,
+    "code files": 15917132730,
+    "code indexes": 172763278,
+    "commitment files": 145494886062,
+    "commitment indexes": 4744509127,
+    "database": 584400764928,
+    "history": 120214708502,
+    "other domain files": 5023,
+    "storage files": 73745079683,
+    "storage indexes": 3617645963
+   },
+   "tests": {
+    "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+     "bytes": {
+      "engine_forkchoiceUpdated": {
+       "database": 43417600,
+       "unmapped": 8192
+      },
+      "engine_newPayload": {
+       "block files": 352256,
+       "database": 77639680
+      }
+     },
+     "secs": {
+      "engine_forkchoiceUpdated": 3.439,
+      "engine_newPayload": 1.703
+     }
+    },
+    "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_DELEGATECALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+     "bytes": {
+      "engine_forkchoiceUpdated": {
+       "database": 127418368,
+       "unmapped": 8192
+      },
+      "engine_newPayload": {
+       "block files": 372736,
+       "database": 1584529408
+      }
+     },
+     "secs": {
+      "engine_forkchoiceUpdated": 4.411,
+      "engine_newPayload": 5.272
+     }
+    },
+    "benchmark/stateful/bloatnet/test_sstore.py::test_sstore_bloated[10GB-fork_Amsterdam-blockchain_test_stateful_engine-cache_strategy_CacheStrategy.NO_CACHE-existing_slots_False-write_new_value_True-benchmark-gas-value_160M]": {
+     "bytes": {
+      "engine_forkchoiceUpdated": {
+       "database": 115138560,
+       "unmapped": 8192
+      },
+      "engine_newPayload": {
+       "block files": 335872,
+       "database": 81555456,
+       "storage files": 32768,
+       "storage indexes": 65536
+      }
+     },
+     "secs": {
+      "engine_forkchoiceUpdated": 3.806,
+      "engine_newPayload": 1.467
+     }
+    },
+    "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_0-case_id_diff_to_existent-benchmark-gas-value_160M]": {
+     "bytes": {
+      "engine_forkchoiceUpdated": {
+       "database": 628854784,
+       "unmapped": 8192
+      },
+      "engine_newPayload": {
+       "accounts files": 28672,
+       "accounts indexes": 61440,
+       "block files": 589824,
+       "code files": 28672,
+       "code indexes": 24576,
+       "database": 193089536,
+       "storage files": 49152,
+       "storage indexes": 40960
+      }
+     },
+     "secs": {
+      "engine_forkchoiceUpdated": 11.028,
+      "engine_newPayload": 3.601
+     }
+    }
+   }
+  },
+  "sa": {
+   "domain_steps": {
+    "accounts": [
+     [
+      0,
+      1
+     ]
+    ],
+    "code": [
+     [
+      0,
+      1
+     ]
+    ],
+    "commitment": [
+     [
+      0,
+      1
+     ]
+    ],
+    "storage": [
+     [
+      0,
+      1
+     ]
+    ]
+   },
+   "events": 4583949,
+   "inventory_bytes": {
+    "accounts files": 15968264966,
+    "accounts indexes": 958842664,
+    "block files": 50,
+    "code files": 49576772083,
+    "code indexes": 50273510,
+    "commitment files": 282109350173,
+    "commitment indexes": 6086070678,
+    "database": 4294967296,
+    "other": 279688,
+    "storage files": 181060811152,
+    "storage indexes": 5517541818
+   },
+   "tests": {
+    "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+     "bytes": {
+      "engine_forkchoiceUpdated": {
+       "database": 1695744
+      },
+      "engine_newPayload": {
+       "accounts files": 222294016,
+       "accounts indexes": 250126336
+      }
+     },
+     "secs": {
+      "engine_forkchoiceUpdated": 0.014,
+      "engine_newPayload": 5.575
+     }
+    },
+    "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_DELEGATECALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+     "bytes": {
+      "engine_forkchoiceUpdated": {
+       "database": 7036928
+      },
+      "engine_newPayload": {
+       "accounts files": 220753920,
+       "accounts indexes": 249622528,
+       "code files": 1705410560,
+       "code indexes": 28246016
+      }
+     },
+     "secs": {
+      "engine_forkchoiceUpdated": 0.083,
+      "engine_newPayload": 25.529
+     }
+    },
+    "benchmark/stateful/bloatnet/test_sstore.py::test_sstore_bloated[10GB-fork_Amsterdam-blockchain_test_stateful_engine-cache_strategy_CacheStrategy.NO_CACHE-existing_slots_False-write_new_value_True-benchmark-gas-value_160M]": {
+     "bytes": {
+      "engine_forkchoiceUpdated": {
+       "database": 13164544,
+       "unmapped": 8192
+      },
+      "engine_newPayload": {
+       "commitment files": 32628736,
+       "commitment indexes": 72421376,
+       "storage files": 2633728,
+       "storage indexes": 7225344
+      }
+     },
+     "secs": {
+      "engine_forkchoiceUpdated": 0.101,
+      "engine_newPayload": 1.945
+     }
+    },
+    "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_0-case_id_diff_to_existent-benchmark-gas-value_160M]": {
+     "bytes": {
+      "engine_forkchoiceUpdated": {
+       "database": 74784768,
+       "unmapped": 16384
+      },
+      "engine_newPayload": {
+       "accounts files": 46399488,
+       "accounts indexes": 84054016,
+       "commitment files": 196542464,
+       "commitment indexes": 316608512
+      }
+     },
+     "secs": {
+      "engine_forkchoiceUpdated": 0.539,
+      "engine_newPayload": 11.052
+     }
+    }
+   }
+  },
+  "src": "collect_trace.py T0"
  }
 }
