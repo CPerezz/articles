@@ -349,3 +349,69 @@ Every block after that, the shadowfork's and the 7,736 pre-run blocks, is in MDB
      leaves them in MDBX. Step 0a answers that first.
    - The promote is one-way: rebuilding the untreated image means a re-download and the 10 h
      pre-run, unless the 509 GB raw state-actor copy is deleted to make room for a backup.
+
+## Round 9 - step 0 confirms the tier split; step 1 can't exist (2026-10-05 20:36-21:05 UTC)
+
+Anon approved step 0 and step 1, and asked for the decision to be written up in the article.
+
+**Erigon facts, read at `5f62f4ed`** (the research agent first quoted line numbers from the
+`binary-trie` working tree; every line below was re-located with `git grep` at the commit):
+- `--exec.no-background-maintenance` stops all file building (`db/state/aggregator.go:2233`).
+  Its help text: "NOT an operational setting" (`cmd/utils/flags.go:1220`).
+- Reads: MDBX first (`db/state/domain.go:1854`), then files on a miss (`:1867`), newest first
+  (`:1492`), with an existence-filter check per file (`:1499`).
+- `erigon snapshots retire` (`cmd/utils/app/snapshots_cmd.go:3435`) builds files (`:3542`),
+  prunes (`:3549`) and merges.
+- An unfinished step is never frozen (`aggregator.go:2309`).
+- `mdbx_copy -c` recipe: `cmd/integration/Readme.md:153`. mdbx-go is pinned at v0.43.0. The
+  image ships only `erigon`, with no MDBX tools.
+
+**Step 0 (`trace-tests.sh` + article `collect_trace.py`, tag T0).**
+- Method: four tests per arm (BALANCE account read, jumpdest-scan call, ether transfer, sstore),
+  all 4/4 passed. The kernel event `filemap:mm_filemap_add_to_page_cache` was filtered to the
+  device-mapper major (252), and each call window was taken from benchmarkoor's
+  `RPC call completed` lines. No events lost: 0 overruns, all 4,583,951 events read.
+- Prediction met. On jochemnet, newPayload's page reads were 99-100% from `mdbx.dat` on all four
+  tests. On state-actor, 0% came from the database:
+  - account read: account indexes 53%, account files 47%;
+  - jumpdest call: code files 77%;
+  - ether transfer: commitment 80%;
+  - sstore: commitment 91%.
+  - forkchoiceUpdated read only the database on both.
+- Inventory: jochemnet has 5 domain files per domain, frozen through step 2099 (124 domain files);
+  state-actor has one file per domain, covering step 0-1.
+- Two harness facts found along the way:
+  - The schelk loop devices run without direct I/O (`DIO 0`; loop readahead 128 KB, md2 2 MB).
+    benchmarkoor's `disk_read_bytes` is the physical traffic under that stack, 4-12x the pages
+    the client asked for (0.08 vs 0.32 GB on the jochemnet account read; 2.20 vs 27.28 GB on the
+    state-actor jumpdest call). Both arms share the stack.
+  - `ext4lazyinit` on the scratch mounts is a read-only bitmap prefetch (~170 MB a run). Inode
+    tables are zeroed (15,200/15,201 and 6,400/6,401 groups). It falls outside the test windows.
+- Tracer fixes during the run:
+  - The dm minor changes with every schelk restore, so the filter is the dm major.
+  - The tracer leaves its arm unmounted (`schelk recover`), so the other arm's trace sees one dm
+    device.
+
+**Step 1 (`fold-joc.sh`): Erigon refused, correctly.**
+- `erigon snapshots retire` ran in 17 s, rc 0. It froze block files up to 24,410,000 but built no
+  state file: 124 domain files before and after, and MDBX grew to 586.26 GB.
+- I stopped the compaction container (the copy wouldn't have fit, and was pointless). The script
+  failed before the promote, as designed: the virgin image is unchanged, and the C chain never
+  started.
+- Why (counted over RPC on the promoted image, `step_size = 1562500` in `erigondb.toml`):
+  - Blocks 24,349,407-24,410,463: 61,057 blocks, 1,212,682 transactions. That is 1,334,796
+    txNums, 0.854 of one step.
+  - Shadowfork: 53,321 blocks, 911,267 txs (17.1 per block). Pre-run: 7,736 blocks, 301,415 txs.
+  - Mainnet 24,300,000-24,349,406: 340.3 txs per block, so a step fills in about 4,565 blocks
+    (~15 h).
+
+**Correction (supersedes round 8's step 1 rationale and the first draft of finding 1,
+`b6e0a54`).** The benchmark's flags don't cause jochemnet's tiering. Everything after block
+24,349,407 is one unfinished step, which any erigon node at this head keeps in MDBX. Jochemnet's
+benchmark state is "new" to Erigon and state-actor's is "old". The snapshot can't be moved:
+filling the step means adding blocks the fixtures weren't built on. Only the generated store can
+move, if state-actor writes the tested state as a recent, unfrozen step. The article's finding 1
+was rewritten on these facts (`e9ff7b7`): 31 oracles, all mutation-caught.
+
+**Box state:** idle, no dm devices; jochemnet virgin = untreated post-pre-run image;
+`/bench/erigon/sa-store` kept.

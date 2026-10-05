@@ -52,20 +52,24 @@ open(cfg, "w").write(s)
 EOF
 [ -s "$CFG" ] || fail "config not written"
 
-# The scratch's dm device, as the kernel's dev_t (major << 20 | minor) the event filter compares.
-dm=$(readlink -f /dev/mapper/er_${ARM}_era)
-maj=$((16#$(stat -c %t "$dm"))); min=$((16#$(stat -c %T "$dm")))
-devt=$(( (maj << 20) | min ))
+# schelk tears the era device down and recreates it on every restore, so its minor isn't known
+# up front. Filter on the device-mapper major instead: during a suite the arm's era device is the
+# only dm device on the box (checked below), and the kernel compares dev_t as major << 20 | minor.
+maj=$(awk '$2 == "device-mapper" {print $1}' /proc/devices)
+[ -n "$maj" ] || fail "no device-mapper major"
+others=$(ls /dev/mapper | grep -v '^control$' | grep -v "^er_${ARM}_era$")
+[ -z "$others" ] || fail "other dm devices present: $others"
+lo=$(( maj << 20 )); hi=$(( (maj + 1) << 20 ))
 {
   echo "======== trace $ARM $TAG: $(date -Is) ========"
   echo "config : $CFG ($(sha256sum "$CFG" | cut -d' ' -f1))"
-  echo "device : $dm $maj:$min dev_t $devt"
-  cat $EV/format | grep -E "field:" 
+  echo "filter : device-mapper major $maj (dev_t $lo..$hi)"
+  grep -E "field:" $EV/format
 } >> "$LOG" 2>&1
 
 echo 0 > $T/tracing_on; echo > $T/trace
 echo 32768 > $T/buffer_size_kb
-echo "s_dev == $devt" > $EV/filter || fail "event filter rejected"
+echo "s_dev >= $lo && s_dev < $hi" > $EV/filter || fail "event filter rejected"
 echo 1 > $EV/enable
 cat $T/trace_pipe > "$OUT/trace.txt" &
 CAT_PID=$!
@@ -86,4 +90,7 @@ find "/schelk-er-$ARM" -xdev -type f -printf '%i %s %p\n' > "$OUT/files.txt"
 cp "$CFG" "$OUT/"
 ls -d /bench/results/er-$ARM-$TAG-$DAY/runs/*/ > "$OUT/run_dir.txt"
 echo "files: $(wc -l < "$OUT/files.txt")" >> "$LOG"
+# Unmount (surgical recover, as benchmarkoor leaves a suite) so the next arm's trace is the only
+# dm device on the box.
+schelk recover -y --state-path "$STATE" >> "$LOG" 2>&1 || fail "recover"
 echo "rc=0" > "$DONE"
