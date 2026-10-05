@@ -7570,7 +7570,15 @@
   }
  },
  "provenance": {
+  "benchmark_flags": [
+   "--exec.no-merge=true",
+   "--exec.no-prune=true",
+   "--exec.no-background-maintenance",
+   "--experimental.parallel-commitment"
+  ],
+  "benchmark_flags_source": "ethpandaops/benchmarkoor-tests jochemnet/v1/glamsterdam-devnet-7 erigon instance, mirrored in /bench/cfg/er-*-B*.yaml",
   "client": "erigon 3.7.0-dev-5f62f4ed",
+  "erigon_commit": "5f62f4edcf410280747bcd92218692b8d1e85fa2",
   "head_after_prerun": 24410463,
   "image": "docker.io/ethpandaops/erigon:glamsterdam-devnet-7",
   "joc_files_end_block": 24349407,
@@ -7579,6 +7587,9 @@
   "joc_mdbx_gb_source": "chaindata/mdbx.dat after the promoted pre-run (study ledger round 4)",
   "medium": "one host, both stores on the same NVMe array (md2)",
   "prerun_blocks": 7736,
+  "sa_accounts_source": "state-actor writer log, Auto-fill line (gen-sa.log)",
+  "sa_contracts": 7340032,
+  "sa_eoas": 422156694,
   "sa_files_bytes": 541327927094,
   "sa_mdbx_bytes": 4294967296,
   "sa_sizes_source": "du -sb of the generated store, byte-identical to the promoted image (ledger round 5)",
