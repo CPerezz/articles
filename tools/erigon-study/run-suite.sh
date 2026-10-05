@@ -29,6 +29,18 @@ pgrep -x benchmarkoor >/dev/null && fail "another benchmarkoor is running"
 
 sed -e "s|er-$ARM-$SUITE-RUNDATE|er-$ARM-$TAG-$DAY|" -e "s|id: er-$ARM-$SUITE\$|id: er-$ARM-$TAG|" \
     -e "s|name: er-$ARM-$SUITE-|name: er-$ARM-$TAG-|" "$SRC" > "$CFG"
+# An optional FILTER (a benchmarkoor regex) narrows the suite to a few tests, e.g. the smoke pair
+# after a store change, without suite A's pre-run.
+if [ -n "${FILTER:-}" ]; then
+  python3 - "$CFG" "$FILTER" <<'EOF' || fail "filter not applied"
+import sys
+cfg, flt = sys.argv[1:]
+s = open(cfg).read()
+old = "      filter: 'regex:(160M|240M)'\n"
+assert old in s, "filter line not found"
+open(cfg, "w").write(s.replace(old, "      filter: 'regex:" + flt.replace("'", "''") + "'\n"))
+EOF
+fi
 echo "$ARM-$TAG" > "$BUSY"
 {
   echo "======== suite $ARM $TAG ($SUITE): $(date -Is) ========"
