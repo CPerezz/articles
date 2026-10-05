@@ -236,3 +236,70 @@ per test in B.
 
 **B chain** (`chain-B.sh`: joc B1, sa B1, joc B2, sa B2) launched at 06:29 on an otherwise idle
 box (the generator was done and no other container was running).
+
+## Round 7 - B chain done; the baseline (2026-10-04 16:28 UTC, collected 2026-10-05)
+
+**Runs:** four suites, all rc 0, 0 failures and 0 validation failures, serial on an idle box.
+
+| suite | tests | duration | window (Oct 4) |
+|---|---|---|---|
+| joc B1 | 266 | 2 h 35 min | 06:29-09:06 |
+| sa B1 | 456 | 2 h 22 min | 09:06-11:28 |
+| joc B2 | 266 | 2 h 35 min | 11:28-14:05 |
+| sa B2 | 456 | 2 h 22 min | 14:05-16:28 |
+
+The 190 state-actor-only tests come from the larger state-actor fill (98 `ext_account_query_warm`,
+32 `sstore_variants`, …). They are outside the intersection, as on Nethermind. Population: 266
+tests, 0 gas mismatches. The class at 1 s on the jochemnet arm puts 121 tests at or above 1 s and
+145 below. Output: `/bench/erigon/baseline-20261004.json` (sha256 `2e8554c8…33c9`).
+
+**Collector extended** (`collect_baseline.py`):
+- A second view over newPayload+FCU time (`a_total`, `b_total`), with its own replica floors and
+  `reportable_total`.
+- FCU ms summaries per row.
+- Ratios are now time ratios (same gas on both arms). Every pre-existing per-test field
+  is unchanged against the first run of the collector.
+
+Ratio = state-actor throughput / jochemnet throughput; below 1 means state-actor is slower.
+
+**Over 1 s, newPayload (benchmarkoor's metric):**
+- Pair 1 is 0.314 and pair 2 is 0.318, against replica floors of 0.996 (jochemnet, 119/121
+  within 10%) and 0.996 (state-actor, 121/121).
+- 120/121 tests are beyond the floor; both pairs fall on the same side of 1 for all 121.
+- So on erigon the generated store executes the same blocks ~3.2x slower. This is the opposite of
+  Nethermind, where the pair ratio was 1.012.
+
+**Over 1 s, newPayload+FCU:** pair 1 0.835 and pair 2 0.841, floors 0.997 and 0.994;
+115/121 beyond the floor. The categories split:
+
+| category (>= 1 s) | n | newPayload | +FCU | FCU ms joc / sa |
+|---|---|---|---|---|
+| code-exec JUMPDEST | 16 | 0.206 | 0.380 | 4,409 / 103 |
+| code-exec DIFF_MAX | 16 | 0.275 | 0.446 | 4,430 / 96 |
+| account row (4 modes) | 16 | 0.26-0.28 | 0.77-0.81 | 3,380-3,500 / 15-19 |
+| code-exec MINIMAL / SAME_MAX | 29 | 0.30-0.31 | 0.84 | 4,410-4,460 / 69-86 |
+| ether transfer | 36 | 0.339 | 1.072 | 11,777 / 638 |
+| storage slot | 4 | 0.718 | 1.653 | 4,705 / 286 |
+
+**Under 1 s** the FCU commit dominates the jochemnet arm. newPayload+FCU ratios run 7-14x in
+state-actor's favour for absent-account, account-row and storage-slot tests: their jochemnet FCU is
+~3.4 s and their execution is milliseconds. The 80 controls (no state work) show newPayload 1.30
+(pair 2: 1.35), 49/80 beyond the floor; their FCU is ~8 ms on both arms. So a fixed per-block
+newPayload cost is ~30% higher on jochemnet; cause not investigated.
+
+**Mechanism, from benchmarkoor's per-method resource counters** (B1, medians, >= 1 s):
+- On account-row tests, state-actor's newPayload reads 2.30 GiB in ~470 k IOPS. jochemnet reads
+  0.31 GiB in ~80 k IOPS. CPU is 2-4 s against 1.6-2.1 s.
+- Code-exec JUMPDEST/DIFF_MAX tests read 25.4 GiB against 6.6-9.9 GiB.
+- The stores differ by tier: state-actor's erigon writer puts all state in frozen snapshot files
+  (4.1 GB `chaindata`, 505 GB `snapshots`). Jochemnet holds 534 GB in MDBX `chaindata` beside
+  873 GB of `snapshots`.
+- With page caches dropped before each step, lookups in frozen, compressed domain files cost far
+  more I/O than in MDBX. Inference only; not checked against erigon's read path. The same tier
+  split explains FCU: jochemnet commits into a 584 GB MDBX (0.04-0.73 GiB written, 3.4-11.8 s),
+  state-actor into a 4 GB one (<= 0.19 GiB, 15-640 ms).
+
+**Reading for the study:** on erigon, "generated vs snapshot" is mostly "frozen-file tier vs MDBX
+tier". A store that matched jochemnet would need the tested state in MDBX, or jochemnet's MDBX
+state merged into files. Throughput must be stated per metric: newPayload alone favours jochemnet
+3.2x; the whole block (newPayload+FCU) is closer and swings by category.

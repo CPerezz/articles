@@ -57,6 +57,12 @@ def secs(e):
     return t / 1e9 if t else None
 
 
+def total_s(e):
+    """newPayload plus forkchoiceUpdated: the whole block, execution and commit."""
+    s, f = secs(e), fcu_ms(e)
+    return s + f / 1e3 if s and f is not None else None
+
+
 def category(t):
     fam = t.split("::", 1)[1].split("[")[0]
     if fam == "test_account_access":
@@ -79,16 +85,21 @@ def category(t):
     return fam
 
 
-def summary(rs):
+def summary(rs, ratios=True):
     rs = [r for r in rs if r is not None]
     if not rs:
         return None
-    return {"n": len(rs), "median": round(median(rs), 4), "within10": sum(1 for r in rs if 0.9 <= r <= 1.1),
-            "min": round(min(rs), 4), "max": round(max(rs), 4)}
+    s = {"n": len(rs), "median": round(median(rs), 4), "min": round(min(rs), 4), "max": round(max(rs), 4)}
+    if ratios:
+        s["within10"] = sum(1 for r in rs if 0.9 <= r <= 1.1)
+    return s
 
 
-def ratio(A, B, t):
-    return mg(A[t]) / mg(B[t]) if t in A and t in B and mg(A[t]) and mg(B[t]) else None
+def ratio(A, B, t, f=None):
+    """Throughput ratio A/B. Both arms run the same gas, so it is B's time over A's."""
+    f = f or secs
+    ta, tb = (f(A[t]), f(B[t])) if t in A and t in B else (None, None)
+    return tb / ta if ta and tb else None
 
 
 runs, ids_ = {}, {}
@@ -104,21 +115,28 @@ for t in ids:
     cls = "ge1s" if median(js) >= 1.0 else "lt1s"
     a, b = ratio(S1, J1, t), ratio(S2, J2, t)
     fj, fs = ratio(J2, J1, t), ratio(S2, S1, t)
+    at, bt = ratio(S1, J1, t, total_s), ratio(S2, J2, t, total_s)
+    fjt, fst = ratio(J2, J1, t, total_s), ratio(S2, S1, t, total_s)
     gas_match = (agg(J1[t]).get("gas_used_total") == agg(S1[t]).get("gas_used_total"))
-    reportable = None
-    if a is not None and fj is not None and fs is not None:
-        reportable = abs(a - 1) > max(abs(fj - 1), abs(fs - 1))
+
+    def beyond_floor(r, f1, f2):
+        return abs(r - 1) > max(abs(f1 - 1), abs(f2 - 1)) if None not in (r, f1, f2) else None
+
+    reportable, reportable_total = beyond_floor(a, fj, fs), beyond_floor(at, fjt, fst)
     rec = {"cls": cls, "cat": category(t), "joc_secs": round(median(js), 3), "a": a, "b": b,
            "floor_joc": fj, "floor_sa": fs, "gas_match": gas_match, "reportable": reportable,
+           "a_total": at, "b_total": bt, "floor_joc_total": fjt, "floor_sa_total": fst,
+           "reportable_total": reportable_total,
            "joc_mgas": mg(J1[t]), "sa_mgas": mg(S1[t]),
            "joc_fcu_ms": fcu_ms(J1[t]), "sa_fcu_ms": fcu_ms(S1[t])}
     rec = {k: (round(v, 4) if isinstance(v, float) else v) for k, v in rec.items()}
     tests[t] = rec
-    for k in ("a", "b", "floor_joc", "floor_sa"):
-        rows[(rec["cls"], rec["cat"])][k].append(rec[k])
-        rows[(rec["cls"], "__all__")][k].append(rec[k])
-    rows[(rec["cls"], rec["cat"])]["_rep"].append(reportable)
-    rows[(rec["cls"], "__all__")]["_rep"].append(reportable)
+    for key in ((rec["cls"], rec["cat"]), (rec["cls"], "__all__")):
+        for k in ("a", "b", "floor_joc", "floor_sa", "a_total", "b_total", "floor_joc_total",
+                  "floor_sa_total", "joc_fcu_ms", "sa_fcu_ms"):
+            rows[key][k].append(rec[k])
+        rows[key]["_rep"].append(reportable)
+        rows[key]["_rep_total"].append(reportable_total)
 
 out = {
     "src": "collect_baseline.py: Erigon B1/B2 pairs, 160M/240M; class at 1 s on the jochemnet arm",
@@ -128,7 +146,8 @@ out = {
     "gas_mismatches": sum(1 for r in tests.values() if not r["gas_match"]),
     "tests": tests,
     "rows": [{"cls": cls, "cat": c, "reportable": sum(1 for x in d["_rep"] if x),
-              **{k: summary(v) for k, v in d.items() if k != "_rep"}}
+              "reportable_total": sum(1 for x in d["_rep_total"] if x),
+              **{k: summary(v, ratios=not k.endswith("_ms")) for k, v in d.items() if not k.startswith("_")}}
              for (cls, c), d in sorted(rows.items(), key=lambda kv: (kv[0][0] != "ge1s", kv[0][1] != "__all__", kv[0][1]))],
 }
 json.dump(out, sys.stdout, indent=1, sort_keys=True)
