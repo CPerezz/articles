@@ -303,3 +303,49 @@ newPayload cost is ~30% higher on jochemnet; cause not investigated.
 tier". A store that matched jochemnet would need the tested state in MDBX, or jochemnet's MDBX
 state merged into files. Throughput must be stated per metric: newPayload alone favours jochemnet
 3.2x; the whole block (newPayload+FCU) is closer and swings by category.
+
+## Round 8 - article part 1; next experiments proposed (2026-10-05)
+
+**Article worktree:** `articles-wt-erigon-article`, branch `erigon-state-db-article` from
+`origin/main` (`bc34cde`), folder `erigon-state-db-divergence/`, commit `0c4ade9`. It uses the
+Nethermind page's shape and helpers (`report_svg.py`, `crt_theme.py` byte-identical to main).
+- Part 1 only: 733 words, 3 figures (newPayload overview, whole-block overview on the same axis,
+  replica floor by duration), 1 table.
+- 21 oracles, each mutation-tested (21/21 caught by their own message). Three of them caught false
+  sentences in the first draft, fixed in the prose:
+  - The "every existing-state test is slower" threshold.
+  - "Commit outweighs execution" as the flip rule; it is "commit saved > extra execution".
+  - "Absent-account lookups": over a second those tests are value-carrying CALLs.
+- Style gate: sentence median 13, 0 em-dashes, 22 contractions/1k.
+- Browser: no SVG text overflow, table fits, no NaN/undefined.
+
+**Collector moved** to the article folder as `collect_erigon.py` (removed here). It adds per-test
+newPayload read bytes and reproduces round 7's per-test values exactly.
+
+**New fact from the client's own log:** at boot jochemnet reports
+`[snapshots:history] ... first_history_idx_in_db=24349407`, frozen steps up to 2099 (~block 24.34M).
+Every block after that, the shadowfork's and the 7,736 pre-run blocks, is in MDBX.
+
+**Proposed next (not run; waiting for Anon), with predictions written before running:**
+1. Step 0, diagnostics, store unchanged:
+   - (a) Tier inventory per store: domain file step ranges and sizes, MDBX table sizes.
+   - (b) Per-file read attribution for 4 tests per arm (account row, jumpdest call, ether
+     transfer, storage), from a manual erigon boot: drop caches, replay the test's payloads, then
+     page-cache residency per file (`fincore`).
+   - Prediction: on jochemnet >= 80% of newPayload bytes come from `mdbx.dat`; on state-actor >= 80%
+     from the accounts/code domain files and their indexes. If both arms read mostly files, the
+     tier hypothesis is wrong and step 1 is off.
+2. Step 1, fold jochemnet's database into files (Erigon's equivalent of the series' compaction):
+   - Boot the promoted image without `--exec.no-merge/--exec.no-prune/--exec.no-background-maintenance`
+     until every complete step is collated, merged and pruned.
+   - Compact MDBX, verify head 24,410,463 and its state root, promote.
+   - Run two fresh pairs (C1, C2) on the same 266 tests.
+   - Prediction: jochemnet's newPayload slows on account and call tests; its FCU drops from
+     3.4-11.8 s to under 1 s. Over a second, the newPayload ratio moves from 0.31 into 0.8-1.2, and
+     the whole-block median into 0.9-1.1.
+   - If jochemnet's reads move to files but the ratio stays below 0.5, the next suspect is
+     state-actor's file layout (one step-0 file per domain, its index types).
+   - Risk: the last, partial step can't be frozen, so if the pre-run's writes sit in it, step 1
+     leaves them in MDBX. Step 0a answers that first.
+   - The promote is one-way: rebuilding the untreated image means a re-download and the 10 h
+     pre-run, unless the 509 GB raw state-actor copy is deleted to make room for a backup.
