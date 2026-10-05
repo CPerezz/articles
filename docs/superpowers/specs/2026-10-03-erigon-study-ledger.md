@@ -415,3 +415,26 @@ was rewritten on these facts (`e9ff7b7`): 31 oracles, all mutation-caught.
 
 **Box state:** idle, no dm devices; jochemnet virgin = untreated post-pre-run image;
 `/bench/erigon/sa-store` kept.
+
+## Round 10 - the baseline again, with the scratch loops on direct I/O (2026-10-05 21:04 UTC)
+
+**Why:** the reth study (same series, other host) found today that buffered schelk loop devices
+dominated its times. Random reads were served about one at a time, ~79 µs a page; under
+`LOOP_SET_DIRECT_IO` both arms ran 5-8x faster with unchanged page counts, and gaps closed. Its open
+question asked whether the Erigon scratches were buffered. They were: `DIO 0` on loop4 (er-joc
+scratch) and loop8 (er-sa scratch), checked in round 9. So B1/B2's time ratios mix store effects
+with loop serialization, and the arm doing more random file reads (state-actor) likely pays more.
+That last part is an inference until D lands.
+
+**Setup:**
+- `losetup --direct-io=on` on loop4 and loop8 with no dm device mapped; sysfs `loop/dio` = 1 on
+  both, still 1 after benchmarkoor's first schelk restore.
+- Virgins (loop3, loop6) stay buffered; they are only read during restores.
+- md2: logical block 512, physical 4096; loop logical block 512.
+
+**Run:** `chain-B.sh joc:D1 sa:D1 joc:D2 sa:D2`. Same config, image and 266 tests as B; only the
+loop mode differs. `collect_erigon.py <day> D` collects it; the B series still reproduces
+byte-for-byte.
+
+**Early sign:** jochemnet's forkchoiceUpdated is still ~3.4 s per block on the first tests. That
+fits the round 2 observation that the commit is single-thread CPU, not I/O.
