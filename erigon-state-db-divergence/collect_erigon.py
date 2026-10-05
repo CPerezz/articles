@@ -8,7 +8,8 @@ where the between-arm gap exceeds the larger of the two arms' own run-to-run del
 otherwise it is "within replica floor".
 
 Runs on the bench host and prints JSON to stdout; the page reads it as data/report_data.json's
-"baseline". Usage: collect_erigon.py [YYYYMMDD]
+"baseline". Usage: collect_erigon.py [YYYYMMDD] [series]    series B (buffered loops, default) or D
+(the same suites with the scratch loops on direct I/O).
 """
 import glob
 import json
@@ -20,6 +21,8 @@ from statistics import median
 
 R = "/bench/results/"
 DAY = sys.argv[1] if len(sys.argv) > 1 else "*"
+SERIES = sys.argv[2] if len(sys.argv) > 2 else "B"
+TAGS = [f"{arm}-{SERIES}{n}" for n in (1, 2) for arm in ("joc", "sa")]
 
 
 def run_of(tag):
@@ -112,10 +115,10 @@ def ratio(A, B, t, f=None):
 
 
 runs, ids_ = {}, {}
-for tag in ("joc-B1", "sa-B1", "joc-B2", "sa-B2"):
+for tag in TAGS:
     runs[tag], ids_[tag] = run_of(tag)
-J1, S1, J2, S2 = runs["joc-B1"], runs["sa-B1"], runs["joc-B2"], runs["sa-B2"]
-complete = all(len(runs[k]) >= 260 for k in ("joc-B1", "sa-B1", "joc-B2", "sa-B2"))
+J1, S1, J2, S2 = (runs[f"{arm}-{SERIES}{n}"] for n, arm in ((1, "joc"), (1, "sa"), (2, "joc"), (2, "sa")))
+complete = all(len(runs[k]) >= 260 for k in TAGS)
 
 ids = sorted(t for t in J1 if t in S1 and mg(J1[t]) and mg(S1[t]))
 tests, rows = {}, defaultdict(lambda: defaultdict(list))
@@ -149,7 +152,7 @@ for t in ids:
         rows[key]["_rep_total"].append(reportable_total)
 
 out = {
-    "src": "collect_erigon.py: Erigon B1/B2 pairs, 160M/240M; class at 1 s on the jochemnet arm",
+    "src": f"collect_erigon.py: Erigon {SERIES}1/{SERIES}2 pairs, 160M/240M; class at 1 s on the jochemnet arm",
     "runs": ids_,
     "complete": complete,
     "n": len(ids),
