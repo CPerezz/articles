@@ -597,3 +597,23 @@ yet; the E pairs measure it across all tests, then a trace of which MDBX tables 
 **E chain** (`chain-B.sh joc:E1 sa:E1 joc:E2 sa:E2`, direct-I/O loops) launched 23:04. The
 `after-compact.sh` watcher never fired: `compact-joc.sh` wrote its marker only after its own smoke
 and trace ran. It was killed and the chain started by hand.
+
+**The commit tail, explained (2026-10-06 23:20 UTC).** Erigon's own timing line splits FCU into
+`flush+commit` and `prune`:
+- D1 (untreated): `flush+commit` 10-14 ms on most tests, 4 s on a few, `prune` 4 s.
+- E1 (rebuilt): `flush+commit` 3-17 ms, `prune` 3 s on each container's first FCU, ~250 µs after.
+
+So the multi-second FCU was mostly never the state commit. It's `runForkchoicePrune`
+(`execution/execmodule/forkchoice.go:871-895`). On a fresh process it calls `CodeStore.Evict`
+(`execution/cache/code_store.go:120`, on by default: `USE_CODE_STORE`, `common/dbg/experiments.go:137`),
+which seeds its size by summing all of `TblCodeCache` once.
+- The rebuilt jochemnet still holds a real mainnet code cache: 143,219 entries, ~1.25 GB, 302,526
+  overflow pages. It isn't a state table, so ResetExec leaves it alone.
+- state-actor's MDBX has no CodeCache rows at all.
+- benchmarkoor recreates the container for every test, so jochemnet pays the full table scan on every
+  test and state-actor never does. That's the 1.49 GB the transfer's FCU read from MDBX in T1.
+
+It's the same kind of confound as the state tier: what one store carries that the other doesn't.
+It's also a confound of the harness: each test boots a fresh client. The next step empties
+jochemnet's CodeCache, so both stores start from an empty one; the clean fix keeps the client
+unchanged. Not applied yet, so that E1/E2 measure the rebuild alone.
