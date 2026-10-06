@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Who cleans up the code? SETCODEFROM and the bytecode nobody points at — CPerezz</title>
+<meta name="description" content="Every client already keeps bytecode no account points at, and it never mattered. SETCODEFROM lets any transaction add to the pile, and the partitioned binary tree moves code into the state root. Where dangling code comes from, client by client, and three ways to ship SETCODEFROM."><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+    :root{
+      --bg:#000; --panel:rgba(51,255,51,.02);
+      --green:#33ff33; --green-dim:#28d128; --green-muted:#1a5a1a;
+      --glow:rgba(51,255,51,.30); --border:#182818;
+      --text:#e2e6e2; --text-2:#aab0aa; --text-dim:#5c645c;
+      --crt:'VT323',monospace; --mono:'IBM Plex Mono',ui-monospace,monospace;
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    body::before{content:'';position:fixed;inset:0;z-index:100;pointer-events:none;
+      background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,255,0,.006) 3px,rgba(0,255,0,.006) 6px)}
+    body::after{content:'';position:fixed;inset:0;z-index:101;pointer-events:none;
+      background:radial-gradient(ellipse at center,transparent 62%,rgba(0,0,0,.45) 100%)}
+    ::selection{background:rgba(51,255,51,.22);color:#fff}
+    a{color:var(--green-dim);text-decoration:none;border-bottom:1px solid rgba(51,255,51,.25);transition:.2s}
+    a:hover{color:var(--green);border-bottom-color:var(--green);text-shadow:0 0 6px var(--glow)}
+    @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.2s!important}}
+
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);font-family:var(--mono);color:var(--text);line-height:1.8;
+    font-size:clamp(15px,.62vw + 13px,17px);-webkit-font-smoothing:antialiased;
+    padding:clamp(1.4rem,4vw,3rem) clamp(1.1rem,4vw,2rem) 5rem}
+  .wrap{max-width:730px;margin:0 auto;position:relative;z-index:5}
+  .topbar{display:flex;justify-content:space-between;align-items:center;font-family:var(--crt);
+    font-size:clamp(.9rem,1.3vw,1.15rem);color:var(--green-muted);margin-bottom:clamp(1.4rem,4vh,2.4rem)}
+  .topbar a{border:none}.topbar a:hover{color:var(--green)}
+  .eyebrow{font-family:var(--crt);letter-spacing:.22em;color:var(--green);opacity:.55;
+    font-size:clamp(.85rem,1.2vw,1.05rem);text-shadow:0 0 8px rgba(51,255,51,.2);margin-bottom:.5rem}
+  h1{font-family:var(--crt);color:var(--green);line-height:1.06;font-weight:400;
+    font-size:clamp(2rem,5.4vw,3.4rem);text-shadow:0 0 7px var(--glow),0 0 24px rgba(51,255,51,.08)}
+  .lead{font-size:clamp(.95rem,1.4vw,1.12rem);color:var(--text-2);font-style:italic;line-height:1.7;
+    margin:clamp(.9rem,2vh,1.3rem) 0 clamp(1rem,2.5vh,1.6rem);padding-left:1rem;border-left:2px solid var(--green-muted)}
+  .meta{font-size:.72rem;letter-spacing:.05em;color:var(--text-dim);border-top:1px solid var(--border);
+    border-bottom:1px solid var(--border);padding:.6rem 0;margin-bottom:clamp(1.6rem,4vh,2.6rem)}
+  .meta .tag{color:var(--text-2)}
+  article h2{font-family:var(--mono);font-weight:700;color:var(--green);letter-spacing:.005em;
+    font-size:clamp(1.15rem,2.3vw,1.5rem);line-height:1.3;margin:clamp(2.4rem,6vh,3.4rem) 0 .2rem;
+    text-shadow:0 0 5px rgba(51,255,51,.18);scroll-margin-top:1.5rem}
+  article h2 .hsig{color:var(--green-muted);font-weight:400}
+  article h2::after{content:'';display:block;height:1px;margin-top:.7rem;opacity:.3;
+    background:linear-gradient(90deg,var(--green-muted),transparent 65%)}
+  p{margin:1rem 0;color:var(--text)}
+  strong{color:#f2fff2;font-weight:600}
+  em{color:var(--text-2)}
+  code{font-family:var(--mono);font-size:.9em;background:rgba(51,255,51,.07);border:1px solid var(--border);
+    border-radius:3px;padding:.06em .38em;color:#bfeecf}
+  ul,ol{margin:1rem 0 1rem 0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:.55rem}
+  li{position:relative;padding-left:1.6rem;color:var(--text)}
+  ul>li::before{content:'▸';position:absolute;left:.1rem;color:var(--green-dim);text-shadow:0 0 5px var(--glow)}
+  ol{counter-reset:step}
+  ol>li{counter-increment:step}
+  ol>li::before{content:counter(step);position:absolute;left:0;top:.05em;font-family:var(--crt);
+    font-size:.95em;color:var(--green);border:1px solid var(--green-muted);border-radius:3px;
+    min-width:1.15em;height:1.15em;display:inline-flex;align-items:center;justify-content:center;line-height:1}
+  ol>li{padding-left:2rem}
+  .callout{border:1px solid var(--green-muted);border-left:3px solid var(--green);background:rgba(51,255,51,.04);
+    padding:clamp(.9rem,2.2vw,1.2rem) clamp(1rem,2.5vw,1.4rem);margin:1.4rem 0;color:#eafaea;
+    box-shadow:0 0 18px rgba(51,255,51,.05)}
+  .callout strong{color:var(--green);text-shadow:0 0 6px var(--glow)}
+  figure{margin:clamp(1.8rem,4vh,2.6rem) 0;border:1px solid var(--border);background:#050805;
+    padding:clamp(.6rem,1.6vw,.9rem);transition:.3s}
+  figure:hover{border-color:var(--green-muted);box-shadow:0 0 22px rgba(51,255,51,.06)}
+  figure img{display:block;width:100%;height:auto;background:#fff;border-radius:2px}
+  figcaption{font-size:.72rem;line-height:1.55;color:var(--text-dim);text-align:center;
+    margin-top:.7rem;padding:0 .4rem}
+  figcaption .fnum{font-family:var(--crt);font-size:1rem;color:var(--green-dim);letter-spacing:.04em}
+  hr.rule{border:none;height:1px;margin:clamp(2rem,5vh,3rem) 0;opacity:.4;
+    background:linear-gradient(90deg,var(--border),var(--green) 30%,var(--green) 70%,var(--border))}
+  .endbar{margin-top:clamp(2.6rem,6vh,4rem);padding-top:1.2rem;border-top:1px solid var(--border);
+    font-family:var(--crt);font-size:clamp(.85rem,1.2vw,1.05rem);color:var(--green-muted);
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:.6rem}
+  .endbar a{border:none}.endbar a:hover{color:var(--green)}
+  .cursor{display:inline-block;width:.5em;height:.9em;background:var(--green);vertical-align:-2px;
+    margin-left:2px;animation:blink 1s step-end infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+</style></head><body><div class="wrap">
+  <div class="topbar"><a href="../">&larr; all articles</a><span>EIPS · STATE</span></div>
+  <header>
+    <div class="eyebrow">// ARTICLE</div>
+    <h1>Who cleans up the code? SETCODEFROM and the bytecode nobody points at</h1>
+    <p class="lead">Every client already keeps bytecode that no account points at. That never mattered, because code sits outside the state root. SETCODEFROM lets any transaction add to the pile, and the partitioned binary tree moves code inside the root.</p>
+    <div class="meta"><span class="tag">Ethereum · EIP-8298 · EIP-8297 · state</span> · 2026 · <a href="https://github.com/CPerezz/articles/tree/main/setcodefrom-dangling-code">reproducible pipeline &amp; data &rarr;</a></div>
+  </header>
+  <article>
+<p>Sync the same client twice, once with full sync and once with snap sync, and both nodes will agree on every state root. They won't agree on what's in their code databases. The full-synced one keeps bytecode that no account points at anymore: <a href="https://eips.ethereum.org/EIPS/eip-8058" target="_blank" rel="noopener">EIP-8058</a> counted 27,869 of those on a full-synced node, as of Cancun.</p>
+<figure><img src="figures/hero.jpeg" alt="" loading="lazy"></figure>
+<p>That has never broken consensus, and it's small. But <a href="https://eips.ethereum.org/EIPS/eip-8298" target="_blank" rel="noopener">SETCODEFROM</a>, proposed for Hegotá, gives every transaction a new way to leave code behind (my <a href="../setcodefrom-account-modes/" target="_blank" rel="noopener">previous article</a> covers what it's for), and the <a href="https://eips.ethereum.org/EIPS/eip-8297" target="_blank" rel="noopener">partitioned binary tree</a> (PBT) moves code inside the state root. Together they turn a harmless leftover into a design decision, and the time to make it is now, while 8298 is still a draft.</p>
+<h2 id="same-chain-same-root-different-code"><span class="hsig">&gt;</span> Same chain, same root, different code</h2>
+<figure><img src="figures/f1-same-root-different-code.svg" alt="Figure 1: two nodes running the same client on the same chain, one full-synced and one snap-synced. Their account tries and state roots are identical, but the full-synced node&#x27;s code database also holds 27,869 codes no account points at." loading="lazy"><figcaption><span class="fnum">Figure 1.</span> two nodes running the same client on the same chain, one full-synced and one snap-synced. Their account tries and state roots are identical, but the full-synced node's code database also holds 27,869 codes no account points at.</figcaption></figure>
+<p>The state root commits to every account's code hash, never to the code itself. The bytes live in a side table, hash to code, that each client fills and keeps however it likes. Consensus needs only one thing from that table: the code of every live account is in it. Anything extra is invisible to the root, so nobody ever had to agree on it.</p>
+<h2 id="how-code-ends-up-dangling"><span class="hsig">&gt;</span> How code ends up dangling</h2>
+<figure><img src="figures/f2-how-code-dangles.svg" alt="Figure 2: three ways code gets left behind: a reorged-out block, a SELFDESTRUCT before Cancun, and an inner CREATE whose outer frame reverts. Each time, nothing points at the code anymore, but it stays." loading="lazy"><figcaption><span class="fnum">Figure 2.</span> three ways code gets left behind: a reorged-out block, a SELFDESTRUCT before Cancun, and an inner CREATE whose outer frame reverts. Each time, nothing points at the code anymore, but it stays.</figcaption></figure>
+<p>Code gets written to that table when a client executes a block that deploys it, and in most clients nothing ever deletes it:</p>
+<ul><li><strong>Reorgs.</strong> A client executes a block on a side branch and writes its new code. The chain picks the other branch, the block's state is undone, and the code stays.</li><li><strong>SELFDESTRUCT, before Cancun.</strong> A contract deployed in one block and destroyed in a later one loses its account and its storage. In a client that keys code by hash, its code can't go with it: another account may share the same code hash, and the client has no way to know. Only a reference count would tell you. <a href="https://eips.ethereum.org/EIPS/eip-6780" target="_blank" rel="noopener">EIP-6780</a> closed this door in Cancun.</li><li><strong>Reverted sub-creates.</strong> An inner CREATE succeeds, then an outer frame reverts. Most clients undo the code before it ever reaches disk. Nethermind stages it when it's inserted and writes the whole batch at the end of the block anyway.</li></ul>
+<p>Here's every client side by side:</p>
+<figure><img src="figures/f3-client-matrix.svg" alt="Figure 3: a grid of five clients against four events. geth, reth, Nethermind and Besu key code by hash and keep it after reorgs and pre-Cancun self-destructs, and Nethermind also keeps code from reverted frames and same-transaction self-destructs. Erigon keys code by address and never leaves any behind." loading="lazy"><figcaption><span class="fnum">Figure 3.</span> a grid of five clients against four events. geth, reth, Nethermind and Besu key code by hash and keep it after reorgs and pre-Cancun self-destructs, and Nethermind also keeps code from reverted frames and same-transaction self-destructs. Erigon keys code by address and never leaves any behind.</figcaption></figure>
+<p>Two things stand out. Reverts aren't the main source: only Nethermind persists code from a reverted frame, the others undo it before anything is written. And only one client doesn't have the problem at all.</p>
+<p>Since Cancun, only reorgs and Nethermind's handling of reverts still leave code behind. Fix those two and nothing would anymore, until SETCODEFROM.</p>
+<h2 id="dedup-or-delete-pick-one"><span class="hsig">&gt;</span> Dedup or delete: pick one</h2>
+<figure><img src="figures/f4-dedup-or-delete.svg" alt="Figure 4: keyed by address, three clones store three copies and deleting one is free. Keyed by code hash, three clones share one copy and deleting it needs to know nobody else points at it, which takes a reference count. PBT keys its code zone by code hash." loading="lazy"><figcaption><span class="fnum">Figure 4.</span> keyed by address, three clones store three copies and deleting one is free. Keyed by code hash, three clones share one copy and deleting it needs to know nobody else points at it, which takes a reference count. PBT keys its code zone by code hash.</figcaption></figure>
+<p>Erigon stores code per address. When the account goes, its code goes with it. The price is that a thousand clones are a thousand copies, though Erigon wins most of that back by compressing its snapshot files (its own config notes a 4x ratio for code on mainnet). geth, reth, Nethermind and Besu store code by hash: a thousand clones share one copy, and deleting it means knowing nobody else points at it. That's a reference count, and none of them keeps one. Besu has been on both sides: older Besu databases keyed code by account, new ones key it by hash.</p>
+<p>PBT picks dedup on purpose. Its code zone is content-addressed, keyed by code hash, so it inherits the same question.</p>
+<h2 id="how-big-is-it-today-small"><span class="hsig">&gt;</span> How big is it today? Small</h2>
+<figure><img src="figures/f5-how-big-today.svg" alt="Figure 5: the 27,869 unreferenced codes are at most 0.68 GB, and 1.83 GB even at the new 64 KiB limit, against about 280 GB of state, and a snap-synced node never fetches them. What they already cost: no client can be asked for code by hash, so EIP-8058 and EIP-8298 both key on addresses instead." loading="lazy"><figcaption><span class="fnum">Figure 5.</span> the 27,869 unreferenced codes are at most 0.68 GB, and 1.83 GB even at the new 64 KiB limit, against about 280 GB of state, and a snap-synced node never fetches them. What they already cost: no client can be asked for code by hash, so EIP-8058 and EIP-8298 both key on addresses instead.</figcaption></figure>
+<p>Those 27,869 codes were deployed under the 24 KiB limit, so together they're 0.68 GB at most. Even at the new 64 KiB limit (<a href="https://eips.ethereum.org/EIPS/eip-7954" target="_blank" rel="noopener">EIP-7954</a>, scheduled for Glamsterdam), the same count would be 1.83 GB, under 0.7% of a full node's ~280 GB of state. A snap-synced node never even downloads it. Cleaning it up for the disk space alone isn't worth anyone's time.</p>
+<p>What it did cost is design freedom. You can't ask a client "do you have code H?", because the answer depends on how it synced. 8058's deduplication discount had to look up the code hash of addresses in the access list instead, and SETCODEFROM takes a source address rather than a code hash for exactly the same reason.</p>
+<h2 id="code-chunking-puts-code-in-the-root"><span class="hsig">&gt;</span> Code chunking puts code in the root</h2>
+<figure><img src="figures/f6-code-in-the-tree.svg" alt="Figure 6: chunked into the state, as in PBT or any code-chunking design, one 64 KiB contract becomes 2,115 leaves plus about as many branch nodes, all consensus state held by full nodes, snap sync servers and AA-VOPS nodes. Shared code can be deleted without a reference count only while no live account can replace its code." loading="lazy"><figcaption><span class="fnum">Figure 6.</span> chunked into the state, as in PBT or any code-chunking design, one 64 KiB contract becomes 2,115 leaves plus about as many branch nodes, all consensus state held by full nodes, snap sync servers and AA-VOPS nodes. Shared code can be deleted without a reference count only while no live account can replace its code.</figcaption></figure>
+<p>Chunk code into the state tree, as PBT (<a href="https://eips.ethereum.org/EIPS/eip-8297" target="_blank" rel="noopener">EIP-8297</a>) does and any code-chunking design would, and the root commits to the code bytes, not just the code hash. A 64 KiB contract becomes up to 2,115 leaves of 31 code bytes each, plus roughly a branch node per leaf, all of it consensus state: every full node stores it, snap sync has to serve it, and under <a href="https://eips.ethereum.org/EIPS/eip-8369" target="_blank" rel="noopener">EIP-8369</a>'s AA-VOPS profile even partially stateless nodes keep the whole code corpus.</p>
+<p>Store those chunks once per code hash, as PBT does to avoid duplicates, and deleting code becomes a consensus decision. Today it needs no reference count: since Cancun, an account with code can only be deleted in the transaction that created it, and no live account can replace its code, so a code leaf older than the transaction always has a holder the transaction can't remove. 8297 says it outright: a later change that lets a live account replace code "would have to say how the check stays local."</p>
+<p>Today's dangling code doesn't come along to PBT, by the way: its converter (<a href="https://eips.ethereum.org/EIPS/eip-8347" target="_blank" rel="noopener">EIP-8347</a>) reads code only through live accounts' code hashes.</p>
+<h2 id="setcodefrom-makes-any-transaction-the-last-holder"><span class="hsig">&gt;</span> SETCODEFROM makes any transaction the last holder</h2>
+<figure><img src="figures/f7-last-holder.svg" alt="Figure 7: account A, deployed with its own code Y, adopts a template&#x27;s code X with SETCODEFROM, and Y is left with zero holders. Under the MPT that&#x27;s local garbage that sync sheds. Under PBT, Y&#x27;s 2,115 leaves sit in the root: forever without a count, gone with their last holder with one." loading="lazy"><figcaption><span class="fnum">Figure 7.</span> account A, deployed with its own code Y, adopts a template's code X with SETCODEFROM, and Y is left with zero holders. Under the MPT that's local garbage that sync sheds. Under PBT, Y's 2,115 leaves sit in the root: forever without a count, gone with their last holder with one.</figcaption></figure>
+<p>SETCODEFROM is that later change. When the last account holding some code adopts different code, the old code has no holder left. Under the MPT that's one more entry in a table nobody agrees on, and sync sheds it. Under PBT it's 2,115 leaves inside the root, and removing them needs exactly the count nobody keeps.</p>
+<p>The flows SETCODEFROM was written for barely trigger this. A source keeps its code, so anything adopted from a template always has at least one holder. What dangles is the original code of a contract that upgrades itself in place, or a template that changes its own code after everyone else left. And those bytes were paid for: under <a href="https://eips.ethereum.org/EIPS/eip-8037" target="_blank" rel="noopener">EIP-8037</a>, deploying 64 KiB costs about 100M state gas, while orphaning it costs 12,200 gas. SETCODEFROM doesn't make state growth cheaper. It makes paid state impossible to take back.</p>
+<div class="callout">That's the part I care about most. <strong>Without a count, dead code in the tree is there forever</strong>: every node stores it, syncs it and serves it, and every AA-VOPS node carries it too. With a count, SETCODEFROM becomes the first way since Cancun to take code back out of state.<br><br>And we can't predict the future. Any use case that deploys unique code and later adopts something else leaves a trail of dead code: an upgrade-heavy protocol, say, or per-user deployments that migrate to a shared template. How long that trail gets, nobody knows, and <strong>once it's in the root it stays</strong>.</div>
+<h2 id="three-ways-to-ship-it"><span class="hsig">&gt;</span> Three ways to ship it</h2>
+<figure><img src="figures/f8-options.svg" alt="Figure 8: three options against five costs: spec work and client work in Hegotá, work at the PBT fork, dead code left in the code zone, and how the first reference-counting bug shows up." loading="lazy"><figcaption><span class="fnum">Figure 8.</span> three options against five costs: spec work and client work in Hegotá, work at the PBT fork, dead code left in the code zone, and how the first reference-counting bug shows up.</figcaption></figure>
+<p><strong>A. Count now, in Hegotá.</strong> 8298 drops code once its last holder replaces it, prices SETCODEFROM for that, and keeps the address operand. Clients build the count and fix their reorg and revert writes; PBT only picks where the count lives. And count bugs show up under the MPT as a leak or a stall, long before they could touch a state root.</p>
+<p><strong>B. Ship as is, let PBT decide.</strong> Nothing changes in Hegotá. PBT later either never removes replaced code (that's C) or adds the count then: a SETCODEFROM gas change, a count that is consensus-critical from day one, and every conversion path computing it identically.</p>
+<p><strong>C. Never remove, by spec.</strong> One sentence in whichever EIP ships second, no new machinery, and dead leaves stay in the root forever. Today that costs nothing extra, since nothing leaves the code zone after Cancun anyway. Tomorrow, nobody knows.</p>
+<figure><img src="figures/f9-who-does-the-work.svg" alt="Figure 9: who does the work, and when. A puts it in Hegotá, in 8298 and the clients. B puts it at the PBT fork, in 8297 and every conversion path. C writes one sentence and lets dead leaves pile up forever." loading="lazy"><figcaption><span class="fnum">Figure 9.</span> who does the work, and when. A puts it in Hegotá, in 8298 and the clients. B puts it at the PBT fork, in 8297 and every conversion path. C writes one sentence and lets dead leaves pile up forever.</figcaption></figure>
+<h2 id="where-i-stand"><span class="hsig">&gt;</span> Where I stand</h2>
+<p>I'm biased here: I co-authored the PBT EIPs and I want to see them ship. But I think we can all agree they're already complex. And there's more than one way into the tree: people converting their own nodes, people importing a converted snapshot, nodes following along with BAL replay. Under B, every one of those paths inherits a fix we could have made in 8298 with a bit more work.</p>
+<p>So I'd rather do A. Decide it while 8298 is still a draft, build the count where its bugs are cheap, and hand PBT a solved problem instead of another EIP's tech debt.</p>
+<h2 id="cheat-sheet"><span class="hsig">&gt;</span> Cheat sheet</h2>
+<figure><img src="figures/f10-cheat-sheet.svg" alt="Figure 10: a table mapping what you care about most to the option that fits: the smallest Hegotá scope to B or C, the simplest PBT spec to C, and keeping other EIPs&#x27; debt out of PBT, taking dead code back out, or catching count bugs before they can move the root to A." loading="lazy"><figcaption><span class="fnum">Figure 10.</span> a table mapping what you care about most to the option that fits: the smallest Hegotá scope to B or C, the simplest PBT spec to C, and keeping other EIPs' debt out of PBT, taking dead code back out, or catching count bugs before they can move the root to A.</figcaption></figure>
+  </article>
+  <div class="endbar"><a href="../">&larr; all articles</a><a href="https://github.com/CPerezz/articles/tree/main/setcodefrom-dangling-code">source &amp; data</a></div>
+  <span class="cursor" style="position:fixed;bottom:1.4rem;right:1.4rem;z-index:6"></span>
+</div></body></html>

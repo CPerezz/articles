@@ -22,6 +22,19 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # --------------------------------------------------------------------------- #
 ARTICLES = [
     {
+        "folder": "setcodefrom-dangling-code",
+        "source": "setcodefrom-dangling-code.md",
+        "eyebrow": "EIPS · STATE",
+        "card_title": "Who cleans up the code? SETCODEFROM and the bytecode nobody points at",
+        "date": "2026",
+        "tags": "Ethereum · EIP-8298 · EIP-8297 · state",
+        "blurb": "Every client already keeps bytecode no account points at, and it never mattered. "
+                 "SETCODEFROM lets any transaction add to the pile, and the partitioned binary tree "
+                 "moves code into the state root. Where dangling code comes from, client by client, "
+                 "and three ways to ship SETCODEFROM.",
+        "repo": "setcodefrom-dangling-code/",
+    },
+    {
         "folder": "setcodefrom-account-modes",
         "source": "setcodefrom-account-modes.md",
         "eyebrow": "EIPS · ACCOUNT ABSTRACTION",
@@ -147,8 +160,9 @@ def _parse_list(block, ordered):
 def _figure(alt, src):
     m = re.match(r"^(Figure \d+)[:.]\s*(.*)$", alt)
     cap = (f'<span class="fnum">{m.group(1)}.</span> {inline(m.group(2))}') if m else inline(alt)
+    figcap = f"<figcaption>{cap}</figcaption>" if cap else ""
     return (f'<figure><img src="{src}" alt="{html.escape(alt, quote=True)}" loading="lazy">'
-            f"<figcaption>{cap}</figcaption></figure>")
+            f"{figcap}</figure>")
 
 
 def convert(md):
@@ -182,6 +196,10 @@ def convert(md):
             out.append("<ul>" + "".join(f"<li>{inline(i)}</li>" for i in _parse_list(b, False)) + "</ul>")
         elif re.match(r"^\d+\.\s", bs):
             out.append("<ol>" + "".join(f"<li>{inline(i)}</li>" for i in _parse_list(b, True)) + "</ol>")
+        elif bs.startswith(">"):
+            quoted = "\n".join(re.sub(r"^>\s?", "", l.strip()) for l in bs.split("\n"))
+            paras = [" ".join(p.split()) for p in quoted.split("\n\n")]
+            out.append('<div class="callout">' + "<br><br>".join(inline(p) for p in paras if p) + "</div>")
         else:
             para = " ".join(l.strip() for l in bs.split("\n"))
             if para.startswith("**Verdict"):
