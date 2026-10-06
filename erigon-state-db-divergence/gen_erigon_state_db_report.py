@@ -182,29 +182,32 @@ def med(ts, k):
     return median(t[k] for t in ts)
 
 
+READ_ROWS = [c for c in ORDER if c not in ("control (no state work)", "warm query", "sload same key")]
+
+
 def chart_reads(B):
-    """Bytes each test read from disk inside newPayload, per arm, tests over a second. Same rows
-    as the overview, so a row's read gap can be put beside its throughput gap."""
+    """Disk reads inside newPayload, per arm, every test of each row. Byte counts don't carry the
+    sub-second timing noise, so both duration classes are pooled."""
     W, L, R, T = 760, 250, 130, 34
     rh = 17
-    rows = class_rows(B, "ge1s")
+    rows = [c for c in READ_ROWS if any(t["cat"] == c for t in B["tests"].values())]
     H = T + 12 + rh * len(rows) + 64
-    sx = S.LogScale(0.1, 60, L, W - R)
-    o = [S.label(0, 14, "GB read from disk inside newPayload, one dot per test, pair 1", "start", "big"),
-         S.label(0, T + 4, "tests over a second", "start", "ax"),
+    sx = S.LogScale(0.001, 30, L, W - R)
+    o = [S.label(0, 14, "GB counted inside newPayload, one dot per test, pair 1", "start", "big"),
+         S.label(0, T + 4, "all tests", "start", "ax"),
          S.label(W - R + 8, T + 4, "jochemnet  s-a", "start", "tick")]
     top = T + 12
-    for i, (cat, _) in enumerate(rows):
+    for i, cat in enumerate(rows):
         y = top + rh * i + 9
-        ts = [t for t in B["tests"].values() if t["cls"] == "ge1s" and t["cat"] == cat]
+        ts = [t for t in B["tests"].values() if t["cat"] == cat]
         o.append(S.label(L - 10, y + 4, ROW_LABEL.get(cat, cat), "end", "tick"))
         for k, var, off in (("joc_np_read_mb", "--db-c", -2), ("sa_np_read_mb", "--db-sa", 2)):
             for t in ts:
-                o.append(S.dot(sx.to(max(0.1, min(60, t[k] / 1e3))), y + off, 2.2, var))
+                o.append(S.dot(sx.to(max(0.001, min(30, t[k] / 1e3))), y + off, 2.2, var))
         o.append(S.label(W - R + 8, y + 4, "%5.2f  %5.2f" % (med(ts, "joc_np_read_mb") / 1e3,
                                                               med(ts, "sa_np_read_mb") / 1e3), "start", "tick"))
     ty = top + rh * len(rows) + 18
-    for t in (0.1, 0.25, 0.5, 1, 2.5, 5, 10, 25):
+    for t in (0.001, 0.01, 0.1, 1, 10):
         o.append(S.label(sx.to(t), ty, "%g" % t, "middle", "tick"))
     ly = H - 8
     o.append(S.dot(L, ly - 4, 3, "--db-c"))
@@ -283,34 +286,34 @@ def main():
     assert len(set(B["runs"].values())) == 4, "a run is shared between the two pairs"
     for t in tests.values():
         assert None not in (t["a"], t["b"], t["a_total"], t["b_total"]), "a test lacks a ratio"
-    # The headline: every existing-state row over a second is slower, the worst a contract call.
+    # The headline: over a second the generated store's newPayload is up to ~2x slower, on the
+    # transfers, while the code calls sit at parity; timed whole, it's ~3x faster.
     ex = {c: ge[c]["a"]["median"] for c in EXISTING if c in ge}
     lo_c = min(ex, key=ex.get)
-    factor = 1.0 / ex[lo_c]
-    assert 4 <= factor <= 6, f"headline factor moved out of band: {factor:.2f}"
-    assert lo_c.startswith("code-exec"), "the slowest row is no longer a contract call: %s" % lo_c
-    ex_tests = [max(t["a"], t["b"]) for t in tests.values() if t["cls"] == "ge1s" and t["cat"] in EXISTING]
-    assert max(ex_tests) < 0.9, "an existing-state test over a second is no longer slower in both pairs"
-    # Clue 1: the client isn't slow, reading existing state is.
+    slow = 1.0 / ex[lo_c]
+    at, bt = ge_all["a_total"]["median"], ge_all["b_total"]["median"]
+    assert lo_c == "ether transfer" and 1.5 <= slow <= 2.5, "the slowest row over a second moved: %s %.2f" % (lo_c, slow)
+    assert 2.5 <= at <= 3.5, "the whole-block median over a second moved: %.2f" % at
+    calls = {c: ge[c]["a"]["median"] for c in ("code-exec DIFF_MAX", "code-exec JUMPDEST")}
+    assert all(0.9 <= v <= 1.1 for v in calls.values()), "the code calls left parity: %r" % calls
+    # The short clue (shown, not counted): contract-account reads and plain calls run at about half
+    # speed or less, the controls don't.
+    SHORT_SLOW = ("account row MINIMAL", "account row SAME_MAX", "account row JUMPDEST",
+                  "account row DIFF_MAX", "code-exec MINIMAL", "code-exec SAME_MAX")
+    short = {c: lt[c]["a"]["median"] for c in SHORT_SLOW}
     ctl = lt["control (no state work)"]["a"]["median"]
-    absent = ge["absent account"]["a"]["median"]
-    assert ctl > 1.1, "the controls are no longer faster on the generated store: %.3f" % ctl
-    assert abs(absent - 1) < 0.03, "absent-account lookups left parity: %.3f" % absent
+    assert max(short.values()) < 0.6 and ctl > 1.1, "the short clue moved: %r, controls %.2f" % (short, ctl)
     # The commit: jochemnet's forkchoiceUpdated takes seconds, state-actor's milliseconds.
     jf = [r["joc_fcu_ms"]["median"] for r in ge.values()]
     sf = [r["sa_fcu_ms"]["median"] for r in ge.values()]
     assert min(jf) > 3000 and max(sf) < 700 and min(jf) > 4 * max(sf), \
         "the commit gap moved: joc %r, sa %r" % (jf, sf)
-    # The whole block: closer to parity overall, spread both ways by row.
-    at, bt = ge_all["a_total"]["median"], ge_all["b_total"]["median"]
-    assert ge_all["a"]["median"] < 0.4 and 0.7 < at < 0.95, "the whole-block median moved: %.3f" % at
+    # The whole block: every row over a second favours state-actor, least on the code calls, most
+    # on the transfers.
     tot = {c: r["a_total"]["median"] for c, r in ge.items()}
-    assert min(tot.values()) < 0.5 and max(tot.values()) > 1.2, "the whole-block rows no longer split"
-    # "Calls and account reads stay slower; storage writes, absent-account calls and ether
-    # transfers go the other way": the rows that flip are exactly those three.
-    flips = {c for c, v in tot.items() if v > 1}
-    assert flips == {"storage slot", "absent account", "ether transfer"}, \
-        "the rows the whole block flips are no longer the three the page names: %r" % sorted(flips)
+    assert min(tot.values()) > 1.5, "a row over a second no longer favours state-actor whole: %r" % tot
+    assert min(tot, key=tot.get).startswith("code-exec") and max(tot, key=tot.get) == "ether transfer", \
+        "the whole-block extremes moved: %r" % tot
     lt_tot = {c: r["a_total"]["median"] for c, r in lt.items()}
     lt_max_c = max(lt_tot, key=lt_tot.get)
     lt_ts = [t for t in tests.values() if t["cls"] == "lt1s" and t["cat"] == lt_max_c]
@@ -319,17 +322,18 @@ def main():
     # Pair 2 agrees with pair 1, row by row, over a second.
     d_np = max(abs(r["a"]["median"] - r["b"]["median"]) for r in ge.values())
     d_tot = max(abs(r["a_total"]["median"] - r["b_total"]["median"]) for r in ge.values())
-    assert d_np < 0.02 and d_tot < 0.06, "the two pairs disagree: %.3f / %.3f" % (d_np, d_tot)
+    assert d_np < 0.05 and d_tot < 0.2, "the two pairs disagree: %.3f / %.3f" % (d_np, d_tot)
     # The rule the page states: under a second one store can't agree with itself, over a
-    # second it nearly always does; timing the whole block doesn't change that.
+    # second it mostly does; timing the whole block doesn't change that.
     def share(r, k):
         return 100.0 * r[k]["within10"] / r[k]["n"]
     f_ge = [share(ge_all, k) for k in ("floor_sa", "floor_joc")]
     f_lt = [share(lt_all, k) for k in ("floor_sa", "floor_joc")]
     f_lt_tot = [share(lt_all, k) for k in ("floor_sa_total", "floor_joc_total")]
-    assert min(f_ge) > 90 and max(f_lt) < 65 and max(f_lt_tot) < 70, \
+    assert min(f_ge) > 80 and max(f_lt) < 65 and max(f_lt_tot) < 75, \
         "the duration floors no longer separate: %r / %r / %r" % (f_ge, f_lt, f_lt_tot)
-    assert ge_all["a"]["within10"] < 0.05 * ge_all["a"]["n"], "the two stores now meet over a second"
+    floor_ge, meet_ge = share(ge_all, "floor_sa"), share(ge_all, "a")
+    assert floor_ge > 95 and meet_ge < 50, "the floor figure's caption no longer holds: %.0f / %.0f" % (floor_ge, meet_ge)
     # Where the state lives.
     assert P["joc_files_end_block"] < P["snapshot_block"] and \
         P["head_after_prerun"] - P["snapshot_block"] == P["prerun_blocks"], \
@@ -337,7 +341,8 @@ def main():
     sa_db_gb, sa_files_gb = P["sa_mdbx_bytes"] / 1e9, P["sa_files_bytes"] / 1e9
     assert sa_files_gb > 100 * sa_db_gb and P["joc_mdbx_gb"] > 100 * sa_db_gb, \
         "the two stores no longer keep their state in different places"
-    acct = [t for t in tests.values() if t["cls"] == "ge1s" and t["cat"].startswith("account row")]
+    CONTRACT_ACCT = ("account row MINIMAL", "account row SAME_MAX", "account row JUMPDEST", "account row DIFF_MAX")
+    acct = [t for t in tests.values() if t["cat"] in CONTRACT_ACCT]
     sa_rd, joc_rd = med(acct, "sa_np_read_mb"), med(acct, "joc_np_read_mb")
     assert sa_rd > 5 * joc_rd, "state-actor no longer reads several times the bytes: %.0f / %.0f" % (sa_rd, joc_rd)
     # Part 2, finding 1: where each store serves the benchmark's reads from, and why.
@@ -362,17 +367,19 @@ def main():
     assert top == {"account read": "account files", "call, jumpdest scan": "code files",
                    "ether transfer": "commitment files", "storage write": "commitment files"}, \
         "the state-actor files each traced test reads most have changed: %r" % top
-    rd = {c: med([t for t in tests.values() if t["cls"] == "ge1s" and t["cat"] == c], "sa_np_read_mb") /
-          med([t for t in tests.values() if t["cls"] == "ge1s" and t["cat"] == c], "joc_np_read_mb")
-          for c in EXISTING if c in ge}
-    assert min(rd.values()) > 1.5, "a row that reads existing accounts no longer reads more on state-actor: %r" % rd
-    # "The one row where both read the same is the absent account."
-    absent_ts = [t for t in tests.values() if t["cls"] == "ge1s" and t["cat"] == "absent account"]
-    rd_absent = med(absent_ts, "sa_np_read_mb") / med(absent_ts, "joc_np_read_mb")
-    assert abs(rd_absent - 1) < 0.1, "absent-account reads no longer match across stores: %.2f" % rd_absent
-    assert all(abs(med([t for t in tests.values() if t["cls"] == "ge1s" and t["cat"] == c], "sa_np_read_mb") /
-                   med([t for t in tests.values() if t["cls"] == "ge1s" and t["cat"] == c], "joc_np_read_mb") - 1) >= 0.1
-               for c in ge if c != "absent account"), "another row now reads the same on both stores"
+    def rd_of(c):
+        ts = [t for t in tests.values() if t["cat"] == c]
+        return med(ts, "sa_np_read_mb") / med(ts, "joc_np_read_mb")
+    # "On every row that touches a contract account, state-actor reads more; on EOAs and absent
+    # accounts it reads less, and neither reads much."
+    CONTRACT_ROWS = [c for c in ORDER if c.startswith(("account row", "code-exec")) and not c.endswith("EXISTING_EOA")]
+    rd = {c: rd_of(c) for c in CONTRACT_ROWS}
+    assert min(rd.values()) > 1.2, "a contract-account row no longer reads more on state-actor: %r" % rd
+    LIGHT = ("account row EXISTING_EOA", "code-exec EXISTING_EOA", "absent account")
+    assert max(rd_of(c) for c in LIGHT) < 1, "an EOA or absent-account row now reads more on state-actor"
+    light_mb = max(med([t for t in tests.values() if t["cat"] == c], k) for c in LIGHT
+                   for k in ("joc_np_read_mb", "sa_np_read_mb"))
+    assert light_mb < 0.2 * joc_rd, "the EOA and absent-account rows no longer read little"
 
     # ----- page ------------------------------------------------------------------------------
     o = []
@@ -383,12 +390,13 @@ def main():
         figs[name] = svg
         return figure(svg, caption)
 
-    hi = max(ex.values())
-    title = f"How can two Erigon databases holding the same state differ {factor:.0f}&times;?"
+    title = (f"How can two Erigon databases holding the same state be {slow:.0f}&times; slower and "
+             f"{at:.0f}&times; faster?")
     w("<!doctype html><html lang=en><head><meta charset=utf-8>")
     w('<meta name=viewport content="width=device-width,initial-scale=1">')
-    w(f'<meta name="description" content="Identical EEST bloatnet runs reported a {factor:.0f}x '
-      'throughput gap between two Erigon state databases, and only timed half of each block.">')
+    w(f'<meta name="description" content="Identical EEST bloatnet runs put a generated Erigon store '
+      f'{slow:.0f}x behind a mainnet snapshot on the benchmark&#39;s own clock and {at:.0f}x ahead '
+      'once the whole block is timed.">')
     w('<link rel="preconnect" href="https://fonts.googleapis.com">'
       '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>'
       '<link href="https://fonts.googleapis.com/css2?family=VT323&'
@@ -404,33 +412,36 @@ def main():
       'files &middot; benchmarking</span> &middot; 2026 &middot; '
       f'<a href="{REPO}">reproducible pipeline &amp; data &rarr;</a></div>')
     w(f"<p class=sub>We ran the same EEST bloatnet benchmarks against two Erigon databases that "
-      f"hold the same state. On every test over a second that reads an existing account, the one "
-      f"generated from scratch came out slower, up to {factor:.0f}&times; on contract calls. "
-      f"That's what the benchmark reports, and it times only half of each block. Erigon writes a "
-      f"block's state in the call that follows it, and there the gap runs the other way. Here's "
-      f"the baseline, and where it points.</p>")
+      f"hold the same state. On the benchmark's own clock, the one generated from scratch ran "
+      f"ether transfers {slow:.1f}&times; slower and contract calls at parity. But that clock "
+      f"stops at newPayload. Erigon writes each block's state in the call that follows, and there "
+      f"the snapshot spends {min(jf)/1e3:.0f} to {max(jf)/1e3:.0f} seconds a block. Timed whole, "
+      f"the generated store is {at:.1f}&times; faster. Here's the baseline, and where it "
+      f"points.</p>")
 
     # ---- part 1: the problem
-    w("<h2>The problem: the same state, up to %d&times; apart</h2>" % round(factor))
+    w(f"<h2>The problem: the same state, {slow:.0f}&times; slower and {at:.0f}&times; faster</h2>")
     w(f"<p>Two databases with the same accounts: a mainnet shadowfork snapshot at block "
       f"{thousands(P['snapshot_block'])} (we call it jochemnet), and the same state written from "
-      f"scratch by <code>state-actor</code>. Same fixtures, same machine, same drive, page cache "
-      f"dropped between tests. Every number here is state-actor's throughput divided by "
-      f"jochemnet's: 1.00 is parity, 0.20 means the generated store is five times slower.</p>")
+      f"scratch by <code>state-actor</code>. Same fixtures, same machine, same drive read with "
+      f"direct I/O, page cache dropped between tests. Every number here is state-actor's "
+      f"throughput divided by jochemnet's: 1.00 is parity, 0.50 means the generated store is "
+      f"twice as slow.</p>")
     w(fig("fig_overview_newpayload",
           chart_overview(B, "a", "b", "newPayload throughput, state-actor / jochemnet, one dot "
                          "per test (band = \u00b110%)"),
           f"The benchmark as published: newPayload time, the {B['n']} tests at 160M and 240M gas, "
           f"two independent pairs. Over a second, {ge_all['a']['within10']} of {ge_all['a']['n']} "
-          f"tests sit inside the band; the rows that read existing accounts sit at "
-          f"{ex[lo_c]:.2f} to {hi:.2f}."))
+          f"tests sit inside the band: the code calls at {calls['code-exec DIFF_MAX']:.2f} and "
+          f"{calls['code-exec JUMPDEST']:.2f}, the transfers at {ex[lo_c]:.2f}."))
     w("<p>Each dot is one test, one colour per pair. The white tick is the category's median, and "
       "the numbers on the right are that median and how many of the category's tests land inside "
       "&plusmn;10%. The same rows and the same axis come back in the next figure.</p>")
-    w(f"<p>The tests that read existing accounts are {1/hi:.0f} to {factor:.0f} times slower on "
-      f"the generated store. The controls run the same loop and touch no state, and they sit at "
-      f"{ctl:.2f}: faster on the generated store, not slower. Calls that touch an account that "
-      f"isn't there sit at {absent:.2f}. Whatever this is, it's about reading state that exists.</p>")
+    w(f"<p>Over a second, the calls that load a contract's code run at parity. Ether transfers run "
+      f"at {ex[lo_c]:.2f}, close to half speed. The short tests point the same way, though they "
+      f"don't count. Reads of contract accounts and plain calls sit at {min(short.values()):.2f} "
+      f"to {max(short.values()):.2f}; the controls, which touch no state, sit at {ctl:.2f}. "
+      f"Whatever separates the two stores is in looking up accounts, not in running code.</p>")
     w(f"<p><b>The benchmark times half of each block.</b> Its throughput counts only "
       f"<code>engine_newPayload</code>, where Erigon executes the block. Erigon writes the block's "
       f"state to disk in the <code>forkchoiceUpdated</code> call that follows. On jochemnet that "
@@ -444,11 +455,9 @@ def main():
           f"median moves from {ge_all['a']['median']:.2f} to {at:.2f}. Under a second the state "
           f"tests swing as far as {lt_tot[lt_max_c]:.0f}&times; toward state-actor, where "
           f"jochemnet's commit outweighs the execution."))
-    w(f"<p>Over a second, the rows now spread from {min(tot.values()):.2f} to "
-      f"{max(tot.values()):.2f}. Calls and account reads stay slower on the generated store: what "
-      f"it loses executing is more than jochemnet loses committing. Storage writes, calls to "
-      f"absent accounts and ether transfers go the other way. The two numbers answer different "
-      f"questions, so this page shows both.</p>")
+    w(f"<p>Over a second, every row favours the generated store once the commit counts: from "
+      f"{min(tot.values()):.1f}&times; on the code calls to {max(tot.values()):.1f}&times; on the "
+      f"transfers. The two numbers answer different questions, so this page shows both.</p>")
     w("<table><tr><th>tests</th><th class=n>n</th><th class=n>newPayload</th>"
       "<th class=n>inside &plusmn;10%</th><th class=n>whole block</th>"
       "<th class=n>inside &plusmn;10%</th></tr>")
@@ -475,18 +484,17 @@ def main():
       f"the short ones ({min(f_lt_tot):.0f}% to {max(f_lt_tot):.0f}%). Sub-second tests are "
       f"always shown and never counted as evidence.</p>")
     w(fig("fig_floor", chart_floor(B),
-          "Amber is state-actor measured twice, the best any comparison can do. Green is the two "
-          "stores, untreated. Over a second the floor is near 100%, and the two stores almost "
-          "never meet."))
+          f"Amber is state-actor measured twice, the best any comparison can do. Green is the two "
+          f"stores, untreated. Over a second the floor is {floor_ge:.0f}%, and the two stores meet "
+          f"on {meet_ge:.0f}% of tests."))
     w(f"<p><b>The last clue is where each store keeps its state.</b> Erigon has two places for "
       f"it: a database (MDBX) for recent writes, and immutable files for everything older. "
       f"Jochemnet's files end at block {thousands(P['joc_files_end_block'])}. Everything after "
       f"that is in its database, {P['joc_mdbx_gb']:.0f} GB of it. That includes the "
       f"{thousands(P['prerun_blocks'])} pre-run blocks that create the accounts the benchmark "
       f"reads. State-actor writes all of its state into files at genesis: a {sa_db_gb:.1f} GB "
-      f"database beside {sa_files_gb:.0f} GB of files. On the account-row tests, its newPayload "
-      f"reads {sa_rd/joc_rd:.0f}&times; the bytes jochemnet's does ({sa_rd/1e3:.2f} GB against "
-      f"{joc_rd/1e3:.2f} GB).</p>")
+      f"database beside {sa_files_gb:.0f} GB of files. On the tests that read contract accounts, "
+      f"its newPayload reads {sa_rd/joc_rd:.0f}&times; the bytes jochemnet's does.</p>")
     w("<p>Same state, different shelves. That points at two things to test: reads from files "
       "against reads from the database, and a database big enough to slow every commit.</p>")
 
@@ -497,9 +505,11 @@ def main():
         return f'<a href="https://github.com/erigontech/erigon/blob/{ec}/{path}#L{line}">{text}</a>'
     w(f"<h2>1. The newest {thousands(db_blocks)} blocks never left jochemnet's database</h2>")
     w(fig("fig_reads", chart_reads(B),
-          f"Bytes each test read from disk inside newPayload, pair 1, tests over a second. On "
-          f"every row that reads existing accounts, state-actor reads {min(rd.values()):.1f} to "
-          f"{max(rd.values()):.1f} times what jochemnet does."))
+          f"Disk reads inside newPayload as benchmarkoor counts them, pair 1, every test. The "
+          f"counter adds up every layer of the storage stack, so only the ratio between the stores "
+          f"means anything. On every row that touches a contract account, state-actor reads "
+          f"{min(rd.values()):.1f} to {max(rd.values()):.1f} times what jochemnet does. On EOAs "
+          f"and absent accounts it reads less, and neither reads much."))
     w(f"<p>Erigon keeps state in two places. Recent writes live in a database (MDBX). Older "
       f"history is frozen into immutable files one step at a time, {thousands(P['step_size'])} "
       f"transactions per step, and Erigon {src('db/state/aggregator.go', 2309, 'never freezes')} "
@@ -536,10 +546,7 @@ def main():
     w(f"<p>State-actor does the opposite. It writes all "
       f"{(P['sa_eoas'] + P['sa_contracts']) / 1e6:.0f} million accounts straight into frozen "
       f"files, as if every one of them were old, and its database holds {sa_db_gb:.1f} GB against "
-      f"{sa_files_gb:.0f} GB of files. In the reads figure, the one row where both stores read the "
-      f"same is the absent account ({med(absent_ts, 'joc_np_read_mb') / 1e3:.2f} GB against "
-      f"{med(absent_ts, 'sa_np_read_mb') / 1e3:.2f} GB). A key that exists nowhere can't be "
-      f"answered from the database on either store.</p>")
+      f"{sa_files_gb:.0f} GB of files.</p>")
     w(f"<p><b>So the two stores answer different questions.</b> On jochemnet the benchmark reads "
       f"state Erigon considers new, served from its database. On state-actor it reads state Erigon "
       f"considers old, served from files. On a mainnet node almost every account a benchmark could "
@@ -570,7 +577,7 @@ def main():
             fh.write(standalone(svg) + "\n")
     print(f"wrote {os.path.relpath(OUT, HERE)} ({len(html_text):,} bytes), "
           f"{len(figs)} standalone figures")
-    print(f"headline factor: {factor:.2f}x ({lo_c})")
+    print(f"headline: newPayload {slow:.2f}x slower ({lo_c}), whole block {at:.2f}x faster")
     print(f"over 1 s: newPayload {ge_all['a']['median']:.3f}/{ge_all['b']['median']:.3f} "
           f"({ge_all['a']['within10']}/{ge_all['a']['n']}), whole block {at:.3f}/{bt:.3f}, "
           f"floor {ge_all['floor_sa']['within10']}/{ge_all['floor_sa']['n']}")
