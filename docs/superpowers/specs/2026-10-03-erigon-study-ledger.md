@@ -438,3 +438,39 @@ byte-for-byte.
 
 **Early sign:** jochemnet's forkchoiceUpdated is still ~3.4 s per block on the first tests. That
 fits the round 2 observation that the commit is single-thread CPU, not I/O.
+
+**D results (2026-10-06 06:19 UTC).** All four suites rc 0, 0 failures: joc D1/D2 266 tests in
+2 h 40 min each, sa D1/D2 456 tests in 1 h 54 min each (2 h 22 min buffered). Loops still at
+dio=1 at the end. `collect_erigon.py '*' D` gives 266 tests, 0 gas mismatches
+(`/bench/erigon/baseline-D.json`, sha256 `03db801a…cf79`). Classes come from D's jochemnet
+times: 55 tests over a second (121 under buffered loops).
+
+| over a second | buffered B1 / B2 | direct I/O D1 / D2 |
+|---|---|---|
+| newPayload, all | 0.314 / 0.318 | 0.727 / 0.715 |
+| call, distinct contract | 0.275 | 0.991 / 1.012 |
+| call, jumpdest scan | 0.206 | 1.051 / 1.072 |
+| ether transfer | 0.339 | 0.554 / 0.562 (22/22 beyond the floor) |
+| whole block, all | 0.835 / 0.841 | 2.816 / 2.884 |
+| replica floor, sa / joc | 121 / 119 of 121 | 55 / 46 of 55 |
+
+- Under a second the floors are still 48-58% (whole block 58-73%), so the short-tests rule stands.
+- Shown under a second: contract-account reads and plain calls 0.35-0.47, controls 1.30, absent
+  accounts 1.05.
+- Jochemnet alone, buffered/direct time per category (B1 vs D1): newPayload 1.6-7.4x faster under
+  direct I/O over a second, forkchoiceUpdated 0.96-1.03x. The commit is CPU work; the loop never
+  touched it.
+- Reading: once the rig stops serialising reads, code loading is at parity. Account lookups and
+  transfers stay about 2x slower on state-actor, and the commit, untouched by the rig, dominates
+  jochemnet's whole block.
+
+**Correction to round 9's "disk_read_bytes = physical traffic under readahead":** benchmarkoor
+sums `rbytes` over every device in the container's `io.stat` (`pkg/stats/cgroup_reader.go:121`),
+so the same bytes count once per layer (dm-era, loop, md2, nvme members). That's about 4x even
+under direct I/O (the state-actor account read: traced 0.47 GB, counted ~2.2 GB). Buffered loops
+added backing readahead on top (4-12x in B). Ratios between arms hold; absolute GB don't.
+
+**Article** (`5f5cf18`): part 1 and finding 1 now run on the D series. Title "How can two Erigon
+databases holding the same state be 2x slower and 3x faster?". The B series is kept under
+`baseline_buffered` for the README errata. 29 oracles, 29/29 mutations caught, style gate (median
+13), browser clean.
