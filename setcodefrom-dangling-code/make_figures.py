@@ -251,30 +251,30 @@ def f3():
 
 
 # --------------------------------------------------------------------------- #
-# F4: dedup or delete, pick one
+# F4: two ways to store shared code
 # --------------------------------------------------------------------------- #
 def f4():
     W, H = 1200, 690
-    b = [head("// dedup or delete: pick one")]
+    b = [head("// two ways to store shared code")]
     ys = [196, 268, 340]
-    for x0, title, sub, tc in ((20, "KEY BY ADDRESS", "Erigon", GREEN),
-                               (610, "KEY BY CODE HASH", "geth · reth · Nethermind · Besu · PBT", BLUE)):
+    for x0, title, sub, tc in ((20, "ONE ENTRY PER ADDRESS", "Erigon", GREEN),
+                               (610, "ONE COPY PER CODE HASH", "geth · reth · Nethermind · Besu · PBT", BLUE)):
         b.append(rect(x0, 80, 570, 520, stroke=tc, sw=2.5))
         b.append(text(x0 + 20, 124, title, 26, tc, bold=True, room=530))
         b.append(text(x0 + 20, 156, sub, 22, MUTED, room=530))
         for y, a in zip(ys, "ABC"):
             b.append(rect(x0 + 30, y, 100, 52, stroke=TEXT, rx=8))
             b.append(text(x0 + 80, y + 35, a, 24, TEXT, "middle", bold=True))
-    # left: one copy per account, deletion is local
+    # left: an entry per address, deletion is local, repeats are squeezed by file compression
     for y in ys:
         b.append(arrow(154, y + 26, 264, y + 26, GREEN, 3))
         b.append(code(270, y, 52, GREEN, "Y", 24))
-    b.append(text(360, 288, ["3 clones,", "3 copies"], 24, TEXT, bold=True, room=210))
+    b.append(text(360, 288, ["3 clones,", "3 entries"], 24, TEXT, bold=True, room=210))
     b.append(mark(58, 446, True))
     b.append(text(88, 454, "C deleted: drop C's row", 22, TEXT, room=480))
     b.append(text(88, 488, "nothing else to check", 22, GREEN, room=480))
-    b.append(text(40, 544, "price: a full copy per clone", 22, KEY, room=530))
-    b.append(text(40, 576, "Erigon compresses it ~4x on disk", 22, MUTED, room=530))
+    b.append(text(40, 544, "repeats compress in its frozen files", 22, TEXT, room=530))
+    b.append(text(40, 576, "(about 4x for code on mainnet)", 22, MUTED, room=530))
     # right: one shared copy, deletion needs to know nobody else points at it
     for y in ys:
         b.append(path(f"M{744},{y + 26} L{892},{294}", BLUE, 3))
@@ -285,9 +285,9 @@ def f4():
     b.append(text(678, 488, "only if no one else points at it", 22, TEXT, room=480))
     b.append(text(678, 522, "→ needs a reference count", 22, RED, bold=True, room=480))
     b.append(text(630, 560, "none of these clients keeps one", 22, MUTED, room=530))
-    b.append(chip(600, 646, "PBT picked dedup: its code zone is keyed by code hash (EIP-8297)", BLUE,
+    b.append(chip(600, 646, "a tree commits every leaf: PBT keeps one copy per code hash (EIP-8297)", BLUE,
                   anchor="middle"))
-    svg("f4-dedup-or-delete.svg", W, H, "Keying code by address makes deletion free; keying by hash makes it shared", b)
+    svg("f4-dedup-or-delete.svg", W, H, "Two ways to store shared code: an entry per address, or one copy per code hash", b)
 
 
 # --------------------------------------------------------------------------- #
