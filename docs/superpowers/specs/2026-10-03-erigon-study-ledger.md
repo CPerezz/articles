@@ -554,3 +554,46 @@ can't do it: it only scales by divisors or multiples of 1,562,500, and `--keep-b
   0.72 to 0.85-1.15; ether transfers from 0.55 to 0.8-1.2; whole block from 2.8 to 0.8-1.25.
 - If newPayload stays below 0.8 with the layouts matched, what's left is in how the two stores were
   built: state-actor's own file writer (pinned to erigon 3.4.2) against erigon's.
+
+**Round 12 results (2026-10-06 10:38-23:03 UTC).** `compact-joc.sh` finished rc 0, and every gate
+passed.
+- **Compact** (9 h 05 min, read-only on the untreated image): accounts 354,792,873 keys (12.9 GB
+  .kv), storage 1,822,629,119 (77.0 GB), code 68,023,550 (16.0 GB), commitment 786,799,699
+  (218.3 GB). Each file was read back and its stream hash matched.
+- **Reset** (`ResetExec`, 2 h 54 min): every state, history and II table is at 0 rows.
+- **Swap:** 123 domain, 45 history, 81 idx and 126 accessor files deleted; 12 staged files copied
+  in; erigondb.toml step_size = 3,281,022,286.
+- **`mdbx_copy -c`** took mdbx.dat from 586.26 GB to 7.52 GB in 44 s. That's left from reorg
+  tables and blocks after the frozen block files; state-actor's is 4.3 GB.
+- **`inspect`:** exec progress, commitment state block and every file end agree with the head
+  (24,410,463 / txNum 3,281,022,285).
+- **RPC equivalence:** 339,329 samples, answers byte-identical on the old and new layouts.
+  - That's balances, nonces, storage, code and `eth_getProof` account and storage trie paths.
+  - 799 MDBX-resident accounts and 335,750 MDBX-resident slots are included, i.e. the pre-run's
+    and the shadowfork's state.
+- **Promote** done. Smoke F1: 2/2, 0 validation failures (newPayload re-checks the state root).
+
+**Trace T1** (same four tests, rebuilt jochemnet, against the round 9 state-actor trace):
+
+| test, newPayload | page reads, from where | state-actor (T0) |
+|---|---|---|
+| account read | 0.44 GB, account indexes 51% / files 49% | 0.47 GB, 53% / 47% |
+| jumpdest call | 0.76 GB, code 42%, accounts 58% | 2.20 GB, code 78% |
+| ether transfer | 0.62 GB, commitment 79%, accounts 20% | 0.64 GB, 80% / 20% |
+| storage write | 0.11 GB, commitment 91% | 0.11 GB, 91% |
+
+- 0% of jochemnet's newPayload page reads now come from MDBX (was 99-100%). Prediction met
+  (>= 95% from files).
+- Account read, transfer and storage write now read the same bytes from the same files on both
+  stores, within 7%.
+- The jumpdest call reads a third of state-actor's code bytes. That's code content (mainnet
+  bytecode vs the generator's), not tier.
+
+**Prediction missed: the commit.** The transfer's forkchoiceUpdated still takes 3.48 s (11.0 s
+before; the account read 0.02 s, was 3.44 s). It now reads 1.49 GB from MDBX, against state-actor's
+0.07 GB. MDBX holds no state tables now, so the reads must be non-state tables. It's not explained
+yet; the E pairs measure it across all tests, then a trace of which MDBX tables FCU reads.
+
+**E chain** (`chain-B.sh joc:E1 sa:E1 joc:E2 sa:E2`, direct-I/O loops) launched 23:04. The
+`after-compact.sh` watcher never fired: `compact-joc.sh` wrote its marker only after its own smoke
+and trace ran. It was killed and the chain started by hand.
