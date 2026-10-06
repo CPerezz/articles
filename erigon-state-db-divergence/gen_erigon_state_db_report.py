@@ -547,16 +547,20 @@ def main():
       f"{(P['sa_eoas'] + P['sa_contracts']) / 1e6:.0f} million accounts straight into frozen "
       f"files, as if every one of them were old, and its database holds {sa_db_gb:.1f} GB against "
       f"{sa_files_gb:.0f} GB of files.</p>")
-    w(f"<p><b>So the two stores answer different questions.</b> On jochemnet the benchmark reads "
-      f"state Erigon considers new, served from its database. On state-actor it reads state Erigon "
-      f"considers old, served from files. On a mainnet node almost every account a benchmark could "
-      f"pick is more than a day old, so it lives in a file. The commit splits the same way: "
-      f"jochemnet writes every block into a {P['joc_mdbx_gb']:.0f} GB database, state-actor into "
-      f"an empty one.</p>")
-    w("<p>The snapshot can't be moved to match. Erigon won't freeze an unfinished step, and filling "
-      "it would mean adding blocks the fixtures weren't built on. The generated store can: "
-      "state-actor would have to write the state the tests read as a recent, unfrozen step. Until "
-      "it does, every Erigon ratio on this page compares new state against old.</p>")
+    w(f"<p><b>So jochemnet measures the best case, and state-actor the worst.</b> These benchmarks "
+      f"exist to find what a cold state read costs at its worst. In Erigon, that's an account whose "
+      f"only copy is in the oldest file: the lookup misses the database, passes every newer file and "
+      f"lands at the bottom. State-actor's store is built that way. Jochemnet's isn't. The pre-run "
+      f"creates the accounts the tests read, so they sit in the database, the first place Erigon "
+      f"looks. It's the same thing the pre-run did to the "
+      f'<a href="../nethermind-state-db-divergence/nethermind-state-db-report.html">Nethermind</a> '
+      f'and <a href="../besu-state-db-divergence/besu-state-db-report.html">Besu</a> snapshots: it '
+      f"makes the benchmark's accounts the newest data in the store.</p>")
+    w(f"<p>The commit is skewed by the same cause. Jochemnet writes every block into a "
+      f"{P['joc_mdbx_gb']:.0f} GB database; a running node keeps only its newest step there.</p>")
+    w("<p><b>So the store to fix is jochemnet.</b> Its tested state has to move to the bottom of "
+      "the files, and out of the database. Erigon's own housekeeping can't do it, as the retire run "
+      "showed, so it takes a rewrite of the files. That's this study's next step.</p>")
 
     w("<p class=note>Every number on this page is computed from the collected run data when the "
       "page is built, and the build fails if the data stops supporting a sentence.</p>")
