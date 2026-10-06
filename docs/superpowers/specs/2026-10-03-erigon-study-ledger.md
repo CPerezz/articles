@@ -498,3 +498,59 @@ reuse of state-actor's erigon file writer.
 
 **Article** (`articles-wt-erigon-article`): finding 1 now ends on this framing. Jochemnet measures
 the best case, state-actor the worst, and the store to fix is jochemnet.
+
+## Round 12 - jochemnet rebuilt as a fully merged node (2026-10-06, launched 10:4x UTC)
+
+**Target layout (the worst case, = state-actor's):** one `[0,1)` file set per state domain
+(accounts, storage, code, commitment) holding every key's latest value at the head, and no state in
+MDBX. A tested key's only copy is then in the bottom (only) file. This is the series' "compact into
+the bottom level" in Erigon's terms.
+
+**Why a new step size.** Erigon never freezes an unfinished step (round 9), and the head is 85% into
+step 2099. `compactlatest inspect` on the untreated image gives:
+- exec progress 24,410,463, commitment state at block 24,410,463, txNum 3,281,022,285, equal to
+  that block's last txNum;
+- files end at 3,279,687,500 (= 2099 x 1,562,500).
+
+So step_size := 3,281,022,286 makes `[0,1)` end exactly at the head. It's the same construction
+state-actor uses (its genesis block is padded to fill step 0). The stock `snapshots step-rebase`
+can't do it: it only scales by divisors or multiples of 1,562,500, and `--keep-blocks` resets exec
+(`cmd/utils/app/step_cmd.go`).
+
+**Tool** (`tools/erigon-study/compactlatest/`, built against erigon `5f62f4ed` with mdbx-go v0.43.0;
+`go vet` clean). It's one new file in `db/state` plus a driver. Everything else is erigon's own code:
+- reads via `AggregatorRoTx.DebugRangeLatest` (MDBX + every file, newest wins; deleted keys dropped
+  as in a merge to step 0, `merge.go:506`);
+- commitment branches re-read through `AggregatorRoTx.GetLatest`, which expands shortened-key
+  references. The jochemnet commitment files are v1.1 with ranges of 2 steps or more, so they are
+  referenced (`CommitmentBranchReferenced`). The new file is written plain; a one-step file is never
+  read as referenced (`DefaultKeyReferencingMinSteps = 2`), the same as state-actor's;
+- written with each domain's configured compression (storage keys, code values, commitment keys,
+  accounts none), as erigon's merge writes big files. `buildFileRange` builds .bt/.kvei/.kvi with the
+  datadir's salt;
+- each file is read back through the domain's own reader, and its stream sha256 and key count must
+  match what was written;
+- `reset` = `rawdbreset.ResetExec` (clears every state, history and II table), then execution
+  progress := head;
+- then `mdbx_copy -c`. Receipt-domain, history, idx and accessor files are removed (old step size;
+  state-actor has none; block execution doesn't read them).
+
+**Checks** (`compact-joc.sh`), all fail-fast before the promote:
+1. Samples: every 1,000,000th key per domain, plus every 1,000th MDBX-resident account, storage
+   and code key (the pre-run's and the shadowfork's).
+2. `rpc-sample.py`: balance, nonce and `eth_getProof` per account; `eth_getStorageAt` and
+   `eth_getProof` per slot; `eth_getCode`. Answered on the untreated layout and on the new one, the
+   two outputs must be byte-identical. `eth_getProof` walks the commitment trie, so this checks trie
+   paths, not just values.
+3. `inspect` on the new layout: step size, files end and state txNum all agree with the head.
+4. After the promote: smoke pair F1 2/2 (newPayload re-checks the state root), then trace T1.
+
+**Predictions (written before the results):**
+- Trace T1: jochemnet's newPayload reads come from the files at least 95% (was 99-100% from MDBX),
+  the account read from account files and indexes.
+- forkchoiceUpdated: jochemnet's commit drops from 4.3-11.9 s to under 1 s (MDBX shrinks from 584 GB
+  to its non-state tables).
+- Then two fresh pairs on direct-I/O loops (E1, E2): over a second, the newPayload ratio goes from
+  0.72 to 0.85-1.15; ether transfers from 0.55 to 0.8-1.2; whole block from 2.8 to 0.8-1.25.
+- If newPayload stays below 0.8 with the layouts matched, what's left is in how the two stores were
+  built: state-actor's own file writer (pinned to erigon 3.4.2) against erigon's.
