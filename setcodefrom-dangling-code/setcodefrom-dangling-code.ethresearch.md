@@ -38,15 +38,17 @@ Two things stand out. Reverts aren't the main source: only Nethermind persists c
 
 Since Cancun, only reorgs and Nethermind's handling of reverts still leave code behind. Fix those two and nothing would anymore, until SETCODEFROM.
 
-## Two ways to store shared code
+## Reference counting vs today's clients
 
-![Figure 4](https://cperezz.github.io/articles/setcodefrom-dangling-code/figures/f4-dedup-or-delete.png)
+![Figure 4](https://cperezz.github.io/articles/setcodefrom-dangling-code/figures/f4-refcount-vs-clients.png)
 
-*Figure 4: keyed by address, three clones are three entries, deleting one is free, and Erigon compresses the repeats on disk. Keyed by code hash, three clones share one copy, and deleting it needs to know nobody else points at it, which takes a reference count. A tree commits every leaf, so PBT keeps one copy per code hash.*
+*Figure 4: three clones of the same code under three designs. A reference count keeps one copy and can delete it when the count hits zero. geth, reth, Nethermind and Besu keep one copy and never delete it. Erigon keeps a copy per address, deletes it with its account and compresses the repeats on disk, which doesn't help inside a tree, where every copy is a committed leaf.*
 
-Erigon stores code per address, with no reference count. When the account goes, its code goes with it, and a thousand clones are a thousand entries. It doesn't pay for them in full, though: its frozen files compress every value against a shared dictionary, so repeated code shrinks to a fraction of a copy (its config notes a 4x ratio for code on mainnet). geth, reth, Nethermind and Besu store code by hash instead: a thousand clones share one copy, and deleting it means knowing nobody else points at it. That's a reference count, and none of them keeps one. Besu has been on both sides: older Besu databases keyed code by account, new ones key it by hash.
+Deleting shared code needs to know nobody else points at it, which takes a reference count, and no client keeps one. geth, reth, Nethermind and Besu store code by hash: a thousand clones share one copy, and the copy stays after they're all gone. Besu has been on both sides: older Besu databases keyed code by account, new ones key it by hash.
 
-Compression can't do that job inside a tree, where every copy would be another committed leaf. So PBT keeps one copy per code hash, and inherits the same question.
+Erigon sidesteps the question. It stores code per address, so the code goes with its account, and its frozen files compress repeats against a shared dictionary: a thousand clones cost a fraction of a thousand copies (its config notes 4x for code on mainnet).
+
+Compression only saves disk, though. Inside a tree every copy would still be its own committed leaf, hashed, synced and proven on its own. So PBT keeps one copy per code hash, and deleting it takes exactly the count nobody keeps.
 
 ## How big is it today? Small
 

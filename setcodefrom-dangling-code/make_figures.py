@@ -251,43 +251,62 @@ def f3():
 
 
 # --------------------------------------------------------------------------- #
-# F4: two ways to store shared code
+# F4: reference counting vs what today's clients do
 # --------------------------------------------------------------------------- #
 def f4():
-    W, H = 1200, 690
-    b = [head("// two ways to store shared code")]
-    ys = [196, 268, 340]
-    for x0, title, sub, tc in ((20, "ONE ENTRY PER ADDRESS", "Erigon", GREEN),
-                               (610, "ONE COPY PER CODE HASH", "geth · reth · Nethermind · Besu · PBT", BLUE)):
-        b.append(rect(x0, 80, 570, 520, stroke=tc, sw=2.5))
-        b.append(text(x0 + 20, 124, title, 26, tc, bold=True, room=530))
-        b.append(text(x0 + 20, 156, sub, 22, MUTED, room=530))
-        for y, a in zip(ys, "ABC"):
-            b.append(rect(x0 + 30, y, 100, 52, stroke=TEXT, rx=8))
-            b.append(text(x0 + 80, y + 35, a, 24, TEXT, "middle", bold=True))
-    # left: an entry per address, deletion is local, repeats are squeezed by file compression
-    for y in ys:
-        b.append(arrow(154, y + 26, 264, y + 26, GREEN, 3))
-        b.append(code(270, y, 52, GREEN, "Y", 24))
-    b.append(text(360, 288, ["3 clones,", "3 entries"], 24, TEXT, bold=True, room=210))
-    b.append(mark(58, 446, True))
-    b.append(text(88, 454, "C deleted: drop C's row", 22, TEXT, room=480))
-    b.append(text(88, 488, "nothing else to check", 22, GREEN, room=480))
-    b.append(text(40, 544, "repeats compress in its frozen files", 22, TEXT, room=530))
-    b.append(text(40, 576, "(about 4x for code on mainnet)", 22, MUTED, room=530))
-    # right: one shared copy, deletion needs to know nobody else points at it
-    for y in ys:
-        b.append(path(f"M{744},{y + 26} L{892},{294}", BLUE, 3))
-    b.append(code(898, 268, 52, BLUE, "Y", 24))
-    b.append(text(980, 288, ["3 clones,", "1 copy"], 24, TEXT, bold=True, room=180))
-    b.append(mark(648, 446, False))
-    b.append(text(678, 454, "C deleted: drop Y?", 22, TEXT, room=480))
-    b.append(text(678, 488, "only if no one else points at it", 22, TEXT, room=480))
-    b.append(text(678, 522, "→ needs a reference count", 22, RED, bold=True, room=480))
-    b.append(text(630, 560, "none of these clients keeps one", 22, MUTED, room=530))
-    b.append(chip(600, 646, "a tree commits every leaf: PBT keeps one copy per code hash (EIP-8297)", BLUE,
-                  anchor="middle"))
-    svg("f4-dedup-or-delete.svg", W, H, "Two ways to store shared code: an entry per address, or one copy per code hash", b)
+    cols = [(300, "REFERENCE COUNT", ["no client yet"], GREEN),
+            (596, "BY HASH, NO COUNT", ["geth, reth,", "Nethermind, Besu"], RED),
+            (892, "BY ADDRESS", ["Erigon"], BLUE)]
+    CW = 286
+    rows = [
+        (["disk space"], [(["one copy"], True), (["one copy"], True),
+                          (["a copy per clone,", "compressed ~4x"], None)]),
+        (["deleting", "code"], [(["when the count", "drops to zero"], True),
+                                (["never: nobody", "knows if it's", "still used"], False),
+                                (["with its account"], True)]),
+        (["inside a tree", "like PBT"], [(["one copy, still", "removable"], True),
+                                         (["dead leaves stay", "in the root"], False),
+                                         (["every copy is its", "own committed leaf"], False)]),
+    ]
+    heights = [max(len(c[0]) for c in cells) * 26 + 40 for _, cells in rows]
+    y0 = 196
+    W, H = 1200, y0 + 140 + sum(heights) + 64
+    b = [head("// reference counting vs today's clients")]
+    for x, t, subs, c in cols:
+        b.append(rect(x, 76, CW, 110, stroke=c, fill=TINT[c], sw=2.5))
+        b.append(text(x + 16, 112, t, 24, c, bold=True, room=CW - 32))
+        b.append(text(x + 16, 142, subs, 20, MUTED, room=CW - 32, lh=1.2))
+    # what each design stores for three clones of the same code
+    b.append(rect(20, y0, 1160, 130, stroke=LINE, fill=PANEL, rx=8))
+    b.append(text(40, y0 + 56, ["3 clones", "of code Y"], 22, TEXT, bold=True, room=240, lh=1.25))
+    for k, (x, _, _, _) in enumerate(cols):
+        for i, a in enumerate("ABC"):
+            cy = y0 + 31 + i * 34
+            b.append(rect(x + 16, cy - 14, 56, 28, stroke=TEXT, rx=6))
+            b.append(text(x + 44, cy + 7, a, 20, TEXT, "middle", bold=True))
+            if k == 2:
+                b.append(arrow(x + 76, cy, x + 160, cy, MUTED, 2.5))
+                b.append(code(x + 166, cy - 13, 26, GREEN, "Y", 14))
+            else:
+                b.append(path(f"M{x + 76},{cy} L{x + 164},{y0 + 65}", MUTED, 2.5))
+        if k < 2:
+            b.append(code(x + 170, y0 + 43, 44, GREEN, "Y", 22))
+        if k == 0:
+            b.append(f'<circle cx="{x + 236}" cy="{y0 + 43}" r="15" fill="{TINT[KEY]}" stroke="{KEY}" '
+                     f'stroke-width="2.5"/>')
+            b.append(text(x + 236, y0 + 50, "3", 20, KEY, "middle", bold=True))
+    y = y0 + 140
+    for (lbl, cells), rh in zip(rows, heights):
+        b.append(rect(20, y, 1160, rh - 8, stroke=LINE, fill=PANEL, rx=8))
+        b.append(text(40, y + 36, lbl, 22, TEXT, bold=True, room=240, lh=1.25))
+        for (x, _, _, _), (ls, ok) in zip(cols, cells):
+            b.append(mark(x + 24, y + 30, ok, r=14))
+            b.append(text(x + 50, y + 37, ls, 20, TEXT, room=CW - 56, lh=1.3))
+        y += rh
+    for i, (ok, s) in enumerate(((True, "yes"), (False, "no"), (None, "partly"))):
+        b.append(mark(42 + i * 150, H - 40, ok, r=12))
+        b.append(text(64 + i * 150, H - 33, s, 20, MUTED))
+    svg("f4-refcount-vs-clients.svg", W, H, "Reference counting vs today's clients: what each stores, deletes, and puts in a tree", b)
 
 
 # --------------------------------------------------------------------------- #
