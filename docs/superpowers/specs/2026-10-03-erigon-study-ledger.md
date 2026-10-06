@@ -474,3 +474,27 @@ added backing readahead on top (4-12x in B). Ratios between arms hold; absolute 
 databases holding the same state be 2x slower and 3x faster?". The B series is kept under
 `baseline_buffered` for the README errata. 29 oracles, 29/29 mutations caught, style gate (median
 13), browser clean.
+
+## Round 11 - the worst case is state-actor's layout; jochemnet is the store to fix (2026-10-06)
+
+**Correction (Anon).** Round 9's "only the generator can move" and the proposal to make state-actor
+write the tested state as an unfrozen step had the direction backwards. These benchmarks measure
+the WORST case for a state read. In Erigon that's a key whose only copy is in the oldest, largest
+frozen file: miss MDBX, pass every newer file, read from the bottom file. state-actor is that
+(empty MDBX, everything in its one step-0 file set). Jochemnet isn't: the pre-run's accounts are in
+MDBX, read first (traced 99-100%). It's the series' finding 1 again (Nethermind: pre-run keys in the
+newest SST files; Besu: newest versions of their keys). So the fix moves jochemnet's tested state to
+the bottom and out of MDBX. Moving state-actor into MDBX would turn the generated store into the
+best case. *(superseded: round 9 "Only the generator can move" and round 10's next-step option 1.)*
+
+Also caused by the same thing: jochemnet's 4-12 s commit, into a 584 GB MDBX. A running node's
+MDBX holds about its newest step.
+
+**Constraint:** Erigon won't freeze an unfinished step (round 9), so its own tools can't do it. It
+takes a rewrite of jochemnet's files. Two read-only scouts were sent out, on erigon at `5f62f4ed`
+and state-actor at `005a19c` (trees exported to /tmp at the exact commits so line numbers hold):
+ways to put step-2099 values into the bottom file, commitment key-referencing, salt, boot checks,
+reuse of state-actor's erigon file writer.
+
+**Article** (`articles-wt-erigon-article`): finding 1 now ends on this framing. Jochemnet measures
+the best case, state-actor the worst, and the store to fix is jochemnet.
