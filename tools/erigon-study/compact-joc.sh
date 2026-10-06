@@ -27,11 +27,11 @@ PORT=18545
 
 rm -f "$DONE" "$FAIL"
 cd /
+exec >> "$LOG" 2>&1
 # uid 1000 like erigon: a root-owned LOCK or temp dir in the datadir would stop the node booting.
 tool() { podman run --rm --user 1000:1000 -e HOME=/tmp -v "$C":"$C" -v "$MNT":"$MNT" "$GO_IMG" "$C/bin/$@"; }
 fail() { echo "FAIL $1 ($(date -Is))"; echo "$1" > "$FAIL"; exit 1; }
 step() { echo; echo "======== $1: $(date -Is) ========"; }
-tool() { podman run --rm --user 0 -v "$C":"$C" -v "$MNT":"$MNT" "$GO_IMG" "$C/bin/$@"; }
 
 while [ -f "$BUSY" ] || pgrep -x benchmarkoor >/dev/null; do sleep 60; done
 echo "compact-joc" > "$BUSY"
