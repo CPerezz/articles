@@ -5,6 +5,7 @@
 //
 //	compactlatest compact --datadir D --dst S --tmp T   write the file set into staging dir S
 //	compactlatest reset   --datadir D --head N          clear MDBX state tables, execution progress := N
+//	compactlatest clear-code-cache --datadir D          empty TblCodeCache (re-derivable from CodeDomain)
 //	compactlatest inspect --datadir D                   print settings, head and file coverage
 package main
 
@@ -159,6 +160,24 @@ func main() {
 			return nil
 		}))
 		must(enc.Encode(map[string]any{"exec_progress": *headFlag, "state_table_rows_after_reset": counts}))
+
+	case "clear-code-cache":
+		// state-actor's store starts with no CodeCache rows; a carried-over cache costs one full
+		// table scan in the first forkchoiceUpdated of every freshly booted client.
+		dirs, lock, err := datadir.New(*datadirFlag).MustFlock()
+		must(err)
+		db := mdbx.New(dbcfg.ChainDB, logger).Path(dirs.Chaindata).Accede(true).MustOpen()
+		var before, after uint64
+		must(db.Update(ctx, func(tx kv.RwTx) error {
+			if before, err = tx.Count(kv.TblCodeCache); err != nil {
+				return err
+			}
+			return tx.ClearTable(kv.TblCodeCache)
+		}))
+		must(db.View(ctx, func(tx kv.Tx) error { after, err = tx.Count(kv.TblCodeCache); return err }))
+		db.Close()
+		_ = lock.Unlock()
+		must(enc.Encode(map[string]uint64{"code_cache_rows_before": before, "code_cache_rows_after": after}))
 
 	default:
 		fmt.Fprintln(os.Stderr, "unknown subcommand", os.Args[1])
