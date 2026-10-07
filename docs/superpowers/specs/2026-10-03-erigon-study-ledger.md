@@ -617,3 +617,22 @@ It's the same kind of confound as the state tier: what one store carries that th
 It's also a confound of the harness: each test boots a fresh client. The next step empties
 jochemnet's CodeCache, so both stores start from an empty one; the clean fix keeps the client
 unchanged. Not applied yet, so that E1/E2 measure the rebuild alone.
+
+**E1, jochemnet side (2026-10-07 02:30 UTC; preliminary, against state-actor's D1).**
+Rebuilt jochemnet ran 266/266 in 3 h 26 min (2 h 40 min untreated). Medians, newPayload ratio
+state-actor/jochemnet, untreated D1 -> rebuilt E1:
+- Account reads (under a second, contract accounts): 0.35-0.47 -> 0.89-1.00. EOA reads 1.12 -> 1.18.
+- Plain calls (minimal, reused contract): 0.46 -> 0.93-0.96.
+- Ether transfers: 0.55 -> 0.93 (over a second), 0.53 -> 0.96 (under).
+- Storage slot over a second: 0.70 -> 0.98. Absent accounts 1.05 -> 0.99.
+- **Code calls over a second flipped: distinct contract 0.99 -> 0.54, jumpdest 1.05 -> 0.66.** The
+  rebuilt jochemnet runs them in 2.1-2.4 s against state-actor's 3.8-3.9 s. Trace T1: jochemnet's
+  jumpdest call read 0.76 GB of pages, state-actor's 2.20 GB, most of it code files. On those tests
+  the two stores now differ in code content and layout, not tier. Open: mainnet code (shared,
+  deduplicated, smaller) against the generator's code pool. That is the series' Nethermind finding
+  4 ("a contract's code block is shared with whatever the generator packed next to it") in Erigon.
+- FCU: jochemnet 3.3-11.9 s -> 20-110 ms on most rows; ether transfers still 3.4 s (CodeCache seed
+  scan; the G pairs test it). state-actor 7-695 ms.
+
+These ratios use state-actor's D1 run, so they share no denominator with a fresh pair; E1/E2 and
+G1/G2 are the measurements.
