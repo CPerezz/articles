@@ -700,3 +700,20 @@ then G1/G2 (~10.7 h).
 
 *Correction to the E1 note above:* T1's jumpdest call read 1.73 GB of code pages on state-actor (code
 files 1.71 + code indexes 0.03) against 0.32 GB on jochemnet (0.24 + 0.08), 5.4x; not 1.72 vs 0.32.
+
+**Correction to "the commit tail, explained" (2026-10-07).** That note read the first timing lines of
+`container.log` and concluded the multi-second FCU "was mostly never the state commit". Wrong for the
+measured block. `collect_fcu.py` (article folder; copy in `tools/erigon-study/`) maps every
+`Timings: Forkchoice` line to its test through benchmarkoor's per-test timestamps, all 266 tests
+mapped (`/bench/erigon/fcu-DE.json`, sha256 `f7b558fe…96ce`):
+- Every test's first FCU on jochemnet pays the CodeCache seed scan (`prune` 4 s untreated, 3 s
+  rebuilt). Most tests have 2-3 FCUs, so the scan lands on a setup block, outside the measurement.
+- The 36 ether-transfer tests have one FCU: their measured block is the container's first, so they
+  carry the scan. That's E's transfer FCU (3.46 s: commit 0.70 s + prune 3 s).
+- The measured block's `flush+commit` on untreated jochemnet (D): median 3 s (4 s on calls and absent
+  accounts, 7 s on transfers). After the rebuild (E): 12-65 ms. So D's multi-second FCU *was* the
+  state commit into the untreated database, and the rebuild fixed it. state-actor: 6 ms.
+
+Consequence: the article's part 1 sentence "Erigon writes the block's state ... that call takes 3.4
+to 11.4 s" stands. The G pairs (cache cleared) should move only the transfers' FCU, to about their
+commit (0.7 s, state-actor 0.63 s).
