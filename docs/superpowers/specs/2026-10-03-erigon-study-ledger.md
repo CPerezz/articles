@@ -756,3 +756,53 @@ Predictions:
 So with jochemnet at the worst case on both counts (state in the bottom file, empty code cache):
 over a second newPayload 0.92-0.93, whole block 0.94-0.95, and the only rows beyond the floor are
 the two distinct-code calls at 0.63-0.65 (state-actor's dictionary-less code file, untested).
+
+## Round 14 - the distinct-code rows (2026-10-07 22:1x UTC, predictions before results)
+
+After G, the only rows over a second beyond the floor are calls into distinct maximum-size contracts:
+`code-exec DIFF_MAX` 0.64 / 0.65 and `code-exec JUMPDEST` 0.63 / 0.65 (state-actor slower). Anon asked
+for another inspection round, root cause first, then the article, then the state-actor fix.
+
+**Read path (erigon 5f62f4ed).** `SharedDomains.getCode` (`db/state/execctx/domain_shared.go:1537`)
+resolves addr -> codeHash, then tries the state cache and the `CodeStore` (memory 256 MB, then
+`TblCodeCache`), both keyed by code hash, and only on a miss reads `CodeDomain` by address from the
+files. A reused contract (one code hash) is read from disk once per process; every distinct contract
+is read from the code `.kv` on every first call. That's why `SAME_MAX` (reused) sits at parity and
+only the distinct rows don't. `Domain.dataReader` (`db/state/domain.go:1669`) reads values with the
+domain's configured compression (`CompressVals` for code) whatever the file was written with; a file
+without patterns decodes the same, so state-actor's raw file is read through the same `Getter.Next`.
+
+**Hypothesis.** state-actor's code `.kv` stores every value raw (its seg port has no pattern path; 0 B
+dictionary), so each 24,576-byte fixture contract costs its full 24 KB, 6-7 pages, per call. Erigon's
+writer compresses code values against a pattern dictionary (`CompressVals`), and the fixtures are
+24 KB of one filler byte, so on jochemnet the same contract is a few hundred bytes in one page. Before
+the rebuild (D) jochemnet read these contracts raw from MDBX, which is why D sat at parity.
+
+**Instruments.**
+1. `compactlatest codespan` (new): walks a code `.kv` in key order through erigon's reader and records,
+   per value, its encoded size and the 4 KB pages that reading the key and value touches; groups the
+   24,576-byte values by first four bytes and the offset of the contract's own address; writes one
+   line per such value (address, group, span, pages, value hash) for a cross-store join.
+   `codespan.sh R14` runs it on jochemnet's promoted code file (staging copy) and state-actor's raw
+   store copy. Read-only, no scratch involved.
+2. `compactlatest recode-code` (new): `RecodeDomain` reuses `compactDomain` (DebugRangeLatest ->
+   erigon's compressor with the domain's own `CompressCfg` and `CompressVals` -> `buildFileRange(0,1)`
+   with accessors -> read-back hash). Only the encoding changes.
+
+**Predictions** (written before codespan finished; scored below when results are in):
+1. Every 24,576-byte value in both files is one of three fixture patterns; the distinct ones
+   (`max_diff`, `unique_jumpdest`) carry their own address. For every address in both stores the value
+   hashes are identical: same bytecode on both sides.
+2. state-actor: each distinct fixture value is 24,576 B + a few bytes of framing on disk; reading key
+   and value touches 7 pages (6-8). jochemnet: <= 512 B, 1-2 pages.
+3. Pages per distinct fixture, state-actor / jochemnet, lands within +-30% of T1's code-page ratio
+   (1.73 / 0.32 GB = 5.4x).
+4. Recode: stream hash of the new file = codespan's of the old one; eth_getCode samples (background
+   and fixture contracts) byte-identical before and after; smoke 2/2. The fixture values shrink to
+   <= 512 B; the file shrinks to under 60% of 49.6 GB (background code is windows of real mainnet
+   contracts, which Erigon's own notes put at ~4x on mainnet).
+5. Trace T2 (both stores in their final state): state-actor's code-file pages on the jumpdest call
+   within +-25% of jochemnet's.
+6. H pairs (jochemnet unchanged since G; state-actor recoded): over a second the distinct-contract and
+   jumpdest calls land in 0.90-1.10 in both pairs; no other row over a second moves more than 0.05 in
+   both pairs against G; the all-rows median stays in 0.90-1.00. Rows beyond the floor: none.

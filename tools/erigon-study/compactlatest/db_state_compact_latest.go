@@ -63,6 +63,17 @@ func (a *Aggregator) CompactLatest(ctx context.Context, db kv.RoDB, dstDir strin
 	return out, nil
 }
 
+// RecodeDomain writes one domain's latest values into a fresh [0,1) file set under dstDir with the
+// domain's own compression settings, as erigon writes its own files. Keys and values don't change,
+// only their encoding: the returned stream hash must equal the old file's.
+func (a *Aggregator) RecodeDomain(ctx context.Context, db kv.RoDB, domain kv.Domain, dstDir string,
+	sampleEvery uint64, samples io.Writer, logger log.Logger) (CompactStat, error) {
+	if domain == kv.CommitmentDomain {
+		return CompactStat{}, fmt.Errorf("recode %s: branches need resolving, use CompactLatest", domain)
+	}
+	return a.compactDomain(ctx, db, domain, dstDir, 1, sampleEvery, samples, logger)
+}
+
 func (a *Aggregator) compactDomain(ctx context.Context, db kv.RoDB, domain kv.Domain, dstDir string, workers int,
 	sampleEvery uint64, samples io.Writer, logger log.Logger) (CompactStat, error) {
 	d := a.d[domain]
