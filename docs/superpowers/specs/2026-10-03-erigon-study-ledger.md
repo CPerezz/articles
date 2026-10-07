@@ -806,3 +806,36 @@ the rebuild (D) jochemnet read these contracts raw from MDBX, which is why D sat
 6. H pairs (jochemnet unchanged since G; state-actor recoded): over a second the distinct-contract and
    jumpdest calls land in 0.90-1.10 in both pairs; no other row over a second moves more than 0.05 in
    both pairs against G; the all-rows median stays in 0.90-1.00. Rows beyond the floor: none.
+
+**codespan R14 (2026-10-07 22:13 UTC, ~2 min per file)**, `/bench/erigon/compact/codespan-{joc,sa}-R14.{json,tsv}`.
+
+| code .kv | file | keys | values raw -> on disk | pattern dict |
+|---|---|---|---|---|
+| jochemnet (Erigon's writer) | 16.03 GB | 68,023,550 | 45.42 GB -> 14.60 GB (3.1x) | 675,844 B |
+| state-actor (its own writer) | 49.58 GB | 16,686,745 | 49.20 GB -> 49.23 GB | 0 B |
+
+The 24,576-byte fixture contracts, by pattern (first four bytes @ offset of the contract's own address):
+
+| pattern | test row | jochemnet: n, bytes on disk, pages (key + value) | state-actor: n, bytes, pages |
+|---|---|---|---|
+| `615fff56@44` (PUSH2 0x5fff JUMP) | jumpdest call | 135,000, 197-199 B, 1.054 | 150,000, 24,577 B, 7.005 |
+| `00000000@12` (STOP, padding) | distinct-contract call | 100,000, 201-203 B, 1.055 | 150,000, 24,577 B, 7.005 |
+| `005b5b5b@-1` (STOP, JUMPDESTs) | reused-contract call | 100,000, 173 B, 1.047 | 150,000, 24,577 B, 7.005 |
+
+Every jochemnet fixture address exists on state-actor, and all 335,000 values hash identically
+(state-actor has 15,000 / 50,000 / 50,000 more that no test reaches). The reused contracts share one
+code hash on both stores, so the code cache serves all but the first call; the other two are a new
+code hash per call.
+
+Scored:
+1. **Met for the fixtures** (identical bytes, address embedded as predicted). Not for "every
+   24,576-byte value": jochemnet also holds 1,595 real mainnet contracts of exactly that size, raw or
+   barely compressible (PNG data, Solidity), in 1,217 other groups.
+2. **Met.** state-actor 24,577 B (one byte of framing), exactly 7 pages per value; jochemnet 197-203 B,
+   1 page (2 on 5%).
+3. **Met.** 7.005 / 1.054 = 6.6x pages per distinct contract, +23% on T1's 5.4x (code files plus
+   their indexes); T1's code files alone were 1.705 / 0.236 = 7.2x.
+
+The recode (`recode-sa.sh`) launched 22:15 UTC: restore, cmp against the raw copy, recode, old/new
+eth_getCode answers, promote, smoke S3, traces T2 (both stores, the four plus a distinct-contract call),
+then `chain-B.sh joc:H1 sa:H1 joc:H2 sa:H2`.

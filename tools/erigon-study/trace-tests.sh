@@ -38,7 +38,8 @@ untrace() {
 trap 'untrace; rm -f "$BUSY"' EXIT
 
 mkdir -p "$OUT"
-FILTER=$(cat /bench/erigon/tools/trace-tests.regex)
+# TRACE_REGEX names another test list (round 14 adds a distinct-contract call to the four).
+FILTER=$(cat "${TRACE_REGEX:-/bench/erigon/tools/trace-tests.regex}")
 python3 - "$SRC" "$CFG" "$ARM" "$TAG" "$DAY" "$FILTER" <<'EOF'
 import sys
 src, cfg, arm, tag, day, flt = sys.argv[1:]
