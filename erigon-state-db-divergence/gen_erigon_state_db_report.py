@@ -85,6 +85,17 @@ def class_rows(B, cls):
     return [(c, rows[c]) for c in ORDER if c in rows]
 
 
+def regroup(S, by):
+    """S's tests grouped by category under `by`'s duration classes, so a before/after pair compares
+    the same tests on one split."""
+    g = {}
+    for t, r in S["tests"].items():
+        cls = by["tests"][t]["cls"]
+        g.setdefault((cls, r["cat"]), []).append(r)
+        g.setdefault((cls, "__all__"), []).append(r)
+    return g
+
+
 AX_LO, AX_HI = 0.15, 40
 
 
@@ -380,6 +391,44 @@ def main():
     light_mb = max(med([t for t in tests.values() if t["cat"] == c], k) for c in LIGHT
                    for k in ("joc_np_read_mb", "sa_np_read_mb"))
     assert light_mb < 0.2 * joc_rd, "the EOA and absent-account rows no longer read little"
+    # Finding 1's fix: jochemnet rebuilt into one bottom file per domain, checked, and re-run.
+    RB, E, S1 = P["rebuild"], D["after_layout"], D["step0_after"]
+    assert RB["new_step_size"] == RB["head_txnum"] + 1 and RB["head_block"] == P["head_after_prerun"], \
+        "the rebuilt files no longer end at the head block"
+    assert RB["rpc_identical"] and min(RB["rpc_samples_db_accounts"], RB["rpc_samples_db_slots"]) > 0, \
+        "the rebuild's RPC check no longer covers database-only state, or found a difference"
+    assert RB["mdbx_after_bytes"] / 1e9 < 0.02 * P["joc_mdbx_gb"], "the database didn't shrink"
+    assert E["n"] == B["n"] and E["complete"] and E["gas_mismatches"] == 0 and \
+        len(set(E["runs"].values()) | set(B["runs"].values())) == 8, "the after series isn't four fresh runs of the same tests"
+    joc_tr1, sa_tr1 = traced(S1, "joc"), traced(S1, "sa")
+    assert max(s["database"] for _, s, _ in joc_tr1) < 0.01, "a traced test still reads jochemnet's database"
+    gap1 = {lj: abs(ts / tj - 1) for (lj, _, tj), (_, _, ts) in zip(joc_tr1, sa_tr1)}
+    odd = max(gap1, key=gap1.get)
+    near1 = max(v for k, v in gap1.items() if k != odd)
+    assert odd == "call, jumpdest scan" and near1 < 0.07, "the traced byte totals no longer match: %r" % gap1
+    code_x = dict((l, s["code files"] * t) for l, s, t in sa_tr1)[odd] / \
+        dict((l, s["code files"] * t) for l, s, t in joc_tr1)[odd]
+    assert code_x > 4, "state-actor's jumpdest call no longer reads several times the code pages: %.1f" % code_x
+    ge_e, ALL_E = dict(class_rows(E, "ge1s")), {r["cls"]: r for r in E["rows"] if r["cat"] == "__all__"}
+    BG = regroup(B, E)
+    n_before, n_after = ge_all["a"]["n"], ALL_E["ge1s"]["a"]["n"]
+    assert n_after > n_before and med(list(E["tests"].values()), "joc_secs") > med(list(tests.values()), "joc_secs"), \
+        "the rebuilt jochemnet is no longer slower, with more tests over a second"
+    np_b, np_a, np_a2 = med(BG[("ge1s", "__all__")], "a"), ALL_E["ge1s"]["a"]["median"], ALL_E["ge1s"]["b"]["median"]
+    wb_b, wb_a = med(BG[("ge1s", "__all__")], "a_total"), ALL_E["ge1s"]["a_total"]["median"]
+    assert np_b < 0.6 and 0.85 <= min(np_a, np_a2) and max(np_a, np_a2) <= 1.0, \
+        "newPayload over a second no longer moves from about half to just under parity: %.2f -> %.2f/%.2f" % (np_b, np_a, np_a2)
+    assert wb_b > 2.5 and 0.85 <= wb_a <= 1.1, "the whole block no longer moves from ~3x to parity: %.2f -> %.2f" % (wb_b, wb_a)
+    acct_b = [med(BG[("ge1s", c)], "a") for c in CONTRACT_ACCT]
+    acct_a = [ge_e[c]["a"]["median"] for c in CONTRACT_ACCT]
+    tr_b, tr_a = med(BG[("ge1s", "ether transfer")], "a"), ge_e["ether transfer"]["a"]["median"]
+    assert max(acct_b) < 0.5 and min(acct_a) > 0.85 and max(acct_a) < 1, "the account rows' move changed: %r -> %r" % (acct_b, acct_a)
+    assert tr_b < 0.6 and tr_a > 0.9, "the transfers' move changed: %.2f -> %.2f" % (tr_b, tr_a)
+    CODE_CALLS = ("code-exec DIFF_MAX", "code-exec JUMPDEST")
+    cc_b = {c: med(BG[("ge1s", c)], "a") for c in CODE_CALLS}
+    cc_a = {c: max(ge_e[c]["a"]["median"], ge_e[c]["b"]["median"]) for c in CODE_CALLS}
+    assert all(0.9 <= v <= 1.1 for v in cc_b.values()) and max(cc_a.values()) < 0.7, \
+        "the code calls no longer flip from parity: %r -> %r" % (cc_b, cc_a)
 
     # ----- page ------------------------------------------------------------------------------
     o = []
@@ -558,9 +607,43 @@ def main():
       f"makes the benchmark's accounts the newest data in the store.</p>")
     w(f"<p>The commit is skewed by the same cause. Jochemnet writes every block into a "
       f"{P['joc_mdbx_gb']:.0f} GB database; a running node keeps only its newest step there.</p>")
-    w("<p><b>So the store to fix is jochemnet.</b> Its tested state has to move to the bottom of "
-      "the files, and out of the database. Erigon's own housekeeping can't do it, as the retire run "
-      "showed, so it takes a rewrite of the files. That's this study's next step.</p>")
+    w("<p><b>So the store to fix is jochemnet.</b> We could have gone the other way, and written the "
+      "tested accounts into state-actor's database as an unfinished step. Then both stores would "
+      "measure the best case: a lookup that ends in the first place Erigon looks. That isn't the "
+      "read these benchmarks exist to price, and it isn't the one a node makes for cold state. On "
+      "a node, everything older than the newest step is in files. So jochemnet's tested state moves "
+      "down, out of the database and into the bottom file, and state-actor stays as it is.</p>")
+    w(f"<p><b>The fix is a rebuild.</b> Erigon won't freeze the unfinished step, so we wrote the "
+      f"files with Erigon's own code. A small tool reads the latest value of every key, from the "
+      f"database and the files alike. It writes one file per domain, covering everything up to the "
+      f"head block: {RB['keys']['accounts'] / 1e6:.0f} million accounts, "
+      f"{RB['keys']['storage'] / 1e9:.2f} billion storage slots, "
+      f"{RB['keys']['code'] / 1e6:.0f} million code entries and the commitment trie. The step "
+      f"size becomes the head's last transaction number plus one, "
+      f"{thousands(RB['new_step_size'])}, so the file ends exactly at block "
+      f"{thousands(RB['head_block'])}. That's how state-actor's store is laid out too: one file "
+      f"per domain, all of it step 0. Then the database's state tables are emptied, and it shrinks "
+      f"from {P['joc_mdbx_gb']:.0f} GB to {RB['mdbx_after_bytes'] / 1e9:.1f} GB.</p>")
+    w(f"<p><b>Nothing moved but the shelf.</b> Before and after, we asked the node the same "
+      f"{thousands(RB['rpc_samples'])} questions: balances, nonces, storage, code, and Merkle "
+      f"proofs that walk the state trie. {thousands(RB['rpc_samples_db_accounts'])} accounts and "
+      f"{thousands(RB['rpc_samples_db_slots'])} slots among them had lived only in the database. "
+      f"Every answer came back byte for byte the same.</p>")
+    w(fig("fig_sources_after", chart_sources(S1),
+          f"The same four tests after the rebuild. Jochemnet was traced again; state-actor's store "
+          f"didn't change, so its bars are the earlier trace. Jochemnet now reads its files, and "
+          f"three of the four totals land within {100 * near1:.0f}% of state-actor's. The jumpdest "
+          f"call is the odd one out: state-actor reads {code_x:.0f}&times; the code-file pages."))
+    w(f"<p><b>What it did.</b> The rebuilt jochemnet is slower, so {n_after} tests now run over "
+      f"a second, against {n_before} before. We compare both series on the new split. Over a "
+      f"second, newPayload went from {np_b:.2f} to {np_a:.2f} ({np_a2:.2f} in the second pair), "
+      f"and the whole block from {wb_b:.2f} to {wb_a:.2f}. Account reads went from "
+      f"{min(acct_b):.2f}&ndash;{max(acct_b):.2f} to {min(acct_a):.2f}&ndash;{max(acct_a):.2f}, "
+      f"and ether transfers from {tr_b:.2f} to {tr_a:.2f}. Two rows went the other way. The "
+      f"distinct-contract and jumpdest calls were at parity, and now sit at "
+      f"{ge_e['code-exec DIFF_MAX']['a']['median']:.2f} and "
+      f"{ge_e['code-exec JUMPDEST']['a']['median']:.2f}. They're the first item in what's "
+      f"left.</p>")
 
     w("<p class=note>Every number on this page is computed from the collected run data when the "
       "page is built, and the build fails if the data stops supporting a sentence.</p>")
