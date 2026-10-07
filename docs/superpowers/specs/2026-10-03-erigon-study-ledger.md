@@ -665,3 +665,35 @@ pages, and jochemnet's a fraction of that. That fits T1 (jumpdest call: 1.72 GB 
 against 0.32 GB). It's the series' Nethermind finding 4 again: the generator's code layout, not
 state. Fixing it belongs in state-actor (pattern compression) or a re-encode of its store through
 erigon's compressor. Deferred to Anon's re-evaluation; not part of the worst-case baseline fix.
+
+**E series complete (2026-10-07 09:47 UTC)**, `/bench/erigon/baseline-E.json` sha256 `d82aa1f8…3f2f`.
+The rebuilt jochemnet (worst-case layout) against the same state-actor store, direct-I/O loops, two
+independent pairs. All four suites rc 0; 266 tests, 0 gas mismatches. Classes come from E's
+jochemnet: 110 tests over a second, 156 under.
+
+| over a second | pair 1 | pair 2 | floor sa / joc (in ±10%) |
+|---|---|---|---|
+| newPayload, all (110) | 0.901 | 0.924 | 95 / 97 of 110 |
+| account rows, contract (16) | 0.87-0.98 | 0.88-1.05 | |
+| calls: EOA / minimal / reused contract | 0.94 / 0.94 / 0.95 | 0.96 / 0.97 / 0.92 | |
+| call, distinct contract (14) | 0.561 | 0.549 | 14/14 beyond the floor |
+| call, jumpdest scan (14) | 0.640 | 0.639 | 14/14 beyond the floor |
+| ether transfer (34) | 0.927 | 0.954 | |
+| storage slot (2) | 0.977 | 0.987 | |
+| whole block, all | 0.947 | 0.967 | |
+| whole block, ether transfer | 1.90 | 1.83 | FCU 3.46 s vs 0.63 s |
+
+Under a second (156, floors 87 and 78 = 56% and 50%): controls 1.38 / 1.41, warm query 1.21 / 1.57,
+absent account 1.05 / 1.00.
+
+**Reading.** With the layouts matched, everything that reads state lands at 0.87-0.98 except:
+1. calls into distinct max-size contracts (0.55-0.64), explained by state-actor's dictionary-less
+   code file;
+2. the transfers' whole block, from jochemnet's carried code cache (G pairs).
+
+Against the predictions: newPayload over a second 0.85-1.15 met (0.90 / 0.92). Ether transfers
+0.8-1.2 met (0.93 / 0.95). Whole block 0.8-1.25 met overall (0.95 / 0.97), missed on the transfers
+(1.90). The code calls came in below the range.
+
+**G chain** (`clear-codecache-joc.sh`): TblCodeCache 143,219 -> 0 rows, promoted 09:4x, smoke S2,
+then G1/G2 (~10.7 h).
