@@ -636,3 +636,32 @@ state-actor/jochemnet, untreated D1 -> rebuilt E1:
 
 These ratios use state-actor's D1 run, so they share no denominator with a fresh pair; E1/E2 and
 G1/G2 are the measurements.
+
+**Pair E1 (2026-10-07 04:25 UTC; floors wait for E2).** 266 tests, 0 gas mismatches. Classes from
+the rebuilt jochemnet's own times: 110 tests over a second (it is slower now), 156 under.
+- Over a second: newPayload **0.90**, whole block **0.95** (D: 0.73 / 2.82).
+  - Account rows 0.87-0.98; plain calls 0.94-0.95; storage 0.98; ether transfers 0.93.
+  - Code calls into distinct max-size contracts 0.56 (distinct) and 0.64 (jumpdest).
+  - Transfers' whole block 1.90: the CodeCache scan, see the G pairs.
+- FCU over a second now 20-110 ms on both stores except the transfers (jochemnet 3.46 s, state-actor
+  0.63 s).
+
+**The code-call gap is a generator artifact: state-actor's code file has no dictionary.** The tested
+contracts are byte-identical on both stores: state-actor's `max_diff_pre_amsterdam` and
+`unique_jumpdest_pre_amsterdam` patterns reproduce EEST's `StopJumpdestInitcode` and
+`JochemnetPredeployContractInitcode` at the same CREATE2 addresses (state-actor `docs/SPEC.md:137-142`).
+The two code files' seg headers, decoded per erigon's `db/seg/decompress.go:273-310`:
+
+| code .kv | size | words | pattern dict |
+|---|---|---|---|
+| jochemnet, rebuilt by erigon's compressor | 16.0 GB | 136,047,100 (68.0 M keys) | 675,844 B |
+| state-actor, its own writer | 49.6 GB | 33,373,490 (16.7 M keys) | 0 B |
+
+state-actor's `internal/erigon/seg` is a pure-Go port that implements only the no-pattern path
+(`compressor.go:20-50`: "pattern-cover compression (CompressKeys/CompressVals) is not implemented
+in v1"). Erigon writes the code domain with `CompressVals` (`statecfg/state_schema.go:251`), whose
+dictionary collapses the JUMPDEST filler. So a state-actor test contract costs its full 24 KB of
+pages, and jochemnet's a fraction of that. That fits T1 (jumpdest call: 1.72 GB of code pages
+against 0.32 GB). It's the series' Nethermind finding 4 again: the generator's code layout, not
+state. Fixing it belongs in state-actor (pattern compression) or a re-encode of its store through
+erigon's compressor. Deferred to Anon's re-evaluation; not part of the worst-case baseline fix.
