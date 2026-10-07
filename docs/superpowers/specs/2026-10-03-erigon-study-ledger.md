@@ -697,3 +697,6 @@ Against the predictions: newPayload over a second 0.85-1.15 met (0.90 / 0.92). E
 
 **G chain** (`clear-codecache-joc.sh`): TblCodeCache 143,219 -> 0 rows, promoted 09:4x, smoke S2,
 then G1/G2 (~10.7 h).
+
+*Correction to the E1 note above:* T1's jumpdest call read 1.73 GB of code pages on state-actor (code
+files 1.71 + code indexes 0.03) against 0.32 GB on jochemnet (0.24 + 0.08), 5.4x; not 1.72 vs 0.32.
