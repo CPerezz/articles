@@ -726,3 +726,33 @@ TblCodeCache emptied (143,219 -> 0 rows), nothing else changed; smoke S2 2/2.
    whole-block ratio from 1.90 to 0.85-1.10.
 3. Nothing else moves beyond pair noise: newPayload over a second 0.87-0.95; distinct-contract and
    jumpdest calls 0.53-0.67 (T1: their code reads never touch MDBX, so the cache isn't on the path).
+
+**G series complete (2026-10-07 20:09 UTC):** rebuilt jochemnet with TblCodeCache emptied, against the
+same state-actor store. `/bench/erigon/baseline-G.json` sha256 `0e592c40…b5e8`, FCU split
+`/bench/erigon/fcu-G.json` sha256 `cb6bab69…12d`. All four suites green; 266 tests; 0 gas
+mismatches; 110 over a second.
+
+| over a second | G pair 1 | G pair 2 | E pair 1 / 2 |
+|---|---|---|---|
+| newPayload, all (110) | 0.927 | 0.919 | 0.901 / 0.924 |
+| whole block, all | 0.942 | 0.946 | 0.947 / 0.967 |
+| ether transfer, whole block | 1.032 | 1.034 | 1.90 / 1.83 |
+| call, distinct contract | 0.641 | 0.650 | 0.561 / 0.549 |
+| call, jumpdest scan | 0.633 | 0.648 | 0.640 / 0.638 |
+| inside +-10% / sa floor / joc floor | 63 / 97 / 94 of 110 | | 50 / 95 / 97 |
+
+Transfers' FCU 906 ms (state-actor 677 ms): commit 0.72 s, prune 0.4 ms. Under a second: floors
+83 / 71 of 156; controls 1.34 / 1.42.
+
+Predictions:
+1. First-FCU prune under 10 ms on every test: **met** (max 2 ms; was 3 s). The 3 s was the seed scan.
+2. Transfers' FCU 0.5-1.0 s and whole block 0.85-1.10: **met** (0.91 s; 1.03 / 1.03).
+3. Nothing else moves: **missed on one row.** The distinct-contract call went 0.56 -> 0.64 in both
+   pairs (+0.08 / +0.10; the pairs agree within 0.012). Pair 1 shows why: jochemnet's throughput on
+   that row fell 9.1%, state-actor's 2.1%. The cache was serving some of those contracts' code; the
+   pre-run deployed them, and `PutByHash` caches code on the deploy path. The jumpdest call didn't
+   move (T1: its code came from the files). No other row moved more than 0.05 in both pairs.
+
+So with jochemnet at the worst case on both counts (state in the bottom file, empty code cache):
+over a second newPayload 0.92-0.93, whole block 0.94-0.95, and the only rows beyond the floor are
+the two distinct-code calls at 0.63-0.65 (state-actor's dictionary-less code file, untested).
