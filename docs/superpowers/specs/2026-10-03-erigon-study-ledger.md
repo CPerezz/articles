@@ -717,3 +717,12 @@ mapped (`/bench/erigon/fcu-DE.json`, sha256 `f7b558fe…96ce`):
 Consequence: the article's part 1 sentence "Erigon writes the block's state ... that call takes 3.4
 to 11.4 s" stands. The G pairs (cache cleared) should move only the transfers' FCU, to about their
 commit (0.7 s, state-actor 0.63 s).
+
+**Predictions for the G pairs (written 2026-10-07 10:02 UTC, G1 running since 09:51).** Jochemnet's
+TblCodeCache emptied (143,219 -> 0 rows), nothing else changed; smoke S2 2/2.
+1. First-FCU `prune` on jochemnet drops from 3 s to under 10 ms on every test (state-actor: ~0.1 ms).
+   If it doesn't, the 3 s isn't the seed scan, and the CodeCache reading is wrong.
+2. The transfers' measured FCU drops from 3.46 s to 0.5-1.0 s (their commit, 0.70 s on E), and their
+   whole-block ratio from 1.90 to 0.85-1.10.
+3. Nothing else moves beyond pair noise: newPayload over a second 0.87-0.95; distinct-contract and
+   jumpdest calls 0.53-0.67 (T1: their code reads never touch MDBX, so the cache isn't on the path).
