@@ -281,6 +281,36 @@ def chart_sources(S0):
         lx += 14 + 8 * len(g) + 18
     return S.svg(W, H, "".join(o))
 
+def chart_commit(series):
+    """The forkchoiceUpdated call after each measured block, median per row, one marker per store
+    state. `series` is (legend, colour, dataset, per-test key)."""
+    W, L, R, T = 760, 250, 40, 34
+    rh = 17
+    rows = [c for c in ORDER if any(t["cat"] == c for t in series[0][2]["tests"].values())]
+    H = T + 12 + rh * len(rows) + 78
+    lo, hi = 1, 20000
+    sx = S.LogScale(lo, hi, L, W - R)
+    o = [S.label(0, 14, "forkchoiceUpdated per measured block, ms, median of each row (pair 1)",
+                 "start", "big")]
+    top = T + 12
+    o.append(S.line(sx.to(1000), top - 4, sx.to(1000), top + rh * len(rows), "--green-muted", 1))
+    for i, cat in enumerate(rows):
+        y = top + rh * i + 9
+        o.append(S.label(L - 10, y + 4, ROW_LABEL.get(cat, cat), "end", "tick"))
+        for j, (legend, var, ds, k) in enumerate(series):
+            v = med([t for t in ds["tests"].values() if t["cat"] == cat], k)
+            dy = 2.4 * (j - (len(series) - 1) / 2)  # equal medians would hide each other
+            o.append(S.dot(sx.to(max(lo, min(hi, v))), y + dy, 3.2, var, f"{legend}: {v:,.0f} ms"))
+    ty = top + rh * len(rows) + 18
+    for t in (1, 10, 100, 1000, 10000):
+        o.append(S.label(sx.to(t), ty, f"{t:,}", "middle", "tick"))
+    for j, (legend, var, _, _) in enumerate(series):
+        lx, ly = L + 250 * (j % 2), H - 30 + 18 * (j // 2)
+        o.append(S.dot(lx, ly - 4, 3.2, var))
+        o.append(S.label(lx + 10, ly, legend, "start", "tick"))
+    return S.svg(W, H, "".join(o))
+
+
 # --------------------------------------------------------------------------- page
 def main():
     D = json.load(open(DATA))
@@ -429,6 +459,81 @@ def main():
     cc_a = {c: max(ge_e[c]["a"]["median"], ge_e[c]["b"]["median"]) for c in CODE_CALLS}
     assert all(0.9 <= v <= 1.1 for v in cc_b.values()) and max(cc_a.values()) < 0.7, \
         "the code calls no longer flip from parity: %r -> %r" % (cc_b, cc_a)
+    # Finding 2: the code cache, and the forkchoiceUpdated split behind it.
+    G, FS, CC = D["final"], D["fcu_split"], P["code_cache"]
+    assert G["n"] == B["n"] and G["complete"] and G["gas_mismatches"] == 0 and \
+        len(set(G["runs"].values()) | set(E["runs"].values()) | set(B["runs"].values())) == 12, \
+        "the final series isn't four fresh runs of the same tests"
+    assert CC["joc_rows"] > 0 and CC["sa_rows"] == 0, "the two stores' code caches no longer differ"
+
+    def fs(tag, k, cat=None):
+        return [v[k] for t, v in FS[tag]["tests"].items() if cat is None or tests[t]["cat"] == cat]
+    commit_d, commit_e, commit_s = (median(fs(t, "commit_s")) for t in ("joc-D1", "joc-E1", "sa-E1"))
+    xfer_prune = median(fs("joc-E1", "prune_s", "ether transfer"))
+    assert commit_d >= 2 and commit_e < 0.05 and commit_s < 0.05, \
+        "the measured commit no longer goes from seconds to milliseconds: %r" % ((commit_d, commit_e, commit_s),)
+    prune_e, prune_g = median(fs("joc-E1", "first_prune_s")), max(fs("joc-G1", "first_prune_s"))
+    assert prune_e >= 2 and prune_g < 0.01 and max(fs("sa-E1", "first_prune_s")) < 0.01, \
+        "the first prune no longer tracks the code cache: %.3f -> %.4f" % (prune_e, prune_g)
+    single = {tests[t]["cat"] for t, v in FS["joc-E1"]["tests"].items() if v["fcus"] == 1}
+    assert single == {"ether transfer"}, "the single-block tests aren't exactly the transfers: %r" % single
+    assert xfer_prune >= 2 and min(fs("joc-E1", "prune_s", "ether transfer")) > 100 * prune_g, \
+        "the transfers' measured block no longer pays the scan: median %.2f s" % xfer_prune
+
+    def xf(S_, k):
+        return med([t for t in S_["tests"].values() if t["cat"] == "ether transfer"], k)
+    xfe, xfg, xfs = xf(E, "joc_fcu_ms"), xf(G, "joc_fcu_ms"), xf(G, "sa_fcu_ms")
+    assert xfe > 3000 and xfg < 1.5 * xfs, "the transfers' call no longer drops to state-actor's: %.0f -> %.0f vs %.0f" % (xfe, xfg, xfs)
+    ge_g, ALL_G = dict(class_rows(G, "ge1s")), {r["cls"]: r for r in G["rows"] if r["cat"] == "__all__"}
+    xw_e, xw_g = ge_e["ether transfer"]["a_total"]["median"], ge_g["ether transfer"]["a_total"]["median"]
+    assert xw_e > 1.5 and 0.8 <= xw_g <= 1.15, "the transfers' whole block no longer drops to parity: %.2f -> %.2f" % (xw_e, xw_g)
+
+    def shift(c):
+        return [ge_g[c][k]["median"] - ge_e[c][k]["median"] for k in ("a", "b")]
+    moved = {c for c in ge_g if c in ge_e and min(map(abs, shift(c))) > 0.05 and shift(c)[0] * shift(c)[1] > 0}
+    assert moved == {"code-exec DIFF_MAX"}, "the rows that moved with the cache changed: %r" % moved
+
+    def dmx(S_, k):
+        return med([t for t in S_["tests"].values() if t["cat"] == "code-exec DIFF_MAX" and t["cls"] == "ge1s"], k)
+    joc_drop, sa_drop = 1 - dmx(G, "joc_mgas") / dmx(E, "joc_mgas"), 1 - dmx(G, "sa_mgas") / dmx(E, "sa_mgas")
+    assert joc_drop > 0.05 and joc_drop > 3 * abs(sa_drop), \
+        "the distinct-contract move is no longer jochemnet slowing: %.3f / %.3f" % (joc_drop, sa_drop)
+    dm_e = ge_e["code-exec DIFF_MAX"]["a"]["median"]
+    dm_g, dm_g2 = ge_g["code-exec DIFF_MAX"]["a"]["median"], ge_g["code-exec DIFF_MAX"]["b"]["median"]
+    d_slow = {c for c, r in class_rows(B, "ge1s") + class_rows(B, "lt1s") if med(
+        [t for t in tests.values() if t["cat"] == c], "joc_fcu_ms") > 1000}
+    assert set(ORDER) - d_slow == {"control (no state work)", "warm query", "sload same key"}, \
+        "the untreated store's slow calls are no longer every row but the three no-state ones"
+    # Where it stands: the final pairs, on the final store's split.
+    BF = regroup(B, G)
+    ga, gb, gfl = ALL_G["ge1s"]["a"], ALL_G["ge1s"]["b"], ALL_G["ge1s"]["floor_sa"]
+    assert 0.85 <= min(ga["median"], gb["median"]) and max(ga["median"], gb["median"]) <= 1.0, \
+        "the final newPayload median left 0.85-1.0: %.3f / %.3f" % (ga["median"], gb["median"])
+    assert gfl["within10"] > 0.8 * gfl["n"] and ga["within10"] < gfl["within10"], "the final floor no longer bounds the pairs"
+    d_np_g = max(abs(r["a"]["median"] - r["b"]["median"]) for r in ge_g.values())
+    assert d_np_g < 0.1, "the final pairs disagree: %.3f" % d_np_g
+    acct_g = [ge_g[c]["a"]["median"] for c in CONTRACT_ACCT]
+    plain_g = [ge_g["code-exec " + m]["a"]["median"] for m in ("EXISTING_EOA", "MINIMAL", "SAME_MAX")]
+    assert min(acct_g + plain_g) > 0.85 and max(acct_g + plain_g) < 1.05, "the account rows or plain calls left the band's edge"
+    # Beyond the floor: no test inside the band in either pair, while state-actor measured twice mostly is.
+    off = {c for c, r in ge_g.items() if r["a"]["within10"] == r["b"]["within10"] == 0
+           and r["floor_sa"]["within10"] > 0.8 * r["floor_sa"]["n"]}
+    assert off == set(CODE_CALLS), "the rows beyond the floor are no longer just the code calls: %r" % off
+    dm, jd = ge_g["code-exec DIFF_MAX"]["a"]["median"], ge_g["code-exec JUMPDEST"]["a"]["median"]
+    wb_g = ALL_G["ge1s"]["a_total"]["median"]
+    assert abs(wb_g - ga["median"]) < 0.1, "the whole block no longer agrees with newPayload: %.3f / %.3f" % (wb_g, ga["median"])
+    lt_g = ALL_G["lt1s"]
+    assert max(share(lt_g, k) for k in ("floor_sa", "floor_joc")) < 65, "the final sub-second floors reproduce now"
+    # What's left: the code file.
+    CF = P["code_files"]
+    assert CF["sa"]["pattern_dict_bytes"] == 0 < CF["joc_rebuilt"]["pattern_dict_bytes"], "the code files' dictionaries changed"
+    assert all(v == [[0, 1]] for arm in ("joc", "sa") for v in S1[arm]["domain_steps"].values()), \
+        "the two stores no longer keep each domain in one step-0 file"
+    # "On the untreated store the commit was most of each block": jochemnet's FCU share of its own
+    # block time, over a second.
+    fcu_share = median(t["joc_fcu_ms"] / (t["joc_fcu_ms"] + 1e3 * t["joc_secs"])
+                       for t in tests.values() if t["cls"] == "ge1s")
+    assert fcu_share > 0.5, "the untreated commit is no longer most of jochemnet's block: %.2f" % fcu_share
 
     # ----- page ------------------------------------------------------------------------------
     o = []
@@ -465,8 +570,12 @@ def main():
       f"ether transfers {slow:.1f}&times; slower and contract calls at parity. But that clock "
       f"stops at newPayload. Erigon writes each block's state in the call that follows, and there "
       f"the snapshot spends {min(jf)/1e3:.0f} to {max(jf)/1e3:.0f} seconds a block. Timed whole, "
-      f"the generated store is {at:.1f}&times; faster. Here's the baseline, and where it "
-      f"points.</p>")
+      f"the generated store is {at:.1f}&times; faster. Both gaps came from the snapshot. Its "
+      f"database held its newest {thousands(db_blocks)} blocks, the benchmark's state included. "
+      f"Erigon looks there first, and commits every block into it. Rebuilt so that state sits in "
+      f"its files, like the generated store's, and with its code cache emptied, the snapshot lands "
+      f"at {ga['median']:.2f} on newPayload and {wb_g:.2f} whole. What's left points at how the "
+      f"generator compresses code.</p>")
 
     # ---- part 1: the problem
     w(f"<h2>The problem: the same state, {slow:.0f}&times; slower and {at:.0f}&times; faster</h2>")
@@ -644,6 +753,106 @@ def main():
       f"{ge_e['code-exec DIFF_MAX']['a']['median']:.2f} and "
       f"{ge_e['code-exec JUMPDEST']['a']['median']:.2f}. They're the first item in what's "
       f"left.</p>")
+
+    # ---- finding 2
+    w("<h2>2. Jochemnet carried a code cache into every boot</h2>")
+    w(fig("fig_commit", chart_commit([("jochemnet, untreated", "--db-u", B, "joc_fcu_ms"),
+                                      ("jochemnet, rebuilt", "--accent", E, "joc_fcu_ms"),
+                                      ("rebuilt, code cache emptied", "--db-c", G, "joc_fcu_ms"),
+                                      ("state-actor", "--db-sa", G, "sa_fcu_ms")]),
+          "The call that follows each measured block. Untreated, jochemnet spends seconds on every "
+          "row except the three that do no new state work. Rebuilt, only the transfers do. With "
+          "its code cache emptied, they don't either."))
+    w(f"<p><b>Erigon's own log splits that call in two:</b> writing the block, and pruning. We "
+      f"matched each line to its test. On the untreated store, the measured block's write took "
+      f"{commit_d:.0f} s at the median. That's finding 1's database. After the rebuild it takes "
+      f"{commit_e * 1e3:.0f} ms, and state-actor's {commit_s * 1e3:.0f} ms.</p>")
+    w(f"<p><b>The transfers kept {xfe / 1e3:.1f} seconds,</b> {xfer_prune:.0f} of them in the prune. A fresh "
+      f"Erigon process sizes its code cache on its first prune, by reading the whole table "
+      f"{src('execution/cache/code_store.go', 128, 'once')}. That table holds contract code Erigon "
+      f"has already decompressed, so a hit skips the code files. Jochemnet's held "
+      f"{thousands(CC['joc_rows'])} contracts' code. The rebuild left it alone, because it "
+      f"isn't state. State-actor's is empty. Every test boots a fresh client, so jochemnet pays the "
+      f"read once per test. Most tests send a setup block first, and that block pays it. A "
+      f"transfer test sends one block, so the measured one does.</p>")
+    w(f"<p><b>The fix</b> is to empty the table. On a miss Erigon reads the code files, which is "
+      f"what state-actor does on every call, so an empty cache is the worst case again. <b>What "
+      f"it did:</b> the first prune went from {prune_e:.0f} s to under {int(prune_g * 1e3) + 1} ms "
+      f"on every test. The transfers' call dropped from {xfe / 1e3:.2f} s to {xfg:.0f} ms, against "
+      f"state-actor's {xfs:.0f} ms, and their whole block from {xw_e:.2f} to {xw_g:.2f}.</p>")
+    w(f"<p>Inside newPayload, one row over a second moved by more than 0.05 in both pairs: the "
+      f"distinct-contract call, from {dm_e:.2f} to {dm_g:.2f} ({dm_g2:.2f} in the second pair). "
+      f"Jochemnet ran it {100 * joc_drop:.0f}% slower, and state-actor {100 * sa_drop:.0f}%. So the "
+      f"cache had been serving some of those contracts' code. The pre-run deployed them, and Erigon "
+      f"caches code as it deploys it. The jumpdest call didn't move; its code came from the files "
+      f"all along, as the trace showed.</p>")
+
+    # ---- part 3
+    w("<h2>Where it stands</h2>")
+    w(fig("fig_overview_after",
+          chart_overview(G, "a", "b", "newPayload throughput after both fixes, state-actor / "
+                         "jochemnet (band = \u00b110%)"),
+          f"The same tests after both fixes, two independent pairs. Same rows and axis as the "
+          f"first figure. The one-second split now follows the rebuilt jochemnet, so "
+          f"{ga['n']} tests count instead of {n_before}."))
+    w("<table><tr><th>tests</th><th class=n>n</th><th class=n>before</th><th class=n>now</th>"
+      "<th class=n>inside &plusmn;10%</th><th class=n>same store twice</th>"
+      "<th class=n>whole block, before</th><th class=n>whole block, now</th></tr>")
+    for cls, label in (("ge1s", "over a second"), ("lt1s", "under a second")):
+        w(f"<tr><td colspan=8><b>{label}</b></td></tr>")
+        for cat, row in class_rows(G, cls):
+            a_, fl, bt_ = row["a"], row["floor_sa"], BF[(cls, cat)]
+            good = " good" if 0.9 <= a_["median"] <= 1.1 else ""
+            w(f"<tr><td>{esc(ROW_LABEL.get(cat, cat))}</td><td class=n>{a_['n']}</td>"
+              f"<td class=n>{med(bt_, 'a'):.3f}</td><td class=\"n{good}\">{a_['median']:.3f}</td>"
+              f"<td class=n>{a_['within10']}/{a_['n']}</td><td class=n>{fl['within10']}/{fl['n']}</td>"
+              f"<td class=n>{med(bt_, 'a_total'):.3f}</td><td class=n>{row['a_total']['median']:.3f}</td></tr>")
+    w("<caption>Median ratio per category, pair 1. Before is the untreated store on the same "
+      "tests and the same split. Same store twice is state-actor measured twice, the best any row "
+      "can do.</caption></table>")
+    w(f"<p>Over a second, {ga['within10']} of {ga['n']} tests now sit inside the band (median "
+      f"{ga['median']:.3f}, and {gb['median']:.3f} in the second pair), against {gfl['within10']} "
+      f"of {gfl['n']} when state-actor is measured twice. Account reads sit at "
+      f"{min(acct_g):.2f} to {max(acct_g):.2f}. Calls into an EOA, a minimal contract or a reused "
+      f"one sit at {min(plain_g):.2f} to {max(plain_g):.2f}. Transfers are at "
+      f"{ge_g['ether transfer']['a']['median']:.2f}. Timed whole, the block says the same thing: "
+      f"{wb_g:.3f}. Two rows are still further from parity than the floor explains: the "
+      f"distinct-contract and jumpdest calls, at {dm:.2f} and {jd:.2f}.</p>")
+    w(f"<p><b>Pair 2</b> repeats both stores with fresh runs, and its medians land within "
+      f"{d_np_g:.3f} of pair 1's on every row over a second. Under a second, "
+      f"{lt_g['a']['within10']} of {lt_g['a']['n']} tests land in the band, and the same store "
+      f"measured twice manages only {lt_g['floor_sa']['within10']} "
+      f"({lt_g['floor_joc']['within10']} for jochemnet). Those rows measure the harness, not the "
+      f"stores.</p>")
+
+    # ---- part 4
+    w("<h2>What's left, and why</h2><ul>")
+    w(f"<li><b>Calls into distinct contracts run {100 * (1 - max(dm, jd)):.0f}% to "
+      f"{100 * (1 - min(dm, jd)):.0f}% "
+      f"slower on the generated store.</b> Both kinds of tested contract are 24 KB of one filler "
+      f"byte around the contract's own address, the same bytecode on both stores. Erigon writes "
+      f"its code file with a {src('db/state/statecfg/state_schema.go', 251, 'dictionary')} of "
+      f"repeated byte patterns, and jochemnet's rebuilt one carries "
+      f"{CF['joc_rebuilt']['pattern_dict_bytes'] / 1e3:.0f} KB of them. State-actor's encoder has no "
+      f"dictionary: its code file's is empty. On the traced jumpdest call, state-actor read "
+      f"{code_x:.0f}&times; the code-file pages. That's the leading explanation, and it's untested. "
+      f"The test is to re-encode state-actor's code file with Erigon's compressor and run the code "
+      f"calls again.</li>")
+    w("<li><b>Both stores keep each domain in one file.</b> On a node, files come in merged ranges, "
+      "and a cold lookup checks each newer file before it reaches the oldest. Neither store here "
+      "pays that walk. It's the same on both sides, so the ratio holds, but a node's worst case "
+      "costs more than either store measures.</li>")
+    w("<li><b>Sub-second tests can't be compared on this harness yet.</b> Every test boots a fresh "
+      "client, and under a second the measurement is mostly that client starting up. A discarded "
+      "burn-in block before the measured one would fix it. Until then, those numbers are shown and "
+      "not counted.</li>")
+    w(f"<li><b>benchmarkoor's clock still stops at newPayload.</b> With both fixes the two clocks "
+      f"agree, so this comparison doesn't depend on it. But on the untreated store the commit was "
+      f"most of each block, and a newPayload-only number hid it. For Erigon, the harness should "
+      f"report the whole block beside newPayload.</li></ul>")
+    w("<p>Over a second, the generated store now stands in for the snapshot on everything but "
+      "calls into distinct, max-size contracts. Those wait on a generator fix; the rest is harness "
+      "work.</p>")
 
     w("<p class=note>Every number on this page is computed from the collected run data when the "
       "page is built, and the build fails if the data stops supporting a sentence.</p>")
