@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Pay like a card, settle like Ethereum — CPerezz</title>
+<meta name="description" content="Card-terminal UX for payments from any rollup, with no bridge, no middleman and no one new to trust. The Fast Confirmation Rule and the Ethereum Economic Zone, stacked, let a shop that only watches Ethereum ship in about two slots today, and in a card tap&#x27;s time as slots shrink."><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+    :root{
+      --bg:#000; --panel:rgba(51,255,51,.02);
+      --green:#33ff33; --green-dim:#28d128; --green-muted:#1a5a1a;
+      --glow:rgba(51,255,51,.30); --border:#182818;
+      --text:#e2e6e2; --text-2:#aab0aa; --text-dim:#5c645c;
+      --crt:'VT323',monospace; --mono:'IBM Plex Mono',ui-monospace,monospace;
+    }
+    *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+    body::before{content:'';position:fixed;inset:0;z-index:100;pointer-events:none;
+      background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,255,0,.006) 3px,rgba(0,255,0,.006) 6px)}
+    body::after{content:'';position:fixed;inset:0;z-index:101;pointer-events:none;
+      background:radial-gradient(ellipse at center,transparent 62%,rgba(0,0,0,.45) 100%)}
+    ::selection{background:rgba(51,255,51,.22);color:#fff}
+    a{color:var(--green-dim);text-decoration:none;border-bottom:1px solid rgba(51,255,51,.25);transition:.2s}
+    a:hover{color:var(--green);border-bottom-color:var(--green);text-shadow:0 0 6px var(--glow)}
+    @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.2s!important}}
+
+  html{scroll-behavior:smooth}
+  body{background:var(--bg);font-family:var(--mono);color:var(--text);line-height:1.8;
+    font-size:clamp(15px,.62vw + 13px,17px);-webkit-font-smoothing:antialiased;
+    padding:clamp(1.4rem,4vw,3rem) clamp(1.1rem,4vw,2rem) 5rem}
+  .wrap{max-width:730px;margin:0 auto;position:relative;z-index:5}
+  .topbar{display:flex;justify-content:space-between;align-items:center;font-family:var(--crt);
+    font-size:clamp(.9rem,1.3vw,1.15rem);color:var(--green-muted);margin-bottom:clamp(1.4rem,4vh,2.4rem)}
+  .topbar a{border:none}.topbar a:hover{color:var(--green)}
+  .eyebrow{font-family:var(--crt);letter-spacing:.22em;color:var(--green);opacity:.55;
+    font-size:clamp(.85rem,1.2vw,1.05rem);text-shadow:0 0 8px rgba(51,255,51,.2);margin-bottom:.5rem}
+  h1{font-family:var(--crt);color:var(--green);line-height:1.06;font-weight:400;
+    font-size:clamp(2rem,5.4vw,3.4rem);text-shadow:0 0 7px var(--glow),0 0 24px rgba(51,255,51,.08)}
+  .lead{font-size:clamp(.95rem,1.4vw,1.12rem);color:var(--text-2);font-style:italic;line-height:1.7;
+    margin:clamp(.9rem,2vh,1.3rem) 0 clamp(1rem,2.5vh,1.6rem);padding-left:1rem;border-left:2px solid var(--green-muted)}
+  .meta{font-size:.72rem;letter-spacing:.05em;color:var(--text-dim);border-top:1px solid var(--border);
+    border-bottom:1px solid var(--border);padding:.6rem 0;margin-bottom:clamp(1.6rem,4vh,2.6rem)}
+  .meta .tag{color:var(--text-2)}
+  article h2{font-family:var(--mono);font-weight:700;color:var(--green);letter-spacing:.005em;
+    font-size:clamp(1.15rem,2.3vw,1.5rem);line-height:1.3;margin:clamp(2.4rem,6vh,3.4rem) 0 .2rem;
+    text-shadow:0 0 5px rgba(51,255,51,.18);scroll-margin-top:1.5rem}
+  article h2 .hsig{color:var(--green-muted);font-weight:400}
+  article h2::after{content:'';display:block;height:1px;margin-top:.7rem;opacity:.3;
+    background:linear-gradient(90deg,var(--green-muted),transparent 65%)}
+  p{margin:1rem 0;color:var(--text)}
+  strong{color:#f2fff2;font-weight:600}
+  em{color:var(--text-2)}
+  code{font-family:var(--mono);font-size:.9em;background:rgba(51,255,51,.07);border:1px solid var(--border);
+    border-radius:3px;padding:.06em .38em;color:#bfeecf}
+  ul,ol{margin:1rem 0 1rem 0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:.55rem}
+  li{position:relative;padding-left:1.6rem;color:var(--text)}
+  ul>li::before{content:'▸';position:absolute;left:.1rem;color:var(--green-dim);text-shadow:0 0 5px var(--glow)}
+  ol{counter-reset:step}
+  ol>li{counter-increment:step}
+  ol>li::before{content:counter(step);position:absolute;left:0;top:.05em;font-family:var(--crt);
+    font-size:.95em;color:var(--green);border:1px solid var(--green-muted);border-radius:3px;
+    min-width:1.15em;height:1.15em;display:inline-flex;align-items:center;justify-content:center;line-height:1}
+  ol>li{padding-left:2rem}
+  .callout{border:1px solid var(--green-muted);border-left:3px solid var(--green);background:rgba(51,255,51,.04);
+    padding:clamp(.9rem,2.2vw,1.2rem) clamp(1rem,2.5vw,1.4rem);margin:1.4rem 0;color:#eafaea;
+    box-shadow:0 0 18px rgba(51,255,51,.05)}
+  .callout strong{color:var(--green);text-shadow:0 0 6px var(--glow)}
+  figure{margin:clamp(1.8rem,4vh,2.6rem) 0;border:1px solid var(--border);background:#050805;
+    padding:clamp(.6rem,1.6vw,.9rem);transition:.3s}
+  figure:hover{border-color:var(--green-muted);box-shadow:0 0 22px rgba(51,255,51,.06)}
+  figure img{display:block;width:100%;height:auto;background:#fff;border-radius:2px}
+  figcaption{font-size:.72rem;line-height:1.55;color:var(--text-dim);text-align:center;
+    margin-top:.7rem;padding:0 .4rem}
+  figcaption .fnum{font-family:var(--crt);font-size:1rem;color:var(--green-dim);letter-spacing:.04em}
+  hr.rule{border:none;height:1px;margin:clamp(2rem,5vh,3rem) 0;opacity:.4;
+    background:linear-gradient(90deg,var(--border),var(--green) 30%,var(--green) 70%,var(--border))}
+  .endbar{margin-top:clamp(2.6rem,6vh,4rem);padding-top:1.2rem;border-top:1px solid var(--border);
+    font-family:var(--crt);font-size:clamp(.85rem,1.2vw,1.05rem);color:var(--green-muted);
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:.6rem}
+  .endbar a{border:none}.endbar a:hover{color:var(--green)}
+  .cursor{display:inline-block;width:.5em;height:.9em;background:var(--green);vertical-align:-2px;
+    margin-left:2px;animation:blink 1s step-end infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+</style></head><body><div class="wrap">
+  <div class="topbar"><a href="../">&larr; all articles</a><span>ETHEREUM · PAYMENTS</span></div>
+  <header>
+    <div class="eyebrow">// ARTICLE</div>
+    <h1>Pay like a card, settle like Ethereum</h1>
+    <p class="lead">Card-terminal UX for payments from any rollup, with no bridge, no middleman and no one new to trust. That's what stacking FCR and EEZ unlocks: about two slots today, a card tap as Ethereum's slots shrink.</p>
+    <div class="meta"><span class="tag">Ethereum · FCR · EEZ · rollups · payments</span> · 2026</div>
+  </header>
+  <article>
+<figure><img src="figures/hero.jpeg" alt="" loading="lazy"></figure>
+<p>You hold ETH on a rollup. The shop wants USDC and only watches Ethereum's base layer. It has never heard of your rollup, and it won't integrate yours or the next one. Multiply that by every rollup and every shop and you get the fragmentation everyone complains about: liquidity stuck on islands, each with its own bridge you have to trust and its own wait.</p>
+<p>Two pieces of Ethereum infrastructure fix it together. <a href="https://github.com/ethereum/consensus-specs/blob/master/specs/phase0/fast-confirmation.md" target="_blank" rel="noopener">FCR</a> (the <strong>Fast Confirmation Rule</strong>) shrinks the wait before a landed block can be trusted. <a href="https://github.com/eez-association/eez-core-protocol" target="_blank" rel="noopener">EEZ</a> (the <strong>Ethereum Economic Zone</strong>) removes the separate crossing between your rollup and the base layer. They fix two different waits, so only stacked does the shop ship in seconds instead of minutes or days.</p>
+<h2 id="the-two-waits"><span class="hsig">&gt;</span> The two waits</h2>
+<figure><img src="figures/f1-two-waits.svg" alt="Figure 1: the two waits. Getting there: your value crosses from your rollup to the base layer through a trusted bridge or market maker, or the rollup&#x27;s own trustless exit, which can take up to about a week. Being believed: once it lands in a block, more blocks pile on and confidence builds until a reorg can&#x27;t undo it, about 13 minutes. EEZ fixes the first wait and removes the trusted step with it; FCR fixes the second." loading="lazy"><figcaption><span class="fnum">Figure 1.</span> the two waits. Getting there: your value crosses from your rollup to the base layer through a trusted bridge or market maker, or the rollup's own trustless exit, which can take up to about a week. Being believed: once it lands in a block, more blocks pile on and confidence builds until a reorg can't undo it, about 13 minutes. EEZ fixes the first wait and removes the trusted step with it; FCR fixes the second.</figcaption></figure>
+<p>Any cross-layer payment has two separate waits stacked on top of each other, and they get fixed by two separate things:</p>
+<ul><li><strong>Getting there</strong>: your value has to actually leave the rollup and arrive where the shop can see it. Today that means trusting a bridge or a market maker to front the funds, or waiting out the rollup's own exit, up to about a week.</li><li><strong>Being believed</strong>: once something lands on the base layer, the shop has to be confident it's staying there before handing over the goods — a block can still be reorged for a while after it's included.</li></ul>
+<h2 id="build-it-the-way-checkout-works-today"><span class="hsig">&gt;</span> Build it the way checkout works today</h2>
+<figure><img src="figures/f2-today.svg" alt="Figure 2: today&#x27;s checkout. Your ETH leaves the rollup through a trusted bridge or market maker (minutes; the rollup&#x27;s own trustless exit takes up to about a week), lands on the base layer, and only then does the shop start its own ~13 minute wait for finality before shipping." loading="lazy"><figcaption><span class="fnum">Figure 2.</span> today's checkout. Your ETH leaves the rollup through a trusted bridge or market maker (minutes; the rollup's own trustless exit takes up to about a week), lands on the base layer, and only then does the shop start its own ~13 minute wait for finality before shipping.</figcaption></figure>
+<p>Without either fix, the shop integrates your rollup specifically, or it doesn't take your money. If it does, your ETH first has to get there: either you trust a market maker to front USDC against a promise of your ETH (fast, but now you're trusting someone), or you use the rollup's own canonical exit, which can take anywhere from a few minutes to about a week depending on how that rollup proves its state. Only once the money has actually arrived does the shop start its <em>own</em> clock — about 13 minutes for Ethereum's base layer to make that arrival practically irreversible. Repeat the integration work for every rollup you want to accept from.</p>
+<h2 id="fix-1-fcr-shrinks-the-being-believed-wait"><span class="hsig">&gt;</span> Fix 1: FCR shrinks the "being believed" wait</h2>
+<figure><img src="figures/f3-fcr.svg" alt="Figure 3: your block lands and validators&#x27; votes (attestations) pour in during the slot; once enough have arrived, FCR marks it safe, Ethereum&#x27;s &quot;safe&quot; tag, about 13 seconds after it landed. Below, the 64 slots full finality takes, about 13 minutes, and the lock at the end of them. Two chips note FCR&#x27;s conditions: votes arrive on time, and no more than 25% of stake acts adversarially." loading="lazy"><figcaption><span class="fnum">Figure 3.</span> your block lands and validators' votes (attestations) pour in during the slot; once enough have arrived, FCR marks it safe, Ethereum's "safe" tag, about 13 seconds after it landed. Below, the 64 slots full finality takes, about 13 minutes, and the lock at the end of them. Two chips note FCR's conditions: votes arrive on time, and no more than 25% of stake acts adversarially.</figcaption></figure>
+<p>Think of a card payment at a physical checkout: "approved" flashes in a second or two and the clerk hands you the bag. It's provisional, resting on the card network's word, and in rare fraud cases it can still be clawed back; the irreversible settlement between the banks comes later. <a href="https://github.com/ethereum/consensus-specs/blob/master/specs/phase0/fast-confirmation.md" target="_blank" rel="noopener">FCR</a>, merged into Ethereum's consensus specs on 2026-04-16, is that "approved" screen for a block:</p>
+<ul><li><strong>Fast</strong>: once enough validators have attested to a block, about one slot (~13 seconds) after it lands, a node can mark it <code>safe</code> and act on it, instead of waiting ~13 minutes for full, slashing-backed finality.</li><li><strong>Conditional</strong>: it assumes attestations arrive on time and no more than 25% of stake acts adversarially. Break those and, unlike finality, nobody gets slashed; the rule just falls back to waiting for finality.</li><li><strong>No fork needed</strong>: it's a client-side rule, not a network upgrade. Some consensus clients ship it today, others are still in release candidates.</li></ul>
+<h2 id="fix-2-eez-removes-the-getting-there-wait"><span class="hsig">&gt;</span> Fix 2: EEZ removes the "getting there" wait</h2>
+<figure><img src="figures/f4-eez.svg" alt="Figure 4: today, your money sits in limbo between two separate ledgers, with a bridge you have to trust in the middle. With EEZ there&#x27;s no bridge and nothing new to trust: the proof-and-update transaction and your checkout transaction are tied together inside one Ethereum block, so both land or neither does, and your rollup mirrors the result on the spot." loading="lazy"><figcaption><span class="fnum">Figure 4.</span> today, your money sits in limbo between two separate ledgers, with a bridge you have to trust in the middle. With EEZ there's no bridge and nothing new to trust: the proof-and-update transaction and your checkout transaction are tied together inside one Ethereum block, so both land or neither does, and your rollup mirrors the result on the spot.</figcaption></figure>
+<p>The bridge model is a wire transfer: your ETH leaves your rollup's ledger, sits in transit, and lands on the base layer's ledger later, and if the transfer breaks halfway you can be stuck with nothing on either side. <a href="https://eez.io" target="_blank" rel="noopener">EEZ</a>, a shared zone of rollups <a href="https://x.com/etheconomiczone/status/2038271122907578375" target="_blank" rel="noopener">built by Gnosis and ZisK with Ethereum Foundation co-funding</a>, instead writes one receipt both ledgers sign off on together:</p>
+<ul><li><strong>One block</strong>: a builder packages your rollup action and the base-layer action into the same Ethereum block. Your rollup's contract only accepts the update once the base layer has recorded it in that block (the code calls this <code>postAndVerifyBatch</code>), and the rollup's own ledger mirrors it on the spot.</li><li><strong>Nothing to trust in between</strong>: no bridge operator or market maker ever holds your money mid-crossing. The base layer accepts your rollup's side only with a proof, so EEZ removes the trusted step, not just the wait. (Today's demo used a stand-in signer for that proof.)</li><li><strong>All or nothing</strong>: either the whole package lands or none of it does, so there's no half-sent state to get stuck in.</li><li><strong>Composable</strong>: by design the pieces can call each other and hand back results, so "swap on the base layer, then send the change back to your rollup" is one package, not three separate trips.</li></ul>
+<h2 id="alike-different-and-where-they-meet"><span class="hsig">&gt;</span> Alike, different, and where they meet</h2>
+<figure><img src="figures/f5-alike-different.svg" alt="Figure 5: a side-by-side card. FCR fixes how long a landed block takes to trust; lives in every Ethereum consensus client; applies to any block, not just checkouts; rolling out client by client. EEZ fixes the crossing and removes the trusted bridge with it; lives in a specific set of rollup and base-layer contracts; applies only inside the zone; unaudited, early. Where they meet: EEZ&#x27;s result is still just an ordinary Ethereum block — FCR can confirm it exactly as fast as any other." loading="lazy"><figcaption><span class="fnum">Figure 5.</span> a side-by-side card. FCR fixes how long a landed block takes to trust; lives in every Ethereum consensus client; applies to any block, not just checkouts; rolling out client by client. EEZ fixes the crossing and removes the trusted bridge with it; lives in a specific set of rollup and base-layer contracts; applies only inside the zone; unaudited, early. Where they meet: EEZ's result is still just an ordinary Ethereum block — FCR can confirm it exactly as fast as any other.</figcaption></figure>
+<p>They don't compete, and they aren't the same feature wearing two names. FCR works on any Ethereum block, checkout or not, and lives in the consensus client every validator already runs. EEZ only works for actions between contracts inside its zone, and lives in a specific, still-unaudited set of rollup and base-layer contracts. They compose for one simple reason: EEZ's atomic package still lands as one ordinary Ethereum block, and FCR doesn't care what's inside a block to confirm it fast.</p>
+<h2 id="four-ways-to-build-your-checkout"><span class="hsig">&gt;</span> Four ways to build your checkout</h2>
+<figure><img src="figures/f6-four-builds.svg" alt="Figure 6: a two-by-two grid, EEZ on one axis and FCR on the other. Neither: a trusted bridge plus full finality, minutes to about a week. FCR only: still the trusted bridge first, then ~13 seconds instead of ~13 minutes once it&#x27;s landed — the bridge still dominates. EEZ only: one atomic block and no bridge, but the shop still waits ~13 minutes of finality to be safe. Both: one atomic block, confirmed in about two slots, roughly 25 seconds end to end." loading="lazy"><figcaption><span class="fnum">Figure 6.</span> a two-by-two grid, EEZ on one axis and FCR on the other. Neither: a trusted bridge plus full finality, minutes to about a week. FCR only: still the trusted bridge first, then ~13 seconds instead of ~13 minutes once it's landed — the bridge still dominates. EEZ only: one atomic block and no bridge, but the shop still waits ~13 minutes of finality to be safe. Both: one atomic block, confirmed in about two slots, roughly 25 seconds end to end.</figcaption></figure>
+<ul><li><strong>Neither.</strong> Today's checkout: a bridge (minutes, trusted, or up to about a week, trustless) and then ~13 minutes of finality. The bridge usually dominates.</li><li><strong>FCR only.</strong> The bridge still has to run first, and you still have to trust it: FCR doesn't touch the crossing. Once the money has arrived, the shop's own wait drops from ~13 minutes to ~13 seconds. Still bridge-bound.</li><li><strong>EEZ only.</strong> The crossing disappears, and the bridge you had to trust goes with it: your rollup action and the base-layer action land as one package, one block. But the shop still has no fast-confirmation rule to lean on, so it waits the full ~13 minutes of finality to be sure that block is staying put.</li><li><strong>Both.</strong> One package, one block, confirmed in about two slots — the one it lands in, plus one more for FCR — roughly 25 seconds, assuming FCR's own conditions hold. This is the only quadrant that's fast, has no bridge to trust, <em>and</em> is a single integration.</li></ul>
+<h2 id="both-together-on-the-way-to-card-speed"><span class="hsig">&gt;</span> Both together: on the way to card speed</h2>
+<figure><img src="figures/f7-end-to-end.svg" alt="Figure 7: the full flow. You sign one transaction. A builder packages your rollup&#x27;s checkout action with the base-layer swap-and-pay action into the same block; your rollup&#x27;s ledger mirrors it. The shop, watching only the base layer, sees the block land, sees it hit &quot;safe&quot; about one slot later, and ships — about two slots after you signed, with no bridge or middleman in between and no rollup-specific integration on its end." loading="lazy"><figcaption><span class="fnum">Figure 7.</span> the full flow. You sign one transaction. A builder packages your rollup's checkout action with the base-layer swap-and-pay action into the same block; your rollup's ledger mirrors it. The shop, watching only the base layer, sees the block land, sees it hit "safe" about one slot later, and ships — about two slots after you signed, with no bridge or middleman in between and no rollup-specific integration on its end.</figcaption></figure>
+<p>You sign once. A builder puts your rollup's side (send ETH, get change back) and the base-layer side (swap into USDC, pay the invoice) in one Ethereum block. The shop never has to know your rollup exists: it watches the base layer, sees the block land, sees FCR mark it <code>safe</code> a slot later, and ships. Two slots, one integration, no bridge to trust. <a href="https://x.com/eduadiez/status/2107159200086319334" target="_blank" rel="noopener">The first atomic transaction of this kind</a> landed on mainnet on 2026-10-05: a much simpler transfer than this checkout, but built from the same pieces.</p>
+<p>Twenty-five seconds still isn't a card tap. But <strong>the whole checkout is counted in slots, not seconds</strong>, so every cut to Ethereum's slot time cuts the wait with it:</p>
+<figure><img src="figures/f8-card-speed.svg" alt="Figure 8: the same two-slot checkout at four slot times. 12-second slots (today): about 25 seconds. 6-second slots (EIP-7782, a draft): about 13. 4-second slots: about 9. 2-second slots, the speculative last step of the roadmap sketch: about 5 seconds, inside the band that feels like a card tap." loading="lazy"><figcaption><span class="fnum">Figure 8.</span> the same two-slot checkout at four slot times. 12-second slots (today): about 25 seconds. 6-second slots (EIP-7782, a draft): about 13. 4-second slots: about 9. 2-second slots, the speculative last step of the roadmap sketch: about 5 seconds, inside the band that feels like a card tap.</figcaption></figure>
+<p><a href="https://eips.ethereum.org/EIPS/eip-7782" target="_blank" rel="noopener">EIP-7782</a>, still a draft, proposes 6-second slots, and <a href="https://x.com/VitalikButerin/status/2026779557479723418" target="_blank" rel="noopener">Vitalik's roadmap sketch</a> keeps stepping them down, 12 → 8 → 6 → 4 → 3 → 2, with the last two steps still speculative. At 2-second slots the checkout takes about 5 seconds, close to the pause you already accept at a card terminal: you tap your phone, the shop sees <code>safe</code>, and the bag crosses the counter.</p>
+<p>Only the stack rides that curve. Shorter slots don't shorten a bridge's exit window, and with today's finality the shop would still wait 64 slots, over two minutes even at 2-second slots. EEZ and FCR together turn the checkout into two slots, and two slots keep getting shorter.</p>
+<h2 id="cheat-sheet"><span class="hsig">&gt;</span> Cheat sheet</h2>
+<figure><img src="figures/f9-cheat-sheet.svg" alt="Figure 9: a table — four ways to build the checkout, what each one needs, and the end-to-end time: neither (trusted bridge, 13 min to ~1 week), FCR only (trusted bridge, ~13 sec once landed), EEZ only (atomic block, no bridge, ~13 min), both (atomic block + FCR, no bridge, ~2 slots / ~25 sec)." loading="lazy"><figcaption><span class="fnum">Figure 9.</span> a table — four ways to build the checkout, what each one needs, and the end-to-end time: neither (trusted bridge, 13 min to ~1 week), FCR only (trusted bridge, ~13 sec once landed), EEZ only (atomic block, no bridge, ~13 min), both (atomic block + FCR, no bridge, ~2 slots / ~25 sec).</figcaption></figure>
+  </article>
+  <div class="endbar"><a href="../">&larr; all articles</a></div>
+  <span class="cursor" style="position:fixed;bottom:1.4rem;right:1.4rem;z-index:6"></span>
+</div></body></html>

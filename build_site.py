@@ -47,6 +47,18 @@ ARTICLES = [
         "repo": "setcodefrom-account-modes/",
     },
     {
+        "folder": "pay-like-a-card-settle-like-ethereum",
+        "source": "pay-like-a-card-settle-like-ethereum.md",
+        "eyebrow": "ETHEREUM \u00b7 PAYMENTS",
+        "card_title": "Pay like a card, settle like Ethereum",
+        "date": "2026",
+        "tags": "Ethereum \u00b7 FCR \u00b7 EEZ \u00b7 rollups \u00b7 payments",
+        "blurb": "Card-terminal UX for payments from any rollup, with no bridge, no middleman and no "
+                 "one new to trust. The Fast Confirmation Rule and the Ethereum Economic Zone, stacked, "
+                 "let a shop that only watches Ethereum ship in about two slots today, and in a card "
+                 "tap's time as slots shrink.",
+    },
+    {
         "folder": "slot0-epoch-reorgs",
         "source": "is-slot-0-reorg-cost-fixable.md",
         "eyebrow": "CONSENSUS · REORGS",
@@ -81,12 +93,13 @@ ARTICLES = [
         "prebuilt": True,
         "href": "besu-state-db-divergence/besu-state-db-report.html",
         "eyebrow": "EXECUTION · STATE DB",
-        "card_title": "Why two identical Besu benchmarks disagree by 8×",
+        "card_title": "How can two Besu databases holding the same state differ 9×?",
         "date": "2026",
         "tags": "Ethereum · Besu · Bonsai · RocksDB · benchmarking",
-        "blurb": "The same experiment on Besu. Two of the three causes are artifacts of how "
-                 "the store was built — where the pre-run's rows land in the LSM tree, and a "
-                 "generated store written with no bloom filters at all.",
+        "blurb": "The same experiment on Besu. Three findings, all about how the stores were built: "
+                 "the pre-run's rows in the snapshot's youngest files, a generated store with no bloom "
+                 "filters, and a code pool unlike mainnet's. Fixed, absence lands at parity and shared "
+                 "code within 1.5%; distinct-contract code overshoots by an amount that depends on the disk.",
         "repo": "besu-state-db-divergence/",
     },
     {
@@ -358,12 +371,12 @@ ARTICLE = """<!DOCTYPE html>
     <div class="eyebrow">// ARTICLE</div>
     <h1>%%TITLE%%</h1>
     <p class="lead">%%SUBTITLE%%</p>
-    <div class="meta"><span class="tag">%%TAGS%%</span> · %%DATE%% · <a href="%%REPO%%">reproducible pipeline &amp; data &rarr;</a></div>
+    <div class="meta"><span class="tag">%%TAGS%%</span> · %%DATE%%%%REPO_META%%</div>
   </header>
   <article>
 %%BODY%%
   </article>
-  <div class="endbar"><a href="../">&larr; all articles</a><a href="%%REPO%%">source &amp; data</a></div>
+  <div class="endbar"><a href="../">&larr; all articles</a>%%REPO_END%%</div>
   <span class="cursor" style="position:fixed;bottom:1.4rem;right:1.4rem;z-index:6"></span>
 </div></body></html>
 """
@@ -392,13 +405,17 @@ def build_article(a):
     src = os.path.join(HERE, a["folder"], a["source"])
     with open(src, encoding="utf-8") as fh:
         title, subtitle, body = convert(fh.read())
+    # "repo" links the article's pipeline and data; entries with nothing to reproduce leave it out
+    repo = a.get("repo")
+    url = "https://github.com/%s/articles/tree/main/%s" % (AUTHOR, repo.rstrip("/")) if repo else ""
     out = _fill(ARTICLE, {
         "FONTS": FONTS, "VARS": CRT_VARS, "AUTHOR": AUTHOR,
         "TITLE": html.escape(title), "TITLE_PLAIN": html.escape(re.sub(r"[*_`]", "", title)),
         "SUBTITLE": subtitle, "BODY": body,
         "DESC": html.escape(re.sub(r"[*_`]", "", a["blurb"]), quote=True),
         "EYEBROW": a["eyebrow"], "TAGS": a["tags"], "DATE": a["date"],
-        "REPO": "https://github.com/%s/articles/tree/main/%s" % (AUTHOR, a["folder"]),
+        "REPO_META": f' · <a href="{url}">reproducible pipeline &amp; data &rarr;</a>' if repo else "",
+        "REPO_END": f'<a href="{url}">source &amp; data</a>' if repo else "",
     })
     dst = os.path.join(HERE, a["folder"], "index.html")
     with open(dst, "w", encoding="utf-8") as fh:
