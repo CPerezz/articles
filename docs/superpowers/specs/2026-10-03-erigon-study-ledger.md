@@ -910,3 +910,41 @@ under 60%). T2 traces running, then the H pairs (~11 h).
   7 pages, in its compressed file. The test contracts compress ~120x because they're one repeated
   opcode, so the distinct-code rows price a cheap code read. Fixture realism, not a store issue
   (same as the Besu ledger's 0.011 deflate ratio on mainnet).
+
+## Round 15 - the two residuals (2026-10-08, predictions before any run)
+
+Plan: `docs/superpowers/plans/2026-10-08-erigon-round-15-residuals.md`. Article before the round:
+`19bee3f` (adds `fig_steps`, `fig_residuals`, `fig_nostate`).
+
+**Residuals after H.** Over a second state-actor leans 3-4% slow (0.971 / 0.960 vs floor centres
+0.99 / 1.00; 15/17 and 19/22 misses low; 2-7% more pages on every T2 test). Under a second the 98
+no-state tests (controls, warm queries, one-slot reloads) run 1.20-1.42x faster on state-actor, floors
+centred 0.96-1.02; jochemnet ~16 ms more per block (median), 1.20-1.30 untreated. The 4-test account
+rows are floor-limited (state-actor twice: medians 0.86-1.10, 8/16 inside).
+
+**Evidence before running anything:** benchmarkoor's read counter, controls: jochemnet 5.1 MB per
+newPayload, state-actor 0.08 MB (both gas levels; 3.8 MB untreated). One control in joc-H1 / sa-H1:
+`Handling new payload` logged 30 ms / 3 ms after the request; execution 29.8 / 39.9 ms. Source:
+`getQuickPayloadStatusIfPossible` -> `GetHeaderByHash(new hash)` -> `BlockReader.HeaderByHash`
+(`block_reader.go:568`) sweeps every headers segment on an MDBX miss; jochemnet has 65 (136 MB of
+.idx), state-actor 0.
+
+**Predictions:**
+1. Phase split over H's logs: on the no-state tests, jochemnet's before-handling time exceeds
+   state-actor's by 10-30 ms at the median in both pairs, and that difference is >= 80% of their
+   newPayload gap. Over a second the before-handling difference is the same 10-30 ms, and
+   state-actor's execution phase is 2-6% longer than jochemnet's at the median.
+2. Probe: a cold `eth_getBlockByHash(random hash)` costs 10-40 ms on jochemnet and < 3 ms on
+   state-actor; warm < 2 ms on both; jochemnet's cold lookup reads >= 200 pages, >= 80% of them from
+   headers `.idx`/`.seg`.
+3. Trace T3: jochemnet's before-handling slice of each no-state newPayload reads >= 200 pages, >= 80%
+   from headers files; state-actor's < 50 pages.
+4. e2e cross-check: re-encoded storage and commitment of the small `old` store hash like the fixed
+   generator's `new` files; byte-identical (55%).
+5. Recode (option B): storage .kv 181 -> 120-175 GB, commitment 282 -> 230-280 GB; stream hashes
+   equal; sample answers identical; smoke 2/2.
+6. T4: state-actor's extra pages on the storage write and the transfer fall from +2.4% / +3.9% to
+   <= +1.5%; the account read stays at +5-7%.
+7. I pairs: the over-a-second median rises 0.005-0.02 in both pairs; transfers and storage slot move
+   toward 1.00; no other row over a second moves by more than its pair-to-pair spread; the
+   sub-second no-state offset stays within 5 ms of 16 ms.
