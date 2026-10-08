@@ -305,6 +305,9 @@ func main() {
 			os.Exit(2)
 		}
 		must(os.MkdirAll(*dst, 0o755))
+		// state-actor's writer never made every table erigon expects (CodeCache), and an accede or
+		// read-only open refuses a missing one. A plain open creates them, as the node's first boot does.
+		mdbx.New(dbcfg.ChainDB, logger).Path(datadir.New(*datadirFlag).Chaindata).MustOpen().Close()
 		_, db, agg, closeAll := open(ctx, *datadirFlag, *tmp, true, logger)
 		defer closeAll()
 		samples, err := os.Create(*samplesPath)

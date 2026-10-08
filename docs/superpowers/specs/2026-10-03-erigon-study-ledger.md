@@ -839,3 +839,22 @@ Scored:
 The recode (`recode-sa.sh`) launched 22:15 UTC: restore, cmp against the raw copy, recode, old/new
 eth_getCode answers, promote, smoke S3, traces T2 (both stores, the four plus a distinct-contract call),
 then `chain-B.sh joc:H1 sa:H1 joc:H2 sa:H2`.
+
+**The state-actor fix (2026-10-08 00:0x UTC)**, worktree `state-actor-wt-erigon-compress`, branch
+`erigon-domain-compression`, commit `a379c85` on upstream main `005a19c` (local, not pushed).
+- `snap.WriteDomain` encodes and re-reads each `.kv` through a `KVCodec` on `snap.Settings`. nil keeps
+  state-actor's pure-Go seg (snap stays free of the erigontech/erigon import; untagged tests unchanged).
+- New `internal/erigon/erigonseg` (`cgo_erigon_commitment`): Erigon's `seg.Compressor` with
+  `statecfg.DomainCompressCfg` (one worker, deterministic) and each domain's `statecfg.Schema`
+  compression (code values; storage and commitment keys; accounts raw); Erigon's `seg.Reader` for the
+  accessor pass, yielding key offsets in Getter coordinates. `client/erigon/snapshot_cgo.go` injects it.
+  The accessor builders are unchanged.
+- Scope: the fix covers storage and commitment keys too, which state-actor also wrote raw. The traced
+  storage write and transfer read within 3-6% of jochemnet's bytes, so those never left the band.
+- Test `TestCodecErigonReadsBack` (tagged): three domains through `snap.Writer`, read back with only
+  Erigon's code: its btindex finds every key at the schema's compression, and each word kind is
+  compressed iff the schema says so. Built in the box's builder image (`Dockerfile.erigon --target
+  builder`, erigon `14273f79a6`): passes; 5/5 mutations caught (key offset +1, code raw, storage
+  CompressVals, storage raw, accounts CompressVals).
+- Full image `localhost/sa-erigon:compress` building for `e2e-sa-compress.sh`: same small store from
+  the published and the fixed image, same root, same code stream, same eth_getCode/getProof answers.
