@@ -696,6 +696,34 @@ def main():
     assert abs(wb_h - ga["median"]) < 0.1, "the whole block no longer agrees with newPayload: %.3f / %.3f" % (wb_h, ga["median"])
     lt_h = ALL_H["lt1s"]
     assert max(share(lt_h, k) for k in ("floor_sa", "floor_joc")) < 65, "the final sub-second floors reproduce now"
+    # "Most of that is the harness", except one offset: blocks with no state work run well above the
+    # band on state-actor in both pairs, while one store measured twice centres them near parity. It
+    # was there untreated; jochemnet's extra time per block, at the median, is ~1% of a block over a
+    # second.
+    ns_rows = [r for c, r in class_rows(FIN, "lt1s") if c in NOSTATE]
+    ns_med = [r[k]["median"] for r in ns_rows for k in ("a", "b")]
+    ns_floor = [r[k]["median"] for r in ns_rows for k in ("floor_sa", "floor_joc")]
+    assert len(ns_rows) == len(NOSTATE) and min(ns_med) > 1.15 and 0.95 < min(ns_floor) and max(ns_floor) < 1.05, \
+        "the no-state offset under a second changed: %r / %r" % (ns_med, ns_floor)
+    ns_tests = [t for t in FIN["tests"].values() if t["cls"] == "lt1s" and t["cat"] in NOSTATE]
+    ns_ms = [1e3 * median(t["joc_secs"] - t["joc_secs"] / t[k] for t in ns_tests) for k in ("a", "b")]
+    assert 10 < min(ns_ms) and max(ns_ms) < 25, "jochemnet's extra time per no-state block moved: %r ms" % ns_ms
+    ns_share = ns_ms[0] / 1e3 / med([t for t in FIN["tests"].values() if t["cls"] == "ge1s"], "joc_secs")
+    assert 0.005 < ns_share < 0.015, "the per-block offset is no longer about 1%% of a block over a second: %.4f" % ns_share
+    ns_d = [rm("D", c, cls="lt1s") for c in NOSTATE]
+    assert min(ns_d) > 1.15, "the no-state offset wasn't there untreated: %r" % ns_d
+    # "Over a second, state-actor still runs 3-4% slower": both pairs sit below both replica floors'
+    # centres, most misses fall low, and state-actor reads more pages on every traced test.
+    lean = [round(100 * (1 - g["median"])) for g in (ga, gb)]
+    assert max(ga["median"], gb["median"]) < min(gfl["median"], jfl["median"]) - 0.01 and 2 <= min(lean) and max(lean) <= 5, \
+        "the over-a-second lean changed: %r against floors %.3f / %.3f" % (lean, gfl["median"], jfl["median"])
+    lows = [(sum(t[k] < 0.9 for t in ST["H"][("ge1s", "__all__")]), sum(not inband(t[k]) for t in ST["H"][("ge1s", "__all__")]))
+            for k in ("a", "b")]
+    assert all(lo > 0.8 * n for lo, n in lows), "the misses no longer fall low: %r" % lows
+    more = [ts / tj - 1 for (_, _, tj), (_, _, ts) in zip(joc_tr2, sa_tr2)]
+    assert min(more) > 0.01 and max(more) < 0.08, "state-actor no longer reads a few percent more on every traced test: %r" % more
+    n_sa_acc, n_joc_acc = P["sa_eoas"] + P["sa_contracts"], RB["keys"]["accounts"]
+    assert 1.15 < n_sa_acc / n_joc_acc < 1.25, "state-actor no longer holds about a fifth more accounts"
     # What's left.
     assert all(v == [[0, 1]] for arm in ("joc", "sa") for v in S2[arm]["domain_steps"].values()), \
         "the two stores no longer keep each domain in one step-0 file"
@@ -1072,14 +1100,33 @@ def main():
       f"on the four-test account rows. Under a second, "
       f"{lt_h['a']['within10']} of {lt_h['a']['n']} tests land in the band, and the same store "
       f"measured twice manages only {lt_h['floor_sa']['within10']} "
-      f"({lt_h['floor_joc']['within10']} for jochemnet). Those rows measure the harness, not the "
-      f"stores.</p>")
+      f"({lt_h['floor_joc']['within10']} for jochemnet). Most of that is the harness. One offset "
+      f"isn't, and it's in what's left.</p>")
 
     # ---- part 4
     w("<h2>What's left, and why</h2><ul>")
     w(f"<li><b>State-actor's Erigon writer can't compress yet.</b> Until it hands each domain to "
-      f"Erigon's compressor, every Erigon store it builds needs the re-encode above, which took "
-      f"{RC['minutes'] / 60:.0f} hours on this one.</li>")
+      f"Erigon's compressor, every Erigon store it builds needs a re-encode like the one above, which "
+      f"took {RC['minutes'] / 60:.0f} hours for the code file alone. We re-encoded only that file. "
+      f"State-actor's storage and commitment files still store their keys raw, where Erigon "
+      f"compresses them ({src('db/state/statecfg/state_schema.go', 229, 'storage')}, "
+      f"{src('db/state/statecfg/state_schema.go', 274, 'commitment')}).</li>")
+    w(f"<li><b>Over a second, state-actor still runs {min(lean)}&ndash;{max(lean)}% slower.</b> Both "
+      f"pairs sit below parity, at {ga['median']:.3f} and {gb['median']:.3f}, where one store measured "
+      f"twice centres on {min(gfl['median'], jfl['median']):.2f} to "
+      f"{max(gfl['median'], jfl['median']):.2f}. Of the tests that miss the band, {lows[0][0]} of "
+      f"{lows[0][1]} miss it low ({lows[1][0]} of {lows[1][1]} in the second pair). On every traced "
+      f"test, state-actor reads {round(100 * min(more))}&ndash;{round(100 * max(more))}% more pages. "
+      f"Two known differences could explain some of it: the raw keys above, and a fifth more "
+      f"accounts ({n_sa_acc / 1e6:.0f} million against {n_joc_acc / 1e6:.0f} million). We haven't "
+      f"tested either.</li>")
+    w(f"<li><b>Under a second, one offset is real.</b> Blocks that do no state work, warm queries and "
+      f"reloads of one slot run {min(ns_med):.2f}&ndash;{max(ns_med):.2f} times faster on "
+      f"state-actor, in both pairs. One store measured twice centres those rows on "
+      f"{min(ns_floor):.2f} to {max(ns_floor):.2f}, so it isn't the harness. At the median, jochemnet "
+      f"spends about {ns_ms[0]:.0f} ms more per block. Over a second that's about 1% of a block. It "
+      f"was there before any fix, at {min(ns_d):.2f}&ndash;{max(ns_d):.2f}, and we haven't traced "
+      f"it.</li>")
     w(f"<li><b>The test contracts are cheaper than real ones.</b> Each is {MAX_CODE // 1024} KB of one "
       f"repeated opcode, so Erigon stores it in about {round(max(j_bytes), -2):.0f} bytes, one page. "
       f"Jochemnet also holds {thousands(JR['n'])} real mainnet contracts of the same size, and the "
@@ -1108,8 +1155,8 @@ def main():
       "was most of each block, and a newPayload-only number hid it. For Erigon, the harness should "
       "report the whole block beside newPayload.</li></ul>")
     w("<p>None of these is a reason to distrust the generated store on tests over a second, once its "
-      "code file is written the way Erigon writes it. Two are generator work, one is a question for "
-      "the fixtures, and three are about the method and the harness.</p>")
+      "code file is written the way Erigon writes it. Two are generator work, two are still open, one "
+      "is a question for the fixtures, and three are about the method and the harness.</p>")
 
     w("<p class=note>Every number on this page is computed from the collected run data when the "
       "page is built, and the build fails if the data stops supporting a sentence.</p>")
