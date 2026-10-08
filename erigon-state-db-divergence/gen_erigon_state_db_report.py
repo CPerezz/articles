@@ -395,6 +395,139 @@ def chart_progress(stage_rows, rows):
     return S.svg(W, H, "".join(o))
 
 
+def ring(x, y, r, var, title=None):
+    t = f"<title>{S.esc(title)}</title>" if title else ""
+    return (f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r}" fill="none" stroke="var({var})" '
+            f'stroke-width="1.6">{t}</circle>')
+
+
+def chart_steps(bars, n):
+    """Tests over a second inside the band after each step, on the final split. bars[i] is
+    (newPayload pair 1, pair 2, state-actor twice, whole block pair 1, pair 2, state-actor twice):
+    pair 1 is the bar, pair 2 a tick, and the amber cap the best that bar could reach."""
+    W, L, R, T = 760, 70, 20, 44
+    ph = 230
+    H = T + ph + 84
+    sy = S.Scale(0, n, T + ph, T)
+    gw = (W - L - R) / len(bars)
+    o = [S.label(0, 14, f"tests over a second inside \u00b110%, of {n}, after each step", "start", "big")]
+    for v in (0, 25, 50, 75, 100):
+        o.append(S.line(L, sy.to(v), W - R, sy.to(v), "--line", 1))
+        o.append(S.label(L - 8, sy.to(v) + 4, str(v), "end", "tick"))
+    for i, ((name, _), b) in enumerate(zip(STAGES, bars)):
+        cx = L + gw * (i + 0.5)
+        for j, (a, p2, fl, var) in enumerate(((*b[:3], "--accent"), (*b[3:], "--db-sa"))):
+            x0 = cx - 46 + j * 50
+            x1 = x0 + 42
+            if a:
+                o.append(S.band(x0, x1, sy.to(0), sy.to(a), var, 0.85))
+            o.append(S.line(x0 - 3, sy.to(fl), x1 + 3, sy.to(fl), "--db-u", 2.5))
+            o.append(S.line(x0 + 7, sy.to(p2), x1 - 7, sy.to(p2), "--fg", 2))
+            o.append(S.label((x0 + x1) / 2, sy.to(max(a, p2)) - 7, str(a), "middle", "tick"))
+        o.append(S.label(cx, T + ph + 18, name, "middle", "tick"))
+    ly = H - 22
+    for k, (text, var, kind) in enumerate((("newPayload", "--accent", "bar"), ("whole block", "--db-sa", "bar"),
+                                           ("pair 2", "--fg", "tick"), ("state-actor measured twice", "--db-u", "tick"))):
+        lx = L + 150 * k
+        if kind == "bar":
+            o.append(S.band(lx, lx + 14, ly - 10, ly, var, 0.85))
+        else:
+            o.append(S.line(lx, ly - 5, lx + 14, ly - 5, var, 2.5))
+        o.append(S.label(lx + 20, ly, text, "start", "tick"))
+    return S.svg(W, H, "".join(o))
+
+
+def chart_residuals(B):
+    """Each row's median, both pairs, beside the medians each store gets when measured twice: where
+    the two stores still differ, and whether by more than the measurement's own noise."""
+    W, L, R, T = 760, 250, 118, 34
+    rh, gap = 17, 30
+    ge, lt = class_rows(B, "ge1s"), class_rows(B, "lt1s")
+    H = T + 2 * 12 + rh * (len(ge) + len(lt)) + gap + 52
+    lo, hi = 0.7, 1.6
+    sx = S.LogScale(lo, hi, L, W - R)
+
+    def x(v):
+        return sx.to(max(lo, min(hi, v)))
+    o = [S.label(0, 14, "row medians: the two stores, and each store measured twice", "start", "big")]
+    y0 = T
+    for head, rows in (("tests over a second", ge), ("tests under a second: shown, not counted", lt)):
+        o.append(S.label(0, y0 + 4, head, "start", "ax"))
+        o.append(S.label(W - R + 8, y0 + 4, "inside  twice", "start", "tick"))
+        top = y0 + 12
+        bot = top + rh * len(rows)
+        o.append(S.band(sx.to(0.9), sx.to(1.1), top, bot, "--accent", 0.10))
+        o.append(S.line(sx.to(1.0), top, sx.to(1.0), bot, "--green-muted", 1))
+        for i, (cat, r) in enumerate(rows):
+            y = top + rh * i + 9
+            o.append(S.label(L - 10, y + 4, ROW_LABEL.get(cat, cat), "end", "tick"))
+            for k, who in (("floor_sa", "state-actor"), ("floor_joc", "jochemnet")):
+                if r[k]:
+                    o.append(ring(x(r[k]["median"]), y, 4.5, "--dim", f"{who} twice: {r[k]['median']:.2f}"))
+            o.append(S.dot(x(r["a"]["median"]), y - 1.5, 3, "--db-u", f"pair 1: {r['a']['median']:.2f}"))
+            o.append(S.dot(x(r["b"]["median"]), y + 1.5, 3, "--db-c", f"pair 2: {r['b']['median']:.2f}"))
+            fl = r["floor_sa"] or {"within10": 0, "n": 0}
+            o.append(S.label(W - R + 8, y + 4, "%d/%d  %d/%d" % (r["a"]["within10"], r["a"]["n"],
+                                                                  fl["within10"], fl["n"]), "start", "tick"))
+        y0 = bot + gap
+    ty = y0 - gap + 18
+    for t in (0.7, 0.8, 0.9, 1, 1.1, 1.25, 1.4, 1.6):
+        o.append(S.label(sx.to(t), ty, "%g" % t, "middle", "tick"))
+    ly = H - 8
+    o.append(S.dot(L, ly - 4, 3, "--db-u"))
+    o.append(S.label(L + 8, ly, "pair 1", "start", "tick"))
+    o.append(S.dot(L + 80, ly - 4, 3, "--db-c"))
+    o.append(S.label(L + 88, ly, "pair 2", "start", "tick"))
+    o.append(ring(L + 170, ly - 4, 4.5, "--dim"))
+    o.append(S.label(L + 180, ly, "each store measured twice", "start", "tick"))
+    return S.svg(W, H, "".join(o))
+
+
+def chart_nostate(B, cats, extra_ms):
+    """Jochemnet's newPayload time against state-actor's, every test, pair 1, on log axes. An extra
+    cost of the same few milliseconds lifts short blocks off the diagonal and vanishes into long
+    ones; the dashed curve is state-actor's time plus extra_ms."""
+    W, L, T, side = 760, 80, 40, 400
+    H = T + side + 56
+    lo, hi = 0.015, 5.0
+    sx = S.LogScale(lo, hi, L, L + side)
+    sy = S.LogScale(lo, hi, T + side, T)
+
+    def cl(v):
+        return max(lo, min(hi, v))
+    o = [S.label(0, 14, "newPayload time per test, jochemnet against state-actor (pair 1)", "start", "big")]
+    for t, txt in ((0.02, "20 ms"), (0.05, "50 ms"), (0.1, "0.1 s"), (0.2, "0.2 s"), (0.5, "0.5 s"),
+                   (1, "1 s"), (2, "2 s"), (5, "5 s")):
+        o.append(S.line(sx.to(t), T, sx.to(t), T + side, "--line", 1))
+        o.append(S.line(L, sy.to(t), L + side, sy.to(t), "--line", 1))
+        o.append(S.label(sx.to(t), T + side + 16, txt, "middle", "tick"))
+        o.append(S.label(L - 8, sy.to(t) + 4, txt, "end", "tick"))
+    o.append(S.label(L + side / 2, T + side + 36, "state-actor", "middle", "ax"))
+    o.append(S.label(L, T - 10, "jochemnet", "middle", "ax"))
+    o.append(S.line(sx.to(lo), sy.to(lo), sx.to(hi), sy.to(hi), "--green-muted", 1.5))
+    xs = [lo * (hi / lo) ** (i / 60) for i in range(61)]
+    pts = [(sx.to(v), sy.to(cl(v + extra_ms / 1e3))) for v in xs]
+    for (x1, y1), (x2, y2) in zip(pts, pts[1:]):
+        o.append(S.line(x1, y1, x2, y2, "--db-u", 1.5, "4 3"))
+    groups = (("over a second", "--db-c", lambda t: t["cls"] == "ge1s"),
+              ("other tests under a second", "--dim", lambda t: t["cls"] == "lt1s" and t["cat"] not in cats),
+              ("the three no-state rows", "--accent",
+               lambda t: t["cls"] == "lt1s" and t["cat"] in cats))
+    for _, var, pick in groups:
+        for t in B["tests"].values():
+            if pick(t):
+                o.append(S.dot(sx.to(cl(t["joc_secs"] / t["a"])), sy.to(cl(t["joc_secs"])), 2.4, var))
+    lx, ly = L + side + 40, T + 30
+    for k, (text, var, _) in enumerate(groups):
+        o.append(S.dot(lx, ly + 22 * k - 4, 3.2, var))
+        o.append(S.label(lx + 12, ly + 22 * k, text, "start", "tick"))
+    o.append(S.line(lx - 6, ly + 66 - 4, lx + 6, ly + 66 - 4, "--green-muted", 1.5))
+    o.append(S.label(lx + 12, ly + 66, "the same time on both", "start", "tick"))
+    o.append(S.line(lx - 6, ly + 88 - 4, lx + 6, ly + 88 - 4, "--db-u", 1.5, "4 3"))
+    o.append(S.label(lx + 12, ly + 88, f"state-actor's time + {extra_ms:.0f} ms", "start", "tick"))
+    return S.svg(W, H, "".join(o))
+
+
 # --------------------------------------------------------------------------- page
 def main():
     D = json.load(open(DATA))
@@ -724,6 +857,40 @@ def main():
     assert min(more) > 0.01 and max(more) < 0.08, "state-actor no longer reads a few percent more on every traced test: %r" % more
     n_sa_acc, n_joc_acc = P["sa_eoas"] + P["sa_contracts"], RB["keys"]["accounts"]
     assert 1.15 < n_sa_acc / n_joc_acc < 1.25, "state-actor no longer holds about a fifth more accounts"
+    # "How much closer each step got", on the final split: each step's gain came from the rows its
+    # fix was about. The rebuild added tests to every row but the two code calls and took them from
+    # those; the emptied cache added mostly minimal-code calls and transfers; the code file mostly
+    # the two code calls, which had none inside before it.
+    def fam_in(s, c, k="a"):
+        return sum(inband(t[k]) for t in ST[s][("ge1s", c)])
+    de, eg, gh = ({c: fam_in(s1, c) - fam_in(s0, c) for c in GE_CATS} for s0, s1 in ("DE", "EG", "GH"))
+    de_gain, de_loss = sum(v for c, v in de.items() if c not in CODE_CALLS), -sum(de[c] for c in CODE_CALLS)
+    assert all(v > 0 for c, v in de.items() if c not in CODE_CALLS) and all(de[c] < 0 for c in CODE_CALLS), \
+        "the rebuild no longer added tests everywhere but the code calls: %r" % de
+    eg_top = sorted(eg, key=eg.get, reverse=True)[:2]
+    assert set(eg_top) == {"code-exec MINIMAL", "ether transfer"} and sum(eg[c] for c in eg_top) >= in_np["G"] - in_np["E"], \
+        "the emptied cache's gain no longer came mostly from minimal-code calls and transfers: %r" % eg
+    gh_cc = sum(gh[c] for c in CODE_CALLS)
+    assert gh_cc >= 0.75 * (in_np["H"] - in_np["G"]) and all(fam_in("G", c) == 0 for c in CODE_CALLS), \
+        "the code file's gain no longer came mostly from the two code calls: %r" % gh
+
+    def floor_in(s, k):
+        return sum(inband(t[k]) for t in ST[s][("ge1s", "__all__")] if t[k] is not None)
+    steps_bars = [(tin(s), tin(s, "b"), floor_in(s, "floor_sa"), tin(s, "a_total"), tin(s, "b_total"),
+                   floor_in(s, "floor_sa_total")) for s in "DEGH"]
+    # "The account reads are too few to tell": one store measured twice spreads those rows' medians
+    # at least as wide and keeps about half their tests inside; two of the four fall below 0.90, each
+    # in one pair only.
+    acc_fl = [ge_h[c]["floor_sa"]["median"] for c in CONTRACT_ACCT]
+    acc_fl_in, acc_fl_n = (sum(ge_h[c]["floor_sa"][k] for c in CONTRACT_ACCT) for k in ("within10", "n"))
+    acc_low = [c for c in CONTRACT_ACCT if (ge_h[c]["a"]["median"] < 0.9) + (ge_h[c]["b"]["median"] < 0.9) == 1]
+    assert min(acc_fl) < 0.9 and max(acc_fl) > 1.05 and acc_fl_in <= 0.6 * acc_fl_n and len(acc_low) == 2 \
+        and not any(ge_h[c]["a"]["median"] < 0.9 and ge_h[c]["b"]["median"] < 0.9 for c in CONTRACT_ACCT), \
+        "the account rows are no longer floor-limited: %r %d/%d %r" % (acc_fl, acc_fl_in, acc_fl_n, acc_low)
+    # "That's N% of their median block": the extra time against state-actor's median no-state block.
+    ns_sa_ms = 1e3 * median(t["joc_secs"] / t["a"] for t in ns_tests)
+    ns_pct = round(100 * ns_ms[0] / ns_sa_ms)
+    assert 25 <= ns_pct <= 50, "the extra time is no longer about a third of a no-state block: %d%%" % ns_pct
     # What's left.
     assert all(v == [[0, 1]] for arm in ("joc", "sa") for v in S2[arm]["domain_steps"].values()), \
         "the two stores no longer keep each domain in one step-0 file"
@@ -778,8 +945,8 @@ def main():
       f"block, it was {at:.1f}&times; faster. It was neither. Three things about how the two "
       f"stores were built made both gaps. Fix them one at a time and the tests that run over a "
       f"second land at a median of {ga['median']:.2f} on newPayload and {wb_h:.2f} whole, "
-      f"{ga['within10']} of {ga['n']} inside &plusmn;10%. Here's each one, what it did to the "
-      f"numbers, and what's left.</p>")
+      f"{ga['within10']} of {ga['n']} inside &plusmn;10%, about what one store gets against itself. "
+      f"Here's each one, what it did to the numbers, and what's still off.</p>")
 
     # ---- part 1: the problem
     w(f"<h2>The problem: the same state, {slow:.0f}&times; slower and {at:.0f}&times; faster</h2>")
@@ -1058,6 +1225,18 @@ def main():
                          "state-actor / jochemnet (band = \u00b110%)"),
           "The same tests after all three fixes, two independent pairs. Compare it with the first "
           "figure: same rows, same axis."))
+    w(f"<p><b>How much closer each step got.</b> Each step brought more tests inside the band, and "
+      f"each gain came from the rows its fix was about. The rebuild added {de_gain} on every other "
+      f"row and took {de_loss} from the two distinct-code "
+      f"calls. The emptied code cache added {in_np['G'] - in_np['E']}, mostly calls into minimal "
+      f"code and transfers. The re-encoded code file added {in_np['H'] - in_np['G']}, {gh_cc} of them "
+      f"the distinct and jumpdest calls, because each of their contracts now costs one page instead "
+      f"of {WORDS[sa_pages]}.</p>")
+    w(fig("fig_steps", chart_steps(steps_bars, n_after),
+          f"Tests over a second inside &plusmn;10% after each step, on the final split: pair 1 as the "
+          f"bar, pair 2 as the tick. The amber cap is state-actor measured twice at that step, the best "
+          f"the bar could reach. newPayload went {in_np['D']}, {in_np['E']}, {in_np['G']}, "
+          f"{in_np['H']}; the whole block {in_wb['D']}, {in_wb['E']}, {in_wb['G']}, {in_wb['H']}."))
     stage_rows = [{c: rm(s, c) for c in GE_CATS} for s in "DEGH"]
     w(fig("fig_progress", chart_progress(stage_rows, GE_CATS),
           f"Every row over a second after each step, pair 1, on the final split. Untreated, "
@@ -1101,32 +1280,51 @@ def main():
       f"{lt_h['a']['within10']} of {lt_h['a']['n']} tests land in the band, and the same store "
       f"measured twice manages only {lt_h['floor_sa']['within10']} "
       f"({lt_h['floor_joc']['within10']} for jochemnet). Most of that is the harness. One offset "
-      f"isn't, and it's in what's left.</p>")
+      f"isn't; it's below.</p>")
+    w("<p><b>Which families are still off.</b> Not every test sits inside the band, and one store "
+      "measured twice doesn't manage that either. So the next figure puts each row's median beside "
+      "the medians each store gets against itself.</p>")
+    w(fig("fig_residuals", chart_residuals(FIN),
+          "Each row's median in both pairs (dots) and each store measured twice (rings), with the "
+          "tests inside the band against how many state-actor twice keeps there. Over a second, every "
+          "row sits inside the band in at least one pair. Under a second, three rows sit far right of "
+          "their rings."))
+    w(f"<p><b>The account reads are too few to tell.</b> Each of those rows has four tests. One store "
+      f"measured twice puts their medians at {min(acc_fl):.2f} to {max(acc_fl):.2f} and keeps "
+      f"{acc_fl_in} of {acc_fl_n} tests inside. Two of the four fall below 0.90 in one pair each, "
+      f"which is within that noise.</p>")
+    w(f"<p><b>Over a second, state-actor leans {min(lean)}&ndash;{max(lean)}% slow.</b> The pairs sit "
+      f"at {ga['median']:.3f} and {gb['median']:.3f}, where each store measured twice centres on "
+      f"{min(gfl['median'], jfl['median']):.2f} to {max(gfl['median'], jfl['median']):.2f}. Most tests "
+      f"that miss the band miss it low: {lows[0][0]} of {lows[0][1]}, and {lows[1][0]} of "
+      f"{lows[1][1]} in the second pair. On every traced test, state-actor reads "
+      f"{round(100 * min(more))}&ndash;{round(100 * max(more))}% more pages. Two known differences "
+      f"could explain some of it. Its storage and commitment files still store their keys raw, where "
+      f"Erigon compresses them ({src('db/state/statecfg/state_schema.go', 229, 'storage')}, "
+      f"{src('db/state/statecfg/state_schema.go', 274, 'commitment')}), because we re-encoded only "
+      f"the code file. And it holds a fifth more accounts ({n_sa_acc / 1e6:.0f} million against "
+      f"{n_joc_acc / 1e6:.0f} million). Neither is tested yet.</p>")
+    w(f"<p><b>Under a second, blocks with no state work run faster on state-actor.</b> Controls, warm "
+      f"queries and reloads of one slot sit at {min(ns_med):.2f}&ndash;{max(ns_med):.2f} in both "
+      f"pairs, while each store measured twice centres them on {min(ns_floor):.2f}&ndash;"
+      f"{max(ns_floor):.2f}. So it isn't the harness. At the median, jochemnet spends about "
+      f"{ns_ms[0]:.0f} ms more per block. That's {ns_pct}% of their median block "
+      f"({ns_sa_ms:.0f} ms on state-actor), and about 1% of a block over a second. It was there "
+      f"untreated, at {min(ns_d):.2f}&ndash;{max(ns_d):.2f}, and we haven't traced it yet.</p>")
+    w(fig("fig_nostate", chart_nostate(FIN, NOSTATE, ns_ms[0]),
+          f"Every test of pair 1: jochemnet's newPayload time against state-actor's, on log axes. The "
+          f"green line is the same time on both; the dashed curve adds {ns_ms[0]:.0f} ms to "
+          f"state-actor's. The three no-state rows cluster around the curve, well above the line. Over "
+          f"a second, the same {ns_ms[0]:.0f} ms barely lifts a test off it."))
 
     # ---- part 4
     w("<h2>What's left, and why</h2><ul>")
     w(f"<li><b>State-actor's Erigon writer can't compress yet.</b> Until it hands each domain to "
       f"Erigon's compressor, every Erigon store it builds needs a re-encode like the one above, which "
-      f"took {RC['minutes'] / 60:.0f} hours for the code file alone. We re-encoded only that file. "
-      f"State-actor's storage and commitment files still store their keys raw, where Erigon "
-      f"compresses them ({src('db/state/statecfg/state_schema.go', 229, 'storage')}, "
-      f"{src('db/state/statecfg/state_schema.go', 274, 'commitment')}).</li>")
-    w(f"<li><b>Over a second, state-actor still runs {min(lean)}&ndash;{max(lean)}% slower.</b> Both "
-      f"pairs sit below parity, at {ga['median']:.3f} and {gb['median']:.3f}, where one store measured "
-      f"twice centres on {min(gfl['median'], jfl['median']):.2f} to "
-      f"{max(gfl['median'], jfl['median']):.2f}. Of the tests that miss the band, {lows[0][0]} of "
-      f"{lows[0][1]} miss it low ({lows[1][0]} of {lows[1][1]} in the second pair). On every traced "
-      f"test, state-actor reads {round(100 * min(more))}&ndash;{round(100 * max(more))}% more pages. "
-      f"Two known differences could explain some of it: the raw keys above, and a fifth more "
-      f"accounts ({n_sa_acc / 1e6:.0f} million against {n_joc_acc / 1e6:.0f} million). We haven't "
-      f"tested either.</li>")
-    w(f"<li><b>Under a second, one offset is real.</b> Blocks that do no state work, warm queries and "
-      f"reloads of one slot run {min(ns_med):.2f}&ndash;{max(ns_med):.2f} times faster on "
-      f"state-actor, in both pairs. One store measured twice centres those rows on "
-      f"{min(ns_floor):.2f} to {max(ns_floor):.2f}, so it isn't the harness. At the median, jochemnet "
-      f"spends about {ns_ms[0]:.0f} ms more per block. Over a second that's about 1% of a block. It "
-      f"was there before any fix, at {min(ns_d):.2f}&ndash;{max(ns_d):.2f}, and we haven't traced "
-      f"it.</li>")
+      f"took {RC['minutes'] / 60:.0f} hours for the code file alone.</li>")
+    w(f"<li><b>The {min(lean)}&ndash;{max(lean)}% lean over a second.</b> Its two candidates, the raw "
+      f"storage and commitment keys and the extra accounts, are untested.</li>")
+    w(f"<li><b>Jochemnet's extra {ns_ms[0]:.0f} ms per block.</b> We haven't traced it.</li>")
     w(f"<li><b>The test contracts are cheaper than real ones.</b> Each is {MAX_CODE // 1024} KB of one "
       f"repeated opcode, so Erigon stores it in about {round(max(j_bytes), -2):.0f} bytes, one page. "
       f"Jochemnet also holds {thousands(JR['n'])} real mainnet contracts of the same size, and the "
