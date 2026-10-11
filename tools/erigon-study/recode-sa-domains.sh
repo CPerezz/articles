@@ -1,19 +1,22 @@
 #!/usr/bin/env bash
-# Round 15, point 2: re-encode state-actor's storage and commitment files the way Erigon writes its
-# own (keys compressed against a pattern dictionary, each domain's own CompressCfg; state_schema.go
-# :229 and :274), check they answer exactly as before, promote, smoke, trace (T4), then run the I
-# pairs. Round 14 did the code file; state-actor's generator wrote these two with raw keys.
+# Round 15, point 2: re-encode state-actor's commitment, storage and accounts files the way Erigon
+# writes its own, check they answer exactly as before, promote, smoke, trace (T4), then run the I
+# pairs. Round 14 did the code file. state-actor's generator writes every file at format version
+# v1.0 with raw keys; Erigon 5f62f4ed compresses storage and commitment keys against a pattern
+# dictionary (state_schema.go:229, :274) and writes storage .kv/.bt v2.0, commitment .kv v2.2, .kvi
+# v2.1 and .kvei v1.2. Accounts aren't compressed, but their .kv/.bt/.kvei versions differ too.
 #
 # Only the encoding changes: same keys, same values, same step. Each new file's (key, value) stream
-# must hash like the old one's, read through the domain's own reader, and eth_getStorageAt and
-# eth_getProof (which walks the commitment trie) must answer byte for byte the same.
+# must hash like the old one's, read through the domain's own reader, and eth_getBalance,
+# eth_getStorageAt and eth_getProof (which walks the commitment trie) must answer byte for byte the
+# same.
 #
-# The domains run one after the other, commitment first: the compressor keeps a raw-size temp copy
-# of every word, so the peak is the larger domain's temp and output plus the smaller's output
-# (~0.63 TB this way round, ~0.73 TB the other) on a rootfs with ~0.73 TB free.
+# The domains run one after the other, largest first: the compressor keeps a raw copy of every word
+# and its dictionary candidates in temp space (2.5x the commitment file at e2e scale), so the peak
+# is ~0.7 TB during the commitment recode; the rootfs has ~1.24 TB free.
 #
-# One-way for the promoted image; /bench/erigon/sa-store keeps the generator's original files.
-# Usage: sudo recode-sa-sc.sh      Never beside a suite (.busy).
+# One-way for the promoted image (/bench/erigon/sa-store was deleted on 2026-10-11 with Anon's ok).
+# Usage: sudo recode-sa-domains.sh      Never beside a suite (.busy).
 set -uo pipefail
 
 IMG=docker.io/ethpandaops/erigon:glamsterdam-devnet-7
@@ -24,13 +27,15 @@ DATA=$MNT/erigon
 C=/bench/erigon/compact
 S=$C/staging-sc
 L=/bench/erigon/logs
-LOG=$L/recode-sa-sc.log
-DONE=$L/recode-sa-sc.done
-FAIL=$L/recode-sa-sc.fail
+LOG=$L/recode-sa-domains.log
+DONE=$L/recode-sa-domains.done
+FAIL=$L/recode-sa-domains.fail
 BUSY=/bench/erigon/.busy
 LOCK=/bench/erigon/.schelk.lock
 PORT=18546
-DOMAINS="commitment storage"
+DOMAINS="commitment storage accounts"
+# ~2,100 RPC samples each for storage (2.1 B keys) and accounts (429 M); commitment's go unused.
+declare -A EVERY=([commitment]=1000000 [storage]=1000000 [accounts]=200000)
 
 rm -f "$DONE" "$FAIL"
 cd /
@@ -68,7 +73,7 @@ halt() { podman logs er-recode-probe > "$C/erigon-sa-sc-$1.log" 2>&1; podman sto
 step "restore scratch"
 flock "$LOCK" schelk restore -y --state-path "$STATE" || fail "restore"
 findmnt -n "$MNT" || fail "not mounted"
-[ "$(df --output=avail -BG / | tail -1 | tr -dc 0-9)" -ge 600 ] || fail "rootfs needs 600 GB free"
+[ "$(df --output=avail -BG / | tail -1 | tr -dc 0-9)" -ge 900 ] || fail "rootfs needs 900 GB free"
 rm -rf "$S" "$C/tmp-sc" && mkdir -p "$S" "$C/tmp-sc" && chown 1000:1000 "$S" "$C/tmp-sc"
 
 for d in $DOMAINS; do
@@ -80,15 +85,16 @@ for d in $DOMAINS; do
   step "recode $d (read-only on the scratch)"
   mkdir -p "$S/$d" && chown 1000:1000 "$S/$d"
   time tool compactlatest recode --domain "$d" --datadir "$DATA" --dst "$S/$d" --tmp "$C/tmp-sc" \
-    --samples "$C/samples-sc-$d.txt" --sample-every 1000000 > "$C/recode-sa-$d-report.json" || fail "recode $d"
+    --samples "$C/samples-sc-$d.txt" --sample-every "${EVERY[$d]}" > "$C/recode-sa-$d-report.json" || fail "recode $d"
   cat "$C/recode-sa-$d-report.json"
   [ "$(sha "$C/recode-sa-$d-report.json" "$d")" = "$(sha "$C/streamhash-sa-$d-old.json" "$d")" ] || fail "recoded $d stream differs from the old file's"
-  rm -rf "$C/tmp-sc"/* 
+  rm -rf "$C/tmp-sc"/*
   ls -la "$S/$d"
 done
-# Storage samples answer eth_getStorageAt and eth_getProof (the commitment trie walk); commitment
-# keys aren't addressable over RPC, so the proofs are its check.
-cp "$C/samples-sc-storage.txt" "$C/samples-sc.txt"
+# Storage samples answer eth_getStorageAt and eth_getProof (the commitment trie walk), account
+# samples balance, nonce and account proofs; commitment keys aren't addressable over RPC, so the
+# proofs are its check.
+cat "$C/samples-sc-storage.txt" "$C/samples-sc-accounts.txt" > "$C/samples-sc.txt"
 wc -l "$C/samples-sc.txt"
 
 step "answers on the old layout"
@@ -97,7 +103,7 @@ python3 "$C/rpc-sample.py" "$PORT" "$C/samples-sc.txt" "$C/answers-sc-old.jsonl"
 halt old
 flock "$LOCK" schelk restore -y --state-path "$STATE" || fail "restore after old probe"
 
-step "swap the storage and commitment files"
+step "swap the re-encoded files"
 for d in $DOMAINS; do
   find "$DATA/snapshots/domain" -maxdepth 1 -type f -name "v*-$d.0-1.*" -print -delete
   cp -v "$S/$d"/* "$DATA/snapshots/domain/" || fail "copy staged $d files"

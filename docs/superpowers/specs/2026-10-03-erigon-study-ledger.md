@@ -980,3 +980,47 @@ the deletions (2026-10-09).
   failure made the next arm's dm-device check fail); fixed (per-arm datadir, unmount on every exit).
 - Trace T3 ran on both stores (6/6 passed each, 2026-10-09 15:14-15:21 UTC); collection pending:
   the bench box's SSH agent (YubiKey via gpg-agent) refused to sign on 2026-10-11.
+
+**Trace T3 (collected 2026-10-11, `/bench/erigon/step0-T3.json` sha256 `628f2586…7ab5`).** Six
+no-state tests, newPayload split at `Handling new payload`. Jochemnet: *before* 14-17 ms, reading
+500-709 KB (block files 356-516 KB, MDBX 90-262 KB); *after* 25-64 ms, reading 139-143 KB
+(commitment index and file). State-actor: before 1-3 ms, after 22-61 ms, nothing read in either.
+Probe per file (jochemnet, 20 cold lookups): 484 KB of headers *index* pages and 180 KB of MDBX per
+lookup, headers data 1 KB; 46-64 of the 65 headers files touched (median 63).
+Prediction 3: **met in substance, missed on the numbers**: the before slice holds the extra reads, all
+of them headers indexes and MDBX, but ~125-175 pages per test, not >= 200, and block files are
+71-84% of it, not >= 80% on every test.
+**Point 1 conclusion:** jochemnet's ~16 ms per block is the unknown-hash check Erigon makes before it
+starts on a new payload (`getQuickPayloadStatusIfPossible` -> `GetHeaderByHash` ->
+`BlockReader.HeaderByHash`, `block_reader.go:568`), which misses MDBX and reads one or two index
+pages from each of the 65 frozen headers files, cold because benchmarkoor drops the page cache before
+every test. Warm, it costs 1 ms. State-actor has no headers files. It's chain history, not state;
+the remedy is the harness's burn-in block (or keeping block-file indexes warm), not either store.
+Without the before phase, the no-state rows sit at 0.94-1.05.
+
+**Point 2 under way (2026-10-11).**
+- Deleted with Anon's ok: `/bench/erigon/compact/staging` (313 GB), `staging-sa` (16 GB),
+  `answers-{old,new}.jsonl` (10 GB); then `/bench/erigon/sa-store` (509 GB) once the disk estimate
+  below showed the commitment recode wouldn't fit (manifest and file list kept in
+  `/bench/erigon/cfg/sa-store-{manifest.json,files.txt}`). Rootfs 1.3 TB free.
+- `compactlatest recode --domain X` and `streamhash` built (vet, gofmt) at 5f62f4ed.
+  `RecodeDomain` copies commitment values as they are: the store's `erigondb.toml` says
+  `references_in_commitment_branches=false`.
+- **e2e cross-check** (`e2e-recode-check.sh`, `/bench/erigon/e2e/recode-check.json`): on the small
+  store, the re-encoded storage and commitment streams equal the published generator's and the fixed
+  generator's (storage 1,373,022 keys). Commitment .kv byte-identical to the fixed generator's;
+  storage .kv the same size (91,625,199 B), 10,919 bytes differing from offset 80,755 (the dictionary
+  region; erigon pins 5f62f4ed vs 14273f79a6). Temp + output peak: commitment 2.53x its old file,
+  storage 1.77x. Prediction 4: **partly met** (streams equal; byte-identical for commitment only).
+- **New difference found:** state-actor writes every domain file at version v1.0 (.kv, .bt, .kvei,
+  .kvi). Erigon 5f62f4ed writes storage .kv/.bt v2.0, commitment .kv v2.2 and .kvi v2.1, .kvei v1.2
+  (jochemnet's rebuilt files and the recode's output alike). The fixed generator (`cbc1719`) still
+  writes v1.0. At e2e scale v2.0's storage .bt is 48% larger than v1.0's for the same keys. Accounts
+  aren't compressed by Erigon but sit behind a v1.0 .bt on state-actor and a v2.0 .bt on jochemnet;
+  on T2's account read state-actor reads 11% more account-index bytes.
+- **Scope, Anon's call:** re-encode all three remaining domains (commitment, storage, accounts), so
+  every state file is written the way Erigon writes it and only the account count differs.
+  `recode-sa-domains.sh` (renamed from recode-sa-sc.sh before its first run) launched 07:19 UTC:
+  stream hashes, recode per domain, ~4,250 RPC samples (storage + accounts, with proofs) on both
+  layouts, swap, promote, smoke S4, trace T4 (T2 + T3 tests, state-actor), then the I pairs.
+- Prediction 5 amended before results: accounts .kv size within ±5% of 15.97 GB (no compression).
