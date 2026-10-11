@@ -1024,3 +1024,23 @@ Without the before phase, the no-state rows sit at 0.94-1.05.
   stream hashes, recode per domain, ~4,250 RPC samples (storage + accounts, with proofs) on both
   layouts, swap, promote, smoke S4, trace T4 (T2 + T3 tests, state-actor), then the I pairs.
 - Prediction 5 amended before results: accounts .kv size within ±5% of 15.97 GB (no compression).
+
+**Point 2 re-encode done (2026-10-11 07:19 -> 16:05 UTC, `recode-sa-domains.sh`).**
+
+| domain | keys | old .kv (v1.0) | new .kv | recode | accessors now |
+|---|---|---|---|---|---|
+| commitment | 947,244,879 | 282.11 GB | 278.33 GB (v2.2) | 1 h 60 min | .kvi v2.1 (6.0 GB); no .kvei, as on jochemnet |
+| storage | 2,214,906,890 | 181.06 GB | 164.83 GB (v2.0) | 3 h 56 min | .bt v2.0 (4.2 GB), .kvei v1.2 (2.5 GB) |
+| accounts | 430,696,738 | 15.97 GB | 15,968,264,966 B (v2.0), same size | 4.5 min | .bt v2.0 (540 MB, was 443 MB), .kvei v1.2 (487 MB, was 516 MB) |
+
+- Stream hashes (old file read by the domain's own reader = recode's written stream = new file read
+  back after the swap): commitment `b765783b…7c9d`, storage `b778bd91…6894`, accounts `cae24ad5…ca20`.
+- RPC: 4,367 samples (2,214 storage slots with `eth_getStorageAt` + `eth_getProof`, 2,153 accounts
+  with balance, nonce and `eth_getProof`), 0 errors, every storage value non-zero; answers identical
+  on both layouts (4,368 lines with the head line). Promoted (4 min 32 s), smoke S4 2/2, trace T4
+  (state-actor; T2 + T3 tests) done; the I pairs started 16:05:33 UTC.
+- Commitment keys barely compress (ratio 1.01 logged by Erigon's compressor; file -1.3%).
+- Prediction 5: **met** (storage 164.8 in 120-175 GB, commitment 278.3 in 230-280 GB, accounts within
+  ±5%, streams equal, answers identical, smoke 2/2).
+- No heavy box work during the I pairs (the trace collection reads ~1 GB from the benchmark's array);
+  T4 is collected after the pairs.
