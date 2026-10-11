@@ -19,13 +19,13 @@ import sys
 from collections import defaultdict
 from datetime import datetime
 
-TAG = sys.argv[1]
 ROOT = "/bench/erigon/trace"
 EVENT = re.compile(r"\s(\d+\.\d+): mm_filemap_add_to_page_cache: dev \d+:\d+ ino ([0-9a-f]+) "
                    r"pfn=\S+ ofs=\d+(?: order=(\d+))?")
 MARK = re.compile(r"\s(\d+\.\d+): tracing_mark_write: WALL (\d+\.\d+)")
 STAMP = re.compile(r"(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z)")
 CALL = re.compile(r"RPC call completed .*?full_duration=(\S+) method=(engine_\w+?)V\d")
+HANDLING = re.compile(r"\[(\d\d-\d\d)\|([\d:.]+)\] \[NewPayload\] Handling new payload")
 GO_DUR = re.compile(r"(\d+(?:\.\d+)?)(h|ms|µs|us|ns|m|s)")
 UNIT = {"h": 3600, "m": 60, "s": 1, "ms": 1e-3, "µs": 1e-6, "us": 1e-6, "ns": 1e-9}
 DOMAINS = ("accounts", "storage", "code", "commitment")
@@ -61,16 +61,20 @@ def go_duration(s):
     return sum(float(v) * UNIT[u] for v, u in GO_DUR.findall(s))
 
 
-def arm(name):
-    d = os.path.join(ROOT, f"{name}-{TAG}")
+def arm(name, tag):
+    d = os.path.join(ROOT, f"{name}-{tag}")
     files = {}
     inventory = defaultdict(int)
     domain_steps = defaultdict(set)
+    versions = {}  # domain file -> its format version, e.g. "storage .bt" -> "v2.0"
     for line in open(os.path.join(d, "files.txt")):
         ino, size, path = line.rstrip("\n").split(" ", 2)
         cat = category(path)
         files[int(ino)] = cat
         inventory[cat] += int(size)
+        if cat.split()[0] in DOMAINS and (cat.endswith(" files") or cat.endswith(" indexes")):
+            name = os.path.basename(path)
+            versions[f"{cat.split()[0]} {os.path.splitext(name)[1]}"] = name.split("-")[0]
         if cat.endswith(" files"):
             s = steps(os.path.basename(path))
             if s:
@@ -84,13 +88,23 @@ def arm(name):
         if "Running test step" not in line:
             continue
         test = next(t for t in result if t.split("::")[-1] in line or t in line)
+        handling = None
         for l in log[i + 1:]:
             if "Test completed" in l or "Running test step" in l:
                 break
+            h = HANDLING.search(l)
+            if h:
+                handling = epoch(f"{STAMP.search(l).group(1)[:4]}-{h.group(1)}T{h.group(2)}Z")
             m = CALL.search(l)
             if m:
                 end = epoch(STAMP.search(l).group(1))
-                windows.append((test, m.group(2), end - go_duration(m.group(1)), end))
+                start = end - go_duration(m.group(1))
+                windows.append((test, m.group(2), start, end))
+                # Erigon logs "Handling new payload" once the engine server's own checks are done:
+                # the slices before and after it tell those checks' reads from the block's.
+                if m.group(2) == "engine_newPayload" and handling is not None and start <= handling <= end:
+                    windows.append((test, "engine_newPayload/before", start, handling))
+                    windows.append((test, "engine_newPayload/after", handling, end))
 
     offset, events = None, []
     for line in open(os.path.join(d, "trace.txt"), errors="replace"):
@@ -112,9 +126,11 @@ def arm(name):
             b[files.get(events[j][1], "unmapped")] += events[j][2]
         tests[test]["secs"][method] = round(t1 - t0, 3)
         tests[test]["bytes"][method] = dict(b)
-    return {"inventory_bytes": dict(inventory), "events": len(events),
+    return {"inventory_bytes": dict(inventory), "events": len(events), "versions": versions,
             "domain_steps": {k: sorted(v) for k, v in domain_steps.items()}, "tests": tests}
 
 
-json.dump({"src": f"collect_trace.py {TAG}", "joc": arm("joc"), "sa": arm("sa")},
-          sys.stdout, indent=1, sort_keys=True)
+if __name__ == "__main__":
+    TAG = sys.argv[1]
+    json.dump({"src": f"collect_trace.py {TAG}", "joc": arm("joc", TAG), "sa": arm("sa", TAG)},
+              sys.stdout, indent=1, sort_keys=True)

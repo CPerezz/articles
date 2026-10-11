@@ -528,6 +528,85 @@ def chart_nostate(B, cats, extra_ms):
     return S.svg(W, H, "".join(o))
 
 
+PHASES = (("before Erigon starts on the block", "--db-u", 0), ("executing the block", "--db-c", 290),
+          ("the rest", "--dim", 460))
+
+
+def chart_phases(panels):
+    """Median newPayload time per store, split where Erigon's log says it starts on the block.
+    panels: (title, [(store, [before, exec, rest] ms, note)]), each panel on its own scale."""
+    W, L, R = 760, 110, 250
+    rh, T = 26, 34
+    H = T + sum(30 + rh * len(rows) + 22 for _, rows in panels) + 40
+    o = [S.label(0, 14, "newPayload, median per store, split where Erigon starts on the block (pair 1)",
+                 "start", "big")]
+    y = T
+    for title, rows in panels:
+        o.append(S.label(0, y + 12, title, "start", "ax"))
+        top = max(sum(v) for _, v, _ in rows)
+        sx = S.Scale(0, top * 1.02, L, W - R)
+        y += 22
+        for store, parts, note in rows:
+            o.append(S.label(L - 10, y + rh / 2 + 4, store, "end", "tick"))
+            x = 0.0
+            for v, (_, var, _) in zip(parts, PHASES):
+                o.append(S.band(sx.to(x), sx.to(x + v), y + 3, y + rh - 3, var, 0.85))
+                x += v
+            text = f"{parts[0]:.0f} + {parts[1]:.0f} ms" + (f", {note}" if note else "")
+            o.append(S.label(W - R + 8, y + rh / 2 + 4, text, "start", "tick"))
+            y += rh
+        y += 22
+    for text, var, dx in PHASES:
+        lx = L + dx
+        o.append(S.band(lx, lx + 14, H - 30, H - 20, var, 0.85))
+        o.append(S.label(lx + 20, H - 21, text, "start", "tick"))
+    return S.svg(W, H, "".join(o))
+
+
+def chart_check(B, recut):
+    """Each row's median as measured (ring, pair 1) and timed from the line where Erigon starts on
+    the block (dots, both pairs): what the rows say once the check before it is left out.
+    recut[(cls, cat)] = (pair 1, pair 2)."""
+    W, L, R, T = 760, 250, 118, 34
+    rh, gap = 17, 30
+    ge, lt = class_rows(B, "ge1s"), class_rows(B, "lt1s")
+    H = T + 2 * 12 + rh * (len(ge) + len(lt)) + gap + 52
+    lo, hi = 0.6, 1.6
+    sx = S.LogScale(lo, hi, L, W - R)
+
+    def x(v):
+        return sx.to(max(lo, min(hi, v)))
+    o = [S.label(0, 14, "row medians, as measured and from where Erigon starts on the block", "start", "big")]
+    y0 = T
+    for head, rows, cls in (("tests over a second", ge, "ge1s"), ("tests under a second: shown, not counted", lt, "lt1s")):
+        o.append(S.label(0, y0 + 4, head, "start", "ax"))
+        o.append(S.label(W - R + 8, y0 + 4, "as is  from", "start", "tick"))
+        top = y0 + 12
+        bot = top + rh * len(rows)
+        o.append(S.band(sx.to(0.9), sx.to(1.1), top, bot, "--accent", 0.10))
+        o.append(S.line(sx.to(1.0), top, sx.to(1.0), bot, "--green-muted", 1))
+        for i, (cat, r) in enumerate(rows):
+            y = top + rh * i + 9
+            a1, a2 = recut[(cls, cat)]
+            o.append(S.label(L - 10, y + 4, ROW_LABEL.get(cat, cat), "end", "tick"))
+            o.append(ring(x(r["a"]["median"]), y, 4.5, "--dim", f"as measured: {r['a']['median']:.2f}"))
+            o.append(S.dot(x(a1), y - 1.5, 3, "--db-u", f"from the start, pair 1: {a1:.2f}"))
+            o.append(S.dot(x(a2), y + 1.5, 3, "--db-c", f"from the start, pair 2: {a2:.2f}"))
+            o.append(S.label(W - R + 8, y + 4, "%.2f  %.2f" % (r["a"]["median"], a1), "start", "tick"))
+        y0 = bot + gap
+    ty = y0 - gap + 18
+    for t in (0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.25, 1.4, 1.6):
+        o.append(S.label(sx.to(t), ty, "%g" % t, "middle", "tick"))
+    ly = H - 8
+    o.append(ring(L, ly - 4, 4.5, "--dim"))
+    o.append(S.label(L + 10, ly, "as measured, pair 1", "start", "tick"))
+    o.append(S.dot(L + 170, ly - 4, 3, "--db-u"))
+    o.append(S.label(L + 178, ly, "from the start, pair 1", "start", "tick"))
+    o.append(S.dot(L + 350, ly - 4, 3, "--db-c"))
+    o.append(S.label(L + 358, ly, "pair 2", "start", "tick"))
+    return S.svg(W, H, "".join(o))
+
+
 # --------------------------------------------------------------------------- page
 def main():
     D = json.load(open(DATA))
@@ -857,6 +936,70 @@ def main():
     assert min(more) > 0.01 and max(more) < 0.08, "state-actor no longer reads a few percent more on every traced test: %r" % more
     n_sa_acc, n_joc_acc = P["sa_eoas"] + P["sa_contracts"], RB["keys"]["accounts"]
     assert 1.15 < n_sa_acc / n_joc_acc < 1.25, "state-actor no longer holds about a fifth more accounts"
+    # "The 16 ms is a lookup, not state" (round 15). Per test and pair, newPayload split where
+    # Erigon's log says it starts on the block: [total, before, execution] ms per store.
+    PH, PB, S3 = D["np_phases"], D["probe_hash"], D["step0_check"]
+    ns_names = [n for n, t in FIN["tests"].items() if t["cls"] == "lt1s" and t["cat"] in NOSTATE]
+    ge_names = [n for n, t in FIN["tests"].items() if t["cls"] == "ge1s"]
+    lt_names = [n for n, t in FIN["tests"].items() if t["cls"] == "lt1s"]
+
+    def ph(names, k, arm, i):
+        return median(PH[n][k][arm][i] for n in names)
+    ns_before = {k: (ph(ns_names, k, "joc", 1), ph(ns_names, k, "sa", 1)) for k in "ab"}
+    ns_exec = {k: (ph(ns_names, k, "joc", 2), ph(ns_names, k, "sa", 2)) for k in "ab"}
+    assert all(12 < j < 20 and s < 3 for j, s in ns_before.values()), "the no-state checks moved: %r" % ns_before
+    assert all(0.85 < s / j < 1.05 for j, s in ns_exec.values()), "the no-state blocks no longer execute alike: %r" % ns_exec
+    ns_share = [median(PH[n][k]["joc"][1] - PH[n][k]["sa"][1] for n in ns_names)
+                / median(PH[n][k]["joc"][0] - PH[n][k]["sa"][0] for n in ns_names) for k in "ab"]
+    assert min(ns_share) > 0.8, "the check is no longer most of the no-state gap: %r" % ns_share
+    # The probe: one unknown block hash, cold and warm, on each store.
+    pj, ps = PB["joc"], PB["sa"]
+    hdr_kb, db_kb = pj["cold"]["bytes_by_kind_median"]["headers index"] / 1e3, pj["cold"]["bytes_by_kind_median"]["database"] / 1e3
+    assert pj["headers_files"] > 50 and ps["headers_files"] == 0, "the stores' headers files changed"
+    assert 10 < pj["cold"]["ms_median"] < 40 and pj["warm"]["ms_median"] < 2 and pj["warm"]["bytes_median"] == 0, \
+        "jochemnet's lookup is no longer slow cold and free warm: %r" % pj
+    assert max(ps[k]["ms_median"] for k in ("cold", "warm")) < 3 and ps["cold"]["bytes_median"] == ps["warm"]["bytes_median"] == 0, \
+        "state-actor's lookup now reads: %r" % ps
+    assert pj["cold"]["headers_files_touched_median"] >= 0.9 * pj["headers_files"] and hdr_kb > 2 * db_kb, \
+        "the cold lookup no longer reads mostly header indexes, nearly all of them"
+    # The trace: on the six no-state tests, what each store reads before that line.
+    t3 = {a: [sum(v["bytes"]["engine_newPayload/before"].values()) / 1e3 for v in S3[a]["tests"].values()] for a in ("joc", "sa")}
+    t3_cats = {c for v in S3["joc"]["tests"].values() for c, b in v["bytes"]["engine_newPayload/before"].items() if b}
+    assert len(t3["joc"]) == len(t3["sa"]) == 6 and min(t3["joc"]) > 300 and max(t3["sa"]) == 0 and t3_cats == {"block files", "database"}, \
+        "the traced checks changed: %r %r" % (t3, t3_cats)
+
+    # "From where Erigon starts on the block": each test's time after the check, per store.
+    def recut(names, k):
+        return [(PH[n][k]["joc"][0] - PH[n][k]["joc"][1]) / (PH[n][k]["sa"][0] - PH[n][k]["sa"][1]) for n in names]
+    rc_rows = {}
+    for n, t in FIN["tests"].items():
+        rc_rows.setdefault((t["cls"], t["cat"]), []).append(n)
+    rc_med = {key: tuple(median(recut(ns, k)) for k in "ab") for key, ns in rc_rows.items()}
+    rc_ns = [rc_med[("lt1s", c)] for c in NOSTATE]
+    assert all(0.9 <= v[0] <= 1.1 for v in rc_ns) and all(0.9 <= v <= 1.15 for p in rc_ns for v in p), \
+        "the no-state rows no longer land near parity from the start: %r" % rc_ns
+    rc_in_lt = [sum(inband(r) for r in recut(lt_names, k)) for k in "ab"]
+    assert all(rc_in_lt[i] > 1.5 * lt_h[k]["within10"] for i, k in enumerate("ab")), "the re-cut no longer brings sub-second tests in"
+    # Over a second the lean is in execution: the shared before phase dilutes it, the check offsets it.
+    rc_ge = [median(recut(ge_names, k)) for k in "ab"]
+    # "Over a second, most rows move left" (pair 1, from as measured to from the start).
+    left = sum(rc_med[("ge1s", c)][0] < ge_h[c]["a"]["median"] for c in ge_h)
+    assert left >= 0.75 * len(ge_h), "most rows over a second no longer move left without the check: %d" % left
+    ex_ge = [median(PH[n][k]["joc"][2] / PH[n][k]["sa"][2] for n in ge_names) for k in "ab"]
+    ge_before = [ph(ge_names, k, arm, 1) for k in "ab" for arm in ("joc", "sa")]
+    ge_diff = [median(PH[n][k]["joc"][1] - PH[n][k]["sa"][1] for n in ge_names) for k in "ab"]
+    assert all(0.92 < v < 0.96 for v in rc_ge + ex_ge) and max(rc_ge) < min(ga["median"], gb["median"]), \
+        "over a second the lean in execution moved: %r %r" % (rc_ge, ex_ge)
+    # "About a quarter of a second there, on work they share": both medians near 250 ms, and the
+    # paired difference is only the check.
+    assert 200 < min(ge_before) and max(ge_before) < 320 and all(12 < d < 25 for d in ge_diff), \
+        "the over-a-second before phase changed: %r %r" % (ge_before, ge_diff)
+    ex_lean = round(100 * (1 - median(ex_ge)))
+    # State-actor's files are v1.0 where Erigon writes v2.x (the code file is Erigon's since the re-encode).
+    VJ, VS = S2["joc"]["versions"], S2["sa"]["versions"]
+    assert all(VS[f"{d} .kv"] == "v1.0" and VJ[f"{d} .kv"] >= "v2.0" for d in ("accounts", "storage", "commitment")) \
+        and VS["code .kv"] == VJ["code .kv"] and VS["accounts .bt"] == "v1.0" < VJ["accounts .bt"], \
+        "the file versions changed: %r %r" % (VJ, VS)
     # "How much closer each step got", on the final split: each step's gain came from the rows its
     # fix was about. The rebuild added tests to every row but the two code calls and took them from
     # those; the emptied cache added mostly minimal-code calls and transfers; the code file mostly
@@ -1279,8 +1422,8 @@ def main():
       f"on the four-test account rows. Under a second, "
       f"{lt_h['a']['within10']} of {lt_h['a']['n']} tests land in the band, and the same store "
       f"measured twice manages only {lt_h['floor_sa']['within10']} "
-      f"({lt_h['floor_joc']['within10']} for jochemnet). Most of that is the harness. One offset "
-      f"isn't; it's below.</p>")
+      f"({lt_h['floor_joc']['within10']} for jochemnet). Most of that is a fresh client starting up. "
+      f"One offset is something else; it's below.</p>")
     w("<p><b>Which families are still off.</b> Not every test sits inside the band, and one store "
       "measured twice doesn't manage that either. So the next figure puts each row's median beside "
       "the medians each store gets against itself.</p>")
@@ -1293,38 +1436,92 @@ def main():
       f"measured twice puts their medians at {min(acc_fl):.2f} to {max(acc_fl):.2f} and keeps "
       f"{acc_fl_in} of {acc_fl_n} tests inside. Two of the four fall below 0.90 in one pair each, "
       f"which is within that noise.</p>")
-    w(f"<p><b>Over a second, state-actor leans {min(lean)}&ndash;{max(lean)}% slow.</b> The pairs sit "
-      f"at {ga['median']:.3f} and {gb['median']:.3f}, where each store measured twice centres on "
-      f"{min(gfl['median'], jfl['median']):.2f} to {max(gfl['median'], jfl['median']):.2f}. Most tests "
-      f"that miss the band miss it low: {lows[0][0]} of {lows[0][1]}, and {lows[1][0]} of "
-      f"{lows[1][1]} in the second pair. On every traced test, state-actor reads "
-      f"{round(100 * min(more))}&ndash;{round(100 * max(more))}% more pages. Two known differences "
-      f"could explain some of it. Its storage and commitment files still store their keys raw, where "
-      f"Erigon compresses them ({src('db/state/statecfg/state_schema.go', 229, 'storage')}, "
-      f"{src('db/state/statecfg/state_schema.go', 274, 'commitment')}), because we re-encoded only "
-      f"the code file. And it holds a fifth more accounts ({n_sa_acc / 1e6:.0f} million against "
-      f"{n_joc_acc / 1e6:.0f} million). Neither is tested yet.</p>")
     w(f"<p><b>Under a second, blocks with no state work run faster on state-actor.</b> Controls, warm "
       f"queries and reloads of one slot sit at {min(ns_med):.2f}&ndash;{max(ns_med):.2f} in both "
       f"pairs, while each store measured twice centres them on {min(ns_floor):.2f}&ndash;"
-      f"{max(ns_floor):.2f}. So it isn't the harness. At the median, jochemnet spends about "
+      f"{max(ns_floor):.2f}. So it isn't noise. At the median, jochemnet spends about "
       f"{ns_ms[0]:.0f} ms more per block. That's {ns_pct}% of their median block "
       f"({ns_sa_ms:.0f} ms on state-actor), and about 1% of a block over a second. It was there "
-      f"untreated, at {min(ns_d):.2f}&ndash;{max(ns_d):.2f}, and we haven't traced it yet.</p>")
+      f"untreated, at {min(ns_d):.2f}&ndash;{max(ns_d):.2f}.</p>")
     w(fig("fig_nostate", chart_nostate(FIN, NOSTATE, ns_ms[0]),
           f"Every test of pair 1: jochemnet's newPayload time against state-actor's, on log axes. The "
           f"green line is the same time on both; the dashed curve adds {ns_ms[0]:.0f} ms to "
           f"state-actor's. The three no-state rows cluster around the curve, well above the line. Over "
           f"a second, the same {ns_ms[0]:.0f} ms barely lifts a test off it."))
+    jb, sb = ns_before["a"]
+    je, se = ns_exec["a"]
+    w(f"<p><b>The {ns_ms[0]:.0f} ms is a lookup, not state.</b> Erigon logs <code>Handling new "
+      f"payload</code> when it starts on a block. On those blocks, jochemnet logs it {jb:.0f} ms after "
+      f"the request arrives and state-actor after {sb:.0f} ms. From there the block takes about the "
+      f"same on both: {je:.0f} and {se:.0f} ms. Before that line, Erigon checks whether it already "
+      f"knows the block's hash. A new block isn't in its database, so the check "
+      f"{src('db/snapshotsync/freezeblocks/block_reader.go', 568, 'walks the frozen header files')}, "
+      f"newest first. Jochemnet carries {pj['headers_files']} of them, mainnet's history. State-actor "
+      f"starts at genesis and has none.</p>")
+
+    def rest(names, arm):
+        return median(PH[n]["a"][arm][0] - PH[n]["a"][arm][1] - PH[n]["a"][arm][2] for n in names)
+    w(fig("fig_phases", chart_phases((
+        ("blocks with no state work, under a second", [
+            ("jochemnet", [jb, je, rest(ns_names, "joc")], f"reads {median(t3['joc']):.0f} KB first"),
+            ("state-actor", [sb, se, rest(ns_names, "sa")], "reads nothing")]),
+        ("tests over a second", [
+            ("jochemnet", [ph(ge_names, "a", "joc", 1), ph(ge_names, "a", "joc", 2), rest(ge_names, "joc")], ""),
+            ("state-actor", [ph(ge_names, "a", "sa", 1), ph(ge_names, "a", "sa", 2), rest(ge_names, "sa")],
+             f"block {ex_lean}% longer")]))),
+          f"Median newPayload time per store, pair 1, split at the line where Erigon starts on the "
+          f"block. On blocks with no state work, jochemnet spends {jb:.0f} ms before it and state-actor "
+          f"{sb:.0f}. Over a second both spend about a quarter of a second there, on work they share, "
+          f"and the block itself takes state-actor {ex_lean}% longer."))
+    w(f"<p><b>It's the page cache.</b> benchmarkoor drops it before every test, so each of those "
+      f"checks reads from disk. Asking each store for a block hash it doesn't have shows the cost. "
+      f"Cold, jochemnet takes {pj['cold']['ms_median']:.1f} ms and reads "
+      f"{pj['cold']['bytes_median'] / 1e3:.0f} KB: index pages from "
+      f"{pj['cold']['headers_files_touched_median']:.0f} of its {pj['headers_files']} header files, "
+      f"plus its database. Warm, it takes {pj['warm']['ms_median']:.1f} ms and reads nothing. "
+      f"State-actor takes {ps['cold']['ms_median']:.1f} ms either way and reads nothing. Traced page "
+      f"by page on six of these tests, jochemnet reads {min(t3['joc']):.0f}&ndash;"
+      f"{max(t3['joc']):.0f} KB before the line, all of it block files and its database. State-actor "
+      f"reads nothing.</p>")
+    w(f"<p><b>So it's chain history, not state.</b> A running node keeps those pages in memory; only "
+      f"a benchmark that empties the cache pays for them on every block. Timed from the line on, the "
+      f"three rows land at {min(v[0] for v in rc_ns):.2f}&ndash;{max(v[0] for v in rc_ns):.2f} "
+      f"(up to {max(v[1] for v in rc_ns):.2f} in the second pair), and {rc_in_lt[0]} of "
+      f"{lt_h['a']['n']} tests under a second sit inside the band instead of "
+      f"{lt_h['a']['within10']}.</p>")
+    w(fig("fig_check", chart_check(FIN, rc_med),
+          "Each row's median as measured (rings) and timed from where Erigon starts on the block "
+          f"(dots), both pairs. Under a second, the no-state rows drop to parity. Over a second, "
+          f"{left} of {len(ge_h)} rows move left: the check sat on jochemnet's side and hid part of "
+          f"state-actor's slower execution."))
+    kvj = sorted(VJ[f"{d} .kv"] for d in ("accounts", "storage", "commitment"))
+    w(f"<p><b>Over a second, the lean is in execution.</b> The pairs sit at {ga['median']:.3f} and "
+      f"{gb['median']:.3f}, where each store measured twice centres on "
+      f"{min(gfl['median'], jfl['median']):.2f} to {max(gfl['median'], jfl['median']):.2f}. Most tests "
+      f"that miss the band miss it low: {lows[0][0]} of {lows[0][1]}, and {lows[1][0]} of "
+      f"{lows[1][1]} in the second pair. The same check costs jochemnet {ge_diff[0]:.0f} ms there, "
+      f"and both stores spend over {int(min(ge_before)) // 100 * 100} ms before it on work they "
+      f"share. Leave both out and state-actor executes {ex_lean}% slower, in both pairs (ratios of "
+      f"{ex_ge[0]:.3f} and {ex_ge[1]:.3f}). On every traced test it reads "
+      f"{round(100 * min(more))}&ndash;{round(100 * max(more))}% more pages.</p>")
+    w(f"<p>Three known differences could explain it. State-actor's storage and commitment files still "
+      f"store their keys raw, where Erigon compresses them "
+      f"({src('db/state/statecfg/state_schema.go', 229, 'storage')}, "
+      f"{src('db/state/statecfg/state_schema.go', 274, 'commitment')}); we re-encoded only the code "
+      f"file. It writes every other state file at format version {VS['accounts .kv']}, its account "
+      f"index included, where Erigon writes {kvj[0]} to {kvj[-1]}. And it holds a fifth more accounts "
+      f"({n_sa_acc / 1e6:.0f} million against {n_joc_acc / 1e6:.0f} million). The next test rewrites the "
+      f"three remaining files the way Erigon writes them, which leaves only the account count.</p>")
 
     # ---- part 4
     w("<h2>What's left, and why</h2><ul>")
-    w(f"<li><b>State-actor's Erigon writer can't compress yet.</b> Until it hands each domain to "
-      f"Erigon's compressor, every Erigon store it builds needs a re-encode like the one above, which "
-      f"took {RC['minutes'] / 60:.0f} hours for the code file alone.</li>")
-    w(f"<li><b>The {min(lean)}&ndash;{max(lean)}% lean over a second.</b> Its two candidates, the raw "
-      f"storage and commitment keys and the extra accounts, are untested.</li>")
-    w(f"<li><b>Jochemnet's extra {ns_ms[0]:.0f} ms per block.</b> We haven't traced it.</li>")
+    w(f"<li><b>State-actor's Erigon writer doesn't write Erigon's files yet.</b> It needs Erigon's "
+      f"compressor and Erigon's current file versions. Until it has both, every Erigon store it builds "
+      f"needs a re-encode like the one above, which took {RC['minutes'] / 60:.0f} hours for the code "
+      f"file alone.</li>")
+    w(f"<li><b>The {ex_lean}% lean in execution over a second.</b> Its candidates are the raw keys, the "
+      f"older file versions and the extra accounts. The next test separates the first two from the "
+      f"last.</li>")
     w(f"<li><b>The test contracts are cheaper than real ones.</b> Each is {MAX_CODE // 1024} KB of one "
       f"repeated opcode, so Erigon stores it in about {round(max(j_bytes), -2):.0f} bytes, one page. "
       f"Jochemnet also holds {thousands(JR['n'])} real mainnet contracts of the same size, and the "
@@ -1345,15 +1542,16 @@ def main():
       "pays that walk. It's the same on both sides, so the ratio holds, but a node's worst case "
       "costs more than either store measures.</li>")
     w("<li><b>Sub-second tests can't be compared on this harness yet.</b> Every test boots a fresh "
-      "client, and under a second the measurement is mostly that client starting up. A discarded "
-      "burn-in block before the measured one would fix it. Until then, those numbers are shown and "
-      "not counted.</li>")
+      "client, and under a second the measurement is mostly that client starting up. Dropping the "
+      "page cache before each test also makes jochemnet pay for its chain history on every block. A "
+      "discarded burn-in block before the measured one would fix both. Until then, those numbers are "
+      "shown and not counted.</li>")
     w("<li><b>benchmarkoor's clock still stops at newPayload.</b> With all three fixes the two "
       "clocks agree, so this comparison doesn't depend on it. But on the untreated store the commit "
       "was most of each block, and a newPayload-only number hid it. For Erigon, the harness should "
       "report the whole block beside newPayload.</li></ul>")
     w("<p>None of these is a reason to distrust the generated store on tests over a second, once its "
-      "code file is written the way Erigon writes it. Two are generator work, two are still open, one "
+      "code file is written the way Erigon writes it. Two are generator work, one is still open, one "
       "is a question for the fixtures, and three are about the method and the harness.</p>")
 
     w("<p class=note>Every number on this page is computed from the collected run data when the "
