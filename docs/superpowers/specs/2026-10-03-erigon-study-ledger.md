@@ -948,3 +948,35 @@ newPayload, state-actor 0.08 MB (both gas levels; 3.8 MB untreated). One control
 7. I pairs: the over-a-second median rises 0.005-0.02 in both pairs; transfers and storage slot move
    toward 1.00; no other row over a second moves by more than its pair-to-pair spread; the
    sub-second no-state offset stays within 5 ms of 16 ms.
+
+**Round 15, point 1 results (2026-10-09; scored 2026-10-11).** Anon approved the plan, option B and
+the deletions (2026-10-09).
+- **Phase split** (`collect_np_phases.py` over H's benchmarkoor logs, `/bench/erigon/np-phases-H.json`
+  sha256 `eea86cd3…528b`; every test in all four runs has both phases). The log's "Running setup
+  step" starts the next test's own setup block, so a step's window ends there; the first version
+  mixed the setup block into the previous test and was discarded. Per test: *before* = request start
+  to `[NewPayload] Handling new payload`; *exec* = `[5/5 Execution] parallel done in=`; *rest* = the
+  remainder (1.5-7 ms).
+  - No-state tests (98): before 16.2 ms on jochemnet, 1.7-1.8 ms on state-actor, paired difference
+    14.4 ms in both pairs; total newPayload difference 16.1 / 16.8 ms, so 86-89% of it is before
+    Erigon starts on the block. Execution: state-actor 7% *shorter* (sa/joc 0.931 / 0.930).
+  - Over a second (110): the before phase is 200-370 ms on both (decoding and checking the payload;
+    shared CPU work), jochemnet's 17.4 / 16.9 ms longer (paired). Execution: state-actor 6.4% / 6.8%
+    longer (sa/joc 1.064 / 1.068). Ratios without the before phase: over a second 0.940 / 0.941
+    (newPayload 0.971 / 0.960); execution only 0.940 / 0.936. Under a second 1.001 / 1.042
+    (newPayload 1.215 / 1.260); no-state rows 0.94-1.05 (newPayload 1.20-1.42).
+  - Prediction 1: **mostly met** (before difference 14.4 ms no-state, 17 ms over a second, 86-89%
+    of the no-state gap); its last clause **missed narrowly**: state-actor's execution is 6.4-6.8%
+    longer over a second, not 2-6%. So the over-a-second lean is larger in execution than the
+    headline shows: the shared ~250 ms before phase dilutes it and jochemnet's +17 ms offsets it.
+- **Probe** (`probe-hash.sh`, 20 random unknown hashes per store, `eth_getBlockByHash`, which reaches
+  `BlockReader.HeaderNumber` -> `HeaderByHash`; `/bench/erigon/probe-hash.json` sha256
+  `6a095508…bf7b`): jochemnet cold 18.7 ms and 0.64 MB read (block files 506 KB, MDBX 170 KB, medians),
+  warm 1.08 ms and nothing read; state-actor cold 1.24 ms, warm 1.04 ms, nothing read either way.
+  Prediction 2: **partly met** (cold 10-40 / < 3 ms, warm < 2 ms: met; >= 200 pages and >= 80% from
+  headers files: missed, ~155 pages, ~79% from block files with MDBX the rest; per-file attribution
+  pending).
+- First probe attempts failed on script bugs (jochemnet's datadir path; a scratch left mounted after a
+  failure made the next arm's dm-device check fail); fixed (per-arm datadir, unmount on every exit).
+- Trace T3 ran on both stores (6/6 passed each, 2026-10-09 15:14-15:21 UTC); collection pending:
+  the bench box's SSH agent (YubiKey via gpg-agent) refused to sign on 2026-10-11.

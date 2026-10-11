@@ -82,7 +82,7 @@ time cmp "$OLD" "$RAW" || fail "the image's code file differs from the copy code
 rm -rf "$S" "$C/tmp-sa" && mkdir -p "$S" "$C/tmp-sa" && chown 1000:1000 "$S" "$C/tmp-sa"
 
 step "recode (read-only on the scratch)"
-time tool compactlatest recode-code --datadir "$DATA" --dst "$S" --tmp "$C/tmp-sa" \
+time tool compactlatest recode --domain code --datadir "$DATA" --dst "$S" --tmp "$C/tmp-sa" \
   --samples "$C/samples-sa.txt" --sample-every 5000 > "$C/recode-sa-report.json" || fail "recode"
 cat "$C/recode-sa-report.json"
 same_stream "$C/recode-sa-report.json" code "$C/codespan-sa-R14.json" || fail "recoded stream differs from the old file's"

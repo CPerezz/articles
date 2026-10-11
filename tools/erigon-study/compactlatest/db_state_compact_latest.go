@@ -48,7 +48,7 @@ func (a *Aggregator) CompactLatest(ctx context.Context, db kv.RoDB, dstDir strin
 	out := map[string]CompactStat{}
 	for _, domain := range []kv.Domain{kv.AccountsDomain, kv.StorageDomain, kv.CodeDomain, kv.CommitmentDomain} {
 		started := time.Now()
-		stat, err := a.compactDomain(ctx, db, domain, dstDir, workers, sampleEvery, samples, logger)
+		stat, err := a.compactDomain(ctx, db, domain, dstDir, workers, true, sampleEvery, samples, logger)
 		if err != nil {
 			return nil, fmt.Errorf("compact %s: %w", domain, err)
 		}
@@ -65,17 +65,41 @@ func (a *Aggregator) CompactLatest(ctx context.Context, db kv.RoDB, dstDir strin
 
 // RecodeDomain writes one domain's latest values into a fresh [0,1) file set under dstDir with the
 // domain's own compression settings, as erigon writes its own files. Keys and values don't change,
-// only their encoding: the returned stream hash must equal the old file's.
+// only their encoding: the returned stream hash must equal the old file's (StreamHashFile).
+// Commitment values are copied as they are, not resolved: state-actor writes its branches with plain
+// keys (its vendored hph has no ReplacePlainKeys), so no value references an offset in another file
+// and re-encoding the storage file can't break one. On an Erigon-written, referenced file use
+// CompactLatest instead.
 func (a *Aggregator) RecodeDomain(ctx context.Context, db kv.RoDB, domain kv.Domain, dstDir string,
 	sampleEvery uint64, samples io.Writer, logger log.Logger) (CompactStat, error) {
-	if domain == kv.CommitmentDomain {
-		return CompactStat{}, fmt.Errorf("recode %s: branches need resolving, use CompactLatest", domain)
+	return a.compactDomain(ctx, db, domain, dstDir, 1, false, sampleEvery, samples, logger)
+}
+
+// StreamHashFile hashes the (key, value) stream of an existing domain .kv, read with the domain's
+// own reader: the same hash compactDomain reports for what it wrote.
+func (a *Aggregator) StreamHashFile(domain kv.Domain, path string) (CompactStat, error) {
+	dec, err := seg.NewDecompressor(path)
+	if err != nil {
+		return CompactStat{}, err
 	}
-	return a.compactDomain(ctx, db, domain, dstDir, 1, sampleEvery, samples, logger)
+	defer dec.Close()
+	r := a.d[domain].dataReader(dec)
+	h := sha256.New()
+	var keys uint64
+	for r.HasNext() {
+		k, _ := r.Next(nil)
+		if !r.HasNext() {
+			return CompactStat{}, fmt.Errorf("%s: key without value at %d", path, keys)
+		}
+		v, _ := r.Next(nil)
+		streamHash(h, k, v)
+		keys++
+	}
+	return CompactStat{Path: path, Keys: keys, Sha256: hex.EncodeToString(h.Sum(nil))}, nil
 }
 
 func (a *Aggregator) compactDomain(ctx context.Context, db kv.RoDB, domain kv.Domain, dstDir string, workers int,
-	sampleEvery uint64, samples io.Writer, logger log.Logger) (CompactStat, error) {
+	resolveBranches bool, sampleEvery uint64, samples io.Writer, logger log.Logger) (CompactStat, error) {
 	d := a.d[domain]
 	path := d.kvNewFilePathIn(dstDir, 0, 1)
 	comp, err := seg.NewCompressor(ctx, d.FilenameBase+".compact", path, d.dirs.Tmp, d.CompressCfg, log.LvlInfo, logger)
@@ -122,7 +146,7 @@ func (a *Aggregator) compactDomain(ctx context.Context, db kv.RoDB, domain kv.Do
 	}
 	defer it.Close()
 
-	if domain != kv.CommitmentDomain {
+	if domain != kv.CommitmentDomain || !resolveBranches {
 		for it.HasNext() {
 			k, v, err := it.Next()
 			if err != nil {

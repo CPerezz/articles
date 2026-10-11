@@ -8,7 +8,8 @@
 //	compactlatest clear-code-cache --datadir D          empty TblCodeCache (re-derivable from CodeDomain)
 //	compactlatest inspect --datadir D                   print settings, head and file coverage
 //	compactlatest codespan --kv F --fixtures T          where every code value of F sits on disk
-//	compactlatest recode-code --datadir D --dst S --tmp T --samples P   re-encode the code file
+//	compactlatest recode --datadir D --domain X --dst S --tmp T --samples P   re-encode one domain's file
+//	compactlatest streamhash --datadir D --domain X --kv F                    (key, value) stream hash of F
 package main
 
 import (
@@ -202,12 +203,13 @@ func main() {
 	dst := fs.String("dst", "", "staging dir for the new domain files (compact)")
 	tmp := fs.String("tmp", "", "temp dir for compressors (compact); default <datadir>/temp")
 	workers := fs.Int("workers", 16, "commitment resolve workers (compact)")
-	sampleEvery := fs.Uint64("sample-every", 1_000_000, "emit every n-th key per domain to the samples file (compact, recode-code)")
+	sampleEvery := fs.Uint64("sample-every", 1_000_000, "emit every n-th key per domain to the samples file (compact, recode)")
 	dbSampleEvery := fs.Uint64("db-sample-every", 1_000, "emit every n-th MDBX-resident key per domain (compact)")
-	samplesPath := fs.String("samples", "", "samples output file (compact, recode-code)")
+	samplesPath := fs.String("samples", "", "samples output file (compact, recode)")
 	headFlag := fs.Uint64("head", 0, "head block the files end at (reset)")
-	kvPath := fs.String("kv", "", "code .kv file (codespan)")
+	kvPath := fs.String("kv", "", ".kv file (codespan, streamhash)")
 	fixturesPath := fs.String("fixtures", "", "per maximum-size value output, TSV (codespan)")
+	domainFlag := fs.String("domain", "", "code|storage|commitment (recode, streamhash)")
 	must(fs.Parse(os.Args[2:]))
 	if *datadirFlag == "" && os.Args[1] != "codespan" {
 		fmt.Fprintln(os.Stderr, "--datadir is required")
@@ -299,11 +301,13 @@ func main() {
 		}
 		must(enc.Encode(codeSpan(*kvPath, *fixturesPath)))
 
-	case "recode-code":
-		if *dst == "" || *samplesPath == "" {
-			fmt.Fprintln(os.Stderr, "recode-code needs --dst and --samples")
+	case "recode":
+		if *dst == "" || *samplesPath == "" || *domainFlag == "" {
+			fmt.Fprintln(os.Stderr, "recode needs --domain, --dst and --samples")
 			os.Exit(2)
 		}
+		domain, err := kv.String2Domain(*domainFlag)
+		must(err)
 		must(os.MkdirAll(*dst, 0o755))
 		// state-actor's writer never made every table erigon expects (CodeCache), and an accede or
 		// read-only open refuses a missing one. A plain open creates them, as the node's first boot does.
@@ -313,9 +317,23 @@ func main() {
 		samples, err := os.Create(*samplesPath)
 		must(err)
 		defer samples.Close()
-		stat, err := agg.RecodeDomain(ctx, db, kv.CodeDomain, *dst, *sampleEvery, samples, logger)
+		stat, err := agg.RecodeDomain(ctx, db, domain, *dst, *sampleEvery, samples, logger)
 		must(err)
-		must(enc.Encode(map[string]any{"step_size": agg.StepSize(), "code": stat}))
+		must(enc.Encode(map[string]any{"step_size": agg.StepSize(), domain.String(): stat}))
+
+	case "streamhash":
+		if *kvPath == "" || *domainFlag == "" {
+			fmt.Fprintln(os.Stderr, "streamhash needs --domain and --kv")
+			os.Exit(2)
+		}
+		domain, err := kv.String2Domain(*domainFlag)
+		must(err)
+		mdbx.New(dbcfg.ChainDB, logger).Path(datadir.New(*datadirFlag).Chaindata).MustOpen().Close()
+		_, _, agg, closeAll := open(ctx, *datadirFlag, "", true, logger)
+		defer closeAll()
+		stat, err := agg.StreamHashFile(domain, *kvPath)
+		must(err)
+		must(enc.Encode(map[string]any{domain.String(): stat}))
 
 	default:
 		fmt.Fprintln(os.Stderr, "unknown subcommand", os.Args[1])

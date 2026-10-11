@@ -3,7 +3,9 @@
 # count cut to 3,000) with the published image and with the fixed one. The two must hold the same
 # state (same root, same code stream, same RPC answers through Erigon); the fixed one's code file
 # must be written the way Erigon writes it (a pattern dictionary, test contracts under 1 KB).
-# Usage: sudo e2e-sa-compress.sh <new-image>      Never beside a suite (.busy).
+# Usage: sudo e2e-sa-compress.sh <new-image>
+# It touches no schelk scratch, so it may run beside the recode; it must never run beside a suite, and
+# it can't take .busy, which would fail the next suite that recode-sa.sh chains into.
 set -uo pipefail
 
 NEW="${1:?new image}"
@@ -13,16 +15,14 @@ GO_IMG=docker.io/library/golang:1.25-bookworm
 E=/bench/erigon/e2e
 C=/bench/erigon/compact
 L=/bench/erigon/logs
-BUSY=/bench/erigon/.busy
 PORT=18547
 
 rm -f "$L/e2e-sa-compress.done" "$L/e2e-sa-compress.fail"
 cd /
 exec >> "$L/e2e-sa-compress.log" 2>&1
 fail() { echo "FAIL $1 ($(date -Is))"; echo "$1" > "$L/e2e-sa-compress.fail"; exit 1; }
-while [ -f "$BUSY" ] || pgrep -x benchmarkoor >/dev/null; do sleep 30; done
-echo "e2e-sa-compress" > "$BUSY"
-trap 'podman rm -f er-e2e-probe >/dev/null 2>&1; rm -f "$BUSY"' EXIT
+pgrep -x benchmarkoor >/dev/null && fail "a suite is running"
+trap 'podman rm -f er-e2e-probe >/dev/null 2>&1' EXIT
 mkdir -p "$E"
 echo "======== e2e $(date -Is): old $OLD new $NEW ========"
 
