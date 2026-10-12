@@ -47,7 +47,7 @@ step() { echo; echo "======== $1: $(date -Is) ========"; }
 sha() { python3 -c "import json,sys; print(json.load(open(sys.argv[1]))[sys.argv[2]]['sha256'])" "$@"; }
 
 while [ -f "$BUSY" ] || pgrep -x benchmarkoor >/dev/null; do sleep 60; done
-echo "recode-sa-sc" > "$BUSY"
+echo "recode-sa-domains" > "$BUSY"
 trap 'podman rm -f er-recode-probe >/dev/null 2>&1; rm -f "$BUSY"' EXIT
 
 boot() { # boot erigon with the benchmark's flags on the current scratch and wait for RPC
