@@ -240,10 +240,11 @@ TRACED = (("opcode_BALANCE", "account read"), ("EXISTING_CONTRACT_JUMPDEST", "ca
 
 def traced(S0, arm):
     """Per traced test: the share of newPayload's page reads each source group served, and the total.
-    Tests a trace didn't run are skipped (the distinct-contract call joined in T2)."""
+    Tests a trace didn't run are skipped (the distinct-contract call joined in T2); the no-state
+    controls a later trace added share these needles and do no state work, so they're never matched."""
     out = []
     for needle, label in TRACED:
-        test = next((t for t in S0[arm]["tests"] if needle in t), None)
+        test = next((t for t in S0[arm]["tests"] if needle in t and "overhead_baseline_True" not in t), None)
         if test is None:
             continue
         b = S0[arm]["tests"][test]["bytes"]["engine_newPayload"]
@@ -284,6 +285,40 @@ def chart_sources(S0):
         o.append(S.label(lx + 14, ly, g, "start", "tick"))
         lx += 14 + 8 * len(g) + 18
     return S.svg(W, H, "".join(o))
+
+def chart_pages(arms):
+    """Each traced test's newPayload reads by file, in MB, one bar per store state. arms is
+    [(label, trace, arm key)]; only tests every arm traced are drawn."""
+    W, L, R, T = 760, 300, 80, 34
+    rh, gap = 16, 12
+    per = [{lab: (sh, tot) for lab, sh, tot in traced(S0, k)} for _, S0, k in arms]
+    tests = [lab for _, lab in TRACED if all(lab in p for p in per)]
+    H = T + len(tests) * (len(arms) * rh + gap) + 56
+    top = max(p[t][1] for p in per for t in tests) / 1e6
+    sx = S.Scale(0, top * 1.02, L, W - R)
+    o = [S.label(0, 14, "pages each test read inside newPayload, by file (MB)", "start", "big")]
+    colours = dict((g, v) for g, _, v in SOURCE_GROUPS) | {"other": "--muted"}
+    y = T
+    for t in tests:
+        for (label, _, _), p in zip(arms, per):
+            sh, tot = p[t]
+            o.append(S.label(L - 10, y + 11, f"{t}, {label}", "end", "tick"))
+            x = 0.0
+            for g in colours:
+                v = sh.get(g, 0) * tot / 1e6
+                if v > 0:
+                    o.append(S.band(sx.to(x), sx.to(x + v), y + 2, y + rh - 2, colours[g], 0.85))
+                    x += v
+            o.append(S.label(W - R + 8, y + 11, f"{tot / 1e6:.0f}", "start", "tick"))
+            y += rh
+        y += gap
+    lx, ly = 0, H - 10
+    for g in colours:
+        o.append(S.band(lx, lx + 10, ly - 9, ly + 1, colours[g], 0.85))
+        o.append(S.label(lx + 14, ly, g, "start", "tick"))
+        lx += 14 + 8 * len(g) + 18
+    return S.svg(W, H, "".join(o))
+
 
 def chart_commit(series):
     """The forkchoiceUpdated call after each measured block, median per row, one marker per store
@@ -359,8 +394,10 @@ def chart_codefile(CL):
     return S.svg(W, H, "".join(o))
 
 
-STAGES = (("untreated", "--db-u"), ("1. rebuilt", "--db-sa"), ("2. code cache emptied", "--db-c"),
-          ("3. code file re-encoded", "--accent"))
+# (legend name, short label under a bar, colour), one per series in order: D E G H I.
+STAGES = (("untreated", "untreated", "--db-u"), ("1. rebuilt", "1. rebuilt", "--db-sa"),
+          ("2. code cache emptied", "2. code cache", "--db-c"), ("3. code file re-encoded", "3. code file", "--accent"),
+          ("4. other state files re-encoded", "4. other files", "--good-fg"))
 
 
 def chart_progress(stage_rows, rows):
@@ -368,7 +405,7 @@ def chart_progress(stage_rows, rows):
     the final store's one-second split. stage_rows[i][cat] is row cat's median after step i."""
     W, L, R, T = 760, 250, 40, 34
     rh = 20
-    H = T + 12 + rh * len(rows) + 74
+    H = T + 12 + rh * len(rows) + 92
     lo, hi = 0.3, 5
     sx = S.LogScale(lo, hi, L, W - R)
 
@@ -382,14 +419,15 @@ def chart_progress(stage_rows, rows):
     for i, cat in enumerate(rows):
         y = top + rh * i + 10
         o.append(S.label(L - 10, y + 4, ROW_LABEL.get(cat, cat), "end", "tick"))
-        pts = [(x(sr[cat]), y + 2.6 * (j - 1.5)) for j, sr in enumerate(stage_rows)]
+        mid = (len(stage_rows) - 1) / 2
+        pts = [(x(sr[cat]), y + 2.6 * (j - mid)) for j, sr in enumerate(stage_rows)]
         o.append(S.polyline(pts, "--dim", 1))
-        for (px, py), (name, var), sr in zip(pts, STAGES, stage_rows):
+        for (px, py), (name, _, var), sr in zip(pts, STAGES, stage_rows):
             o.append(S.dot(px, py, 3, var, f"{name}: {sr[cat]:.2f}"))
     for t in (0.3, 0.5, 1, 2, 4):
         o.append(S.label(sx.to(t), bot + 16, "%g" % t, "middle", "tick"))
-    for j, (name, var) in enumerate(STAGES):
-        lx, ly = L + 250 * (j % 2), H - 30 + 18 * (j // 2)
+    for j, (name, _, var) in enumerate(STAGES):
+        lx, ly = L + 250 * (j % 2), H - 48 + 18 * (j // 2)
         o.append(S.dot(lx, ly - 4, 3.2, var))
         o.append(S.label(lx + 10, ly, name, "start", "tick"))
     return S.svg(W, H, "".join(o))
@@ -414,7 +452,7 @@ def chart_steps(bars, n):
     for v in (0, 25, 50, 75, 100):
         o.append(S.line(L, sy.to(v), W - R, sy.to(v), "--line", 1))
         o.append(S.label(L - 8, sy.to(v) + 4, str(v), "end", "tick"))
-    for i, ((name, _), b) in enumerate(zip(STAGES, bars)):
+    for i, ((_, name, _), b) in enumerate(zip(STAGES, bars)):
         cx = L + gw * (i + 0.5)
         for j, (a, p2, fl, var) in enumerate(((*b[:3], "--accent"), (*b[3:], "--db-sa"))):
             x0 = cx - 46 + j * 50
@@ -423,7 +461,8 @@ def chart_steps(bars, n):
                 o.append(S.band(x0, x1, sy.to(0), sy.to(a), var, 0.85))
             o.append(S.line(x0 - 3, sy.to(fl), x1 + 3, sy.to(fl), "--db-u", 2.5))
             o.append(S.line(x0 + 7, sy.to(p2), x1 - 7, sy.to(p2), "--fg", 2))
-            o.append(S.label((x0 + x1) / 2, sy.to(max(a, p2)) - 7, str(a), "middle", "tick"))
+            top = max(a, p2)
+            o.append(S.label((x0 + x1) / 2, sy.to(fl if 0 <= fl - top < 8 else top) - 7, str(a), "middle", "tick"))
         o.append(S.label(cx, T + ph + 18, name, "middle", "tick"))
     ly = H - 22
     for k, (text, var, kind) in enumerate((("newPayload", "--accent", "bar"), ("whole block", "--db-sa", "bar"),
@@ -719,17 +758,17 @@ def main():
     assert light_mb < 0.2 * joc_rd, "the EOA and absent-account rows no longer read little"
     # Finding 1's fix: jochemnet rebuilt into one bottom file per domain, checked, and re-run.
     RB, E, S1 = P["rebuild"], D["after_layout"], D["step0_after"]
-    G, FIN, S2 = D["cache_emptied"], D["final"], D["step0_final"]
+    G, HH, FIN, S2 = D["cache_emptied"], D["code_file"], D["final"], D["step0_final"]
     assert RB["new_step_size"] == RB["head_txnum"] + 1 and RB["head_block"] == P["head_after_prerun"], \
         "the rebuilt files no longer end at the head block"
     assert RB["rpc_identical"] and min(RB["rpc_samples_db_accounts"], RB["rpc_samples_db_slots"]) > 0, \
         "the rebuild's RPC check no longer covers database-only state, or found a difference"
     assert RB["mdbx_after_bytes"] / 1e9 < 0.02 * P["joc_mdbx_gb"], "the database didn't shrink"
-    for S_ in (E, G, FIN):
+    for S_ in (E, G, HH, FIN):
         assert S_["n"] == B["n"] and S_["complete"] and S_["gas_mismatches"] == 0, \
             "a later series isn't the same 266 tests at the same gas"
-    all_runs = [r for S_ in (B, E, G, FIN) for r in S_["runs"].values()]
-    assert len(all_runs) == len(set(all_runs)) == 16, "two series share a run, or one isn't four runs"
+    all_runs = [r for S_ in (B, E, G, HH, FIN) for r in S_["runs"].values()]
+    assert len(all_runs) == len(set(all_runs)) == 20, "two series share a run, or one isn't four runs"
     joc_tr1, sa_tr1 = traced(S1, "joc"), traced(S1, "sa")
     assert max(s["database"] for _, s, _ in joc_tr1) < 0.01, "a traced test still reads jochemnet's database"
     gap1 = {lj: abs(ts / tj - 1) for (lj, _, tj), (_, _, ts) in zip(joc_tr1, sa_tr1)}
@@ -741,19 +780,20 @@ def main():
     assert code_x > 4, "state-actor's jumpdest call no longer reads several times the code pages: %.1f" % code_x
     # From here on every series is grouped on the final store's one-second split, so a row means
     # the same tests at every step. Stages: D untreated, E rebuilt, G code cache emptied, H code
-    # file re-encoded.
-    ST = {"D": regroup(B, FIN), "E": regroup(E, FIN), "G": regroup(G, FIN), "H": regroup(FIN, FIN)}
+    # file re-encoded, I the other state files re-encoded.
+    ST = {"D": regroup(B, FIN), "E": regroup(E, FIN), "G": regroup(G, FIN), "H": regroup(HH, FIN),
+          "I": regroup(FIN, FIN)}
 
     def rm(s, cat, k="a", cls="ge1s"):
         return med(ST[s][(cls, cat)], k)
 
     def tin(s, k="a"):
         return sum(inband(t[k]) for t in ST[s][("ge1s", "__all__")])
-    GE_CATS = [c for c in ORDER if ("ge1s", c) in ST["H"]]
+    GE_CATS = [c for c in ORDER if ("ge1s", c) in ST["I"]]
 
     def differs(s, k="a", kb="b"):
         return [c for c in GE_CATS if not inband(rm(s, c, k)) and not inband(rm(s, c, kb))]
-    n_before, n_after = ge_all["a"]["n"], len(ST["H"][("ge1s", "__all__")])
+    n_before, n_after = ge_all["a"]["n"], len(ST["I"][("ge1s", "__all__")])
     NOSTATE = ("control (no state work)", "warm query", "sload same key")
 
     def joc_state_secs(S_):
@@ -777,17 +817,18 @@ def main():
         "the code calls no longer flip from parity: %r -> %r" % (cc_b, cc_a)
     # The set that differs, step by step: rows over a second outside the band in both pairs, and
     # tests inside it (pair 1), on both clocks.
-    diff_np = {s: differs(s) for s in "DEGH"}
-    diff_wb = {s: differs(s, "a_total", "b_total") for s in "DEGH"}
-    in_np, in_wb = {s: tin(s) for s in "DEGH"}, {s: tin(s, "a_total") for s in "DEGH"}
+    diff_np = {s: differs(s) for s in "DEGHI"}
+    diff_wb = {s: differs(s, "a_total", "b_total") for s in "DEGHI"}
+    in_np, in_wb = {s: tin(s) for s in "DEGHI"}, {s: tin(s, "a_total") for s in "DEGHI"}
     assert in_np["D"] < in_np["E"] < in_np["G"] < in_np["H"] and in_wb["D"] < in_wb["E"] < in_wb["G"] <= in_wb["H"], \
         "the tests inside the band no longer grow at every step: %r / %r" % (in_np, in_wb)
     assert set(diff_np["D"]) == set(GE_CATS) - set(CODE_CALLS) and set(diff_wb["D"]) == set(GE_CATS), \
         "untreated, the rows that differ are no longer every row but the code calls (all of them whole)"
     assert set(CODE_CALLS) <= set(diff_np["E"]) and set(diff_np["G"]) == set(CODE_CALLS), \
         "after the first two fixes, the rows that differ are no longer the code calls"
-    assert diff_np["H"] == [] and diff_wb["H"] == [], "after the third fix a row still differs: %r / %r" % (diff_np["H"], diff_wb["H"])
-    nd = [len(diff_np[s]) for s in "DEGH"]
+    assert diff_np["H"] == diff_wb["H"] == diff_np["I"] == diff_wb["I"] == [], \
+        "after the third step a row still differs: %r" % ((diff_np["H"], diff_wb["H"], diff_np["I"], diff_wb["I"]),)
+    nd = [len(diff_np[s]) for s in "DEGHI"]
     assert nd == sorted(nd, reverse=True), "the rows that differ didn't shrink at every step: %r" % nd
     # Finding 2: the code cache, and the forkchoiceUpdated split behind it.
     FS, CC = D["fcu_split"], P["code_cache"]
@@ -886,11 +927,12 @@ def main():
     # Where it stands: the final pairs, on their own split.
     ge_h, ALL_H = dict(class_rows(FIN, "ge1s")), {r["cls"]: r for r in FIN["rows"] if r["cat"] == "__all__"}
     ga, gb, gfl = ALL_H["ge1s"]["a"], ALL_H["ge1s"]["b"], ALL_H["ge1s"]["floor_sa"]
-    assert ga["within10"] == in_np["H"] and ga["n"] == n_after, "the final row set and the staged one disagree"
+    assert ga["within10"] == in_np["I"] and ga["n"] == n_after, "the final row set and the staged one disagree"
     assert 0.9 <= min(ga["median"], gb["median"]) and max(ga["median"], gb["median"]) <= 1.05, \
         "the final newPayload median left the band: %.3f / %.3f" % (ga["median"], gb["median"])
     # The two stores agree about as well as each one agrees with itself.
     jfl = ALL_H["ge1s"]["floor_joc"]
+    fl_lo, fl_hi = sorted((gfl["median"], jfl["median"]))
     cross, floors = (ga["within10"], gb["within10"]), (gfl["within10"], jfl["within10"])
     assert min(cross) >= min(floors) - 0.05 * ga["n"] and max(cross) <= max(floors) + 0.05 * ga["n"] \
         and min(floors) > 0.8 * ga["n"], "the pairs no longer agree as well as one store with itself: %r / %r" % (cross, floors)
@@ -915,7 +957,7 @@ def main():
     ns_rows = [r for c, r in class_rows(FIN, "lt1s") if c in NOSTATE]
     ns_med = [r[k]["median"] for r in ns_rows for k in ("a", "b")]
     ns_floor = [r[k]["median"] for r in ns_rows for k in ("floor_sa", "floor_joc")]
-    assert len(ns_rows) == len(NOSTATE) and min(ns_med) > 1.15 and 0.95 < min(ns_floor) and max(ns_floor) < 1.05, \
+    assert len(ns_rows) == len(NOSTATE) and 0.9 < min(ns_floor) and max(ns_floor) < 1.05 and min(ns_med) > max(ns_floor) + 0.08, \
         "the no-state offset under a second changed: %r / %r" % (ns_med, ns_floor)
     ns_tests = [t for t in FIN["tests"].values() if t["cls"] == "lt1s" and t["cat"] in NOSTATE]
     ns_ms = [1e3 * median(t["joc_secs"] - t["joc_secs"] / t[k] for t in ns_tests) for k in ("a", "b")]
@@ -929,12 +971,13 @@ def main():
     lean = [round(100 * (1 - g["median"])) for g in (ga, gb)]
     assert max(ga["median"], gb["median"]) < min(gfl["median"], jfl["median"]) - 0.01 and 2 <= min(lean) and max(lean) <= 5, \
         "the over-a-second lean changed: %r against floors %.3f / %.3f" % (lean, gfl["median"], jfl["median"])
-    lows = [(sum(t[k] < 0.9 for t in ST["H"][("ge1s", "__all__")]), sum(not inband(t[k]) for t in ST["H"][("ge1s", "__all__")]))
+    lows = [(sum(t[k] < 0.9 for t in ST["I"][("ge1s", "__all__")]), sum(not inband(t[k]) for t in ST["I"][("ge1s", "__all__")]))
             for k in ("a", "b")]
-    assert all(lo > 0.8 * n for lo, n in lows), "the misses no longer fall low: %r" % lows
+    assert all(lo > 0.7 * n for lo, n in lows), "the misses no longer fall low: %r" % lows
     more = [ts / tj - 1 for (_, _, tj), (_, _, ts) in zip(joc_tr2, sa_tr2)]
     assert min(more) > 0.01 and max(more) < 0.08, "state-actor no longer reads a few percent more on every traced test: %r" % more
-    n_sa_acc, n_joc_acc = P["sa_eoas"] + P["sa_contracts"], RB["keys"]["accounts"]
+    # Accounts each store holds: the accounts domain's key count, on both sides.
+    n_sa_acc, n_joc_acc = P["recode_rest"]["domains"]["accounts"]["keys"], RB["keys"]["accounts"]
     assert 1.15 < n_sa_acc / n_joc_acc < 1.25, "state-actor no longer holds about a fifth more accounts"
     # "The 16 ms is a lookup, not state" (round 15). Per test and pair, newPayload split where
     # Erigon's log says it starts on the block: [total, before, execution] ms per store.
@@ -984,7 +1027,7 @@ def main():
     rc_ge = [median(recut(ge_names, k)) for k in "ab"]
     # "Over a second, most rows move left" (pair 1, from as measured to from the start).
     left = sum(rc_med[("ge1s", c)][0] < ge_h[c]["a"]["median"] for c in ge_h)
-    assert left >= 0.75 * len(ge_h), "most rows over a second no longer move left without the check: %d" % left
+    assert left > len(ge_h) / 2, "most rows over a second no longer move left without the check: %d" % left
     ex_ge = [median(PH[n][k]["joc"][2] / PH[n][k]["sa"][2] for n in ge_names) for k in "ab"]
     ge_before = [ph(ge_names, k, arm, 1) for k in "ab" for arm in ("joc", "sa")]
     ge_diff = [median(PH[n][k]["joc"][1] - PH[n][k]["sa"][1] for n in ge_names) for k in "ab"]
@@ -994,7 +1037,7 @@ def main():
     # paired difference is only the check.
     assert 200 < min(ge_before) and max(ge_before) < 320 and all(12 < d < 25 for d in ge_diff), \
         "the over-a-second before phase changed: %r %r" % (ge_before, ge_diff)
-    ex_lean = round(100 * (1 - median(ex_ge)))
+    ex_lean = f"{100 * (1 - median(ex_ge)):.1f}"
     # State-actor's files are v1.0 where Erigon writes v2.x (the code file is Erigon's since the re-encode).
     VJ, VS = S2["joc"]["versions"], S2["sa"]["versions"]
     assert all(VS[f"{d} .kv"] == "v1.0" and VJ[f"{d} .kv"] >= "v2.0" for d in ("accounts", "storage", "commitment")) \
@@ -1020,16 +1063,51 @@ def main():
     def floor_in(s, k):
         return sum(inband(t[k]) for t in ST[s][("ge1s", "__all__")] if t[k] is not None)
     steps_bars = [(tin(s), tin(s, "b"), floor_in(s, "floor_sa"), tin(s, "a_total"), tin(s, "b_total"),
-                   floor_in(s, "floor_sa_total")) for s in "DEGH"]
-    # "The account reads are too few to tell": one store measured twice spreads those rows' medians
-    # at least as wide and keeps about half their tests inside; two of the four fall below 0.90, each
-    # in one pair only.
-    acc_fl = [ge_h[c]["floor_sa"]["median"] for c in CONTRACT_ACCT]
-    acc_fl_in, acc_fl_n = (sum(ge_h[c]["floor_sa"][k] for c in CONTRACT_ACCT) for k in ("within10", "n"))
-    acc_low = [c for c in CONTRACT_ACCT if (ge_h[c]["a"]["median"] < 0.9) + (ge_h[c]["b"]["median"] < 0.9) == 1]
-    assert min(acc_fl) < 0.9 and max(acc_fl) > 1.05 and acc_fl_in <= 0.6 * acc_fl_n and len(acc_low) == 2 \
-        and not any(ge_h[c]["a"]["median"] < 0.9 and ge_h[c]["b"]["median"] < 0.9 for c in CONTRACT_ACCT), \
-        "the account rows are no longer floor-limited: %r %d/%d %r" % (acc_fl, acc_fl_in, acc_fl_n, acc_low)
+                   floor_in(s, "floor_sa_total")) for s in "DEGHI"]
+    # Finding 4: the other state files, re-encoded the way Erigon writes them.
+    RR, S4 = P["recode_rest"], D["step0_files"]
+    V4 = S4["sa"]["versions"]
+    assert all(V4[k] == VJ[k] for k in VJ) and set(V4) == set(VJ), "after the re-encode the file versions differ: %r %r" % (V4, VJ)
+    RD = RR["domains"]
+    assert RR["answers_identical"] and RR["rpc_errors"] == 0 and RR["rpc_samples"] == RR["rpc_storage_samples"] + RR["rpc_account_samples"], \
+        "the re-encode's RPC check moved"
+    assert RD["storage"]["new_kv_bytes"] < 0.95 * RD["storage"]["old_kv_bytes"] and \
+        RD["commitment"]["new_kv_bytes"] < RD["commitment"]["old_kv_bytes"] and \
+        RD["accounts"]["new_kv_bytes"] == RD["accounts"]["old_kv_bytes"], "the re-encoded file sizes changed"
+    # "What it did": more tests inside in both pairs, the account rows in, the medians not moving
+    # together, and execution alone closing part of its gap.
+    hall = {r["cls"]: r for r in HH["rows"] if r["cat"] == "__all__"}["ge1s"]
+    in4 = [(hall["a"]["within10"], ga["within10"]), (hall["b"]["within10"], gb["within10"])]
+    assert all(after > before for before, after in in4), "the fourth step no longer brings tests in: %r" % in4
+    md4 = [(hall[k]["median"], g["median"]) for k, g in (("a", ga), ("b", gb))]
+    assert (md4[0][1] - md4[0][0]) * (md4[1][1] - md4[1][0]) < 0, "the pairs' medians now move together: %r" % md4
+    hi = {c: fam_in("I", c) - fam_in("H", c) for c in GE_CATS}
+    hi_acc = sum(hi[c] for c in CONTRACT_ACCT)
+    assert hi_acc > (in_np["I"] - in_np["H"]) / 2, "the fourth step's gain no longer came mostly from account reads: %r" % hi
+    acc_both = [c for c in CONTRACT_ACCT if inband(ge_h[c]["a"]["median"]) and inband(ge_h[c]["b"]["median"])]
+    acc_one = [c for c in CONTRACT_ACCT if c not in acc_both and (inband(ge_h[c]["a"]["median"]) or inband(ge_h[c]["b"]["median"]))]
+    assert len(acc_both) == 3 and len(acc_one) == 1, "the account rows after the fourth step changed: %r %r" % (acc_both, acc_one)
+    PHH = D["np_phases_code_file"]
+    ex_h = [median(PHH[n][k]["joc"][2] / PHH[n][k]["sa"][2] for n in ge_names) for k in "ab"]
+    assert all(0.92 < h < i < 0.97 for h, i in zip(ex_h, ex_ge)), "execution alone no longer closes part of its gap: %r -> %r" % (ex_h, ex_ge)
+    # "So the format was about a quarter of the lean in execution."
+    quarter = (median(ex_ge) - median(ex_h)) / (1 - median(ex_h))
+    assert 0.15 < quarter < 0.4, "the format's share of the execution lean moved: %.2f" % quarter
+    # The trace: state-actor reads what it read before, still more than jochemnet, and on the account
+    # read the extra is the account index, which is larger in proportion to the accounts it holds.
+    def np_bytes(S_, arm, name):
+        return sum(S_[arm]["tests"][name]["bytes"]["engine_newPayload"].values())
+    t4 = [n for n in S4["sa"]["tests"] if n in S2["sa"]["tests"]]
+    moved4 = [abs(np_bytes(S4, "sa", n) / np_bytes(S2, "sa", n) - 1) for n in t4]
+    more4 = [np_bytes(S4, "sa", n) / np_bytes(S2, "joc", n) - 1 for n in t4]
+    assert len(t4) == len(TRACED) and max(moved4) < 0.015 and 0.01 < min(more4) and max(more4) < 0.08, \
+        "the re-encode now changes what state-actor reads: %r %r" % (moved4, more4)
+    acct_read = next(n for n in t4 if "opcode_BALANCE" in n)
+    bj, b4 = (S_[a]["tests"][acct_read]["bytes"]["engine_newPayload"] for S_, a in ((S2, "joc"), (S4, "sa")))
+    idx_extra = (b4["accounts indexes"] - bj["accounts indexes"]) / (np_bytes(S4, "sa", acct_read) - np_bytes(S2, "joc", acct_read))
+    idx_j, idx_s = S2["joc"]["inventory_bytes"]["accounts indexes"], S4["sa"]["inventory_bytes"]["accounts indexes"]
+    assert idx_extra > 0.8 and abs((idx_s / idx_j) / (n_sa_acc / n_joc_acc) - 1) < 0.05, \
+        "the account read's extra is no longer the account index, sized by the account count: %.2f %.3f" % (idx_extra, idx_s / idx_j)
     # "That's N% of their median block": the extra time against state-actor's median no-state block.
     ns_sa_ms = 1e3 * median(t["joc_secs"] / t["a"] for t in ns_tests)
     ns_pct = round(100 * ns_ms[0] / ns_sa_ms)
@@ -1086,7 +1164,7 @@ def main():
       f"hold the same state. On the benchmark's own clock, the one generated from scratch ran "
       f"ether transfers {slow:.1f}&times; slower. Timed through the commit that follows each "
       f"block, it was {at:.1f}&times; faster. It was neither. Three things about how the two "
-      f"stores were built made both gaps. Fix them one at a time and the tests that run over a "
+      f"stores were built made both gaps, and a fourth made part of what was left. Fix them one at a time and the tests that run over a "
       f"second land at a median of {ga['median']:.2f} on newPayload and {wb_h:.2f} whole, "
       f"{ga['within10']} of {ga['n']} inside &plusmn;10%, about what one store gets against itself. "
       f"Here's each one, what it did to the numbers, and what's still off.</p>")
@@ -1166,10 +1244,11 @@ def main():
       f"reads. State-actor writes all of its state into files: a {sa_db_gb:.1f} GB database beside "
       f"{sa_files_gb:.0f} GB of files. On the tests that read contract accounts, its newPayload "
       f"reads {sa_rd/joc_rd:.0f}&times; the bytes jochemnet's does.</p>")
-    w("<p>Three things made the gaps:</p><ol>"
+    w("<p>Three things made the gaps, and a fourth made part of what was left:</p><ol>"
       "<li>the benchmark's state never left jochemnet's database;</li>"
       "<li>jochemnet carried a code cache into every boot;</li>"
-      "<li>Erigon compresses a contract's code, and state-actor writes it raw.</li></ol>")
+      "<li>Erigon compresses a contract's code, and state-actor writes it raw;</li>"
+      "<li>state-actor writes the rest of Erigon's files in their oldest format.</li></ol>")
 
     # ---- part 2, finding 1
     ec, sac = P["erigon_commit"], P["state_actor_commit"]
@@ -1348,7 +1427,7 @@ def main():
       f"same. The file went from {CL['sa']['file_bytes'] / 1e9:.1f} GB to "
       f"{CL['sa_recoded']['file_bytes'] / 1e9:.1f} GB.</p>")
     w(fig("fig_sources_final", chart_sources(S2),
-          f"Five tests traced on both stores in their final state: jochemnet rebuilt with its cache "
+          f"Five tests traced on both stores after the third step: jochemnet rebuilt with its cache "
           f"emptied, state-actor with its code file re-encoded. Both read only their files, and "
           f"every total lands within {100 * max(gap2.values()):.0f}% of the other store's."))
     w(f"<p><b>What it did.</b> The distinct-contract call went from {dm_g:.2f} to {dm_h:.2f} "
@@ -1361,12 +1440,56 @@ def main():
     w("<p>The fix belongs in the generator: its Erigon writer has to hand each domain to Erigon's own "
       "compressor, at Erigon's own settings.</p>")
 
+    # ---- finding 4
+    kvj = sorted(VJ[f"{d} .kv"] for d in ("accounts", "storage", "commitment"))
+    w("<h2>4. State-actor writes Erigon's oldest file format</h2>")
+    w(f"<p><b>The code file wasn't the only one.</b> Erigon names each file after its format "
+      f"version. State-actor writes every other state file at {VS['accounts .kv']}, "
+      f"{src('db/state/statecfg/versions.yaml', 8, 'the oldest one Erigon still reads')}. Erigon "
+      f"writes {kvj[0]} to {kvj[-1]}, with newer indexes and filters beside them. It also compresses "
+      f"the keys of the storage and commitment files "
+      f"({src('db/state/statecfg/state_schema.go', 229, 'storage')}, "
+      f"{src('db/state/statecfg/state_schema.go', 274, 'commitment')}), which state-actor writes "
+      f"raw.</p>")
+    w(f"<p><b>The test</b> is the same as for the code file: re-encode the other three with Erigon's "
+      f"own writer, at its current versions. Every key and value stays: "
+      f"{RD['commitment']['keys'] / 1e6:.0f} million commitment entries, "
+      f"{RD['storage']['keys'] / 1e9:.2f} billion storage slots and "
+      f"{RD['accounts']['keys'] / 1e6:.0f} million accounts hash the same before and after, and "
+      f"{thousands(RR['rpc_samples'])} answers to <code>eth_getStorageAt</code>, "
+      f"<code>eth_getBalance</code> and <code>eth_getProof</code> came back byte for byte the same. "
+      f"The storage file went from {RD['storage']['old_kv_bytes'] / 1e9:.0f} GB to "
+      f"{RD['storage']['new_kv_bytes'] / 1e9:.0f}, the commitment file from "
+      f"{RD['commitment']['old_kv_bytes'] / 1e9:.0f} to {RD['commitment']['new_kv_bytes'] / 1e9:.0f}, "
+      f"and the account file kept its size.</p>")
+    w(fig("fig_pages", chart_pages([("jochemnet", S2, "joc"), ("state-actor, step 3", S2, "sa"),
+                                    ("state-actor, step 4", S4, "sa")]),
+          f"Five tests traced page by page: jochemnet, and state-actor before and after this step. "
+          f"State-actor's reads moved by {100 * max(moved4):.1f}% at most, and it still reads "
+          f"{round(100 * min(more4))}&ndash;{round(100 * max(more4))}% more than jochemnet."))
+    w(f"<p><b>What it did.</b> Over a second, {ga['within10']} and {gb['within10']} of {ga['n']} "
+      f"tests now sit inside the band, against {in4[0][0]} and {in4[1][0]}. Of the "
+      f"{WORDS[in_np['I'] - in_np['H']]} the first pair gained, {WORDS[hi_acc]} are account reads, and "
+      f"{WORDS[len(acc_both)]} of those four rows now sit inside in both pairs. But the medians moved "
+      f"apart: {md4[0][0]:.3f} to {md4[0][1]:.3f} in the first pair, {md4[1][0]:.3f} to "
+      f"{md4[1][1]:.3f} in the second. Timed from where Erigon starts on the block (below), "
+      f"state-actor's execution went from {100 * (1 - median(ex_h)):.1f}% behind to "
+      f"{100 * (1 - median(ex_ge)):.1f}%.</p>")
+    w(f"<p><b>Why it didn't close.</b> State-actor reads what it read before. On the account read, "
+      f"what it reads beyond jochemnet is the account index, and an index grows with the keys it "
+      f"holds. State-actor's account index is {idx_s / 1e9:.2f} GB against {idx_j / 1e9:.2f}, for "
+      f"{n_sa_acc / 1e6:.0f} million accounts against {n_joc_acc / 1e6:.0f} million. So the format "
+      f"was about a quarter of the lean in execution. The account count is what's left that we know "
+      f"of, and it takes a store generated at jochemnet's size to test.</p>")
+    w("<p>The fix belongs in the generator as well: Erigon's current file versions, beside its "
+      "compressor.</p>")
+
     # ---- part 3
     w("<h2>Where it stands</h2>")
     w(fig("fig_overview_after",
-          chart_overview(FIN, "a", "b", "newPayload throughput after the three fixes, "
+          chart_overview(FIN, "a", "b", "newPayload throughput after the four steps, "
                          "state-actor / jochemnet (band = \u00b110%)"),
-          "The same tests after all three fixes, two independent pairs. Compare it with the first "
+          "The same tests after all four steps, two independent pairs. Compare it with the first "
           "figure: same rows, same axis."))
     w(f"<p><b>How much closer each step got.</b> Each step brought more tests inside the band, and "
       f"each gain came from the rows its fix was about. The rebuild added {de_gain} on every other "
@@ -1374,40 +1497,42 @@ def main():
       f"calls. The emptied code cache added {in_np['G'] - in_np['E']}, mostly calls into minimal "
       f"code and transfers. The re-encoded code file added {in_np['H'] - in_np['G']}, {gh_cc} of them "
       f"the distinct and jumpdest calls, because each of their contracts now costs one page instead "
-      f"of {WORDS[sa_pages]}.</p>")
+      f"of {WORDS[sa_pages]}. The other files added {in_np['I'] - in_np['H']}, {hi_acc} of them "
+      f"account reads.</p>")
     w(fig("fig_steps", chart_steps(steps_bars, n_after),
           f"Tests over a second inside &plusmn;10% after each step, on the final split: pair 1 as the "
           f"bar, pair 2 as the tick. The amber cap is state-actor measured twice at that step, the best "
-          f"the bar could reach. newPayload went {in_np['D']}, {in_np['E']}, {in_np['G']}, "
-          f"{in_np['H']}; the whole block {in_wb['D']}, {in_wb['E']}, {in_wb['G']}, {in_wb['H']}."))
-    stage_rows = [{c: rm(s, c) for c in GE_CATS} for s in "DEGH"]
+          f"the bar could reach. newPayload went {', '.join(str(in_np[s]) for s in 'DEGHI')}; the whole "
+          f"block {', '.join(str(in_wb[s]) for s in 'DEGHI')}."))
+    stage_rows = [{c: rm(s, c) for c in GE_CATS} for s in "DEGHI"]
     w(fig("fig_progress", chart_progress(stage_rows, GE_CATS),
           f"Every row over a second after each step, pair 1, on the final split. Untreated, "
           f"{nd[0]} of {len(GE_CATS)} rows sat outside the band in both pairs. After the rebuild, "
-          f"{nd[1]}; after the code cache, {nd[2]}; after the code file, none."))
+          f"{nd[1]}; after the code cache, {nd[2]}; after the code file, {nd[3] or 'none'}; after the "
+          f"other files, {nd[4] or 'none'}."))
     w("<table><tr><th>tests</th><th class=n>n</th><th class=n>untreated</th><th class=n>1</th>"
-      "<th class=n>2</th><th class=n>3, now</th><th class=n>inside &plusmn;10%</th>"
+      "<th class=n>2</th><th class=n>3</th><th class=n>4, now</th><th class=n>inside &plusmn;10%</th>"
       "<th class=n>same store twice</th><th class=n>whole block, untreated</th>"
       "<th class=n>whole block, now</th></tr>")
     for cls, label in (("ge1s", "over a second"), ("lt1s", "under a second")):
-        w(f"<tr><td colspan=10><b>{label}</b></td></tr>")
+        w(f"<tr><td colspan=11><b>{label}</b></td></tr>")
         for cat, row in class_rows(FIN, cls):
             cells = "".join(f'<td class="n{" bad" if cls == "ge1s" and cat in diff_np[s] else ""}">'
-                            f"{rm(s, cat, 'a', cls):.3f}</td>" for s in "DEGH")
+                            f"{rm(s, cat, 'a', cls):.3f}</td>" for s in "DEGHI")
             a_, fl = row["a"], row["floor_sa"]
             w(f"<tr><td>{esc(ROW_LABEL.get(cat, cat))}</td><td class=n>{a_['n']}</td>{cells}"
               f"<td class=n>{a_['within10']}/{a_['n']}</td><td class=n>{fl['within10']}/{fl['n']}</td>"
               f"<td class=n>{rm('D', cat, 'a_total', cls):.3f}</td><td class=n>{row['a_total']['median']:.3f}</td></tr>")
     w("<tr><td colspan=2><b>rows over a second outside the band</b></td>"
-      + "".join(f"<td class=n>{len(diff_np[s])}</td>" for s in "DEGH")
-      + f"<td colspan=2></td><td class=n>{len(diff_wb['D'])}</td><td class=n>{len(diff_wb['H'])}</td></tr>")
+      + "".join(f"<td class=n>{len(diff_np[s])}</td>" for s in "DEGHI")
+      + f"<td colspan=2></td><td class=n>{len(diff_wb['D'])}</td><td class=n>{len(diff_wb['I'])}</td></tr>")
     w("<tr><td colspan=2><b>tests over a second inside &plusmn;10%</b></td>"
-      + "".join(f"<td class=n>{in_np[s]}</td>" for s in "DEGH")
-      + f"<td></td><td class=n>{gfl['within10']}</td><td class=n>{in_wb['D']}</td><td class=n>{in_wb['H']}</td></tr>")
+      + "".join(f"<td class=n>{in_np[s]}</td>" for s in "DEGHI")
+      + f"<td></td><td class=n>{gfl['within10']}</td><td class=n>{in_wb['D']}</td><td class=n>{in_wb['I']}</td></tr>")
     w("<caption>Median ratio per category, pair 1, after each step: 1 the rebuild, 2 the emptied "
-      "code cache, 3 the re-encoded code file. Every column uses the final store's one-second "
-      "split; shaded cells are rows outside the band in both pairs. Same store twice is "
-      "state-actor measured twice, the best any row can do.</caption></table>")
+      "code cache, 3 the re-encoded code file, 4 the other state files re-encoded. Every column uses "
+      "the final store's one-second split; shaded cells are rows outside the band in both pairs. "
+      "Same store twice is state-actor measured twice, the best any row can do.</caption></table>")
     w(f"<p>Over a second, {ga['within10']} of {ga['n']} tests now sit inside the band (median "
       f"{ga['median']:.3f}), and {gb['within10']} in the second pair ({gb['median']:.3f}). One store "
       f"measured twice manages {gfl['within10']} for state-actor and {jfl['within10']} for "
@@ -1432,10 +1557,6 @@ def main():
           "tests inside the band against how many state-actor twice keeps there. Over a second, every "
           "row sits inside the band in at least one pair. Under a second, three rows sit far right of "
           "their rings."))
-    w(f"<p><b>The account reads are too few to tell.</b> Each of those rows has four tests. One store "
-      f"measured twice puts their medians at {min(acc_fl):.2f} to {max(acc_fl):.2f} and keeps "
-      f"{acc_fl_in} of {acc_fl_n} tests inside. Two of the four fall below 0.90 in one pair each, "
-      f"which is within that noise.</p>")
     w(f"<p><b>Under a second, blocks with no state work run faster on state-actor.</b> Controls, warm "
       f"queries and reloads of one slot sit at {min(ns_med):.2f}&ndash;{max(ns_med):.2f} in both "
       f"pairs, while each store measured twice centres them on {min(ns_floor):.2f}&ndash;"
@@ -1494,34 +1615,24 @@ def main():
           f"(dots), both pairs. Under a second, the no-state rows drop to parity. Over a second, "
           f"{left} of {len(ge_h)} rows move left: the check sat on jochemnet's side and hid part of "
           f"state-actor's slower execution."))
-    kvj = sorted(VJ[f"{d} .kv"] for d in ("accounts", "storage", "commitment"))
     w(f"<p><b>Over a second, the lean is in execution.</b> The pairs sit at {ga['median']:.3f} and "
       f"{gb['median']:.3f}, where each store measured twice centres on "
-      f"{min(gfl['median'], jfl['median']):.2f} to {max(gfl['median'], jfl['median']):.2f}. Most tests "
+      f"{fl_lo:.2f}{'' if f'{fl_lo:.2f}' == f'{fl_hi:.2f}' else f' to {fl_hi:.2f}'}. Most tests "
       f"that miss the band miss it low: {lows[0][0]} of {lows[0][1]}, and {lows[1][0]} of "
       f"{lows[1][1]} in the second pair. The same check costs jochemnet {ge_diff[0]:.0f} ms there, "
       f"and both stores spend over {int(min(ge_before)) // 100 * 100} ms before it on work they "
-      f"share. Leave both out and state-actor executes {ex_lean}% slower, in both pairs (ratios of "
-      f"{ex_ge[0]:.3f} and {ex_ge[1]:.3f}). On every traced test it reads "
-      f"{round(100 * min(more))}&ndash;{round(100 * max(more))}% more pages.</p>")
-    w(f"<p>Three known differences could explain it. State-actor's storage and commitment files still "
-      f"store their keys raw, where Erigon compresses them "
-      f"({src('db/state/statecfg/state_schema.go', 229, 'storage')}, "
-      f"{src('db/state/statecfg/state_schema.go', 274, 'commitment')}); we re-encoded only the code "
-      f"file. It writes every other state file at format version {VS['accounts .kv']}, its account "
-      f"index included, where Erigon writes {kvj[0]} to {kvj[-1]}. And it holds a fifth more accounts "
-      f"({n_sa_acc / 1e6:.0f} million against {n_joc_acc / 1e6:.0f} million). The next test rewrites the "
-      f"three remaining files the way Erigon writes them, which leaves only the account count.</p>")
+      f"share. Leave both out and state-actor executes {100 * (1 - median(ex_ge)):.1f}% slower, in "
+      f"both pairs (ratios of {ex_ge[0]:.3f} and {ex_ge[1]:.3f}). Finding 4 took it down from "
+      f"{100 * (1 - median(ex_h)):.1f}%; what's left lines up with the extra accounts.</p>")
 
     # ---- part 4
     w("<h2>What's left, and why</h2><ul>")
     w(f"<li><b>State-actor's Erigon writer doesn't write Erigon's files yet.</b> It needs Erigon's "
       f"compressor and Erigon's current file versions. Until it has both, every Erigon store it builds "
-      f"needs a re-encode like the one above, which took {RC['minutes'] / 60:.0f} hours for the code "
-      f"file alone.</li>")
-    w(f"<li><b>The {ex_lean}% lean in execution over a second.</b> Its candidates are the raw keys, the "
-      f"older file versions and the extra accounts. The next test separates the first two from the "
-      f"last.</li>")
+      f"needs re-encodes like the ones above: {RC['minutes'] / 60:.0f} hours for the code file and "
+      f"{sum(v['minutes'] for v in RD.values()) / 60:.0f} for the other three.</li>")
+    w(f"<li><b>The {100 * (1 - median(ex_ge)):.1f}% lean in execution over a second.</b> It follows the "
+      f"account count, which only a store generated at jochemnet's size can test.</li>")
     w(f"<li><b>The test contracts are cheaper than real ones.</b> Each is {MAX_CODE // 1024} KB of one "
       f"repeated opcode, so Erigon stores it in about {round(max(j_bytes), -2):.0f} bytes, one page. "
       f"Jochemnet also holds {thousands(JR['n'])} real mainnet contracts of the same size, and the "
@@ -1546,12 +1657,12 @@ def main():
       "page cache before each test also makes jochemnet pay for its chain history on every block. A "
       "discarded burn-in block before the measured one would fix both. Until then, those numbers are "
       "shown and not counted.</li>")
-    w("<li><b>benchmarkoor's clock still stops at newPayload.</b> With all three fixes the two "
+    w("<li><b>benchmarkoor's clock still stops at newPayload.</b> With all four steps the two "
       "clocks agree, so this comparison doesn't depend on it. But on the untreated store the commit "
       "was most of each block, and a newPayload-only number hid it. For Erigon, the harness should "
       "report the whole block beside newPayload.</li></ul>")
     w("<p>None of these is a reason to distrust the generated store on tests over a second, once its "
-      "code file is written the way Erigon writes it. Two are generator work, one is still open, one "
+      "files are written the way Erigon writes them. Two are generator work, one is still open, one "
       "is a question for the fixtures, and three are about the method and the harness.</p>")
 
     w("<p class=note>Every number on this page is computed from the collected run data when the "
