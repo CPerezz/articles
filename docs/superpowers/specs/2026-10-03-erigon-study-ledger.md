@@ -1044,3 +1044,30 @@ Without the before phase, the no-state rows sit at 0.94-1.05.
   ±5%, streams equal, answers identical, smoke 2/2).
 - No heavy box work during the I pairs (the trace collection reads ~1 GB from the benchmark's array);
   T4 is collected after the pairs.
+
+**Round 15 point 2 results (I pairs, 2026-10-11 16:05 -> 2026-10-12 10:07 UTC).**
+- `/bench/erigon/baseline-I.json` sha256 `ea6cc1dd…7a60` (266 tests, 0 gas mismatches, same 110-test
+  split as H); `np-phases-I.json` `192bee87…023c`; `step0-T4.json` `b35bf8d7…7949`.
+- State-actor's suite took 5 h 44 min per run (H: 1 h 53 min): each Erigon boot now takes ~36 s
+  (KZG ready -> downloader 34 s) against ~6 s on the v1.0 files, like jochemnet's ~30 s. Boot time
+  isn't measured. Not traced further (candidate: the v2.x accessors' open path; v1.0 .kvei is a
+  bloom filter read into the heap at open, v1.2 a fuse filter mmapped).
+- Over a second: newPayload **0.964 / 0.974** (H 0.971 / 0.960), in band **98 / 97** of 110 (H 93 / 88);
+  floors 101 (sa) / 94 (joc); whole block 0.990 / 0.994. Account rows 0.876-1.004 / 0.953-0.994
+  (H 0.857-1.097 / 0.851-0.985): three of four inside in both pairs. Rows outside in both pairs: 0.
+- Execution only (phase split): joc/sa **0.956 / 0.954** (H 0.940 / 0.936): the lean in execution went
+  6.2% -> 4.5%, about a quarter closed. The check before handling: 17.4 / 16.6 ms, unchanged.
+- T4 vs T2: state-actor's reads moved <= 1.1% on every traced test; still 2-6% more than jochemnet.
+  On the account read the extra is the account index (+24 MB of +23 MB total; accounts .bt + .kvei
+  1.03 GB vs 0.85 GB on jochemnet, in proportion to 430.7 M vs 354.8 M accounts). Transfer: commitment
+  index +17 MB (6.02 vs 5.00 GB index, 947 M vs 787 M keys). Code calls: +80 MB code files, -58 MB code
+  indexes (jochemnet holds 68 M code entries, state-actor 16.7 M).
+- Prediction 6: **missed** (storage write +2.7% and transfer +3.7% after, not <= 1.5%; the account read
+  stays +5%, as predicted). Prediction 7: **missed** (the median rose only in pair 2; storage slot
+  moved away in pair 1; distinct calls moved -0.04 in pair 1). What did move: tests in band +5 / +9,
+  account rows in, execution lean -1.7 points.
+- **Conclusion:** writing state-actor's files at Erigon's current versions with Erigon's key
+  compression is worth doing (it's part of the generator fix) but explains about a quarter of the
+  execution lean. The rest follows the store's size: a fifth more accounts and commitment keys make
+  bigger indexes, of which a cold benchmark reads more. Testing that needs a store generated at
+  jochemnet's account count (out of scope for this round). Article `da36d8c` (finding 4).
