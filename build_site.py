@@ -121,6 +121,22 @@ ARTICLES = [
                  "independent pairs.",
         "repo": "nethermind-state-db-divergence/",
     },
+    {
+        # Same series as the three entries above, same shape: prebuilt by
+        # reth-state-db-divergence/gen_reth_state_db_report.py.
+        "folder": "reth-state-db-divergence",
+        "prebuilt": True,
+        "href": "reth-state-db-divergence/reth-state-db-report.html",
+        "eyebrow": "EXECUTION · STATE DB",
+        "card_title": "How can two reth databases differ 64× on the same benchmarks, and then agree?",
+        "date": "2026",
+        "tags": "Ethereum · reth · MDBX · benchmarking",
+        "blurb": "A mainnet snapshot and a generated store, the same benchmark suite, up to 64× "
+                 "apart. A buffered loop, an older storage layout, and four things in how the "
+                 "store was generated. With all of them fixed, 153 of the 154 tests that run for "
+                 "half a second or more land within ±10%.",
+        "repo": "reth-state-db-divergence/",
+    },
 ]
 
 SITE_TITLE = "Articles"
