@@ -1694,5 +1694,6 @@ left unmapped. Collector C20: 0 failed checks.
   `reth-study-ledger`.
 - Host wiped on Anon's instruction, after those uploads:
   - every reth store and scratch, the S fixtures, `/root/bench/reth` and the study images;
-  - schelk states moved to `/var/lib/schelk/retired-reth/`.
-  - Raw run results no longer exist outside `report_data.json`.
+  - second pass, same day: schelk reth states, the 951 GB jochemnet reth download, every reth
+    image and volume, and `/data/eth/reth` (Feb-2026 snapshots, deleted after an explicit ask).
+  - No reth data remains on the host, and raw run results exist only as `report_data.json`.
