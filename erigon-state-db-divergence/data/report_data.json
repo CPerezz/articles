@@ -70026,6 +70026,12 @@
    "rpc_storage_samples": 2214,
    "source": "recode-sa-domains.sh (study repo tools/erigon-study): compactlatest streamhash + recode per domain; samples-sc.txt, answers-sc-{old,new}.jsonl compared with cmp; smoke S4 2/2"
   },
+  "reth_reference": {
+   "account_reads_mainnet_accounts": 0.976,
+   "account_reads_matched_count": 0.97,
+   "href": "../reth-state-db-divergence/reth-state-db-report.html",
+   "source": "reth article (articles main cf6448f), 'Then: accounts that look like mainnet's': account reads ran at 0.970 on PR1-5 (jochemnet's account count) and 0.976 on PR1-8 (mainnet-shaped accounts)"
+  },
   "retire_domain_files": {
    "after": 124,
    "before": 124
@@ -70042,6 +70048,13 @@
   "state_actor_code_pool_min_bytes": 1024,
   "state_actor_code_pool_source": "state-actor 005a19c internal/sizecal/factors.go MinContractCode = 1<<10, the floor of the shared autofill code pool (internal/autofill/plan.go CodeSampler)",
   "state_actor_commit": "005a19c67534b7383a352acd65b9b06b2f81d58e",
+  "state_actor_fix": {
+   "merge_commit": "6fb97a635d40880ed27dd665cb290ea21ee76993",
+   "merged": "2026-10-13",
+   "pr": 148,
+   "title": "erigon: write snapshot files with the pinned Erigon's own code",
+   "url": "https://github.com/ethereum/state-actor/pull/148"
+  },
   "state_root": "0x48d611bb839188317e983453705b31e1420b2c4416675f98d776ad8e130d51b8",
   "step0_check_source": "/bench/erigon/step0-T3.json sha256 645fe3c7...a7b9 (collect_trace.py T3): six no-state tests traced on both stores, newPayload split at 'Handling new payload'",
   "step0_files_source": "/bench/erigon/step0-T4.json sha256 b35bf8d7...7949 (collect_trace.arm('sa', 'T4')): state-actor after the re-encode, the T2 and T3 tests",

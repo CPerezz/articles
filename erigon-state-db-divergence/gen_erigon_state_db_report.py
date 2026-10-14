@@ -1108,6 +1108,16 @@ def main():
     idx_j, idx_s = S2["joc"]["inventory_bytes"]["accounts indexes"], S4["sa"]["inventory_bytes"]["accounts indexes"]
     assert idx_extra > 0.8 and abs((idx_s / idx_j) / (n_sa_acc / n_joc_acc) - 1) < 0.05, \
         "the account read's extra is no longer the account index, sized by the account count: %.2f %.3f" % (idx_extra, idx_s / idx_j)
+    # "The fix is in the generator now": the state-actor PR that writes Erigon's own files, merged.
+    SF = P["state_actor_fix"]
+    assert SF["url"].endswith(f"/pull/{SF['pr']}") and len(SF["merge_commit"]) == 40 and SF["merged"], \
+        "the generator fix is no longer a merged state-actor PR: %r" % SF
+    # "What's left": reth's store at jochemnet's account count, and how little mainnet-shaped
+    # accounts added there.
+    RT = P["reth_reference"]
+    assert 0.95 < RT["account_reads_matched_count"] < RT["account_reads_mainnet_accounts"] < 1.0 and \
+        RT["account_reads_mainnet_accounts"] - RT["account_reads_matched_count"] < 0.01, \
+        "reth's account-read reference changed: %r" % RT
     # "That's N% of their median block": the extra time against state-actor's median no-state block.
     ns_sa_ms = 1e3 * median(t["joc_secs"] / t["a"] for t in ns_tests)
     ns_pct = round(100 * ns_ms[0] / ns_sa_ms)
@@ -1481,8 +1491,9 @@ def main():
       f"{n_sa_acc / 1e6:.0f} million accounts against {n_joc_acc / 1e6:.0f} million. So the format "
       f"was about a quarter of the lean in execution. The account count is what's left that we know "
       f"of, and it takes a store generated at jochemnet's size to test.</p>")
-    w("<p>The fix belongs in the generator as well: Erigon's current file versions, beside its "
-      "compressor.</p>")
+    w(f'<p><b>The fix is in the generator now.</b> Since state-actor <a href="{SF["url"]}">'
+      f"#{SF['pr']}</a>, its Erigon writer hands every file to Erigon's own code, at Erigon's current "
+      "versions, so a generated store no longer needs these re-encodes.</p>")
 
     # ---- part 3
     w("<h2>Where it stands</h2>")
@@ -1627,12 +1638,16 @@ def main():
 
     # ---- part 4
     w("<h2>What's left, and why</h2><ul>")
-    w(f"<li><b>State-actor's Erigon writer doesn't write Erigon's files yet.</b> It needs Erigon's "
-      f"compressor and Erigon's current file versions. Until it has both, every Erigon store it builds "
-      f"needs re-encodes like the ones above: {RC['minutes'] / 60:.0f} hours for the code file and "
-      f"{sum(v['minutes'] for v in RD.values()) / 60:.0f} for the other three.</li>")
-    w(f"<li><b>The {100 * (1 - median(ex_ge)):.1f}% lean in execution over a second.</b> It follows the "
-      f"account count, which only a store generated at jochemnet's size can test.</li>")
+    w(f"<li><b>The {100 * (1 - median(ex_ge)):.1f}% lean in execution over a second.</b> On the "
+      f"traced account read, nearly all of state-actor's extra reads are its account index, "
+      f"{idx_s / idx_j:.2f} times jochemnet's for {n_sa_acc / n_joc_acc:.2f} times the accounts. A "
+      f"store generated at jochemnet's account count would test that. The "
+      f'<a href="{RT["href"]}">reth study</a> generated one, and its account reads ran at '
+      f"{RT['account_reads_matched_count']:.3f}. Accounts shaped like mainnet's only took them to "
+      f"{RT['account_reads_mainnet_accounts']:.3f}: a block reads one row page per account, however "
+      f"small the row. We didn't run it here. Over a second, {cross[0]} and {cross[1]} of "
+      f"{ga['n']} tests already sit inside the band, close to the {floors[0]} and {floors[1]} one "
+      f"store gets against itself.</li>")
     w(f"<li><b>The test contracts are cheaper than real ones.</b> Each is {MAX_CODE // 1024} KB of one "
       f"repeated opcode, so Erigon stores it in about {round(max(j_bytes), -2):.0f} bytes, one page. "
       f"Jochemnet also holds {thousands(JR['n'])} real mainnet contracts of the same size, and the "
@@ -1661,9 +1676,9 @@ def main():
       "clocks agree, so this comparison doesn't depend on it. But on the untreated store the commit "
       "was most of each block, and a newPayload-only number hid it. For Erigon, the harness should "
       "report the whole block beside newPayload.</li></ul>")
-    w("<p>None of these is a reason to distrust the generated store on tests over a second, once its "
-      "files are written the way Erigon writes them. Two are generator work, one is still open, one "
-      "is a question for the fixtures, and three are about the method and the harness.</p>")
+    w("<p>None of these is a reason to distrust the generated store on tests over a second. One is "
+      "generator work we didn't run, one is still open, one is a question for the fixtures, and "
+      "three are about the method and the harness.</p>")
 
     w("<p class=note>Every number on this page is computed from the collected run data when the "
       "page is built, and the build fails if the data stops supporting a sentence.</p>")

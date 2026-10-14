@@ -1,0 +1,288 @@
+{
+ "sa": {
+  "domain_steps": {
+   "accounts": [
+    [
+     0,
+     1
+    ]
+   ],
+   "code": [
+    [
+     0,
+     1
+    ]
+   ],
+   "commitment": [
+    [
+     0,
+     1
+    ]
+   ],
+   "storage": [
+    [
+     0,
+     1
+    ]
+   ]
+  },
+  "events": 17187469,
+  "inventory_bytes": {
+   "accounts files": 15968264966,
+   "accounts indexes": 1026943156,
+   "block files": 54,
+   "code files": 16736566858,
+   "code indexes": 50932580,
+   "commitment files": 278330181092,
+   "commitment indexes": 6019393950,
+   "database": 458752,
+   "other": 541832,
+   "storage files": 164833982718,
+   "storage indexes": 6661498556
+  },
+  "tests": {
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "bytes": {
+     "engine_forkchoiceUpdated": {
+      "database": 360448
+     },
+     "engine_newPayload": {},
+     "engine_newPayload/after": {},
+     "engine_newPayload/before": {}
+    },
+    "secs": {
+     "engine_forkchoiceUpdated": 0.007,
+     "engine_newPayload": 0.029,
+     "engine_newPayload/after": 0.028,
+     "engine_newPayload/before": 0.001
+    }
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "bytes": {
+     "engine_forkchoiceUpdated": {
+      "database": 360448
+     },
+     "engine_newPayload": {},
+     "engine_newPayload/after": {},
+     "engine_newPayload/before": {}
+    },
+    "secs": {
+     "engine_forkchoiceUpdated": 0.007,
+     "engine_newPayload": 0.065,
+     "engine_newPayload/after": 0.064,
+     "engine_newPayload/before": 0.001
+    }
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_BALANCE-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_MINIMAL-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "bytes": {
+     "engine_forkchoiceUpdated": {
+      "database": 1724416
+     },
+     "engine_newPayload": {
+      "accounts files": 217030656,
+      "accounts indexes": 250011648
+     },
+     "engine_newPayload/after": {
+      "accounts files": 217030656,
+      "accounts indexes": 250011648
+     },
+     "engine_newPayload/before": {}
+    },
+    "secs": {
+     "engine_forkchoiceUpdated": 0.012,
+     "engine_newPayload": 0.982,
+     "engine_newPayload/after": 0.82,
+     "engine_newPayload/before": 0.162
+    }
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "bytes": {
+     "engine_forkchoiceUpdated": {
+      "database": 360448
+     },
+     "engine_newPayload": {},
+     "engine_newPayload/after": {},
+     "engine_newPayload/before": {}
+    },
+    "secs": {
+     "engine_forkchoiceUpdated": 0.006,
+     "engine_newPayload": 0.03,
+     "engine_newPayload/after": 0.029,
+     "engine_newPayload/before": 0.001
+    }
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_CALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_True-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_240M]": {
+    "bytes": {
+     "engine_forkchoiceUpdated": {
+      "database": 360448
+     },
+     "engine_newPayload": {},
+     "engine_newPayload/after": {},
+     "engine_newPayload/before": {}
+    },
+    "secs": {
+     "engine_forkchoiceUpdated": 0.006,
+     "engine_newPayload": 0.039,
+     "engine_newPayload/after": 0.037,
+     "engine_newPayload/before": 0.002
+    }
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_DELEGATECALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_DIFF_MAX-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "bytes": {
+     "engine_forkchoiceUpdated": {
+      "database": 7172096
+     },
+     "engine_newPayload": {
+      "accounts files": 215805952,
+      "accounts indexes": 249888768,
+      "code files": 316653568,
+      "code indexes": 25169920
+     },
+     "engine_newPayload/after": {
+      "accounts files": 215805952,
+      "accounts indexes": 249888768,
+      "code files": 316653568,
+      "code indexes": 25169920
+     },
+     "engine_newPayload/before": {}
+    },
+    "secs": {
+     "engine_forkchoiceUpdated": 0.065,
+     "engine_newPayload": 2.454,
+     "engine_newPayload/after": 2.168,
+     "engine_newPayload/before": 0.286
+    }
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_account_access[fork_Amsterdam-blockchain_test_stateful_engine-opcode_DELEGATECALL-value_sent_0-account_mode_AccountMode.EXISTING_CONTRACT_JUMPDEST-overhead_baseline_False-cache_strategy_CacheStrategy.NO_CACHE-benchmark-gas-value_160M]": {
+    "bytes": {
+     "engine_forkchoiceUpdated": {
+      "database": 7172096
+     },
+     "engine_newPayload": {
+      "accounts files": 215592960,
+      "accounts indexes": 249544704,
+      "code files": 315346944,
+      "code indexes": 25174016
+     },
+     "engine_newPayload/after": {
+      "accounts files": 215592960,
+      "accounts indexes": 249544704,
+      "code files": 315346944,
+      "code indexes": 25174016
+     },
+     "engine_newPayload/before": {}
+    },
+    "secs": {
+     "engine_forkchoiceUpdated": 0.11,
+     "engine_newPayload": 2.521,
+     "engine_newPayload/after": 2.234,
+     "engine_newPayload/before": 0.287
+    }
+   },
+   "benchmark/stateful/bloatnet/test_account_query.py::test_ext_account_query_warm[fork_Amsterdam-blockchain_test_stateful_engine-initial_storage_True-initial_balance_True-empty_code_True-opcode_BALANCE-benchmark-gas-value_160M]": {
+    "bytes": {
+     "engine_forkchoiceUpdated": {
+      "database": 479232
+     },
+     "engine_newPayload": {},
+     "engine_newPayload/after": {},
+     "engine_newPayload/before": {}
+    },
+    "secs": {
+     "engine_forkchoiceUpdated": 0.007,
+     "engine_newPayload": 0.031,
+     "engine_newPayload/after": 0.029,
+     "engine_newPayload/before": 0.002
+    }
+   },
+   "benchmark/stateful/bloatnet/test_sload.py::test_sload_same_key_benchmark[fork_Amsterdam-blockchain_test_stateful_engine-storage_keys_pre_set_True-benchmark-gas-value_160M]": {
+    "bytes": {
+     "engine_forkchoiceUpdated": {},
+     "engine_newPayload": {
+      "database": 8192
+     },
+     "engine_newPayload/after": {
+      "database": 8192
+     },
+     "engine_newPayload/before": {}
+    },
+    "secs": {
+     "engine_forkchoiceUpdated": 0.005,
+     "engine_newPayload": 0.028,
+     "engine_newPayload/after": 0.027,
+     "engine_newPayload/before": 0.001
+    }
+   },
+   "benchmark/stateful/bloatnet/test_sstore.py::test_sstore_bloated[10GB-fork_Amsterdam-blockchain_test_stateful_engine-cache_strategy_CacheStrategy.NO_CACHE-existing_slots_False-write_new_value_True-benchmark-gas-value_160M]": {
+    "bytes": {
+     "engine_forkchoiceUpdated": {
+      "database": 13287424
+     },
+     "engine_newPayload": {
+      "commitment files": 32419840,
+      "commitment indexes": 72413184,
+      "storage files": 2572288,
+      "storage indexes": 7278592
+     },
+     "engine_newPayload/after": {
+      "commitment files": 32419840,
+      "commitment indexes": 72413184,
+      "storage files": 2564096,
+      "storage indexes": 7266304
+     },
+     "engine_newPayload/before": {
+      "storage files": 8192,
+      "storage indexes": 12288
+     }
+    },
+    "secs": {
+     "engine_forkchoiceUpdated": 0.093,
+     "engine_newPayload": 0.252,
+     "engine_newPayload/after": 0.242,
+     "engine_newPayload/before": 0.01
+    }
+   },
+   "benchmark/stateful/bloatnet/test_transaction_types.py::test_ether_transfers_onchain_receivers[fork_Amsterdam-blockchain_test_stateful_engine-transfer_amount_0-case_id_diff_to_existent-benchmark-gas-value_160M]": {
+    "bytes": {
+     "engine_forkchoiceUpdated": {
+      "database": 74829824,
+      "unmapped": 8192
+     },
+     "engine_newPayload": {
+      "accounts files": 45252608,
+      "accounts indexes": 84025344,
+      "commitment files": 196734976,
+      "commitment indexes": 316858368
+     },
+     "engine_newPayload/after": {
+      "accounts files": 45252608,
+      "accounts indexes": 84025344,
+      "commitment files": 196734976,
+      "commitment indexes": 316858368
+     },
+     "engine_newPayload/before": {}
+    },
+    "secs": {
+     "engine_forkchoiceUpdated": 0.406,
+     "engine_newPayload": 1.577,
+     "engine_newPayload/after": 1.36,
+     "engine_newPayload/before": 0.217
+    }
+   }
+  },
+  "versions": {
+   "accounts .bt": "v2.0",
+   "accounts .kv": "v2.0",
+   "accounts .kvei": "v1.2",
+   "code .bt": "v2.0",
+   "code .kv": "v2.0",
+   "code .kvei": "v1.2",
+   "commitment .kv": "v2.2",
+   "commitment .kvi": "v2.1",
+   "storage .bt": "v2.0",
+   "storage .kv": "v2.0",
+   "storage .kvei": "v1.2"
+  }
+ },
+ "src": "collect_trace.arm(sa, T4)"
+}

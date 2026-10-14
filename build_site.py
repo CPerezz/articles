@@ -137,6 +137,24 @@ ARTICLES = [
                  "half a second or more land within ±10%.",
         "repo": "reth-state-db-divergence/",
     },
+    {
+        # Same series as the four entries above, same shape: prebuilt by
+        # erigon-state-db-divergence/gen_erigon_state_db_report.py.
+        "folder": "erigon-state-db-divergence",
+        "prebuilt": True,
+        "href": "erigon-state-db-divergence/erigon-state-db-report.html",
+        "eyebrow": "EXECUTION · STATE DB",
+        "card_title": "How can two Erigon databases holding the same state be 2× slower and 3× "
+                      "faster, and then agree?",
+        "date": "2026",
+        "tags": "Ethereum · Erigon · snapshot files · MDBX · benchmarking",
+        "blurb": "A mainnet snapshot and a generated store, the same benchmark suite: newPayload "
+                 "2× slower on one, whole blocks 3× faster. State left in the snapshot's "
+                 "database, a code cache, and files in the wrong encoding and format. Fixed one "
+                 "at a time, 98 and 97 of the 110 tests over a second land within ±10% on two "
+                 "pairs, about as close as one store gets to itself.",
+        "repo": "erigon-state-db-divergence/",
+    },
 ]
 
 SITE_TITLE = "Articles"
