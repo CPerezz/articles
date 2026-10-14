@@ -1,0 +1,25 @@
+# Trial: can reth fill stateful EEST fixtures on its own state-actor store (testing_buildBlockV1)?
+global:
+  log_level: info
+runner:
+  container_runtime: podman
+  docker_network: benchmarkoor
+builder:
+  eest_payloads:
+    eest_repo: https://github.com/ethereum/execution-specs.git
+    eest_ref: 13b791382048f083f8243b0eb5071273775c6440
+    targets:
+      - name: reth-trial
+        client: reth
+        filler_client: reth
+        filler_image: docker.io/benchlocal/reth:devnet7-sigkill
+        source_dir: /schelk-sa/reth
+        output_dir: /data/fixtures/refill-trial/reth
+        fork: amsterdam
+        gas_benchmark_values: [160]
+        tests:
+          - tests/benchmark/stateful/bloatnet/test_account_query.py
+          - "-k"
+          - "test_account_access and BALANCE and value_sent_0 and (EXISTING_EOA or NON_EXISTING_ACCOUNT) and not overhead_baseline_True"
+        genesis: /schelk-sa/reth/chainspec.json
+        genesis_fork_override: { amsterdam: 1 }

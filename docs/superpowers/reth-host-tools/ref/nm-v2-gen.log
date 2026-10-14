@@ -1,0 +1,659 @@
+started : 2026-09-21T22:10:43+00:00
+2026/09/21 22:10:44 Synthesized genesis: fork=osaka chainID=1337 gasLimit=1000000000 timestamp=0 extraData=0B
+2026/09/21 22:12:10 --spec warning: --target-size 375809638400 B: the following entities derive their size from template parameters the size projection cannot see: entities[1] (template sequential_eoas), entities[2] (template storage_pattern), entities[4] (template create2_deploys), entities[5] (template create2_deploys), entities[6] (template create2_deploys), entities[7] (template create2_deploys), entities[8] (template sequential_pkey_eoas), entities[9] (template create_preimage_deploys), entities[10] (template sequential_pkey_delegations); --target-size can neither budget nor truncate their output, and the auto-fill top-up may overshoot the target
+2026/09/21 22:12:10 --spec warning: entities[6] (template create2_deploys): code_pattern "max_diff_pre_amsterdam" materializes 150000 unique 24576-byte runtimes ≈ 3.4 GiB held in memory for the entire run (per-address code is not streamed, unlike storage); ensure the build host has the RAM headroom or lower salt_count (true code streaming is a tracked follow-up)
+2026/09/21 22:12:10 --spec warning: entities[7] (template create2_deploys): code_pattern "unique_jumpdest_pre_amsterdam" materializes 150000 unique 24576-byte runtimes ≈ 3.4 GiB held in memory for the entire run (per-address code is not streamed, unlike storage); ensure the build host has the RAM headroom or lower salt_count (true code streaming is a tracked follow-up)
+2026/09/21 22:12:10 --spec: loaded 1200007 entities from /spec.yaml (projected cost 2.56 KB)
+2026/09/21 22:12:10 Configuration:
+2026/09/21 22:12:10   Database:     /data
+2026/09/21 22:12:10   Seed:         42
+2026/09/21 22:12:10   Trie Mode:    mpt
+2026/09/21 22:12:10   Group Depth:  8
+2026/09/21 22:12:10   Target Size:  350.00 GB
+2026/09/21 22:12:10   Auto-fill:    422156694 EOAs / 7340032 contracts (mainnet 20/10/70)
+2026/09/21 22:12:10   Fork:         osaka
+2026/09/21 22:12:10   Chain ID:     1337
+2026/09/21 22:12:10   Gas Limit:    1000000000
+2026/09/21 22:12:11 ▸ nethermind: phase 0 — spec storage
+2026/09/21 22:12:31   nethermind: phase 0 — spec storage 4,096 · 205/s · slots
+2026/09/21 22:12:52   nethermind: phase 0 — spec storage 32,768 · 799/s · slots
+2026/09/21 22:13:14   nethermind: phase 0 — spec storage 61,440 · 967/s · slots
+2026/09/21 22:13:36   nethermind: phase 0 — spec storage 90,112 · 1.1k/s · slots
+2026/09/21 22:14:00   nethermind: phase 0 — spec storage 118,784 · 1.1k/s · slots
+2026/09/21 22:17:06   nethermind: phase 0 — spec storage 147,456 · 499/s · slots
+2026/09/21 22:17:21   nethermind: phase 0 — spec storage 5,857,280 · 18.9k/s · slots
+2026/09/21 22:17:36   nethermind: phase 0 — spec storage 11,833,344 · 36.4k/s · slots
+2026/09/21 22:17:51   nethermind: phase 0 — spec storage 17,838,080 · 52.4k/s · slots
+2026/09/21 22:18:06   nethermind: phase 0 — spec storage 23,928,832 · 67.3k/s · slots
+2026/09/21 22:18:21   nethermind: phase 0 — spec storage 30,052,352 · 81.1k/s · slots
+2026/09/21 22:18:36   nethermind: phase 0 — spec storage 35,934,208 · 93.2k/s · slots
+2026/09/21 22:18:51   nethermind: phase 0 — spec storage 41,857,024 · 104.5k/s · slots
+2026/09/21 22:19:06   nethermind: phase 0 — spec storage 48,001,024 · 115.5k/s · slots
+2026/09/21 22:19:21   nethermind: phase 0 — spec storage 53,960,704 · 125.3k/s · slots
+2026/09/21 22:19:36   nethermind: phase 0 — spec storage 60,002,304 · 134.7k/s · slots
+2026/09/21 22:19:52   nethermind: phase 0 — spec storage 66,007,040 · 143.3k/s · slots
+2026/09/21 22:20:07   nethermind: phase 0 — spec storage 72,134,656 · 151.6k/s · slots
+2026/09/21 22:20:22   nethermind: phase 0 — spec storage 78,110,720 · 159.2k/s · slots
+2026/09/21 22:20:37   nethermind: phase 0 — spec storage 84,135,936 · 166.4k/s · slots
+2026/09/21 22:20:52   nethermind: phase 0 — spec storage 90,001,408 · 172.8k/s · slots
+2026/09/21 22:21:07   nethermind: phase 0 — spec storage 96,006,144 · 179.2k/s · slots
+2026/09/21 22:21:22   nethermind: phase 0 — spec storage 102,109,184 · 185.4k/s · slots
+2026/09/21 22:21:37   nethermind: phase 0 — spec storage 108,081,152 · 191.0k/s · slots
+2026/09/21 22:21:52   nethermind: phase 0 — spec storage 113,967,104 · 196.2k/s · slots
+2026/09/21 22:22:07   nethermind: phase 0 — spec storage 119,963,648 · 201.3k/s · slots
+2026/09/21 22:22:22   nethermind: phase 0 — spec storage 126,013,440 · 206.2k/s · slots
+2026/09/21 22:22:37   nethermind: phase 0 — spec storage 132,214,784 · 211.2k/s · slots
+2026/09/21 22:22:52   nethermind: phase 0 — spec storage 138,088,448 · 215.4k/s · slots
+2026/09/21 22:23:07   nethermind: phase 0 — spec storage 144,130,048 · 219.7k/s · slots
+2026/09/21 22:23:22   nethermind: phase 0 — spec storage 150,159,360 · 223.7k/s · slots
+2026/09/21 22:23:37   nethermind: phase 0 — spec storage 156,270,592 · 227.7k/s · slots
+2026/09/21 22:23:52   nethermind: phase 0 — spec storage 162,238,464 · 231.3k/s · slots
+2026/09/21 22:24:07   nethermind: phase 0 — spec storage 168,271,872 · 234.9k/s · slots
+2026/09/21 22:24:22   nethermind: phase 0 — spec storage 174,104,576 · 238.0k/s · slots
+2026/09/21 22:24:37   nethermind: phase 0 — spec storage 180,084,736 · 241.3k/s · slots
+2026/09/21 22:24:52   nethermind: phase 0 — spec storage 186,093,568 · 244.4k/s · slots
+2026/09/21 22:25:07   nethermind: phase 0 — spec storage 192,036,864 · 247.3k/s · slots
+2026/09/21 22:25:23   nethermind: phase 0 — spec storage 198,094,848 · 250.2k/s · slots
+2026/09/21 22:25:38   nethermind: phase 0 — spec storage 204,279,808 · 253.2k/s · slots
+2026/09/21 22:25:53   nethermind: phase 0 — spec storage 210,251,776 · 255.9k/s · slots
+2026/09/21 22:26:08   nethermind: phase 0 — spec storage 216,223,744 · 258.4k/s · slots
+2026/09/21 22:26:23   nethermind: phase 0 — spec storage 222,244,864 · 260.9k/s · slots
+2026/09/21 22:26:38   nethermind: phase 0 — spec storage 228,356,096 · 263.4k/s · slots
+2026/09/21 22:26:53   nethermind: phase 0 — spec storage 234,385,408 · 265.7k/s · slots
+2026/09/21 22:27:08   nethermind: phase 0 — spec storage 240,394,240 · 268.0k/s · slots
+2026/09/21 22:27:23   nethermind: phase 0 — spec storage 246,337,536 · 270.1k/s · slots
+2026/09/21 22:27:38   nethermind: phase 0 — spec storage 252,248,064 · 272.1k/s · slots
+2026/09/21 22:27:53   nethermind: phase 0 — spec storage 258,363,392 · 274.3k/s · slots
+2026/09/21 22:28:08   nethermind: phase 0 — spec storage 264,323,072 · 276.2k/s · slots
+2026/09/21 22:28:23   nethermind: phase 0 — spec storage 270,430,208 · 278.2k/s · slots
+2026/09/21 22:28:38   nethermind: phase 0 — spec storage 276,439,040 · 280.1k/s · slots
+2026/09/21 22:28:53   nethermind: phase 0 — spec storage 282,546,176 · 282.0k/s · slots
+2026/09/21 22:29:08   nethermind: phase 0 — spec storage 288,600,064 · 283.8k/s · slots
+2026/09/21 22:29:23   nethermind: phase 0 — spec storage 294,539,264 · 285.4k/s · slots
+2026/09/21 22:29:38   nethermind: phase 0 — spec storage 300,544,000 · 287.0k/s · slots
+2026/09/21 22:29:53   nethermind: phase 0 — spec storage 306,716,672 · 288.7k/s · slots
+2026/09/21 22:30:08   nethermind: phase 0 — spec storage 312,651,776 · 290.2k/s · slots
+2026/09/21 22:30:23   nethermind: phase 0 — spec storage 318,668,800 · 291.7k/s · slots
+2026/09/21 22:30:38   nethermind: phase 0 — spec storage 324,579,328 · 293.1k/s · slots
+2026/09/21 22:30:53   nethermind: phase 0 — spec storage 330,551,296 · 294.5k/s · slots
+2026/09/21 22:31:38 ▸ nethermind: phase 1/2 — generating accounts
+2026/09/21 22:31:53   nethermind: phase 1/2 — generating accounts 4,368,316/422,156,694 (1.0%) · 291.2k/s · ETA 23m54s · EOAs
+2026/09/21 22:32:12   nethermind: phase 1/2 — generating accounts 9,489,776/422,156,694 (2.2%) · 281.8k/s · ETA 24m24s · EOAs
+2026/09/21 22:32:31   nethermind: phase 1/2 — generating accounts 15,187,767/422,156,694 (3.6%) · 288.4k/s · ETA 23m31s · EOAs
+2026/09/21 22:32:46   nethermind: phase 1/2 — generating accounts 20,805,798/422,156,694 (4.9%) · 307.5k/s · ETA 21m45s · EOAs
+2026/09/21 22:33:03   nethermind: phase 1/2 — generating accounts 24,684,341/422,156,694 (5.8%) · 291.2k/s · ETA 22m44s · EOAs
+2026/09/21 22:33:18   nethermind: phase 1/2 — generating accounts 30,018,032/422,156,694 (7.1%) · 300.9k/s · ETA 21m43s · EOAs
+2026/09/21 22:33:35   nethermind: phase 1/2 — generating accounts 34,181,534/422,156,694 (8.1%) · 291.8k/s · ETA 22m9s · EOAs
+2026/09/21 22:33:50   nethermind: phase 1/2 — generating accounts 38,658,358/422,156,694 (9.2%) · 292.2k/s · ETA 21m52s · EOAs
+2026/09/21 22:34:09   nethermind: phase 1/2 — generating accounts 43,678,067/422,156,694 (10.3%) · 289.5k/s · ETA 21m47s · EOAs
+2026/09/21 22:34:24   nethermind: phase 1/2 — generating accounts 48,821,894/422,156,694 (11.6%) · 294.3k/s · ETA 21m8s · EOAs
+2026/09/21 22:34:41   nethermind: phase 1/2 — generating accounts 53,175,219/422,156,694 (12.6%) · 290.5k/s · ETA 21m10s · EOAs
+2026/09/21 22:34:56   nethermind: phase 1/2 — generating accounts 58,411,824/422,156,694 (13.8%) · 295.0k/s · ETA 20m33s · EOAs
+2026/09/21 22:35:11   nethermind: phase 1/2 — generating accounts 62,648,627/422,156,694 (14.8%) · 293.9k/s · ETA 20m23s · EOAs
+2026/09/21 22:35:27   nethermind: phase 1/2 — generating accounts 66,471,780/422,156,694 (15.7%) · 290.1k/s · ETA 20m26s · EOAs
+2026/09/21 22:35:42   nethermind: phase 1/2 — generating accounts 72,089,413/422,156,694 (17.1%) · 295.3k/s · ETA 19m45s · EOAs
+2026/09/21 22:35:59   nethermind: phase 1/2 — generating accounts 75,968,449/422,156,694 (18.0%) · 291.3k/s · ETA 19m48s · EOAs
+2026/09/21 22:36:14   nethermind: phase 1/2 — generating accounts 81,318,554/422,156,694 (19.3%) · 294.9k/s · ETA 19m15s · EOAs
+2026/09/21 22:36:31   nethermind: phase 1/2 — generating accounts 85,464,957/422,156,694 (20.2%) · 292.0k/s · ETA 19m13s · EOAs
+2026/09/21 22:36:46   nethermind: phase 1/2 — generating accounts 90,024,205/422,156,694 (21.3%) · 292.5k/s · ETA 18m55s · EOAs
+2026/09/21 22:37:04   nethermind: phase 1/2 — generating accounts 94,961,587/422,156,694 (22.5%) · 290.7k/s · ETA 18m45s · EOAs
+2026/09/21 22:37:19   nethermind: phase 1/2 — generating accounts 100,535,385/422,156,694 (23.8%) · 294.3k/s · ETA 18m12s · EOAs
+2026/09/21 22:37:37   nethermind: phase 1/2 — generating accounts 104,458,608/422,156,694 (24.7%) · 291.1k/s · ETA 18m11s · EOAs
+2026/09/21 22:37:52   nethermind: phase 1/2 — generating accounts 109,881,585/422,156,694 (26.0%) · 294.0k/s · ETA 17m42s · EOAs
+2026/09/21 22:38:09   nethermind: phase 1/2 — generating accounts 113,956,159/422,156,694 (27.0%) · 291.7k/s · ETA 17m36s · EOAs
+2026/09/21 22:38:24   nethermind: phase 1/2 — generating accounts 118,235,564/422,156,694 (28.0%) · 291.4k/s · ETA 17m22s · EOAs
+2026/09/21 22:38:43   nethermind: phase 1/2 — generating accounts 123,453,158/422,156,694 (29.2%) · 290.7k/s · ETA 17m7s · EOAs
+2026/09/21 22:38:58   nethermind: phase 1/2 — generating accounts 128,819,322/422,156,694 (30.5%) · 293.0k/s · ETA 16m41s · EOAs
+2026/09/21 22:39:15   nethermind: phase 1/2 — generating accounts 132,950,097/422,156,694 (31.5%) · 290.9k/s · ETA 16m34s · EOAs
+2026/09/21 22:39:30   nethermind: phase 1/2 — generating accounts 137,931,937/422,156,694 (32.7%) · 292.2k/s · ETA 16m12s · EOAs
+2026/09/21 22:39:45   nethermind: phase 1/2 — generating accounts 142,225,728/422,156,694 (33.7%) · 291.9k/s · ETA 15m58s · EOAs
+2026/09/21 22:40:02   nethermind: phase 1/2 — generating accounts 146,246,151/422,156,694 (34.6%) · 290.0k/s · ETA 15m51s · EOAs
+2026/09/21 22:40:17   nethermind: phase 1/2 — generating accounts 151,655,982/422,156,694 (35.9%) · 292.0k/s · ETA 15m26s · EOAs
+2026/09/21 22:40:35   nethermind: phase 1/2 — generating accounts 155,743,091/422,156,694 (36.9%) · 290.0k/s · ETA 15m18s · EOAs
+2026/09/21 22:40:50   nethermind: phase 1/2 — generating accounts 161,162,815/422,156,694 (38.2%) · 291.9k/s · ETA 14m54s · EOAs
+2026/09/21 22:41:08   nethermind: phase 1/2 — generating accounts 165,240,832/422,156,694 (39.1%) · 290.0k/s · ETA 14m46s · EOAs
+2026/09/21 22:41:23   nethermind: phase 1/2 — generating accounts 169,726,594/422,156,694 (40.2%) · 290.2k/s · ETA 14m29s · EOAs
+2026/09/21 22:41:41   nethermind: phase 1/2 — generating accounts 174,738,134/422,156,694 (41.4%) · 289.6k/s · ETA 14m14s · EOAs
+2026/09/21 22:41:56   nethermind: phase 1/2 — generating accounts 180,258,845/422,156,694 (42.7%) · 291.4k/s · ETA 13m50s · EOAs
+2026/09/21 22:42:13   nethermind: phase 1/2 — generating accounts 184,235,278/422,156,694 (43.6%) · 289.9k/s · ETA 13m40s · EOAs
+2026/09/21 22:42:28   nethermind: phase 1/2 — generating accounts 188,721,170/422,156,694 (44.7%) · 290.1k/s · ETA 13m24s · EOAs
+2026/09/21 22:42:43   nethermind: phase 1/2 — generating accounts 193,131,549/422,156,694 (45.7%) · 290.2k/s · ETA 13m9s · EOAs
+2026/09/21 22:43:01   nethermind: phase 1/2 — generating accounts 197,530,620/422,156,694 (46.8%) · 289.1k/s · ETA 12m57s · EOAs
+2026/09/21 22:43:16   nethermind: phase 1/2 — generating accounts 203,078,683/422,156,694 (48.1%) · 290.8k/s · ETA 12m33s · EOAs
+2026/09/21 22:43:33   nethermind: phase 1/2 — generating accounts 207,027,428/422,156,694 (49.0%) · 289.4k/s · ETA 12m23s · EOAs
+2026/09/21 22:43:48   nethermind: phase 1/2 — generating accounts 211,541,499/422,156,694 (50.1%) · 289.7k/s · ETA 12m7s · EOAs
+2026/09/21 22:44:03   nethermind: phase 1/2 — generating accounts 215,951,385/422,156,694 (51.2%) · 289.7k/s · ETA 11m51s · EOAs
+2026/09/21 22:44:21   nethermind: phase 1/2 — generating accounts 220,323,240/422,156,694 (52.2%) · 288.8k/s · ETA 11m38s · EOAs
+2026/09/21 22:44:36   nethermind: phase 1/2 — generating accounts 225,664,781/422,156,694 (53.5%) · 290.1k/s · ETA 11m17s · EOAs
+2026/09/21 22:44:53   nethermind: phase 1/2 — generating accounts 229,820,056/422,156,694 (54.4%) · 289.0k/s · ETA 11m5s · EOAs
+2026/09/21 22:45:08   nethermind: phase 1/2 — generating accounts 234,479,788/422,156,694 (55.5%) · 289.4k/s · ETA 10m48s · EOAs
+2026/09/21 22:45:23   nethermind: phase 1/2 — generating accounts 239,018,211/422,156,694 (56.6%) · 289.6k/s · ETA 10m32s · EOAs
+2026/09/21 22:45:41   nethermind: phase 1/2 — generating accounts 243,114,377/422,156,694 (57.6%) · 288.5k/s · ETA 10m20s · EOAs
+2026/09/21 22:45:56   nethermind: phase 1/2 — generating accounts 248,344,204/422,156,694 (58.8%) · 289.5k/s · ETA 10m0s · EOAs
+2026/09/21 22:46:13   nethermind: phase 1/2 — generating accounts 252,610,932/422,156,694 (59.8%) · 288.7k/s · ETA 9m47s · EOAs
+2026/09/21 22:46:28   nethermind: phase 1/2 — generating accounts 257,410,740/422,156,694 (61.0%) · 289.2k/s · ETA 9m29s · EOAs
+2026/09/21 22:46:43   nethermind: phase 1/2 — generating accounts 261,826,806/422,156,694 (62.0%) · 289.3k/s · ETA 9m14s · EOAs
+2026/09/21 22:47:00   nethermind: phase 1/2 — generating accounts 265,907,102/422,156,694 (63.0%) · 288.2k/s · ETA 9m2s · EOAs
+2026/09/21 22:47:15   nethermind: phase 1/2 — generating accounts 271,477,801/422,156,694 (64.3%) · 289.6k/s · ETA 8m40s · EOAs
+2026/09/21 22:47:33   nethermind: phase 1/2 — generating accounts 275,404,090/422,156,694 (65.2%) · 288.5k/s · ETA 8m28s · EOAs
+2026/09/21 22:47:48   nethermind: phase 1/2 — generating accounts 280,328,637/422,156,694 (66.4%) · 289.1k/s · ETA 8m10s · EOAs
+2026/09/21 22:48:05   nethermind: phase 1/2 — generating accounts 284,901,161/422,156,694 (67.5%) · 288.6k/s · ETA 7m55s · EOAs
+2026/09/21 22:48:20   nethermind: phase 1/2 — generating accounts 289,529,537/422,156,694 (68.6%) · 288.9k/s · ETA 7m39s · EOAs
+2026/09/21 22:48:39   nethermind: phase 1/2 — generating accounts 294,399,317/422,156,694 (69.7%) · 288.2k/s · ETA 7m23s · EOAs
+2026/09/21 22:48:54   nethermind: phase 1/2 — generating accounts 300,064,819/422,156,694 (71.1%) · 289.5k/s · ETA 7m1s · EOAs
+2026/09/21 22:49:12   nethermind: phase 1/2 — generating accounts 303,896,576/422,156,694 (72.0%) · 288.4k/s · ETA 6m50s · EOAs
+2026/09/21 22:49:27   nethermind: phase 1/2 — generating accounts 309,072,558/422,156,694 (73.2%) · 289.2k/s · ETA 6m31s · EOAs
+2026/09/21 22:49:45   nethermind: phase 1/2 — generating accounts 313,393,414/422,156,694 (74.2%) · 288.4k/s · ETA 6m17s · EOAs
+2026/09/21 22:50:00   nethermind: phase 1/2 — generating accounts 317,770,829/422,156,694 (75.3%) · 288.4k/s · ETA 6m1s · EOAs
+2026/09/21 22:50:18   nethermind: phase 1/2 — generating accounts 322,889,943/422,156,694 (76.5%) · 288.2k/s · ETA 5m44s · EOAs
+2026/09/21 22:50:33   nethermind: phase 1/2 — generating accounts 327,750,318/422,156,694 (77.6%) · 288.7k/s · ETA 5m27s · EOAs
+2026/09/21 22:50:51   nethermind: phase 1/2 — generating accounts 332,386,076/422,156,694 (78.7%) · 288.2k/s · ETA 5m11s · EOAs
+2026/09/21 22:51:06   nethermind: phase 1/2 — generating accounts 336,922,897/422,156,694 (79.8%) · 288.4k/s · ETA 4m55s · EOAs
+2026/09/21 22:51:21   nethermind: phase 1/2 — generating accounts 341,221,425/422,156,694 (80.8%) · 288.4k/s · ETA 4m40s · EOAs
+2026/09/21 22:51:39   nethermind: phase 1/2 — generating accounts 345,681,982/422,156,694 (81.9%) · 287.8k/s · ETA 4m25s · EOAs
+2026/09/21 22:51:54   nethermind: phase 1/2 — generating accounts 350,530,121/422,156,694 (83.0%) · 288.2k/s · ETA 4m8s · EOAs
+2026/09/21 22:52:12   nethermind: phase 1/2 — generating accounts 355,178,988/422,156,694 (84.1%) · 287.8k/s · ETA 3m52s · EOAs
+2026/09/21 22:52:27   nethermind: phase 1/2 — generating accounts 360,029,054/422,156,694 (85.3%) · 288.2k/s · ETA 3m35s · EOAs
+2026/09/21 22:52:45   nethermind: phase 1/2 — generating accounts 364,675,011/422,156,694 (86.4%) · 287.9k/s · ETA 3m19s · EOAs
+2026/09/21 22:53:00   nethermind: phase 1/2 — generating accounts 369,084,365/422,156,694 (87.4%) · 288.0k/s · ETA 3m4s · EOAs
+2026/09/21 22:53:15   nethermind: phase 1/2 — generating accounts 373,980,785/422,156,694 (88.6%) · 288.4k/s · ETA 2m47s · EOAs
+2026/09/21 22:53:31   nethermind: phase 1/2 — generating accounts 377,970,873/422,156,694 (89.5%) · 287.8k/s · ETA 2m33s · EOAs
+2026/09/21 22:53:46   nethermind: phase 1/2 — generating accounts 382,712,023/422,156,694 (90.7%) · 288.1k/s · ETA 2m16s · EOAs
+2026/09/21 22:54:01   nethermind: phase 1/2 — generating accounts 387,358,249/422,156,694 (91.8%) · 288.4k/s · ETA 2m0s · EOAs
+2026/09/21 22:54:18   nethermind: phase 1/2 — generating accounts 391,266,713/422,156,694 (92.7%) · 287.6k/s · ETA 1m47s · EOAs
+2026/09/21 22:54:33   nethermind: phase 1/2 — generating accounts 396,169,954/422,156,694 (93.8%) · 288.0k/s · ETA 1m30s · EOAs
+2026/09/21 22:54:51   nethermind: phase 1/2 — generating accounts 400,763,585/422,156,694 (94.9%) · 287.7k/s · ETA 1m14s · EOAs
+2026/09/21 22:55:06   nethermind: phase 1/2 — generating accounts 405,431,474/422,156,694 (96.0%) · 287.9k/s · ETA 58s · EOAs
+2026/09/21 22:55:21   nethermind: phase 1/2 — generating accounts 409,627,807/422,156,694 (97.0%) · 287.8k/s · ETA 43s · EOAs
+2026/09/21 22:55:39   nethermind: phase 1/2 — generating accounts 414,059,785/422,156,694 (98.1%) · 287.3k/s · ETA 28s · EOAs
+2026/09/21 22:55:54   nethermind: phase 1/2 — generating accounts 418,952,702/422,156,694 (99.2%) · 287.7k/s · ETA 11s · EOAs
+2026/09/21 22:56:05 ▸ nethermind: phase 1/2 — generating contracts
+2026/09/21 22:56:20   nethermind: phase 1/2 — generating contracts 17,472/7,340,032 (0.2%) · 1.2k/s · ETA 1h44m46s · contracts
+2026/09/21 22:56:35   nethermind: phase 1/2 — generating contracts 35,952/7,340,032 (0.5%) · 1.2k/s · ETA 1h41m35s · contracts
+2026/09/21 22:56:50   nethermind: phase 1/2 — generating contracts 54,930/7,340,032 (0.7%) · 1.2k/s · ETA 1h39m28s · contracts
+2026/09/21 22:57:05   nethermind: phase 1/2 — generating contracts 73,223/7,340,032 (1.0%) · 1.2k/s · ETA 1h39m14s · contracts
+2026/09/21 22:57:20   nethermind: phase 1/2 — generating contracts 92,539/7,340,032 (1.3%) · 1.2k/s · ETA 1h37m53s · contracts
+2026/09/21 22:57:35   nethermind: phase 1/2 — generating contracts 111,092/7,340,032 (1.5%) · 1.2k/s · ETA 1h37m36s · contracts
+2026/09/21 22:57:50   nethermind: phase 1/2 — generating contracts 130,332/7,340,032 (1.8%) · 1.2k/s · ETA 1h36m48s · contracts
+2026/09/21 22:58:05   nethermind: phase 1/2 — generating contracts 149,245/7,340,032 (2.0%) · 1.2k/s · ETA 1h36m21s · contracts
+2026/09/21 22:58:21   nethermind: phase 1/2 — generating contracts 168,224/7,340,032 (2.3%) · 1.2k/s · ETA 1h35m59s · contracts
+2026/09/21 22:58:36   nethermind: phase 1/2 — generating contracts 187,518/7,340,032 (2.6%) · 1.2k/s · ETA 1h35m25s · contracts
+2026/09/21 22:58:51   nethermind: phase 1/2 — generating contracts 205,798/7,340,032 (2.8%) · 1.2k/s · ETA 1h35m23s · contracts
+2026/09/21 22:59:06   nethermind: phase 1/2 — generating contracts 224,687/7,340,032 (3.1%) · 1.2k/s · ETA 1h35m3s · contracts
+2026/09/21 22:59:21   nethermind: phase 1/2 — generating contracts 243,821/7,340,032 (3.3%) · 1.2k/s · ETA 1h34m43s · contracts
+2026/09/21 22:59:36   nethermind: phase 1/2 — generating contracts 262,756/7,340,032 (3.6%) · 1.2k/s · ETA 1h34m24s · contracts
+2026/09/21 22:59:51   nethermind: phase 1/2 — generating contracts 281,630/7,340,032 (3.8%) · 1.3k/s · ETA 1h34m6s · contracts
+2026/09/21 23:00:06   nethermind: phase 1/2 — generating contracts 301,068/7,340,032 (4.1%) · 1.3k/s · ETA 1h33m43s · contracts
+2026/09/21 23:00:21   nethermind: phase 1/2 — generating contracts 320,426/7,340,032 (4.4%) · 1.3k/s · ETA 1h33m17s · contracts
+2026/09/21 23:00:36   nethermind: phase 1/2 — generating contracts 339,023/7,340,032 (4.6%) · 1.3k/s · ETA 1h33m6s · contracts
+2026/09/21 23:00:51   nethermind: phase 1/2 — generating contracts 357,499/7,340,032 (4.9%) · 1.3k/s · ETA 1h32m56s · contracts
+2026/09/21 23:01:06   nethermind: phase 1/2 — generating contracts 376,645/7,340,032 (5.1%) · 1.3k/s · ETA 1h32m35s · contracts
+2026/09/21 23:01:21   nethermind: phase 1/2 — generating contracts 395,241/7,340,032 (5.4%) · 1.3k/s · ETA 1h32m24s · contracts
+2026/09/21 23:01:36   nethermind: phase 1/2 — generating contracts 414,314/7,340,032 (5.6%) · 1.3k/s · ETA 1h32m5s · contracts
+2026/09/21 23:01:51   nethermind: phase 1/2 — generating contracts 433,125/7,340,032 (5.9%) · 1.3k/s · ETA 1h31m52s · contracts
+2026/09/21 23:02:06   nethermind: phase 1/2 — generating contracts 452,164/7,340,032 (6.2%) · 1.3k/s · ETA 1h31m33s · contracts
+2026/09/21 23:02:21   nethermind: phase 1/2 — generating contracts 470,978/7,340,032 (6.4%) · 1.3k/s · ETA 1h31m20s · contracts
+2026/09/21 23:02:36   nethermind: phase 1/2 — generating contracts 489,465/7,340,032 (6.7%) · 1.3k/s · ETA 1h31m9s · contracts
+2026/09/21 23:02:51   nethermind: phase 1/2 — generating contracts 508,706/7,340,032 (6.9%) · 1.3k/s · ETA 1h30m49s · contracts
+2026/09/21 23:03:06   nethermind: phase 1/2 — generating contracts 527,213/7,340,032 (7.2%) · 1.3k/s · ETA 1h30m38s · contracts
+2026/09/21 23:03:21   nethermind: phase 1/2 — generating contracts 546,161/7,340,032 (7.4%) · 1.3k/s · ETA 1h30m21s · contracts
+2026/09/21 23:03:36   nethermind: phase 1/2 — generating contracts 564,935/7,340,032 (7.7%) · 1.3k/s · ETA 1h30m8s · contracts
+2026/09/21 23:03:51   nethermind: phase 1/2 — generating contracts 584,104/7,340,032 (8.0%) · 1.3k/s · ETA 1h29m49s · contracts
+2026/09/21 23:04:06   nethermind: phase 1/2 — generating contracts 602,896/7,340,032 (8.2%) · 1.3k/s · ETA 1h29m35s · contracts
+2026/09/21 23:04:21   nethermind: phase 1/2 — generating contracts 622,040/7,340,032 (8.5%) · 1.3k/s · ETA 1h29m16s · contracts
+2026/09/21 23:04:36   nethermind: phase 1/2 — generating contracts 640,792/7,340,032 (8.7%) · 1.3k/s · ETA 1h29m2s · contracts
+2026/09/21 23:04:51   nethermind: phase 1/2 — generating contracts 659,950/7,340,032 (9.0%) · 1.3k/s · ETA 1h28m44s · contracts
+2026/09/21 23:05:06   nethermind: phase 1/2 — generating contracts 678,635/7,340,032 (9.2%) · 1.3k/s · ETA 1h28m30s · contracts
+2026/09/21 23:05:21   nethermind: phase 1/2 — generating contracts 697,516/7,340,032 (9.5%) · 1.3k/s · ETA 1h28m14s · contracts
+2026/09/21 23:05:36   nethermind: phase 1/2 — generating contracts 716,314/7,340,032 (9.8%) · 1.3k/s · ETA 1h28m0s · contracts
+2026/09/21 23:05:51   nethermind: phase 1/2 — generating contracts 734,971/7,340,032 (10.0%) · 1.3k/s · ETA 1h27m46s · contracts
+2026/09/21 23:06:06   nethermind: phase 1/2 — generating contracts 753,623/7,340,032 (10.3%) · 1.3k/s · ETA 1h27m32s · contracts
+2026/09/21 23:06:22   nethermind: phase 1/2 — generating contracts 772,819/7,340,032 (10.5%) · 1.3k/s · ETA 1h27m16s · contracts
+2026/09/21 23:06:37   nethermind: phase 1/2 — generating contracts 791,541/7,340,032 (10.8%) · 1.3k/s · ETA 1h27m2s · contracts
+2026/09/21 23:06:52   nethermind: phase 1/2 — generating contracts 809,927/7,340,032 (11.0%) · 1.3k/s · ETA 1h26m50s · contracts
+2026/09/21 23:07:07   nethermind: phase 1/2 — generating contracts 828,680/7,340,032 (11.3%) · 1.3k/s · ETA 1h26m35s · contracts
+2026/09/21 23:07:22   nethermind: phase 1/2 — generating contracts 847,506/7,340,032 (11.5%) · 1.3k/s · ETA 1h26m21s · contracts
+2026/09/21 23:07:37   nethermind: phase 1/2 — generating contracts 866,966/7,340,032 (11.8%) · 1.3k/s · ETA 1h26m3s · contracts
+2026/09/21 23:07:52   nethermind: phase 1/2 — generating contracts 885,852/7,340,032 (12.1%) · 1.3k/s · ETA 1h25m47s · contracts
+2026/09/21 23:08:07   nethermind: phase 1/2 — generating contracts 904,688/7,340,032 (12.3%) · 1.3k/s · ETA 1h25m32s · contracts
+2026/09/21 23:08:22   nethermind: phase 1/2 — generating contracts 923,612/7,340,032 (12.6%) · 1.3k/s · ETA 1h25m18s · contracts
+2026/09/21 23:08:37   nethermind: phase 1/2 — generating contracts 942,155/7,340,032 (12.8%) · 1.3k/s · ETA 1h25m5s · contracts
+2026/09/21 23:08:52   nethermind: phase 1/2 — generating contracts 961,210/7,340,032 (13.1%) · 1.3k/s · ETA 1h24m49s · contracts
+2026/09/21 23:09:07   nethermind: phase 1/2 — generating contracts 979,834/7,340,032 (13.3%) · 1.3k/s · ETA 1h24m35s · contracts
+2026/09/21 23:09:23   nethermind: phase 1/2 — generating contracts 999,045/7,340,032 (13.6%) · 1.3k/s · ETA 1h24m19s · contracts
+2026/09/21 23:09:38   nethermind: phase 1/2 — generating contracts 1,018,025/7,340,032 (13.9%) · 1.3k/s · ETA 1h24m3s · contracts
+2026/09/21 23:09:53   nethermind: phase 1/2 — generating contracts 1,036,869/7,340,032 (14.1%) · 1.3k/s · ETA 1h23m48s · contracts
+2026/09/21 23:10:08   nethermind: phase 1/2 — generating contracts 1,056,112/7,340,032 (14.4%) · 1.3k/s · ETA 1h23m31s · contracts
+2026/09/21 23:10:23   nethermind: phase 1/2 — generating contracts 1,074,698/7,340,032 (14.6%) · 1.3k/s · ETA 1h23m17s · contracts
+2026/09/21 23:10:38   nethermind: phase 1/2 — generating contracts 1,093,973/7,340,032 (14.9%) · 1.3k/s · ETA 1h23m0s · contracts
+2026/09/21 23:10:53   nethermind: phase 1/2 — generating contracts 1,112,579/7,340,032 (15.2%) · 1.3k/s · ETA 1h22m47s · contracts
+2026/09/21 23:11:08   nethermind: phase 1/2 — generating contracts 1,131,652/7,340,032 (15.4%) · 1.3k/s · ETA 1h22m31s · contracts
+2026/09/21 23:11:23   nethermind: phase 1/2 — generating contracts 1,150,401/7,340,032 (15.7%) · 1.3k/s · ETA 1h22m17s · contracts
+2026/09/21 23:11:38   nethermind: phase 1/2 — generating contracts 1,169,650/7,340,032 (15.9%) · 1.3k/s · ETA 1h22m0s · contracts
+2026/09/21 23:11:53   nethermind: phase 1/2 — generating contracts 1,188,386/7,340,032 (16.2%) · 1.3k/s · ETA 1h21m46s · contracts
+2026/09/21 23:12:08   nethermind: phase 1/2 — generating contracts 1,207,231/7,340,032 (16.4%) · 1.3k/s · ETA 1h21m31s · contracts
+2026/09/21 23:12:23   nethermind: phase 1/2 — generating contracts 1,226,084/7,340,032 (16.7%) · 1.3k/s · ETA 1h21m16s · contracts
+2026/09/21 23:12:38   nethermind: phase 1/2 — generating contracts 1,244,615/7,340,032 (17.0%) · 1.3k/s · ETA 1h21m3s · contracts
+2026/09/21 23:12:53   nethermind: phase 1/2 — generating contracts 1,263,432/7,340,032 (17.2%) · 1.3k/s · ETA 1h20m48s · contracts
+2026/09/21 23:13:08   nethermind: phase 1/2 — generating contracts 1,282,383/7,340,032 (17.5%) · 1.3k/s · ETA 1h20m32s · contracts
+2026/09/21 23:13:23   nethermind: phase 1/2 — generating contracts 1,300,892/7,340,032 (17.7%) · 1.3k/s · ETA 1h20m18s · contracts
+2026/09/21 23:13:38   nethermind: phase 1/2 — generating contracts 1,320,001/7,340,032 (18.0%) · 1.3k/s · ETA 1h20m2s · contracts
+2026/09/21 23:13:53   nethermind: phase 1/2 — generating contracts 1,338,627/7,340,032 (18.2%) · 1.3k/s · ETA 1h19m48s · contracts
+2026/09/21 23:14:09   nethermind: phase 1/2 — generating contracts 1,357,123/7,340,032 (18.5%) · 1.3k/s · ETA 1h19m35s · contracts
+2026/09/21 23:14:24   nethermind: phase 1/2 — generating contracts 1,375,961/7,340,032 (18.7%) · 1.3k/s · ETA 1h19m20s · contracts
+2026/09/21 23:14:39   nethermind: phase 1/2 — generating contracts 1,394,522/7,340,032 (19.0%) · 1.3k/s · ETA 1h19m6s · contracts
+2026/09/21 23:14:54   nethermind: phase 1/2 — generating contracts 1,413,347/7,340,032 (19.3%) · 1.3k/s · ETA 1h18m51s · contracts
+2026/09/21 23:15:09   nethermind: phase 1/2 — generating contracts 1,432,443/7,340,032 (19.5%) · 1.3k/s · ETA 1h18m34s · contracts
+2026/09/21 23:15:24   nethermind: phase 1/2 — generating contracts 1,451,208/7,340,032 (19.8%) · 1.3k/s · ETA 1h18m20s · contracts
+2026/09/21 23:15:39   nethermind: phase 1/2 — generating contracts 1,469,987/7,340,032 (20.0%) · 1.3k/s · ETA 1h18m5s · contracts
+2026/09/21 23:15:54   nethermind: phase 1/2 — generating contracts 1,488,982/7,340,032 (20.3%) · 1.3k/s · ETA 1h17m50s · contracts
+2026/09/21 23:16:09   nethermind: phase 1/2 — generating contracts 1,507,325/7,340,032 (20.5%) · 1.3k/s · ETA 1h17m37s · contracts
+2026/09/21 23:16:24   nethermind: phase 1/2 — generating contracts 1,525,976/7,340,032 (20.8%) · 1.3k/s · ETA 1h17m23s · contracts
+2026/09/21 23:16:39   nethermind: phase 1/2 — generating contracts 1,545,065/7,340,032 (21.0%) · 1.3k/s · ETA 1h17m6s · contracts
+2026/09/21 23:16:54   nethermind: phase 1/2 — generating contracts 1,563,420/7,340,032 (21.3%) · 1.3k/s · ETA 1h16m53s · contracts
+2026/09/21 23:17:09   nethermind: phase 1/2 — generating contracts 1,581,999/7,340,032 (21.6%) · 1.3k/s · ETA 1h16m39s · contracts
+2026/09/21 23:17:24   nethermind: phase 1/2 — generating contracts 1,600,908/7,340,032 (21.8%) · 1.3k/s · ETA 1h16m23s · contracts
+2026/09/21 23:17:39   nethermind: phase 1/2 — generating contracts 1,619,158/7,340,032 (22.1%) · 1.3k/s · ETA 1h16m10s · contracts
+2026/09/21 23:17:54   nethermind: phase 1/2 — generating contracts 1,638,021/7,340,032 (22.3%) · 1.3k/s · ETA 1h15m55s · contracts
+2026/09/21 23:18:09   nethermind: phase 1/2 — generating contracts 1,656,622/7,340,032 (22.6%) · 1.3k/s · ETA 1h15m41s · contracts
+2026/09/21 23:18:24   nethermind: phase 1/2 — generating contracts 1,675,416/7,340,032 (22.8%) · 1.3k/s · ETA 1h15m26s · contracts
+2026/09/21 23:18:39   nethermind: phase 1/2 — generating contracts 1,694,052/7,340,032 (23.1%) · 1.3k/s · ETA 1h15m12s · contracts
+2026/09/21 23:18:55   nethermind: phase 1/2 — generating contracts 1,712,921/7,340,032 (23.3%) · 1.3k/s · ETA 1h14m57s · contracts
+2026/09/21 23:19:10   nethermind: phase 1/2 — generating contracts 1,731,801/7,340,032 (23.6%) · 1.3k/s · ETA 1h14m42s · contracts
+2026/09/21 23:19:25   nethermind: phase 1/2 — generating contracts 1,750,295/7,340,032 (23.8%) · 1.3k/s · ETA 1h14m28s · contracts
+2026/09/21 23:19:40   nethermind: phase 1/2 — generating contracts 1,768,392/7,340,032 (24.1%) · 1.3k/s · ETA 1h14m15s · contracts
+2026/09/21 23:19:55   nethermind: phase 1/2 — generating contracts 1,786,625/7,340,032 (24.3%) · 1.3k/s · ETA 1h14m2s · contracts
+2026/09/21 23:20:10   nethermind: phase 1/2 — generating contracts 1,804,784/7,340,032 (24.6%) · 1.2k/s · ETA 1h13m49s · contracts
+2026/09/21 23:20:25   nethermind: phase 1/2 — generating contracts 1,823,339/7,340,032 (24.8%) · 1.2k/s · ETA 1h13m35s · contracts
+2026/09/21 23:20:40   nethermind: phase 1/2 — generating contracts 1,841,878/7,340,032 (25.1%) · 1.2k/s · ETA 1h13m20s · contracts
+2026/09/21 23:20:55   nethermind: phase 1/2 — generating contracts 1,860,622/7,340,032 (25.3%) · 1.2k/s · ETA 1h13m5s · contracts
+2026/09/21 23:21:10   nethermind: phase 1/2 — generating contracts 1,879,206/7,340,032 (25.6%) · 1.2k/s · ETA 1h12m51s · contracts
+2026/09/21 23:21:25   nethermind: phase 1/2 — generating contracts 1,897,914/7,340,032 (25.9%) · 1.2k/s · ETA 1h12m37s · contracts
+2026/09/21 23:21:40   nethermind: phase 1/2 — generating contracts 1,917,015/7,340,032 (26.1%) · 1.2k/s · ETA 1h12m21s · contracts
+2026/09/21 23:21:55   nethermind: phase 1/2 — generating contracts 1,935,497/7,340,032 (26.4%) · 1.2k/s · ETA 1h12m6s · contracts
+2026/09/21 23:22:10   nethermind: phase 1/2 — generating contracts 1,954,314/7,340,032 (26.6%) · 1.2k/s · ETA 1h11m51s · contracts
+2026/09/21 23:22:25   nethermind: phase 1/2 — generating contracts 1,972,718/7,340,032 (26.9%) · 1.2k/s · ETA 1h11m37s · contracts
+2026/09/21 23:22:40   nethermind: phase 1/2 — generating contracts 1,991,598/7,340,032 (27.1%) · 1.2k/s · ETA 1h11m22s · contracts
+2026/09/21 23:22:55   nethermind: phase 1/2 — generating contracts 2,010,371/7,340,032 (27.4%) · 1.2k/s · ETA 1h11m6s · contracts
+2026/09/21 23:23:10   nethermind: phase 1/2 — generating contracts 2,028,884/7,340,032 (27.6%) · 1.2k/s · ETA 1h10m53s · contracts
+2026/09/21 23:23:25   nethermind: phase 1/2 — generating contracts 2,048,163/7,340,032 (27.9%) · 1.2k/s · ETA 1h10m36s · contracts
+2026/09/21 23:23:40   nethermind: phase 1/2 — generating contracts 2,066,605/7,340,032 (28.2%) · 1.2k/s · ETA 1h10m22s · contracts
+2026/09/21 23:23:55   nethermind: phase 1/2 — generating contracts 2,085,119/7,340,032 (28.4%) · 1.2k/s · ETA 1h10m7s · contracts
+2026/09/21 23:24:10   nethermind: phase 1/2 — generating contracts 2,103,066/7,340,032 (28.7%) · 1.2k/s · ETA 1h9m55s · contracts
+2026/09/21 23:24:25   nethermind: phase 1/2 — generating contracts 2,121,907/7,340,032 (28.9%) · 1.2k/s · ETA 1h9m40s · contracts
+2026/09/21 23:24:40   nethermind: phase 1/2 — generating contracts 2,140,688/7,340,032 (29.2%) · 1.2k/s · ETA 1h9m25s · contracts
+2026/09/21 23:24:55   nethermind: phase 1/2 — generating contracts 2,159,346/7,340,032 (29.4%) · 1.2k/s · ETA 1h9m10s · contracts
+2026/09/21 23:25:10   nethermind: phase 1/2 — generating contracts 2,178,108/7,340,032 (29.7%) · 1.2k/s · ETA 1h8m55s · contracts
+2026/09/21 23:25:25   nethermind: phase 1/2 — generating contracts 2,196,652/7,340,032 (29.9%) · 1.2k/s · ETA 1h8m40s · contracts
+2026/09/21 23:25:40   nethermind: phase 1/2 — generating contracts 2,215,234/7,340,032 (30.2%) · 1.2k/s · ETA 1h8m26s · contracts
+2026/09/21 23:25:56   nethermind: phase 1/2 — generating contracts 2,234,284/7,340,032 (30.4%) · 1.2k/s · ETA 1h8m11s · contracts
+2026/09/21 23:26:11   nethermind: phase 1/2 — generating contracts 2,252,452/7,340,032 (30.7%) · 1.2k/s · ETA 1h7m57s · contracts
+2026/09/21 23:26:26   nethermind: phase 1/2 — generating contracts 2,270,995/7,340,032 (30.9%) · 1.2k/s · ETA 1h7m42s · contracts
+2026/09/21 23:26:41   nethermind: phase 1/2 — generating contracts 2,289,449/7,340,032 (31.2%) · 1.2k/s · ETA 1h7m28s · contracts
+2026/09/21 23:26:56   nethermind: phase 1/2 — generating contracts 2,308,725/7,340,032 (31.5%) · 1.2k/s · ETA 1h7m12s · contracts
+2026/09/21 23:27:11   nethermind: phase 1/2 — generating contracts 2,327,196/7,340,032 (31.7%) · 1.2k/s · ETA 1h6m57s · contracts
+2026/09/21 23:27:26   nethermind: phase 1/2 — generating contracts 2,345,757/7,340,032 (32.0%) · 1.2k/s · ETA 1h6m43s · contracts
+2026/09/21 23:27:41   nethermind: phase 1/2 — generating contracts 2,364,126/7,340,032 (32.2%) · 1.2k/s · ETA 1h6m30s · contracts
+2026/09/21 23:27:56   nethermind: phase 1/2 — generating contracts 2,382,884/7,340,032 (32.5%) · 1.2k/s · ETA 1h6m15s · contracts
+2026/09/21 23:28:11   nethermind: phase 1/2 — generating contracts 2,401,577/7,340,032 (32.7%) · 1.2k/s · ETA 1h6m0s · contracts
+2026/09/21 23:28:26   nethermind: phase 1/2 — generating contracts 2,419,753/7,340,032 (33.0%) · 1.2k/s · ETA 1h5m46s · contracts
+2026/09/21 23:28:41   nethermind: phase 1/2 — generating contracts 2,437,822/7,340,032 (33.2%) · 1.2k/s · ETA 1h5m33s · contracts
+2026/09/21 23:28:56   nethermind: phase 1/2 — generating contracts 2,456,911/7,340,032 (33.5%) · 1.2k/s · ETA 1h5m17s · contracts
+2026/09/21 23:29:11   nethermind: phase 1/2 — generating contracts 2,475,455/7,340,032 (33.7%) · 1.2k/s · ETA 1h5m2s · contracts
+2026/09/21 23:29:26   nethermind: phase 1/2 — generating contracts 2,493,915/7,340,032 (34.0%) · 1.2k/s · ETA 1h4m48s · contracts
+2026/09/21 23:29:42   nethermind: phase 1/2 — generating contracts 2,512,213/7,340,032 (34.2%) · 1.2k/s · ETA 1h4m34s · contracts
+2026/09/21 23:29:57   nethermind: phase 1/2 — generating contracts 2,531,124/7,340,032 (34.5%) · 1.2k/s · ETA 1h4m18s · contracts
+2026/09/21 23:30:12   nethermind: phase 1/2 — generating contracts 2,549,901/7,340,032 (34.7%) · 1.2k/s · ETA 1h4m3s · contracts
+2026/09/21 23:30:27   nethermind: phase 1/2 — generating contracts 2,568,471/7,340,032 (35.0%) · 1.2k/s · ETA 1h3m49s · contracts
+2026/09/21 23:30:42   nethermind: phase 1/2 — generating contracts 2,587,039/7,340,032 (35.2%) · 1.2k/s · ETA 1h3m34s · contracts
+2026/09/21 23:30:57   nethermind: phase 1/2 — generating contracts 2,605,319/7,340,032 (35.5%) · 1.2k/s · ETA 1h3m20s · contracts
+2026/09/21 23:31:12   nethermind: phase 1/2 — generating contracts 2,623,826/7,340,032 (35.7%) · 1.2k/s · ETA 1h3m6s · contracts
+2026/09/21 23:31:27   nethermind: phase 1/2 — generating contracts 2,642,603/7,340,032 (36.0%) · 1.2k/s · ETA 1h2m50s · contracts
+2026/09/21 23:31:42   nethermind: phase 1/2 — generating contracts 2,660,668/7,340,032 (36.2%) · 1.2k/s · ETA 1h2m37s · contracts
+2026/09/21 23:31:57   nethermind: phase 1/2 — generating contracts 2,678,878/7,340,032 (36.5%) · 1.2k/s · ETA 1h2m23s · contracts
+2026/09/21 23:32:12   nethermind: phase 1/2 — generating contracts 2,697,339/7,340,032 (36.7%) · 1.2k/s · ETA 1h2m9s · contracts
+2026/09/21 23:32:27   nethermind: phase 1/2 — generating contracts 2,715,787/7,340,032 (37.0%) · 1.2k/s · ETA 1h1m55s · contracts
+2026/09/21 23:32:42   nethermind: phase 1/2 — generating contracts 2,734,796/7,340,032 (37.3%) · 1.2k/s · ETA 1h1m39s · contracts
+2026/09/21 23:32:57   nethermind: phase 1/2 — generating contracts 2,753,164/7,340,032 (37.5%) · 1.2k/s · ETA 1h1m25s · contracts
+2026/09/21 23:33:12   nethermind: phase 1/2 — generating contracts 2,771,908/7,340,032 (37.8%) · 1.2k/s · ETA 1h1m10s · contracts
+2026/09/21 23:33:27   nethermind: phase 1/2 — generating contracts 2,789,541/7,340,032 (38.0%) · 1.2k/s · ETA 1h0m57s · contracts
+2026/09/21 23:33:42   nethermind: phase 1/2 — generating contracts 2,808,169/7,340,032 (38.3%) · 1.2k/s · ETA 1h0m42s · contracts
+2026/09/21 23:33:57   nethermind: phase 1/2 — generating contracts 2,826,739/7,340,032 (38.5%) · 1.2k/s · ETA 1h0m27s · contracts
+2026/09/21 23:34:12   nethermind: phase 1/2 — generating contracts 2,845,418/7,340,032 (38.8%) · 1.2k/s · ETA 1h0m12s · contracts
+2026/09/21 23:34:28   nethermind: phase 1/2 — generating contracts 2,864,025/7,340,032 (39.0%) · 1.2k/s · ETA 59m57s · contracts
+2026/09/21 23:34:43   nethermind: phase 1/2 — generating contracts 2,882,467/7,340,032 (39.3%) · 1.2k/s · ETA 59m43s · contracts
+2026/09/21 23:34:58   nethermind: phase 1/2 — generating contracts 2,900,864/7,340,032 (39.5%) · 1.2k/s · ETA 59m28s · contracts
+2026/09/21 23:35:13   nethermind: phase 1/2 — generating contracts 2,919,185/7,340,032 (39.8%) · 1.2k/s · ETA 59m14s · contracts
+2026/09/21 23:35:28   nethermind: phase 1/2 — generating contracts 2,937,556/7,340,032 (40.0%) · 1.2k/s · ETA 59m0s · contracts
+2026/09/21 23:35:43   nethermind: phase 1/2 — generating contracts 2,956,158/7,340,032 (40.3%) · 1.2k/s · ETA 58m45s · contracts
+2026/09/21 23:35:58   nethermind: phase 1/2 — generating contracts 2,974,339/7,340,032 (40.5%) · 1.2k/s · ETA 58m31s · contracts
+2026/09/21 23:36:13   nethermind: phase 1/2 — generating contracts 2,992,644/7,340,032 (40.8%) · 1.2k/s · ETA 58m17s · contracts
+2026/09/21 23:36:28   nethermind: phase 1/2 — generating contracts 3,010,974/7,340,032 (41.0%) · 1.2k/s · ETA 58m3s · contracts
+2026/09/21 23:36:43   nethermind: phase 1/2 — generating contracts 3,029,433/7,340,032 (41.3%) · 1.2k/s · ETA 57m48s · contracts
+2026/09/21 23:36:58   nethermind: phase 1/2 — generating contracts 3,048,040/7,340,032 (41.5%) · 1.2k/s · ETA 57m33s · contracts
+2026/09/21 23:37:13   nethermind: phase 1/2 — generating contracts 3,066,779/7,340,032 (41.8%) · 1.2k/s · ETA 57m18s · contracts
+2026/09/21 23:37:28   nethermind: phase 1/2 — generating contracts 3,085,501/7,340,032 (42.0%) · 1.2k/s · ETA 57m3s · contracts
+2026/09/21 23:37:43   nethermind: phase 1/2 — generating contracts 3,104,081/7,340,032 (42.3%) · 1.2k/s · ETA 56m48s · contracts
+2026/09/21 23:37:58   nethermind: phase 1/2 — generating contracts 3,122,463/7,340,032 (42.5%) · 1.2k/s · ETA 56m34s · contracts
+2026/09/21 23:38:13   nethermind: phase 1/2 — generating contracts 3,141,191/7,340,032 (42.8%) · 1.2k/s · ETA 56m19s · contracts
+2026/09/21 23:38:28   nethermind: phase 1/2 — generating contracts 3,159,548/7,340,032 (43.0%) · 1.2k/s · ETA 56m4s · contracts
+2026/09/21 23:38:43   nethermind: phase 1/2 — generating contracts 3,178,182/7,340,032 (43.3%) · 1.2k/s · ETA 55m49s · contracts
+2026/09/21 23:38:58   nethermind: phase 1/2 — generating contracts 3,196,312/7,340,032 (43.5%) · 1.2k/s · ETA 55m35s · contracts
+2026/09/21 23:39:13   nethermind: phase 1/2 — generating contracts 3,214,264/7,340,032 (43.8%) · 1.2k/s · ETA 55m21s · contracts
+2026/09/21 23:39:28   nethermind: phase 1/2 — generating contracts 3,233,036/7,340,032 (44.0%) · 1.2k/s · ETA 55m6s · contracts
+2026/09/21 23:39:43   nethermind: phase 1/2 — generating contracts 3,251,182/7,340,032 (44.3%) · 1.2k/s · ETA 54m52s · contracts
+2026/09/21 23:39:58   nethermind: phase 1/2 — generating contracts 3,269,331/7,340,032 (44.5%) · 1.2k/s · ETA 54m38s · contracts
+2026/09/21 23:40:13   nethermind: phase 1/2 — generating contracts 3,287,983/7,340,032 (44.8%) · 1.2k/s · ETA 54m23s · contracts
+2026/09/21 23:40:28   nethermind: phase 1/2 — generating contracts 3,306,764/7,340,032 (45.1%) · 1.2k/s · ETA 54m8s · contracts
+2026/09/21 23:40:43   nethermind: phase 1/2 — generating contracts 3,325,493/7,340,032 (45.3%) · 1.2k/s · ETA 53m52s · contracts
+2026/09/21 23:40:58   nethermind: phase 1/2 — generating contracts 3,343,631/7,340,032 (45.6%) · 1.2k/s · ETA 53m38s · contracts
+2026/09/21 23:41:13   nethermind: phase 1/2 — generating contracts 3,362,305/7,340,032 (45.8%) · 1.2k/s · ETA 53m23s · contracts
+2026/09/21 23:41:28   nethermind: phase 1/2 — generating contracts 3,380,343/7,340,032 (46.1%) · 1.2k/s · ETA 53m9s · contracts
+2026/09/21 23:41:43   nethermind: phase 1/2 — generating contracts 3,398,679/7,340,032 (46.3%) · 1.2k/s · ETA 52m55s · contracts
+2026/09/21 23:41:58   nethermind: phase 1/2 — generating contracts 3,416,950/7,340,032 (46.6%) · 1.2k/s · ETA 52m40s · contracts
+2026/09/21 23:42:13   nethermind: phase 1/2 — generating contracts 3,435,542/7,340,032 (46.8%) · 1.2k/s · ETA 52m25s · contracts
+2026/09/21 23:42:28   nethermind: phase 1/2 — generating contracts 3,454,295/7,340,032 (47.1%) · 1.2k/s · ETA 52m10s · contracts
+2026/09/21 23:42:43   nethermind: phase 1/2 — generating contracts 3,472,439/7,340,032 (47.3%) · 1.2k/s · ETA 51m56s · contracts
+2026/09/21 23:42:58   nethermind: phase 1/2 — generating contracts 3,490,497/7,340,032 (47.6%) · 1.2k/s · ETA 51m42s · contracts
+2026/09/21 23:43:13   nethermind: phase 1/2 — generating contracts 3,509,033/7,340,032 (47.8%) · 1.2k/s · ETA 51m27s · contracts
+2026/09/21 23:43:28   nethermind: phase 1/2 — generating contracts 3,527,528/7,340,032 (48.1%) · 1.2k/s · ETA 51m12s · contracts
+2026/09/21 23:43:43   nethermind: phase 1/2 — generating contracts 3,546,196/7,340,032 (48.3%) · 1.2k/s · ETA 50m57s · contracts
+2026/09/21 23:43:58   nethermind: phase 1/2 — generating contracts 3,564,572/7,340,032 (48.6%) · 1.2k/s · ETA 50m42s · contracts
+2026/09/21 23:44:13   nethermind: phase 1/2 — generating contracts 3,582,658/7,340,032 (48.8%) · 1.2k/s · ETA 50m28s · contracts
+2026/09/21 23:44:28   nethermind: phase 1/2 — generating contracts 3,601,032/7,340,032 (49.1%) · 1.2k/s · ETA 50m14s · contracts
+2026/09/21 23:44:43   nethermind: phase 1/2 — generating contracts 3,619,208/7,340,032 (49.3%) · 1.2k/s · ETA 49m59s · contracts
+2026/09/21 23:44:58   nethermind: phase 1/2 — generating contracts 3,637,634/7,340,032 (49.6%) · 1.2k/s · ETA 49m45s · contracts
+2026/09/21 23:45:13   nethermind: phase 1/2 — generating contracts 3,655,713/7,340,032 (49.8%) · 1.2k/s · ETA 49m31s · contracts
+2026/09/21 23:45:28   nethermind: phase 1/2 — generating contracts 3,674,151/7,340,032 (50.1%) · 1.2k/s · ETA 49m16s · contracts
+2026/09/21 23:45:43   nethermind: phase 1/2 — generating contracts 3,692,327/7,340,032 (50.3%) · 1.2k/s · ETA 49m1s · contracts
+2026/09/21 23:45:58   nethermind: phase 1/2 — generating contracts 3,710,584/7,340,032 (50.6%) · 1.2k/s · ETA 48m47s · contracts
+2026/09/21 23:46:14   nethermind: phase 1/2 — generating contracts 3,729,084/7,340,032 (50.8%) · 1.2k/s · ETA 48m32s · contracts
+2026/09/21 23:46:29   nethermind: phase 1/2 — generating contracts 3,747,922/7,340,032 (51.1%) · 1.2k/s · ETA 48m17s · contracts
+2026/09/21 23:46:44   nethermind: phase 1/2 — generating contracts 3,766,370/7,340,032 (51.3%) · 1.2k/s · ETA 48m2s · contracts
+2026/09/21 23:46:59   nethermind: phase 1/2 — generating contracts 3,784,833/7,340,032 (51.6%) · 1.2k/s · ETA 47m47s · contracts
+2026/09/21 23:47:14   nethermind: phase 1/2 — generating contracts 3,803,087/7,340,032 (51.8%) · 1.2k/s · ETA 47m33s · contracts
+2026/09/21 23:47:29   nethermind: phase 1/2 — generating contracts 3,821,696/7,340,032 (52.1%) · 1.2k/s · ETA 47m18s · contracts
+2026/09/21 23:47:44   nethermind: phase 1/2 — generating contracts 3,839,787/7,340,032 (52.3%) · 1.2k/s · ETA 47m4s · contracts
+2026/09/21 23:47:59   nethermind: phase 1/2 — generating contracts 3,858,062/7,340,032 (52.6%) · 1.2k/s · ETA 46m49s · contracts
+2026/09/21 23:48:14   nethermind: phase 1/2 — generating contracts 3,876,684/7,340,032 (52.8%) · 1.2k/s · ETA 46m34s · contracts
+2026/09/21 23:48:29   nethermind: phase 1/2 — generating contracts 3,895,348/7,340,032 (53.1%) · 1.2k/s · ETA 46m19s · contracts
+2026/09/21 23:48:44   nethermind: phase 1/2 — generating contracts 3,913,876/7,340,032 (53.3%) · 1.2k/s · ETA 46m4s · contracts
+2026/09/21 23:48:59   nethermind: phase 1/2 — generating contracts 3,932,218/7,340,032 (53.6%) · 1.2k/s · ETA 45m50s · contracts
+2026/09/21 23:49:14   nethermind: phase 1/2 — generating contracts 3,950,626/7,340,032 (53.8%) · 1.2k/s · ETA 45m35s · contracts
+2026/09/21 23:49:29   nethermind: phase 1/2 — generating contracts 3,969,048/7,340,032 (54.1%) · 1.2k/s · ETA 45m20s · contracts
+2026/09/21 23:49:44   nethermind: phase 1/2 — generating contracts 3,987,453/7,340,032 (54.3%) · 1.2k/s · ETA 45m6s · contracts
+2026/09/21 23:49:59   nethermind: phase 1/2 — generating contracts 4,005,989/7,340,032 (54.6%) · 1.2k/s · ETA 44m51s · contracts
+2026/09/21 23:50:14   nethermind: phase 1/2 — generating contracts 4,024,454/7,340,032 (54.8%) · 1.2k/s · ETA 44m36s · contracts
+2026/09/21 23:50:29   nethermind: phase 1/2 — generating contracts 4,042,955/7,340,032 (55.1%) · 1.2k/s · ETA 44m21s · contracts
+2026/09/21 23:50:44   nethermind: phase 1/2 — generating contracts 4,061,238/7,340,032 (55.3%) · 1.2k/s · ETA 44m7s · contracts
+2026/09/21 23:50:59   nethermind: phase 1/2 — generating contracts 4,079,796/7,340,032 (55.6%) · 1.2k/s · ETA 43m52s · contracts
+2026/09/21 23:51:14   nethermind: phase 1/2 — generating contracts 4,098,309/7,340,032 (55.8%) · 1.2k/s · ETA 43m37s · contracts
+2026/09/21 23:51:29   nethermind: phase 1/2 — generating contracts 4,117,027/7,340,032 (56.1%) · 1.2k/s · ETA 43m21s · contracts
+2026/09/21 23:51:44   nethermind: phase 1/2 — generating contracts 4,135,442/7,340,032 (56.3%) · 1.2k/s · ETA 43m7s · contracts
+2026/09/21 23:51:59   nethermind: phase 1/2 — generating contracts 4,153,862/7,340,032 (56.6%) · 1.2k/s · ETA 42m52s · contracts
+2026/09/21 23:52:14   nethermind: phase 1/2 — generating contracts 4,172,318/7,340,032 (56.8%) · 1.2k/s · ETA 42m37s · contracts
+2026/09/21 23:52:29   nethermind: phase 1/2 — generating contracts 4,190,787/7,340,032 (57.1%) · 1.2k/s · ETA 42m22s · contracts
+2026/09/21 23:52:44   nethermind: phase 1/2 — generating contracts 4,209,172/7,340,032 (57.3%) · 1.2k/s · ETA 42m8s · contracts
+2026/09/21 23:52:59   nethermind: phase 1/2 — generating contracts 4,227,581/7,340,032 (57.6%) · 1.2k/s · ETA 41m53s · contracts
+2026/09/21 23:53:14   nethermind: phase 1/2 — generating contracts 4,245,933/7,340,032 (57.8%) · 1.2k/s · ETA 41m38s · contracts
+2026/09/21 23:53:29   nethermind: phase 1/2 — generating contracts 4,264,406/7,340,032 (58.1%) · 1.2k/s · ETA 41m23s · contracts
+2026/09/21 23:53:44   nethermind: phase 1/2 — generating contracts 4,282,631/7,340,032 (58.3%) · 1.2k/s · ETA 41m9s · contracts
+2026/09/21 23:54:00   nethermind: phase 1/2 — generating contracts 4,301,056/7,340,032 (58.6%) · 1.2k/s · ETA 40m54s · contracts
+2026/09/21 23:54:15   nethermind: phase 1/2 — generating contracts 4,319,450/7,340,032 (58.8%) · 1.2k/s · ETA 40m39s · contracts
+2026/09/21 23:54:30   nethermind: phase 1/2 — generating contracts 4,337,907/7,340,032 (59.1%) · 1.2k/s · ETA 40m25s · contracts
+2026/09/21 23:54:45   nethermind: phase 1/2 — generating contracts 4,356,555/7,340,032 (59.4%) · 1.2k/s · ETA 40m10s · contracts
+2026/09/21 23:55:00   nethermind: phase 1/2 — generating contracts 4,374,754/7,340,032 (59.6%) · 1.2k/s · ETA 39m55s · contracts
+2026/09/21 23:55:15   nethermind: phase 1/2 — generating contracts 4,393,061/7,340,032 (59.9%) · 1.2k/s · ETA 39m40s · contracts
+2026/09/21 23:55:30   nethermind: phase 1/2 — generating contracts 4,411,643/7,340,032 (60.1%) · 1.2k/s · ETA 39m25s · contracts
+2026/09/21 23:55:45   nethermind: phase 1/2 — generating contracts 4,429,856/7,340,032 (60.4%) · 1.2k/s · ETA 39m11s · contracts
+2026/09/21 23:56:00   nethermind: phase 1/2 — generating contracts 4,448,107/7,340,032 (60.6%) · 1.2k/s · ETA 38m56s · contracts
+2026/09/21 23:56:15   nethermind: phase 1/2 — generating contracts 4,466,145/7,340,032 (60.8%) · 1.2k/s · ETA 38m42s · contracts
+2026/09/21 23:56:30   nethermind: phase 1/2 — generating contracts 4,484,253/7,340,032 (61.1%) · 1.2k/s · ETA 38m28s · contracts
+2026/09/21 23:56:45   nethermind: phase 1/2 — generating contracts 4,502,862/7,340,032 (61.3%) · 1.2k/s · ETA 38m13s · contracts
+2026/09/21 23:57:00   nethermind: phase 1/2 — generating contracts 4,520,629/7,340,032 (61.6%) · 1.2k/s · ETA 37m59s · contracts
+2026/09/21 23:57:15   nethermind: phase 1/2 — generating contracts 4,538,915/7,340,032 (61.8%) · 1.2k/s · ETA 37m44s · contracts
+2026/09/21 23:57:30   nethermind: phase 1/2 — generating contracts 4,557,216/7,340,032 (62.1%) · 1.2k/s · ETA 37m29s · contracts
+2026/09/21 23:57:45   nethermind: phase 1/2 — generating contracts 4,575,662/7,340,032 (62.3%) · 1.2k/s · ETA 37m14s · contracts
+2026/09/21 23:58:00   nethermind: phase 1/2 — generating contracts 4,594,217/7,340,032 (62.6%) · 1.2k/s · ETA 36m59s · contracts
+2026/09/21 23:58:15   nethermind: phase 1/2 — generating contracts 4,611,934/7,340,032 (62.8%) · 1.2k/s · ETA 36m45s · contracts
+2026/09/21 23:58:30   nethermind: phase 1/2 — generating contracts 4,630,448/7,340,032 (63.1%) · 1.2k/s · ETA 36m30s · contracts
+2026/09/21 23:58:45   nethermind: phase 1/2 — generating contracts 4,648,636/7,340,032 (63.3%) · 1.2k/s · ETA 36m16s · contracts
+2026/09/21 23:59:00   nethermind: phase 1/2 — generating contracts 4,666,716/7,340,032 (63.6%) · 1.2k/s · ETA 36m2s · contracts
+2026/09/21 23:59:15   nethermind: phase 1/2 — generating contracts 4,685,165/7,340,032 (63.8%) · 1.2k/s · ETA 35m47s · contracts
+2026/09/21 23:59:30   nethermind: phase 1/2 — generating contracts 4,703,489/7,340,032 (64.1%) · 1.2k/s · ETA 35m32s · contracts
+2026/09/21 23:59:45   nethermind: phase 1/2 — generating contracts 4,722,018/7,340,032 (64.3%) · 1.2k/s · ETA 35m17s · contracts
+2026/09/22 00:00:00   nethermind: phase 1/2 — generating contracts 4,739,727/7,340,032 (64.6%) · 1.2k/s · ETA 35m3s · contracts
+2026/09/22 00:00:15   nethermind: phase 1/2 — generating contracts 4,758,136/7,340,032 (64.8%) · 1.2k/s · ETA 34m48s · contracts
+2026/09/22 00:00:30   nethermind: phase 1/2 — generating contracts 4,776,451/7,340,032 (65.1%) · 1.2k/s · ETA 34m34s · contracts
+2026/09/22 00:00:45   nethermind: phase 1/2 — generating contracts 4,794,765/7,340,032 (65.3%) · 1.2k/s · ETA 34m19s · contracts
+2026/09/22 00:01:00   nethermind: phase 1/2 — generating contracts 4,813,431/7,340,032 (65.6%) · 1.2k/s · ETA 34m4s · contracts
+2026/09/22 00:01:15   nethermind: phase 1/2 — generating contracts 4,831,692/7,340,032 (65.8%) · 1.2k/s · ETA 33m49s · contracts
+2026/09/22 00:01:30   nethermind: phase 1/2 — generating contracts 4,849,760/7,340,032 (66.1%) · 1.2k/s · ETA 33m35s · contracts
+2026/09/22 00:01:45   nethermind: phase 1/2 — generating contracts 4,867,908/7,340,032 (66.3%) · 1.2k/s · ETA 33m20s · contracts
+2026/09/22 00:02:00   nethermind: phase 1/2 — generating contracts 4,886,182/7,340,032 (66.6%) · 1.2k/s · ETA 33m5s · contracts
+2026/09/22 00:02:15   nethermind: phase 1/2 — generating contracts 4,904,731/7,340,032 (66.8%) · 1.2k/s · ETA 32m50s · contracts
+2026/09/22 00:02:30   nethermind: phase 1/2 — generating contracts 4,923,055/7,340,032 (67.1%) · 1.2k/s · ETA 32m36s · contracts
+2026/09/22 00:02:45   nethermind: phase 1/2 — generating contracts 4,941,608/7,340,032 (67.3%) · 1.2k/s · ETA 32m21s · contracts
+2026/09/22 00:03:00   nethermind: phase 1/2 — generating contracts 4,959,702/7,340,032 (67.6%) · 1.2k/s · ETA 32m6s · contracts
+2026/09/22 00:03:15   nethermind: phase 1/2 — generating contracts 4,978,068/7,340,032 (67.8%) · 1.2k/s · ETA 31m51s · contracts
+2026/09/22 00:03:30   nethermind: phase 1/2 — generating contracts 4,996,436/7,340,032 (68.1%) · 1.2k/s · ETA 31m37s · contracts
+2026/09/22 00:03:45   nethermind: phase 1/2 — generating contracts 5,014,655/7,340,032 (68.3%) · 1.2k/s · ETA 31m22s · contracts
+2026/09/22 00:04:00   nethermind: phase 1/2 — generating contracts 5,032,912/7,340,032 (68.6%) · 1.2k/s · ETA 31m7s · contracts
+2026/09/22 00:04:15   nethermind: phase 1/2 — generating contracts 5,050,909/7,340,032 (68.8%) · 1.2k/s · ETA 30m53s · contracts
+2026/09/22 00:04:30   nethermind: phase 1/2 — generating contracts 5,068,780/7,340,032 (69.1%) · 1.2k/s · ETA 30m39s · contracts
+2026/09/22 00:04:45   nethermind: phase 1/2 — generating contracts 5,087,287/7,340,032 (69.3%) · 1.2k/s · ETA 30m24s · contracts
+2026/09/22 00:05:00   nethermind: phase 1/2 — generating contracts 5,105,667/7,340,032 (69.6%) · 1.2k/s · ETA 30m9s · contracts
+2026/09/22 00:05:15   nethermind: phase 1/2 — generating contracts 5,124,181/7,340,032 (69.8%) · 1.2k/s · ETA 29m54s · contracts
+2026/09/22 00:05:31   nethermind: phase 1/2 — generating contracts 5,142,329/7,340,032 (70.1%) · 1.2k/s · ETA 29m40s · contracts
+2026/09/22 00:05:46   nethermind: phase 1/2 — generating contracts 5,161,012/7,340,032 (70.3%) · 1.2k/s · ETA 29m24s · contracts
+2026/09/22 00:06:01   nethermind: phase 1/2 — generating contracts 5,179,333/7,340,032 (70.6%) · 1.2k/s · ETA 29m10s · contracts
+2026/09/22 00:06:16   nethermind: phase 1/2 — generating contracts 5,197,681/7,340,032 (70.8%) · 1.2k/s · ETA 28m55s · contracts
+2026/09/22 00:06:31   nethermind: phase 1/2 — generating contracts 5,216,155/7,340,032 (71.1%) · 1.2k/s · ETA 28m40s · contracts
+2026/09/22 00:06:46   nethermind: phase 1/2 — generating contracts 5,234,354/7,340,032 (71.3%) · 1.2k/s · ETA 28m25s · contracts
+2026/09/22 00:07:01   nethermind: phase 1/2 — generating contracts 5,252,668/7,340,032 (71.6%) · 1.2k/s · ETA 28m11s · contracts
+2026/09/22 00:07:16   nethermind: phase 1/2 — generating contracts 5,271,160/7,340,032 (71.8%) · 1.2k/s · ETA 27m56s · contracts
+2026/09/22 00:07:31   nethermind: phase 1/2 — generating contracts 5,289,493/7,340,032 (72.1%) · 1.2k/s · ETA 27m41s · contracts
+2026/09/22 00:07:46   nethermind: phase 1/2 — generating contracts 5,307,893/7,340,032 (72.3%) · 1.2k/s · ETA 27m26s · contracts
+2026/09/22 00:08:01   nethermind: phase 1/2 — generating contracts 5,326,255/7,340,032 (72.6%) · 1.2k/s · ETA 27m11s · contracts
+2026/09/22 00:08:17   nethermind: phase 1/2 — generating contracts 5,344,603/7,340,032 (72.8%) · 1.2k/s · ETA 26m57s · contracts
+2026/09/22 00:08:32   nethermind: phase 1/2 — generating contracts 5,363,146/7,340,032 (73.1%) · 1.2k/s · ETA 26m41s · contracts
+2026/09/22 00:08:47   nethermind: phase 1/2 — generating contracts 5,381,714/7,340,032 (73.3%) · 1.2k/s · ETA 26m26s · contracts
+2026/09/22 00:09:02   nethermind: phase 1/2 — generating contracts 5,400,396/7,340,032 (73.6%) · 1.2k/s · ETA 26m11s · contracts
+2026/09/22 00:09:17   nethermind: phase 1/2 — generating contracts 5,418,593/7,340,032 (73.8%) · 1.2k/s · ETA 25m57s · contracts
+2026/09/22 00:09:32   nethermind: phase 1/2 — generating contracts 5,436,713/7,340,032 (74.1%) · 1.2k/s · ETA 25m42s · contracts
+2026/09/22 00:09:47   nethermind: phase 1/2 — generating contracts 5,455,150/7,340,032 (74.3%) · 1.2k/s · ETA 25m27s · contracts
+2026/09/22 00:10:02   nethermind: phase 1/2 — generating contracts 5,473,559/7,340,032 (74.6%) · 1.2k/s · ETA 25m12s · contracts
+2026/09/22 00:10:17   nethermind: phase 1/2 — generating contracts 5,492,032/7,340,032 (74.8%) · 1.2k/s · ETA 24m57s · contracts
+2026/09/22 00:10:32   nethermind: phase 1/2 — generating contracts 5,510,069/7,340,032 (75.1%) · 1.2k/s · ETA 24m43s · contracts
+2026/09/22 00:10:47   nethermind: phase 1/2 — generating contracts 5,528,480/7,340,032 (75.3%) · 1.2k/s · ETA 24m28s · contracts
+2026/09/22 00:11:02   nethermind: phase 1/2 — generating contracts 5,546,924/7,340,032 (75.6%) · 1.2k/s · ETA 24m13s · contracts
+2026/09/22 00:11:17   nethermind: phase 1/2 — generating contracts 5,565,235/7,340,032 (75.8%) · 1.2k/s · ETA 23m58s · contracts
+2026/09/22 00:11:32   nethermind: phase 1/2 — generating contracts 5,582,685/7,340,032 (76.1%) · 1.2k/s · ETA 23m44s · contracts
+2026/09/22 00:11:47   nethermind: phase 1/2 — generating contracts 5,601,173/7,340,032 (76.3%) · 1.2k/s · ETA 23m29s · contracts
+2026/09/22 00:12:02   nethermind: phase 1/2 — generating contracts 5,619,273/7,340,032 (76.6%) · 1.2k/s · ETA 23m15s · contracts
+2026/09/22 00:12:17   nethermind: phase 1/2 — generating contracts 5,637,608/7,340,032 (76.8%) · 1.2k/s · ETA 23m0s · contracts
+2026/09/22 00:12:32   nethermind: phase 1/2 — generating contracts 5,656,052/7,340,032 (77.1%) · 1.2k/s · ETA 22m45s · contracts
+2026/09/22 00:12:47   nethermind: phase 1/2 — generating contracts 5,674,419/7,340,032 (77.3%) · 1.2k/s · ETA 22m30s · contracts
+2026/09/22 00:13:02   nethermind: phase 1/2 — generating contracts 5,692,797/7,340,032 (77.6%) · 1.2k/s · ETA 22m15s · contracts
+2026/09/22 00:13:17   nethermind: phase 1/2 — generating contracts 5,711,378/7,340,032 (77.8%) · 1.2k/s · ETA 22m0s · contracts
+2026/09/22 00:13:32   nethermind: phase 1/2 — generating contracts 5,729,690/7,340,032 (78.1%) · 1.2k/s · ETA 21m45s · contracts
+2026/09/22 00:13:47   nethermind: phase 1/2 — generating contracts 5,748,143/7,340,032 (78.3%) · 1.2k/s · ETA 21m30s · contracts
+2026/09/22 00:14:02   nethermind: phase 1/2 — generating contracts 5,766,617/7,340,032 (78.6%) · 1.2k/s · ETA 21m15s · contracts
+2026/09/22 00:14:17   nethermind: phase 1/2 — generating contracts 5,785,014/7,340,032 (78.8%) · 1.2k/s · ETA 21m1s · contracts
+2026/09/22 00:14:32   nethermind: phase 1/2 — generating contracts 5,803,406/7,340,032 (79.1%) · 1.2k/s · ETA 20m46s · contracts
+2026/09/22 00:14:47   nethermind: phase 1/2 — generating contracts 5,821,907/7,340,032 (79.3%) · 1.2k/s · ETA 20m31s · contracts
+2026/09/22 00:15:02   nethermind: phase 1/2 — generating contracts 5,839,715/7,340,032 (79.6%) · 1.2k/s · ETA 20m16s · contracts
+2026/09/22 00:15:17   nethermind: phase 1/2 — generating contracts 5,857,929/7,340,032 (79.8%) · 1.2k/s · ETA 20m2s · contracts
+2026/09/22 00:15:32   nethermind: phase 1/2 — generating contracts 5,876,237/7,340,032 (80.1%) · 1.2k/s · ETA 19m47s · contracts
+2026/09/22 00:15:47   nethermind: phase 1/2 — generating contracts 5,894,644/7,340,032 (80.3%) · 1.2k/s · ETA 19m32s · contracts
+2026/09/22 00:16:02   nethermind: phase 1/2 — generating contracts 5,912,498/7,340,032 (80.6%) · 1.2k/s · ETA 19m18s · contracts
+2026/09/22 00:16:17   nethermind: phase 1/2 — generating contracts 5,930,939/7,340,032 (80.8%) · 1.2k/s · ETA 19m3s · contracts
+2026/09/22 00:16:32   nethermind: phase 1/2 — generating contracts 5,949,234/7,340,032 (81.1%) · 1.2k/s · ETA 18m48s · contracts
+2026/09/22 00:16:47   nethermind: phase 1/2 — generating contracts 5,967,669/7,340,032 (81.3%) · 1.2k/s · ETA 18m33s · contracts
+2026/09/22 00:17:02   nethermind: phase 1/2 — generating contracts 5,986,085/7,340,032 (81.6%) · 1.2k/s · ETA 18m18s · contracts
+2026/09/22 00:17:17   nethermind: phase 1/2 — generating contracts 6,004,501/7,340,032 (81.8%) · 1.2k/s · ETA 18m3s · contracts
+2026/09/22 00:17:32   nethermind: phase 1/2 — generating contracts 6,022,824/7,340,032 (82.1%) · 1.2k/s · ETA 17m48s · contracts
+2026/09/22 00:17:47   nethermind: phase 1/2 — generating contracts 6,041,156/7,340,032 (82.3%) · 1.2k/s · ETA 17m33s · contracts
+2026/09/22 00:18:02   nethermind: phase 1/2 — generating contracts 6,059,551/7,340,032 (82.6%) · 1.2k/s · ETA 17m18s · contracts
+2026/09/22 00:18:17   nethermind: phase 1/2 — generating contracts 6,078,127/7,340,032 (82.8%) · 1.2k/s · ETA 17m3s · contracts
+2026/09/22 00:18:32   nethermind: phase 1/2 — generating contracts 6,096,366/7,340,032 (83.1%) · 1.2k/s · ETA 16m49s · contracts
+2026/09/22 00:18:47   nethermind: phase 1/2 — generating contracts 6,114,724/7,340,032 (83.3%) · 1.2k/s · ETA 16m34s · contracts
+2026/09/22 00:19:02   nethermind: phase 1/2 — generating contracts 6,133,119/7,340,032 (83.6%) · 1.2k/s · ETA 16m19s · contracts
+2026/09/22 00:19:18   nethermind: phase 1/2 — generating contracts 6,151,489/7,340,032 (83.8%) · 1.2k/s · ETA 16m4s · contracts
+2026/09/22 00:19:33   nethermind: phase 1/2 — generating contracts 6,169,618/7,340,032 (84.1%) · 1.2k/s · ETA 15m49s · contracts
+2026/09/22 00:19:48   nethermind: phase 1/2 — generating contracts 6,187,998/7,340,032 (84.3%) · 1.2k/s · ETA 15m34s · contracts
+2026/09/22 00:20:03   nethermind: phase 1/2 — generating contracts 6,206,255/7,340,032 (84.6%) · 1.2k/s · ETA 15m20s · contracts
+2026/09/22 00:20:18   nethermind: phase 1/2 — generating contracts 6,224,673/7,340,032 (84.8%) · 1.2k/s · ETA 15m5s · contracts
+2026/09/22 00:20:33   nethermind: phase 1/2 — generating contracts 6,242,436/7,340,032 (85.0%) · 1.2k/s · ETA 14m50s · contracts
+2026/09/22 00:20:48   nethermind: phase 1/2 — generating contracts 6,260,938/7,340,032 (85.3%) · 1.2k/s · ETA 14m35s · contracts
+2026/09/22 00:21:03   nethermind: phase 1/2 — generating contracts 6,279,241/7,340,032 (85.5%) · 1.2k/s · ETA 14m21s · contracts
+2026/09/22 00:21:18   nethermind: phase 1/2 — generating contracts 6,297,809/7,340,032 (85.8%) · 1.2k/s · ETA 14m6s · contracts
+2026/09/22 00:21:33   nethermind: phase 1/2 — generating contracts 6,316,219/7,340,032 (86.1%) · 1.2k/s · ETA 13m51s · contracts
+2026/09/22 00:21:48   nethermind: phase 1/2 — generating contracts 6,334,422/7,340,032 (86.3%) · 1.2k/s · ETA 13m36s · contracts
+2026/09/22 00:22:03   nethermind: phase 1/2 — generating contracts 6,352,739/7,340,032 (86.5%) · 1.2k/s · ETA 13m21s · contracts
+2026/09/22 00:22:18   nethermind: phase 1/2 — generating contracts 6,370,973/7,340,032 (86.8%) · 1.2k/s · ETA 13m6s · contracts
+2026/09/22 00:22:33   nethermind: phase 1/2 — generating contracts 6,389,317/7,340,032 (87.0%) · 1.2k/s · ETA 12m51s · contracts
+2026/09/22 00:22:48   nethermind: phase 1/2 — generating contracts 6,407,597/7,340,032 (87.3%) · 1.2k/s · ETA 12m37s · contracts
+2026/09/22 00:23:03   nethermind: phase 1/2 — generating contracts 6,425,665/7,340,032 (87.5%) · 1.2k/s · ETA 12m22s · contracts
+2026/09/22 00:23:18   nethermind: phase 1/2 — generating contracts 6,443,879/7,340,032 (87.8%) · 1.2k/s · ETA 12m7s · contracts
+2026/09/22 00:23:33   nethermind: phase 1/2 — generating contracts 6,462,190/7,340,032 (88.0%) · 1.2k/s · ETA 11m52s · contracts
+2026/09/22 00:23:48   nethermind: phase 1/2 — generating contracts 6,480,591/7,340,032 (88.3%) · 1.2k/s · ETA 11m37s · contracts
+2026/09/22 00:24:03   nethermind: phase 1/2 — generating contracts 6,498,982/7,340,032 (88.5%) · 1.2k/s · ETA 11m22s · contracts
+2026/09/22 00:24:18   nethermind: phase 1/2 — generating contracts 6,517,417/7,340,032 (88.8%) · 1.2k/s · ETA 11m8s · contracts
+2026/09/22 00:24:33   nethermind: phase 1/2 — generating contracts 6,535,832/7,340,032 (89.0%) · 1.2k/s · ETA 10m53s · contracts
+2026/09/22 00:24:48   nethermind: phase 1/2 — generating contracts 6,554,176/7,340,032 (89.3%) · 1.2k/s · ETA 10m38s · contracts
+2026/09/22 00:25:03   nethermind: phase 1/2 — generating contracts 6,572,515/7,340,032 (89.5%) · 1.2k/s · ETA 10m23s · contracts
+2026/09/22 00:25:18   nethermind: phase 1/2 — generating contracts 6,590,894/7,340,032 (89.8%) · 1.2k/s · ETA 10m8s · contracts
+2026/09/22 00:25:33   nethermind: phase 1/2 — generating contracts 6,609,282/7,340,032 (90.0%) · 1.2k/s · ETA 9m53s · contracts
+2026/09/22 00:25:48   nethermind: phase 1/2 — generating contracts 6,627,695/7,340,032 (90.3%) · 1.2k/s · ETA 9m38s · contracts
+2026/09/22 00:26:03   nethermind: phase 1/2 — generating contracts 6,646,146/7,340,032 (90.5%) · 1.2k/s · ETA 9m23s · contracts
+2026/09/22 00:26:19   nethermind: phase 1/2 — generating contracts 6,664,521/7,340,032 (90.8%) · 1.2k/s · ETA 9m8s · contracts
+2026/09/22 00:26:34   nethermind: phase 1/2 — generating contracts 6,682,832/7,340,032 (91.0%) · 1.2k/s · ETA 8m53s · contracts
+2026/09/22 00:26:49   nethermind: phase 1/2 — generating contracts 6,701,270/7,340,032 (91.3%) · 1.2k/s · ETA 8m38s · contracts
+2026/09/22 00:27:04   nethermind: phase 1/2 — generating contracts 6,719,606/7,340,032 (91.5%) · 1.2k/s · ETA 8m23s · contracts
+2026/09/22 00:27:19   nethermind: phase 1/2 — generating contracts 6,737,915/7,340,032 (91.8%) · 1.2k/s · ETA 8m9s · contracts
+2026/09/22 00:27:34   nethermind: phase 1/2 — generating contracts 6,756,033/7,340,032 (92.0%) · 1.2k/s · ETA 7m54s · contracts
+2026/09/22 00:27:49   nethermind: phase 1/2 — generating contracts 6,774,368/7,340,032 (92.3%) · 1.2k/s · ETA 7m39s · contracts
+2026/09/22 00:28:04   nethermind: phase 1/2 — generating contracts 6,792,526/7,340,032 (92.5%) · 1.2k/s · ETA 7m24s · contracts
+2026/09/22 00:28:19   nethermind: phase 1/2 — generating contracts 6,810,847/7,340,032 (92.8%) · 1.2k/s · ETA 7m9s · contracts
+2026/09/22 00:28:34   nethermind: phase 1/2 — generating contracts 6,829,239/7,340,032 (93.0%) · 1.2k/s · ETA 6m55s · contracts
+2026/09/22 00:28:49   nethermind: phase 1/2 — generating contracts 6,847,479/7,340,032 (93.3%) · 1.2k/s · ETA 6m40s · contracts
+2026/09/22 00:29:04   nethermind: phase 1/2 — generating contracts 6,865,595/7,340,032 (93.5%) · 1.2k/s · ETA 6m25s · contracts
+2026/09/22 00:29:19   nethermind: phase 1/2 — generating contracts 6,884,002/7,340,032 (93.8%) · 1.2k/s · ETA 6m10s · contracts
+2026/09/22 00:29:34   nethermind: phase 1/2 — generating contracts 6,902,309/7,340,032 (94.0%) · 1.2k/s · ETA 5m55s · contracts
+2026/09/22 00:29:49   nethermind: phase 1/2 — generating contracts 6,920,790/7,340,032 (94.3%) · 1.2k/s · ETA 5m40s · contracts
+2026/09/22 00:30:04   nethermind: phase 1/2 — generating contracts 6,939,183/7,340,032 (94.5%) · 1.2k/s · ETA 5m25s · contracts
+2026/09/22 00:30:19   nethermind: phase 1/2 — generating contracts 6,957,600/7,340,032 (94.8%) · 1.2k/s · ETA 5m10s · contracts
+2026/09/22 00:30:34   nethermind: phase 1/2 — generating contracts 6,976,007/7,340,032 (95.0%) · 1.2k/s · ETA 4m55s · contracts
+2026/09/22 00:30:50   nethermind: phase 1/2 — generating contracts 6,994,432/7,340,032 (95.3%) · 1.2k/s · ETA 4m40s · contracts
+2026/09/22 00:31:05   nethermind: phase 1/2 — generating contracts 7,012,879/7,340,032 (95.5%) · 1.2k/s · ETA 4m25s · contracts
+2026/09/22 00:31:20   nethermind: phase 1/2 — generating contracts 7,031,380/7,340,032 (95.8%) · 1.2k/s · ETA 4m10s · contracts
+2026/09/22 00:31:35   nethermind: phase 1/2 — generating contracts 7,049,741/7,340,032 (96.0%) · 1.2k/s · ETA 3m55s · contracts
+2026/09/22 00:31:50   nethermind: phase 1/2 — generating contracts 7,068,194/7,340,032 (96.3%) · 1.2k/s · ETA 3m40s · contracts
+2026/09/22 00:32:05   nethermind: phase 1/2 — generating contracts 7,086,593/7,340,032 (96.5%) · 1.2k/s · ETA 3m25s · contracts
+2026/09/22 00:32:20   nethermind: phase 1/2 — generating contracts 7,104,702/7,340,032 (96.8%) · 1.2k/s · ETA 3m11s · contracts
+2026/09/22 00:32:35   nethermind: phase 1/2 — generating contracts 7,123,103/7,340,032 (97.0%) · 1.2k/s · ETA 2m56s · contracts
+2026/09/22 00:32:50   nethermind: phase 1/2 — generating contracts 7,141,467/7,340,032 (97.3%) · 1.2k/s · ETA 2m41s · contracts
+2026/09/22 00:33:05   nethermind: phase 1/2 — generating contracts 7,159,834/7,340,032 (97.5%) · 1.2k/s · ETA 2m26s · contracts
+2026/09/22 00:33:20   nethermind: phase 1/2 — generating contracts 7,178,183/7,340,032 (97.8%) · 1.2k/s · ETA 2m11s · contracts
+2026/09/22 00:33:35   nethermind: phase 1/2 — generating contracts 7,196,570/7,340,032 (98.0%) · 1.2k/s · ETA 1m56s · contracts
+2026/09/22 00:33:50   nethermind: phase 1/2 — generating contracts 7,214,961/7,340,032 (98.3%) · 1.2k/s · ETA 1m41s · contracts
+2026/09/22 00:34:05   nethermind: phase 1/2 — generating contracts 7,233,337/7,340,032 (98.5%) · 1.2k/s · ETA 1m26s · contracts
+2026/09/22 00:34:20   nethermind: phase 1/2 — generating contracts 7,251,724/7,340,032 (98.8%) · 1.2k/s · ETA 1m11s · contracts
+2026/09/22 00:34:35   nethermind: phase 1/2 — generating contracts 7,270,108/7,340,032 (99.0%) · 1.2k/s · ETA 56s · contracts
+2026/09/22 00:34:50   nethermind: phase 1/2 — generating contracts 7,288,145/7,340,032 (99.3%) · 1.2k/s · ETA 42s · contracts
+2026/09/22 00:35:05   nethermind: phase 1/2 — generating contracts 7,306,394/7,340,032 (99.5%) · 1.2k/s · ETA 27s · contracts
+2026/09/22 00:35:20   nethermind: phase 1/2 — generating contracts 7,324,238/7,340,032 (99.8%) · 1.2k/s · ETA 12s · contracts
+2026/09/22 00:35:33 ▸ nethermind: phase 2/2 — building state trie
+2026/09/22 00:35:48   nethermind: phase 2/2 — building state trie 6,769,650/430,696,738 (1.6%) · 451.3k/s · ETA 15m39s · accounts
+2026/09/22 00:36:03   nethermind: phase 2/2 — building state trie 13,665,462/430,696,738 (3.2%) · 455.5k/s · ETA 15m15s · accounts
+2026/09/22 00:36:18   nethermind: phase 2/2 — building state trie 20,639,457/430,696,738 (4.8%) · 458.7k/s · ETA 14m54s · accounts
+2026/09/22 00:36:33   nethermind: phase 2/2 — building state trie 27,652,286/430,696,738 (6.4%) · 460.9k/s · ETA 14m34s · accounts
+2026/09/22 00:36:48   nethermind: phase 2/2 — building state trie 34,779,602/430,696,738 (8.1%) · 463.3k/s · ETA 14m14s · accounts
+2026/09/22 00:37:03   nethermind: phase 2/2 — building state trie 41,927,597/430,696,738 (9.7%) · 465.5k/s · ETA 13m55s · accounts
+2026/09/22 00:37:18   nethermind: phase 2/2 — building state trie 48,966,078/430,696,738 (11.4%) · 466.0k/s · ETA 13m39s · accounts
+2026/09/22 00:37:33   nethermind: phase 2/2 — building state trie 56,094,877/430,696,738 (13.0%) · 466.8k/s · ETA 13m22s · accounts
+2026/09/22 00:37:49   nethermind: phase 2/2 — building state trie 63,326,996/430,696,738 (14.7%) · 467.9k/s · ETA 13m5s · accounts
+2026/09/22 00:38:04   nethermind: phase 2/2 — building state trie 70,500,867/430,696,738 (16.4%) · 468.9k/s · ETA 12m48s · accounts
+2026/09/22 00:38:19   nethermind: phase 2/2 — building state trie 77,578,935/430,696,738 (18.0%) · 469.2k/s · ETA 12m32s · accounts
+2026/09/22 00:38:34   nethermind: phase 2/2 — building state trie 84,642,601/430,696,738 (19.7%) · 469.3k/s · ETA 12m17s · accounts
+2026/09/22 00:38:49   nethermind: phase 2/2 — building state trie 91,855,544/430,696,738 (21.3%) · 470.2k/s · ETA 12m0s · accounts
+2026/09/22 00:39:04   nethermind: phase 2/2 — building state trie 98,883,335/430,696,738 (23.0%) · 470.0k/s · ETA 11m45s · accounts
+2026/09/22 00:39:19   nethermind: phase 2/2 — building state trie 105,991,202/430,696,738 (24.6%) · 470.3k/s · ETA 11m30s · accounts
+2026/09/22 00:39:34   nethermind: phase 2/2 — building state trie 113,179,644/430,696,738 (26.3%) · 470.9k/s · ETA 11m14s · accounts
+2026/09/22 00:39:49   nethermind: phase 2/2 — building state trie 120,241,005/430,696,738 (27.9%) · 470.9k/s · ETA 10m59s · accounts
+2026/09/22 00:40:04   nethermind: phase 2/2 — building state trie 127,273,319/430,696,738 (29.6%) · 470.5k/s · ETA 10m44s · accounts
+2026/09/22 00:40:19   nethermind: phase 2/2 — building state trie 134,445,348/430,696,738 (31.2%) · 470.9k/s · ETA 10m29s · accounts
+2026/09/22 00:40:34   nethermind: phase 2/2 — building state trie 141,528,987/430,696,738 (32.9%) · 471.0k/s · ETA 10m13s · accounts
+2026/09/22 00:40:49   nethermind: phase 2/2 — building state trie 148,650,931/430,696,738 (34.5%) · 471.2k/s · ETA 9m58s · accounts
+2026/09/22 00:41:04   nethermind: phase 2/2 — building state trie 155,769,689/430,696,738 (36.2%) · 471.3k/s · ETA 9m43s · accounts
+2026/09/22 00:41:19   nethermind: phase 2/2 — building state trie 162,815,492/430,696,738 (37.8%) · 471.3k/s · ETA 9m28s · accounts
+2026/09/22 00:41:34   nethermind: phase 2/2 — building state trie 169,903,615/430,696,738 (39.4%) · 471.2k/s · ETA 9m13s · accounts
+2026/09/22 00:41:49   nethermind: phase 2/2 — building state trie 177,135,815/430,696,738 (41.1%) · 471.5k/s · ETA 8m57s · accounts
+2026/09/22 00:42:04   nethermind: phase 2/2 — building state trie 184,293,272/430,696,738 (42.8%) · 471.7k/s · ETA 8m42s · accounts
+2026/09/22 00:42:19   nethermind: phase 2/2 — building state trie 191,299,772/430,696,738 (44.4%) · 471.6k/s · ETA 8m27s · accounts
+2026/09/22 00:42:34   nethermind: phase 2/2 — building state trie 198,451,812/430,696,738 (46.1%) · 471.6k/s · ETA 8m12s · accounts
+2026/09/22 00:42:49   nethermind: phase 2/2 — building state trie 205,684,137/430,696,738 (47.8%) · 471.8k/s · ETA 7m56s · accounts
+2026/09/22 00:43:04   nethermind: phase 2/2 — building state trie 212,916,547/430,696,738 (49.4%) · 471.9k/s · ETA 7m41s · accounts
+2026/09/22 00:43:19   nethermind: phase 2/2 — building state trie 220,114,935/430,696,738 (51.1%) · 472.2k/s · ETA 7m25s · accounts
+2026/09/22 00:43:34   nethermind: phase 2/2 — building state trie 227,220,124/430,696,738 (52.8%) · 472.2k/s · ETA 7m10s · accounts
+2026/09/22 00:43:49   nethermind: phase 2/2 — building state trie 234,335,299/430,696,738 (54.4%) · 472.3k/s · ETA 6m55s · accounts
+2026/09/22 00:44:05   nethermind: phase 2/2 — building state trie 241,464,661/430,696,738 (56.1%) · 472.2k/s · ETA 6m40s · accounts
+2026/09/22 00:44:20   nethermind: phase 2/2 — building state trie 248,696,395/430,696,738 (57.7%) · 472.3k/s · ETA 6m25s · accounts
+2026/09/22 00:44:35   nethermind: phase 2/2 — building state trie 255,875,543/430,696,738 (59.4%) · 472.5k/s · ETA 6m10s · accounts
+2026/09/22 00:44:50   nethermind: phase 2/2 — building state trie 262,909,788/430,696,738 (61.0%) · 472.4k/s · ETA 5m55s · accounts
+2026/09/22 00:45:05   nethermind: phase 2/2 — building state trie 270,011,958/430,696,738 (62.7%) · 472.4k/s · ETA 5m40s · accounts
+2026/09/22 00:45:20   nethermind: phase 2/2 — building state trie 277,240,707/430,696,738 (64.4%) · 472.6k/s · ETA 5m24s · accounts
+2026/09/22 00:45:35   nethermind: phase 2/2 — building state trie 284,340,272/430,696,738 (66.0%) · 472.7k/s · ETA 5m9s · accounts
+2026/09/22 00:45:50   nethermind: phase 2/2 — building state trie 291,334,618/430,696,738 (67.6%) · 472.5k/s · ETA 4m54s · accounts
+2026/09/22 00:46:05   nethermind: phase 2/2 — building state trie 298,560,421/430,696,738 (69.3%) · 472.6k/s · ETA 4m39s · accounts
+2026/09/22 00:46:20   nethermind: phase 2/2 — building state trie 305,750,877/430,696,738 (71.0%) · 472.7k/s · ETA 4m24s · accounts
+2026/09/22 00:46:35   nethermind: phase 2/2 — building state trie 312,823,499/430,696,738 (72.6%) · 472.7k/s · ETA 4m9s · accounts
+2026/09/22 00:46:50   nethermind: phase 2/2 — building state trie 319,603,918/430,696,738 (74.2%) · 472.2k/s · ETA 3m55s · accounts
+2026/09/22 00:47:05   nethermind: phase 2/2 — building state trie 326,701,868/430,696,738 (75.9%) · 472.3k/s · ETA 3m40s · accounts
+2026/09/22 00:47:20   nethermind: phase 2/2 — building state trie 333,728,614/430,696,738 (77.5%) · 472.2k/s · ETA 3m25s · accounts
+2026/09/22 00:47:35   nethermind: phase 2/2 — building state trie 340,810,976/430,696,738 (79.1%) · 472.1k/s · ETA 3m10s · accounts
+2026/09/22 00:47:50   nethermind: phase 2/2 — building state trie 347,967,747/430,696,738 (80.8%) · 472.2k/s · ETA 2m55s · accounts
+2026/09/22 00:48:05   nethermind: phase 2/2 — building state trie 355,021,942/430,696,738 (82.4%) · 472.1k/s · ETA 2m40s · accounts
+2026/09/22 00:48:20   nethermind: phase 2/2 — building state trie 362,126,608/430,696,738 (84.1%) · 472.0k/s · ETA 2m25s · accounts
+2026/09/22 00:48:35   nethermind: phase 2/2 — building state trie 369,305,632/430,696,738 (85.7%) · 472.2k/s · ETA 2m10s · accounts
+2026/09/22 00:48:50   nethermind: phase 2/2 — building state trie 376,361,431/430,696,738 (87.4%) · 472.1k/s · ETA 1m55s · accounts
+2026/09/22 00:49:05   nethermind: phase 2/2 — building state trie 383,442,783/430,696,738 (89.0%) · 472.1k/s · ETA 1m40s · accounts
+2026/09/22 00:49:20   nethermind: phase 2/2 — building state trie 390,666,718/430,696,738 (90.7%) · 472.3k/s · ETA 1m24s · accounts
+2026/09/22 00:49:35   nethermind: phase 2/2 — building state trie 397,727,293/430,696,738 (92.3%) · 472.2k/s · ETA 1m9s · accounts
+2026/09/22 00:49:50   nethermind: phase 2/2 — building state trie 404,770,004/430,696,738 (94.0%) · 472.2k/s · ETA 54s · accounts
+2026/09/22 00:50:05   nethermind: phase 2/2 — building state trie 411,944,729/430,696,738 (95.6%) · 472.3k/s · ETA 39s · accounts
+2026/09/22 00:50:20   nethermind: phase 2/2 — building state trie 418,842,674/430,696,738 (97.2%) · 472.1k/s · ETA 25s · accounts
+2026/09/22 00:50:35   nethermind: phase 2/2 — building state trie 425,984,890/430,696,738 (98.9%) · 472.1k/s · ETA 9s · accounts
+2026/09/22 00:50:49 nethermind: genesis hash = 0x0cb035288eb4e257f34f3d570ed4f43f9d2fc45c09f19db6c0392f60f4a68623
+2026/09/22 00:50:49 nethermind: state root  = 0x48d611bb839188317e983453705b31e1420b2c4416675f98d776ad8e130d51b8
+2026/09/22 00:50:49 nethermind: 7 RocksDBs + flat column DB written under /data/ (flat backend, CurrentState=(0, 0x48d611bb839188317e983453705b31e1420b2c4416675f98d776ad8e130d51b8))
+2026/09/22 00:50:49 nethermind: preallocated 1200012 accounts from cfg.GenesisAccounts (test-only path)
+2026/09/22 00:50:49 nethermind: synthesized 422156694 EOAs + 7340032 contracts (stats: 422156694 / 7340032)
+2026/09/22 02:31:16   nethermind: compacted all DBs in 1h40m27s
+
+=== State Generation Complete ===
+Total Time:        4h19m5.653s
+Accounts Created:  422156694
+Contracts Created: 7340032
+Storage Slots:     1879211807
+Total Bytes:       137.08 GB
+Total DB Size:     471.36 GB
+Throughput:        120883.43 slots/sec
+State Root:        0x48d611bb839188317e983453705b31e1420b2c4416675f98d776ad8e130d51b8
+Genesis:           included (ready to use without geth init)
+Manifest:          /data/state-actor-manifest.json
+
+real	260m34.982s
+user	0m18.925s
+sys	0m12.569s
+exit code : 0
+finished  : 2026-09-22T02:31:18+00:00
+471G	/bench/nm-store/v2/flat/
+1.1G	/bench/nm-store/v2/code/
+160K	/bench/nm-store/v2/receipts/
+108K	/bench/nm-store/v2/headers/
+108K	/bench/nm-store/v2/blocks/
+108K	/bench/nm-store/v2/blockNumbers/
+108K	/bench/nm-store/v2/blockInfos/
+88K	/bench/nm-store/v2/state/

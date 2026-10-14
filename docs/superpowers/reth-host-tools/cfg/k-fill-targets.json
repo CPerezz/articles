@@ -1,0 +1,42 @@
+{
+  "HashedAccounts.leaf_fill": [
+    0.56,
+    0.62
+  ],
+  "AccountsTrie.leaf_fill": [
+    0.93,
+    1.0
+  ],
+  "bloated.HashedStorages.height": [
+    5,
+    5
+  ],
+  "bloated.HashedStorages.items": [
+    335545083,
+    335545083
+  ],
+  "bloated.HashedStorages.leaf_fill": [
+    0.65,
+    0.715
+  ],
+  "bloated.StoragesTrie.height": [
+    5,
+    7
+  ],
+  "bloated.StoragesTrie.items": [
+    25758807,
+    25758807
+  ],
+  "bloated.StoragesTrie.leaf_fill": [
+    0.93,
+    1.0
+  ],
+  "midsize.HashedStorages.leaf_fill": [
+    0.63,
+    0.77
+  ],
+  "main.StoragesTrie.leaf_fill": [
+    0.7,
+    1.0
+  ]
+}
