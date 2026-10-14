@@ -1681,3 +1681,18 @@ left unmapped. Collector C20: 0 failed checks.
   not account shape. **No cycle 4** (plan).
 - What moved toward parity: code-heavy (both), +value, sstore write, sload. The StoragesTrie order
   fix explains +value (traced 8.0k -> 6.1k top-tree pages, J 5.8k).
+
+## Close-out (2026-10-14)
+
+- PRs signed and opened as drafts: ethereum/state-actor #150 (A, storage tail), #151 (B, StoragesTrie
+  order) and #152 (C, account model, stacked on #150). Commits `5d0f715`, `28cdd8a`, `1722acf`, all
+  verified.
+- Article committed (`cf6448f`) and pushed as branch `reth-state-db-article`; it is not on `main`
+  yet, so it is not published. It includes `data/report_data.json`: the C1-C20 collection, 0 failed
+  checks.
+- This ledger, the plans and the host tools (`docs/superpowers/reth-host-tools/`) are on branch
+  `reth-study-ledger`.
+- Host wiped on Anon's instruction, after those uploads:
+  - every reth store and scratch, the S fixtures, `/root/bench/reth` and the study images;
+  - schelk states moved to `/var/lib/schelk/retired-reth/`.
+  - Raw run results no longer exist outside `report_data.json`.
