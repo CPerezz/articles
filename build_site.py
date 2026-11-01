@@ -22,6 +22,19 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # --------------------------------------------------------------------------- #
 ARTICLES = [
     {
+        "folder": "pbt-devnet-1-migration",
+        "source": "pbt-devnet-1-migration.md",
+        "eyebrow": "EXECUTION · STATE MIGRATION",
+        "card_title": "Migrating Ethereum's state live, in an afternoon, on half the recommended hardware",
+        "date": "2026",
+        "tags": "Ethereum · EIP-8347 · EIP-8297 · devnet · geth · Nethermind · Besu · erigon",
+        "blurb": "Nine nodes of four clients moved a mainnet-sized state to the binary tree while the chain ran at "
+                 "three times mainnet's load, on 16 GiB where EIP-7870 asks for 32 or 64 GB. A self-conversion "
+                 "reached the head in 2h41m; all nine crossed the fork on one root. What it cost, what broke, "
+                 "what a node needs.",
+        "repo": "pbt-devnet-1-migration/",
+    },
+    {
         "folder": "setcodefrom-dangling-code",
         "source": "setcodefrom-dangling-code.md",
         "eyebrow": "EIPS · STATE",
