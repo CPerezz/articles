@@ -22,6 +22,19 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # --------------------------------------------------------------------------- #
 ARTICLES = [
     {
+        "folder": "setcodefrom-state-backed-validation",
+        "source": "setcodefrom-state-backed-validation.md",
+        "eyebrow": "EIPS · SECURITY",
+        "card_title": "A state-backed validation of SETCODEFROM",
+        "date": "2026",
+        "tags": "Ethereum · EIP-8298 · EIP-7702 · security",
+        "blurb": "A census of 104 million contract creations and two mainnet contracts showed what the "
+                 "draft would break: an account could show one code while running another, and code "
+                 "you borrow could replace your own. The two rules that fix it, and the use cases "
+                 "that go.",
+        "repo": "setcodefrom-state-backed-validation/",
+    },
+    {
         "folder": "setcodefrom-dangling-code",
         "source": "setcodefrom-dangling-code.md",
         "eyebrow": "EIPS · STATE",
@@ -194,6 +207,19 @@ def _figure(alt, src):
             f"{figcap}</figure>")
 
 
+def _table(block):
+    """A pipe table: header row, alignment row (`---:` aligns right), body rows. Styled inline, so the
+    shared stylesheet, and with it every other article's page, stays unchanged."""
+    rows = [[c.strip() for c in r.strip().strip("|").split("|")] for r in block.strip().split("\n")]
+    align = ["right" if c.endswith(":") else "left" for c in rows[1]]
+    pad = "border-bottom:1px solid var(--border);padding:.5rem .6rem"
+    cell = lambda tag, c, a, extra="": f'<{tag} style="text-align:{a};{pad}{extra}">{inline(c)}</{tag}>'
+    head = "".join(cell("th", c, a, ";color:var(--green);font-weight:600") for c, a in zip(rows[0], align))
+    body = "".join("<tr>" + "".join(cell("td", c, a) for c, a in zip(r, align)) + "</tr>" for r in rows[2:])
+    return (f'<table style="width:100%;border-collapse:collapse;margin:1.4rem 0;font-size:.92em">'
+            f"<thead><tr>{head}</tr></thead><tbody>{body}</tbody></table>")
+
+
 def convert(md):
     """Return (title, subtitle_html, body_html)."""
     raw = re.split(r"\n\s*\n", md.strip())
@@ -225,6 +251,8 @@ def convert(md):
             out.append("<ul>" + "".join(f"<li>{inline(i)}</li>" for i in _parse_list(b, False)) + "</ul>")
         elif re.match(r"^\d+\.\s", bs):
             out.append("<ol>" + "".join(f"<li>{inline(i)}</li>" for i in _parse_list(b, True)) + "</ol>")
+        elif bs.startswith("|"):
+            out.append(_table(bs))
         elif bs.startswith(">"):
             quoted = "\n".join(re.sub(r"^>\s?", "", l.strip()) for l in bs.split("\n"))
             paras = [" ".join(p.split()) for p in quoted.split("\n\n")]
