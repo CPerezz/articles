@@ -4,7 +4,7 @@
 
 [SETCODEFROM](https://eips.ethereum.org/EIPS/eip-8298) points an account's code hash at code another contract already deployed. The draft was generous: any account could adopt, as often as it liked, from any code running on its behalf, and the new code showed up the instant the instruction ran.
 
-That generosity is what [the menu of account modes](../setcodefrom-account-modes/) was built on, and it is where the trouble was. We ran the worst cases against bytecode that is on mainnet today: two things broke, and each gets a rule. Nothing is at risk now. SETCODEFROM is not live, and the fix goes into the EIP, not into anybody's contracts.
+That generosity is what [the menu of account modes](../setcodefrom-account-modes/) was built on, and it is where the trouble was. We ran the worst cases against bytecode that is on mainnet today: two things broke, and each gets a rule in [the change we propose](https://github.com/ethereum/EIPs/pull/12716). Nothing is at risk now. SETCODEFROM is not live, and the fix goes into the EIP, not into anybody's contracts.
 
 ## Two things you can count on today
 
@@ -36,17 +36,19 @@ Why that is worse than it sounds:
 
 - **The code is what enforces the owners.** The proxy sends every call to the singleton that checks them. Replace it, and whoever wrote the new code controls the Safe.
 - **Nothing a guard watches has moved.** In [the Bybit hack](https://www.halborn.com/blog/post/explained-the-bybit-hack-february-2025) the payload rewrote the slot that points at the singleton. Here owners, threshold, modules, balance and that slot are all unchanged.
-- **There is no way back, and it is not about Safes.** The owners can restore storage, but only the new code can change the code. Every contract that runs borrowed code is exposed, and the next section shows that is most of them.
+- **There is no way back, and it is not about Safes.** The owners can restore storage, but only the new code can change the code. Every contract that can be handed code to run is exposed, and the next section counts them: almost a third of everything ever created.
 
 **How rule 2 fixes it.** SETCODEFROM halts unless the code running in the frame is the account's own. In the Safe the frame runs the payload, so it halts, exactly as `0xA7` does there today, and the Safe keeps its proxy. Rule 1 alone would only delay the replacement until the Safe's outermost frame ends.
 
 ## Who runs borrowed code?
 
-We scanned all code left by contract creations on mainnet up to block 26,430,999 and asked how much of it runs code it borrows.
+We scanned all code left by contract creations on mainnet up to block 26,430,999 and asked how much of it runs code it borrows, and who picks that code.
 
-![Figure 4: 62.6 % of all contract creations can run borrowed code; ERC-1167 minimal clones alone are at least 49.2 %. Under the draft their code is only as fixed as what they borrow.](figures/f4-delegatecall.svg)
+![Figure 4: 62.6 % of all contract creations can run borrowed code. Followed to what they borrow, 27.4 % of all creations borrow code that is fixed for good, 30.9 % borrow code that someone picks at run time, two thirds of them CoinTool's XEN proxies, and 4.3 % were not followed. Whoever picks the code can spend what the contract holds today; under the draft they could also replace its code.](figures/f4-delegatecall.svg)
 
-A reachable `DELEGATECALL` does not mean anyone can pick its target, but that is the point: under the draft, "my code never changes" becomes a property of everything a contract borrows. Rule 2 makes it the contract's own again.
+62.6 % is an upper bound, so we followed the 400 most-created of these codes to what they borrow. 27 % of all contracts borrow code that is fixed for good, and even the draft could not have touched them. For 31 %, someone picks the code at run time. Two thirds of those are one family, CoinTool's XEN minting proxies, which run whatever their creator sends; the rest include exchange deposit wallets, OpenSea's user proxies, Safes and DSProxy.
+
+Today whoever picks that code can spend what the contract holds, but cannot replace its code. The draft erased that line, and rule 2 redraws it.
 
 ## Rule 1: record now, switch when your outermost frame ends
 
@@ -85,7 +87,9 @@ The census left 6,650 codes open: the byte sits behind a jump destination that o
 
 A static analysis settles the first two rows by itself. It cannot settle the last six: in five, a jump target comes from calldata or storage, and one is too big to finish, so we read them. Four are MEV bots whose jump tables only their owner drives, never as far as the byte. One is a Boson Protocol facet whose function pointer only its initializer writes. The last is an older contract whose byte sits in the compiler's metadata, past the end of its code; in the 12 million states the analysis did explore, every jump was fixed. On an archive node, 223 real transactions of the 25 hardest cases never jumped into data.
 
-The 7,289 contracts hold about 5 ETH, 197 WETH and 0.9 million USDC, nearly all in the first row; the last row holds no ETH and only token dust. A contract that let a stranger pick its jump target would be broken already: that is its bug, not SETCODEFROM's.
+The 7,289 contracts hold about 5 ETH, 197 WETH and 0.9 million USDC, nearly all in the first row; the last row holds no ETH and only token dust.
+
+> **A contract that let a stranger pick its jump target would be broken already: that is its bug, not SETCODEFROM's.**
 
 ## Each rule has its own job
 
@@ -102,12 +106,4 @@ Four things go, and the first one hurts.
 - **Proxies do not graduate.** To the EVM, a proxy adopting through its implementation and an implementation hijacked through `DELEGATECALL` are the same thing, so closing one closes the other. Proxies keep their ordinary upgrade paths, and one deployed after the fork can carry SETCODEFROM in its own code.
 - **The rest is about order.** Put the upgrade function in your own bytecode, check the source before adopting rather than your code hash after, and initialise before adopting or in a later call: until your outermost frame ends, a call to yourself still runs the old code.
 
-When you write a template, remember that code you run through `DELEGATECALL` can still call you as yourself: rule 2 stops borrowed code from running the instruction, not from asking your own code to.
-
-## What this does not fix
-
-**Code that an EOA's delegate runs can still adopt for it, for good.** What that code can take is not new: under EIP-7702 a delegate, or a module it runs, can already move everything the account holds. What is new is permanence. Today the key can always re-delegate away from a bad delegate; once the account holds adopted code, EIP-7702 ignores the key's delegations and [EIP-3607](https://eips.ethereum.org/EIPS/eip-3607) rejects its transactions. That is the price of letting key-less accounts migrate, and it deserves its own decision.
-
-## Cheat sheet
-
-![Figure 10: the draft and the update side by side: when the new code takes effect, who may adopt, and what stays as merged.](figures/f10-cheat-sheet.svg)
+Two things to remember when you write a template. Code you run through `DELEGATECALL` can still call you as yourself: rule 2 stops borrowed code from running the instruction, not from asking your own code to. And the template is an account too: if it carries SETCODEFROM, make it refuse to adopt at its own address, or whoever passes its checks there swaps the code under every account delegated to it.

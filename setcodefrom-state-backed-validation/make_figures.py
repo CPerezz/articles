@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Draws the article's figures as self-contained SVGs in the site's CRT palette.
 
-    python3 make_figures.py      # writes figures/f1-two-properties.svg ... figures/f10-cheat-sheet.svg
+    python3 make_figures.py      # writes figures/f1-two-properties.svg ... figures/f9-gone-and-stays.svg
 
 Stdlib only. Every label goes through text(), which refuses strings wider than the
 room they were given, so a wording change that would overflow a box fails loudly here
@@ -37,11 +37,17 @@ DATA = {
     "go_on": 0,
     "dc_codes": 989_538,
     "dc_creations": 65_326_187,
-    # Shape of the creations that can reach DELEGATECALL, on the census as first run
-    # (65,261,971 of 104,236,728 creations; the later correction added 0.1 %).
+    # What the creations that can reach DELEGATECALL borrow, on the census as first run
+    # (65,261,971 of 104,236,728 creations; the later correction added 0.1 %). The 400 most
+    # created of these codes were followed to the code they delegate to, through chains of
+    # constant targets, on code read from mainnet at block 26,495,084.
+    "creations_first_run": 104_236_728,
     "dc_first_run": 65_261_971,
     "top400": 61_682_120,
-    "erc1167_in_top400": 51_350_051,
+    "dc_fixed": 28_556_114,     # every target is a constant, and so on down the chain
+    "dc_chosen": 32_213_410,    # a target read from the call's input, storage or memory
+    "dc_undecided": 912_596,
+    "cointool": 21_461_824,     # clones of CoinTool_App: delegatecall(a, data) for msg.sender == original
 }
 
 
@@ -306,47 +312,45 @@ def f3():
 # F4: who runs borrowed code
 # --------------------------------------------------------------------------- #
 def f4():
-    W, H = 1200, 820
-    b = [head("// who runs borrowed code?")]
-    total, dc, clones = DATA["creations"], DATA["dc_creations"], DATA["erc1167_in_top400"]
+    W, H = 1200, 760
+    b = [head("// who runs borrowed code, and who picks it?")]
+    total, dc = DATA["creations"], DATA["dc_creations"]
     b.append(text(30, 122, f"{dc / total * 100:.1f} %", 46, PURPLE, bold=True, room=200))
     b.append(text(236, 102, f"of the {n(total)} contract creations that left code", 22, TEXT, room=930))
     b.append(text(236, 132, "can run code they borrow: a DELEGATECALL or CALLCODE is reachable", 20, MUTED,
                   room=930))
-    rows = [("minimal clones (ERC-1167)", ["45 bytes that forward every call", "to one fixed implementation"],
-             clones, PURPLE, True, "at least "),
-            ("other code that can DELEGATECALL", ["Safe proxies, other proxies,", "wallets, a long tail"],
-             dc - clones, PURPLE, False, ""),
-            ("never borrows code", ["no DELEGATECALL or CALLCODE", "it can reach"], total - dc, MUTED, False, "")]
-    x0, full = 600, 560
-    for i, (name, desc, v, c, filled, pre) in enumerate(rows):
+    t1 = DATA["creations_first_run"]
+    rest = DATA["dc_first_run"] - DATA["dc_fixed"] - DATA["dc_chosen"]
+    rows = [("never borrows code", ["no DELEGATECALL or CALLCODE", "it can reach"],
+             t1 - DATA["dc_first_run"], MUTED, False),
+            ("borrows code that is fixed for good", ["a clone of an implementation", "that delegates no further"],
+             DATA["dc_fixed"], GREEN, False),
+            ("borrows code that someone picks", ["the target comes from the call's", "input, storage or memory"],
+             DATA["dc_chosen"], PURPLE, True),
+            ("not followed", ["outside the 400 most created", "codes, or undecided"], rest, MUTED, False)]
+    x0, full = 600, 1100
+    for i, (name, desc, v, c, filled) in enumerate(rows):
         y = 176 + i * 100
         b.append(text(30, y + 30, name, 22, TEXT, bold=True, room=550))
         b.append(text(30, y + 60, desc, 19, MUTED, room=550, lh=1.25))
-        w = full * v / total
+        w = full * v / t1
         b.append(f'<rect x="{x0}" y="{y + 10}" width="{w:.1f}" height="48" rx="4" '
                  f'fill="{c if filled else TINT[c]}" stroke="{c}" stroke-width="2"/>')
-        b.append(text(x0 + w + 14, y + 43, f"{pre}{v / total * 100:.1f} %", 22, TEXT if c == MUTED else c,
+        b.append(text(x0 + w + 14, y + 43, f"{v / t1 * 100:.1f} %", 22, TEXT if c == MUTED else c,
                       bold=True, room=1170 - (x0 + w + 14)))
-    b.append(text(30, 500, "clones checked byte for byte on the 400 most created codes, "
-                           f"{DATA['top400'] / DATA['dc_first_run'] * 100:.1f} % of these creations", 18, MUTED,
-                  room=1140))
-    b.append(line(30, 528, 1170, 528, LINE, 2))
-    b.append(text(30, 572, "under the draft, each one's code is only as fixed as what it borrows", 22, RED,
-                  bold=True, room=1140))
-    chains = [("a clone", "its implementation", "whatever that can be made to run"),
-              ("a Safe proxy", "the Safe singleton", "every payload it is handed"),
-              ("an upgradable proxy", "its implementation", "the next one its admin installs")]
-    for i, (acc, first, then) in enumerate(chains):
-        y = 622 + i * 54
-        b.append(chip(30, y, acc, TEXT, size=20))
-        b.append(arrow(30 + tw(acc, 20) + 34, y, 324, y, PURPLE, 3))
-        b.append(chip(332, y, first, PURPLE, size=20))
-        b.append(arrow(588, y, 614, y, PURPLE, 3))
-        b.append(chip(622, y, then, PURPLE, size=20))
-    b.append(text(30, 794, "with rule 2, only the account's own code can replace it", 22, GREEN, bold=True,
-                  room=1140))
-    svg("f4-delegatecall.svg", W, H, "Most contracts ever created run borrowed code", b)
+        if name.endswith("someone picks"):  # the one family that is two thirds of the row
+            wc = full * DATA["cointool"] / t1
+            b.append(line(x0 + wc, y + 10, x0 + wc, y + 58, BG, 3))
+            b.append(text(x0 + wc / 2, y + 41, "CoinTool's XEN proxies", 16, BG, "middle", bold=True,
+                          room=wc - 8))
+    b.append(text(30, 590, "shares of all creations; the 400 most created of these codes "
+                           f"({DATA['top400'] / DATA['dc_first_run'] * 100:.1f} %) followed to what they borrow",
+                  18, MUTED, room=1140))
+    b.append(line(30, 616, 1170, 616, LINE, 2))
+    b.append(text(30, 660, "today: whoever picks the code can spend what the contract holds", 22, TEXT, room=1140))
+    b.append(text(30, 696, "draft: they can also replace the contract's code", 22, RED, bold=True, room=1140))
+    b.append(text(30, 732, "with rule 2: only the contract's own code can", 22, GREEN, bold=True, room=1140))
+    svg("f4-delegatecall.svg", W, H, "Who runs borrowed code, and who picks it", b)
 
 
 # --------------------------------------------------------------------------- #
@@ -500,35 +504,7 @@ def f9():
     svg("f9-gone-and-stays.svg", W, H, "Use cases the update removes and use cases it keeps", b)
 
 
-# --------------------------------------------------------------------------- #
-# F10: cheat sheet
-# --------------------------------------------------------------------------- #
-def f10():
-    rows = [("the new code takes effect", ["at the instruction"], ["when the account's", "outermost frame ends"]),
-            (["an account with code,", "from that code"], ["adopts"], ["adopts"]),
-            (["an account with code,", "from code it borrows"], ["adopts"], ["halts, as 0xA7 does today"]),
-            (["a 7702 account,", "through its delegate"], ["adopts"], ["adopts"]),
-            ("initcode", ["adopts, visible at once"], ["adopts, visible when", "the creation completes"]),
-            ("flag, gas table, last one wins", ["as merged"], ["unchanged"]),
-            ("mempool: code with DELEGATECALL", ["tracked, with a quota"], ["nothing to track"])]
-    W = 1200
-    c1, c2, c3 = 30, 500, 830
-    rh = 96
-    H = 150 + len(rows) * rh + 30
-    b = [head("// cheat sheet")]
-    b.append(text(c2, 110, "DRAFT", 22, RED, bold=True, spacing=2))
-    b.append(text(c3, 110, "WITH THE UPDATE", 22, GREEN, bold=True, spacing=2))
-    for i, (what, old, new) in enumerate(rows):
-        y = 130 + i * rh
-        b.append(line(30, y, 1170, y, LINE, 2))
-        b.append(text(c1, y + 42, what, 22, TEXT, bold=True, room=450))
-        b.append(text(c2, y + 42, old, 21, MUTED, room=310, lh=1.3))
-        b.append(text(c3, y + 42, new, 21, TEXT, room=340, lh=1.3))
-    b.append(line(30, 130 + len(rows) * rh, 1170, 130 + len(rows) * rh, LINE, 2))
-    svg("f10-cheat-sheet.svg", W, H, "The draft and the update, side by side", b)
-
-
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
-    for f in (f1, f2, f3, f4, f5, f6, f7, f8, f9, f10):
+    for f in (f1, f2, f3, f4, f5, f6, f7, f8, f9):
         f()
